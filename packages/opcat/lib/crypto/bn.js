@@ -23,7 +23,7 @@ BN.Minus1 = new BN(-1);
  */
 BN.fromNumber = function (n) {
   $.checkArgument(_.isNumber(n));
-  return new BN(n);
+  return BN.fromString(n.toString(16), 16)
 };
 
 /**

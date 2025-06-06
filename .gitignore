@@ -48,6 +48,7 @@ typings/
 # compiler
 compiler
 /out
+/.parcel-cache
 
 # templates
 *.tar.gz

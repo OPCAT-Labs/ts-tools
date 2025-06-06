@@ -9,28 +9,10 @@
     }
   ],
   [
-    "3CMNFxN1oHBc4R1EpboAL5yzHGgE611Xou",
-    "74f209f6ea907e2ea48f74fae05782ae8a665257",
-    {
-      "addrType": "script",
-      "isPrivkey": false,
-      "isTestnet": false
-    }
-  ],
-  [
     "mo9ncXisMeAoXwqcV5EWuyncbmCcQN4rVs",
     "53c0307d6851aa0ce7825ba883c6bd9ad242b486",
     {
       "addrType": "pubkey",
-      "isPrivkey": false,
-      "isTestnet": true
-    }
-  ],
-  [
-    "2N2JD6wb56AfK4tfmM6PwdVmoYk2dCKf4Br",
-    "6349a418fc4578d10a372b54b45c280cc8c4382f",
-    {
-      "addrType": "script",
       "isPrivkey": false,
       "isTestnet": true
     }
@@ -81,28 +63,10 @@
     }
   ],
   [
-    "3QjYXhTkvuj8qPaXHTTWb5wjXhdsLAAWVy",
-    "fcc5460dd6e2487c7d75b1963625da0e8f4c5975",
-    {
-      "addrType": "script",
-      "isPrivkey": false,
-      "isTestnet": false
-    }
-  ],
-  [
     "n3ZddxzLvAY9o7184TB4c6FJasAybsw4HZ",
     "f1d470f9b02370fdec2e6b708b08ac431bf7a5f7",
     {
       "addrType": "pubkey",
-      "isPrivkey": false,
-      "isTestnet": true
-    }
-  ],
-  [
-    "2NBFNJTktNa7GZusGbDbGKRZTxdK9VVez3n",
-    "c579342c2c4c9220205e2cdc285617040c924a0a",
-    {
-      "addrType": "script",
       "isPrivkey": false,
       "isTestnet": true
     }
@@ -153,28 +117,10 @@
     }
   ],
   [
-    "3AnNxabYGoTxYiTEZwFEnerUoeFXK2Zoks",
-    "63bcc565f9e68ee0189dd5cc67f1b0e5f02f45cb",
-    {
-      "addrType": "script",
-      "isPrivkey": false,
-      "isTestnet": false
-    }
-  ],
-  [
     "n3LnJXCqbPjghuVs8ph9CYsAe4Sh4j97wk",
     "ef66444b5b17f14e8fae6e7e19b045a78c54fd79",
     {
       "addrType": "pubkey",
-      "isPrivkey": false,
-      "isTestnet": true
-    }
-  ],
-  [
-    "2NB72XtkjpnATMggui83aEtPawyyKvnbX2o",
-    "c3e55fceceaa4391ed2a9677f4a4d34eacd021a0",
-    {
-      "addrType": "script",
       "isPrivkey": false,
       "isTestnet": true
     }
@@ -225,28 +171,10 @@
     }
   ],
   [
-    "33vt8ViH5jsr115AGkW6cEmEz9MpvJSwDk",
-    "188f91a931947eddd7432d6e614387e32b244709",
-    {
-      "addrType": "script",
-      "isPrivkey": false,
-      "isTestnet": false
-    }
-  ],
-  [
     "mhaMcBxNh5cqXm4aTQ6EcVbKtfL6LGyK2H",
     "1694f5bc1a7295b600f40018a618a6ea48eeb498",
     {
       "addrType": "pubkey",
-      "isPrivkey": false,
-      "isTestnet": true
-    }
-  ],
-  [
-    "2MxgPqX1iThW3oZVk9KoFcE5M4JpiETssVN",
-    "3b9b3fd7a50d4f08d1a5b0f62f644fa7115ae2f3",
-    {
-      "addrType": "script",
       "isPrivkey": false,
       "isTestnet": true
     }
@@ -297,28 +225,10 @@
     }
   ],
   [
-    "3QCzvfL4ZRvmJFiWWBVwxfdaNBT8EtxB5y",
-    "f6fe69bcb548a829cce4c57bf6fff8af3a5981f9",
-    {
-      "addrType": "script",
-      "isPrivkey": false,
-      "isTestnet": false
-    }
-  ],
-  [
     "mizXiucXRCsEriQCHUkCqef9ph9qtPbZZ6",
     "261f83568a098a8638844bd7aeca039d5f2352c0",
     {
       "addrType": "pubkey",
-      "isPrivkey": false,
-      "isTestnet": true
-    }
-  ],
-  [
-    "2NEWDzHWwY5ZZp8CQWbB7ouNMLqCia6YRda",
-    "e930e1834a4d234702773951d627cce82fbb5d2e",
-    {
-      "addrType": "script",
       "isPrivkey": false,
       "isTestnet": true
     }
@@ -369,28 +279,10 @@
     }
   ],
   [
-    "37Sp6Rv3y4kVd1nQ1JV5pfqXccHNyZm1x3",
-    "3f210e7277c899c3a155cc1c90f4106cbddeec6e",
-    {
-      "addrType": "script",
-      "isPrivkey": false,
-      "isTestnet": false
-    }
-  ],
-  [
     "myoqcgYiehufrsnnkqdqbp69dddVDMopJu",
     "c8a3c2a09a298592c3e180f02487cd91ba3400b5",
     {
       "addrType": "pubkey",
-      "isPrivkey": false,
-      "isTestnet": true
-    }
-  ],
-  [
-    "2N7FuwuUuoTBrDFdrAZ9KxBmtqMLxce9i1C",
-    "99b31df7c9068d1481b596578ddbb4d3bd90baeb",
-    {
-      "addrType": "script",
       "isPrivkey": false,
       "isTestnet": true
     }
@@ -436,15 +328,6 @@
     "1ed467017f043e91ed4c44b4e8dd674db211c4e6",
     {
       "addrType": "pubkey",
-      "isPrivkey": false,
-      "isTestnet": false
-    }
-  ],
-  [
-    "3ALJH9Y951VCGcVZYAdpA3KchoP9McEj1G",
-    "5ece0cadddc415b1980f001785947120acdb36fc",
-    {
-      "addrType": "script",
       "isPrivkey": false,
       "isTestnet": false
     }

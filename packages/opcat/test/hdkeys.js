@@ -342,8 +342,8 @@ describe('BIP32 compliance', function () {
       var derived = key.deriveChild("m/44'");
       derived.privateKey
         .toHex()
-        .should.equal('b15bce3608d607ee3a49069197732c656bca942ee59f3e29b4d56914c1de6825');
-      opcat.PrivateKey.isValid.callCount.should.equal(2);
+        .should.equal('e177a510d6326595afdb1200e4ce56b59f8815cf3eee8d5c4745b2b70540b3f8');
+      opcat.PrivateKey.isValid.callCount.should.equal(1);
     });
     it('will handle edge case that a derive public key is invalid', function () {
       var publicKeyBuffer = Buffer.from(

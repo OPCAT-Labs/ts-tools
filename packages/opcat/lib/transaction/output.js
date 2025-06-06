@@ -8,6 +8,7 @@ var Varint = require('../encoding/varint');
 var Script = require('../script');
 var $ = require('../util/preconditions');
 var errors = require('../errors');
+var Hash = require('../crypto/hash')
 
 var MAX_SAFE_INTEGER = 0x1fffffffffffff;
 
@@ -28,6 +29,7 @@ function Output(args) {
       }
       this.setScript(script);
     }
+    this.setData(args.data)
   } else {
     throw new TypeError('Unrecognized argument for Output');
   }
@@ -94,8 +96,23 @@ Output.prototype.toObject = Output.prototype.toJSON = function toObject() {
     satoshis: this.satoshis,
   };
   obj.script = this._script.toBuffer().toString('hex');
+  obj.data = this.data.toString('hex')
   return obj;
 };
+
+Output.prototype.setData = function (data) {
+  if (!data) {
+    this.data = Buffer.from([])
+    return;
+  }
+  if (Buffer.isBuffer(data)) {
+    this.data = data
+  } else if (_.isString(data) && JSUtil.isHexa(data)) {
+    this.data = Buffer.from(data, 'hex')
+  } else {
+    throw new TypeError('Invalid argument type: data for output.setData')
+  }
+}
 
 Output.fromObject = function (data) {
   return new Output(data);
@@ -138,38 +155,65 @@ Output.prototype.inspect = function () {
 };
 
 Output.fromBufferReader = function (br) {
-  var obj = {};
-  obj.satoshis = br.readUInt64LEBN();
-  var size = br.readVarintNum();
-  if (size !== 0) {
-    if (br.remaining() < size) {
-      throw new TypeError('Unrecognized Output');
+  var obj = {}
+  obj.satoshis = br.readUInt64LEBN()
+  var scriptSize = br.readVarintNum()
+  if (scriptSize !== 0) {
+    if (br.remaining() < scriptSize) {
+      throw new TypeError('Unrecognized Output')
     }
-    obj.script = br.read(size);
+    obj.script = br.read(scriptSize)
   } else {
-    obj.script = Buffer.from([]);
+    obj.script = Buffer.from([])
   }
-  return new Output(obj);
-};
+  var dataSize = br.readVarintNum()
+  if (dataSize !== 0) {
+    if (br.remaining() < dataSize) {
+      throw new TypeError('Unrecognized Output')
+    }
+    obj.data = br.read(dataSize)
+  } else {
+    obj.data = Buffer.from([])
+  }
+  return new Output(obj)
+}
 
-Output.prototype.toBufferWriter = function (writer) {
+Output.prototype.toBufferWriter = function (hashScriptPubkey, writer) {
+    $.checkArgument(typeof hashScriptPubkey === 'boolean', 'hashScriptSig should be boolean')
   if (!writer) {
     writer = new BufferWriter();
   }
   writer.writeUInt64LEBN(this._satoshisBN);
   var script = this._script.toBuffer();
-  writer.writeVarintNum(script.length);
-  writer.write(script);
-  return writer;
+  var data = this.data
+  if(hashScriptPubkey) {
+    writer.write(Hash.sha256(script))
+    writer.write(Hash.sha256(data))
+  } else {
+    writer.writeVarintNum(script.length);
+    writer.write(script);
+    writer.writeVarintNum(data.length)
+    writer.write(data)
+  }
+
+
+  return writer
 };
 
 // 8    value
 // ???  script size (VARINT)
 // ???  script
+/**
+ * Calculates the total size of the output in bytes.
+ * Includes the script size, data size, and their respective varint sizes,
+ * plus a fixed 8-byte overhead.
+ * @returns {number} The total output size in bytes.
+ */
 Output.prototype.getSize = function () {
   var scriptSize = this.script.toBuffer().length;
-  var varintSize = Varint(scriptSize).toBuffer().length;
-  return 8 + varintSize + scriptSize;
+  var dataSize = this.data.length
+  var varintSize = Varint(scriptSize).toBuffer().length + Varint(dataSize).toBuffer().length
+  return 8 + varintSize + scriptSize + dataSize
 };
 
 module.exports = Output;

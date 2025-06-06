@@ -17,8 +17,6 @@ var UnspentOutput = require('./unspentoutput');
 var Input = require('./input');
 var PublicKeyHashInput = Input.PublicKeyHash;
 var PublicKeyInput = Input.PublicKey;
-var MultiSigScriptHashInput = Input.MultiSigScriptHash;
-var MultiSigInput = Input.MultiSig;
 var Output = require('./output');
 var Script = require('../script');
 var PrivateKey = require('../privatekey');
@@ -94,6 +92,16 @@ Transaction.DUMMY_PRIVATEKEY = PrivateKey.fromWIF(
 
 /* Constructors and Serialization */
 
+Transaction.fromString = function (rawHex) {
+  return new Transaction().fromString(rawHex)
+}
+Transaction.fromBuffer = function (buffer) {
+  return new Transaction().fromBuffer(buffer)
+}
+Transaction.fromObject = function (obj) {
+  return new Transaction().fromObject(obj)
+}
+
 /**
  * Create a 'shallow' copy of the transaction, by serializing and deserializing
  * it dropping any additional information that inputs and outputs may have hold
@@ -135,8 +143,24 @@ Object.defineProperty(Transaction.prototype, 'outputAmount', ioProperty);
  * @return {Buffer}
  */
 Transaction.prototype._getHash = function () {
-  return Hash.sha256sha256(this.toBuffer());
+  return Hash.sha256sha256(this.toTxHashPreimageBuffer());
 };
+
+
+Transaction.prototype.toTxHashPreimageBuffer = function () {
+  var writer = new BufferWriter()
+  writer.writeUInt32LE(this.version)
+  writer.writeVarintNum(this.inputs.length)
+  _.each(this.inputs, function (input) {
+    input.toBufferWriter(true, writer)
+  })
+  writer.writeVarintNum(this.outputs.length)
+  _.each(this.outputs, function (output) {
+    output.toBufferWriter(true, writer)
+  })
+  writer.writeUInt32LE(this.nLockTime)
+  return writer.toBuffer()
+}
 
 /**
  * Retrieve a hexa string that can be used with bitcoind's CLI interface
@@ -282,11 +306,11 @@ Transaction.prototype.toBufferWriter = function (writer) {
   writer.writeUInt32LE(this.version);
   writer.writeVarintNum(this.inputs.length);
   _.each(this.inputs, function (input) {
-    input.toBufferWriter(writer);
+    input.toBufferWriter(false, writer);
   });
   writer.writeVarintNum(this.outputs.length);
   _.each(this.outputs, function (output) {
-    output.toBufferWriter(writer);
+    output.toBufferWriter(false, writer);
   });
   writer.writeUInt32LE(this.nLockTime);
   return writer;
@@ -366,17 +390,10 @@ Transaction.prototype.fromObject = function fromObject(arg) {
     var txin;
     if (script.isPublicKeyHashOut()) {
       txin = new Input.PublicKeyHash(input);
-    } else if (script.isScriptHashOut() && input.publicKeys && input.threshold) {
-      txin = new Input.MultiSigScriptHash(
-        input,
-        input.publicKeys,
-        input.threshold,
-        input.signatures,
-      );
     } else if (script.isPublicKeyOut()) {
       txin = new Input.PublicKey(input);
     } else {
-      throw new errors.Transaction.Input.UnsupportedScript(input.output.script);
+      txin = new Input(input)
     }
     self.addInput(txin);
   });
@@ -391,6 +408,9 @@ Transaction.prototype.fromObject = function fromObject(arg) {
   }
   if (transaction.changeAddress) {
     this._changeAddress = Address.fromString(transaction.changeAddress);
+  }
+  if (transaction.changeData) {
+    this._changeData = transaction.changeData;
   }
   if (transaction.fee) {
     this._fee = transaction.fee;
@@ -486,7 +506,7 @@ Transaction.prototype.getLockTime = function () {
 };
 
 Transaction.prototype.fromString = function (string) {
-  this.fromBuffer(Buffer.from(string, 'hex'));
+  return this.fromBuffer(Buffer.from(string, 'hex'));
 };
 
 Transaction.prototype._newTransaction = function () {
@@ -536,20 +556,17 @@ Transaction.prototype._newTransaction = function () {
  * // From a pay to public key hash output
  * transaction.from({'txId': '0000...', outputIndex: 0, satoshis: 1000, script: 'OP_DUP ...'});
  *
- * // From a multisig P2SH output
- * transaction.from({'txId': '0000...', inputIndex: 0, satoshis: 1000, script: '... OP_HASH'},
- *                  ['03000...', '02000...'], 2);
  * ```
  *
  * @param {(Array.<Transaction~fromObject>|Transaction~fromObject)} utxo
  * @param {Array=} pubkeys
  * @param {number=} threshold
  */
-Transaction.prototype.from = function (utxo, pubkeys, threshold) {
+Transaction.prototype.from = function (utxo) {
   if (_.isArray(utxo)) {
     var self = this;
     _.each(utxo, function (utxo) {
-      self.from(utxo, pubkeys, threshold);
+      self.from(utxo);
     });
     return this;
   }
@@ -560,15 +577,11 @@ Transaction.prototype.from = function (utxo, pubkeys, threshold) {
   if (exists) {
     return this;
   }
-  if (pubkeys && threshold) {
-    this._fromMultisigUtxo(utxo, pubkeys, threshold);
-  } else {
-    this._fromNonP2SH(utxo);
-  }
+  this._fromUTXO(utxo);
   return this;
 };
 
-Transaction.prototype._fromNonP2SH = function (utxo) {
+Transaction.prototype._fromUTXO = function (utxo) {
   var Clazz;
   utxo = new UnspentOutput(utxo);
   if (utxo.script.isPublicKeyHashOut()) {
@@ -583,42 +596,12 @@ Transaction.prototype._fromNonP2SH = function (utxo) {
       output: new Output({
         script: utxo.script,
         satoshis: utxo.satoshis,
+        data: utxo.data || Buffer.from([]),
       }),
       prevTxId: utxo.txId,
       outputIndex: utxo.outputIndex,
       script: Script.empty(),
     }),
-  );
-};
-
-Transaction.prototype._fromMultisigUtxo = function (utxo, pubkeys, threshold) {
-  $.checkArgument(
-    threshold <= pubkeys.length,
-    'Number of required signatures must be greater than the number of public keys',
-  );
-  var Clazz;
-  utxo = new UnspentOutput(utxo);
-  if (utxo.script.isMultisigOut()) {
-    Clazz = MultiSigInput;
-  } else if (utxo.script.isScriptHashOut()) {
-    Clazz = MultiSigScriptHashInput;
-  } else {
-    throw new Error('@TODO');
-  }
-  this.addInput(
-    new Clazz(
-      {
-        output: new Output({
-          script: utxo.script,
-          satoshis: utxo.satoshis,
-        }),
-        prevTxId: utxo.txId,
-        outputIndex: utxo.outputIndex,
-        script: Script.empty(),
-      },
-      pubkeys,
-      threshold,
-    ),
   );
 };
 
@@ -717,12 +700,16 @@ Transaction.prototype.feePerKb = function (amount) {
  * SIGHASH_SINGLE or SIGHASH_NONE signatures will not be reset).
  *
  * @param {Address} address An address for change to be sent to.
+ * @param {Buffer|string} data The data to be stored in the change output.
  * @return {Transaction} this, for chaining
  */
-Transaction.prototype.change = function (address) {
+Transaction.prototype.change = function (address, data) {
   $.checkArgument(address, 'address is required');
   this._changeScript = Script.fromAddress(address);
   this._changeAddress = Address(address);
+  if (data) {
+    this._changeData = data
+  }
   this._updateChangeOutput();
   return this;
 };
@@ -902,6 +889,7 @@ Transaction.prototype._updateChangeOutput = function () {
     new Output({
       script: this._changeScript,
       satoshis: 0,
+      data: this._changeData || ''
     }),
   );
   var available = this.getUnspentValue();
@@ -915,6 +903,7 @@ Transaction.prototype._updateChangeOutput = function () {
       new Output({
         script: this._changeScript,
         satoshis: changeAmount,
+        data: this._changeData || ''
       }),
     );
   }
@@ -1144,8 +1133,8 @@ Transaction.prototype.sign = function (privateKey, sigtype) {
 
 Transaction.prototype.getSignatures = function (privKey, sigtype) {
   privKey = new PrivateKey(privKey);
-  // By default, signs using ALL|FORKID
-  sigtype = sigtype || Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+  // By default, signs using SIGHASH_ALL
+  sigtype = sigtype || Signature.SIGHASH_ALL;
   var transaction = this;
   var results = [];
   var hashData = Hash.sha256ripemd160(privKey.publicKey.toBuffer());
@@ -1205,8 +1194,8 @@ Transaction.prototype.isValidSignature = function (signature) {
 /**
  * @returns {bool} whether the signature is valid for this transaction input
  */
-Transaction.prototype.verifySignature = function (sig, pubkey, nin, subscript, satoshisBN, flags) {
-  return Sighash.verify(this, sig, pubkey, nin, subscript, satoshisBN, flags);
+Transaction.prototype.verifySignature = function (sig, pubkey, nin) {
+  return Sighash.verify(this, sig, pubkey, nin);
 };
 
 /**
@@ -1296,11 +1285,11 @@ Transaction.prototype.setInputScript = function (options, unlockScriptOrCallback
   var isLowS = false;
   if (typeof options === 'number') {
     inputIndex = options;
-    sigtype = Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+    sigtype = Signature.SIGHASH_ALL;
   } else {
     inputIndex = options.inputIndex || 0;
     privateKey = options.privateKey;
-    sigtype = options.sigtype || Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+    sigtype = options.sigtype || Signature.SIGHASH_ALL;
     isLowS = options.isLowS || false;
   }
 
@@ -1333,10 +1322,10 @@ Transaction.prototype.setInputScriptAsync = async function (options, unlockScrip
   var isLowS = false;
   if (typeof options === 'number') {
     inputIndex = options;
-    sigtype = Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+    sigtype = Signature.SIGHASH_ALL;
   } else {
     inputIndex = options.inputIndex || 0;
-    sigtype = options.sigtype || Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+    sigtype = options.sigtype || Signature.SIGHASH_ALL;
     isLowS = options.isLowS || false;
   }
 
@@ -1510,12 +1499,12 @@ Transaction.prototype.isSealed = function () {
   return this.sealed;
 };
 
-Transaction.prototype.getPreimage = function (inputIndex, sigtype, isLowS, csIdx) {
+Transaction.prototype.getPreimage = function (inputIndex, sigtype, isLowS) {
   $.checkArgumentType(inputIndex, 'number', 'inputIndex');
-  sigtype = sigtype || Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+  sigtype = sigtype || Signature.SIGHASH_ALL;
   isLowS = isLowS || false;
   inputIndex = inputIndex || 0;
-  var preimage = this.inputs[inputIndex].getPreimage(this, inputIndex, sigtype, isLowS, csIdx);
+  var preimage = this.inputs[inputIndex].getPreimage(this, inputIndex, sigtype, isLowS);
   return preimage.toString('hex');
 };
 
@@ -1527,7 +1516,7 @@ Transaction.prototype.getSignature = function (inputIndex, privateKeys, sigtypes
   privateKeys = privateKeys || (inputOpt ? inputOpt.privateKey : this._privateKey);
 
   if (privateKeys) {
-    sigtypes = sigtypes || Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+    sigtypes = sigtypes || Signature.SIGHASH_ALL;
     var sigs = this.inputs[inputIndex].getSignatures(this, privateKeys, inputIndex, sigtypes);
 
     _.each(sigs, function (sig) {

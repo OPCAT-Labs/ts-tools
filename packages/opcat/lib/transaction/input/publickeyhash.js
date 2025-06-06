@@ -38,7 +38,7 @@ PublicKeyHashInput.prototype.getSignatures = function (
 ) {
   $.checkState(this.output instanceof Output);
   hashData = hashData || Hash.sha256ripemd160(privateKey.publicKey.toBuffer());
-  sigtype = sigtype || Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+  sigtype = sigtype || Signature.SIGHASH_ALL;
 
   if (hashData.equals(this.output.script.getPublicKeyHash())) {
     return [
@@ -52,8 +52,6 @@ PublicKeyHashInput.prototype.getSignatures = function (
           privateKey,
           sigtype,
           index,
-          this.output.script,
-          this.output.satoshisBN,
         ),
         sigtype: sigtype,
       }),

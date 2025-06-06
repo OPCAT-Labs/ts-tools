@@ -52,7 +52,6 @@ Interpreter.prototype.verify = function (
   nin,
   flags,
   satoshisBN,
-  sighashScript,
 ) {
   var Transaction = require('../transaction');
 
@@ -66,25 +65,13 @@ Interpreter.prototype.verify = function (
     flags = 0;
   }
 
-  // If FORKID is enabled, we also ensure strict encoding.
-  if (flags & Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID) {
-    flags |= Interpreter.SCRIPT_VERIFY_STRICTENC;
-
-    // If FORKID is enabled, we need the input amount.
-    if (!satoshisBN) {
-      throw new Error('internal error - need satoshisBN to verify FORKID transactions');
-    }
-  }
-
   this.set({
     script: scriptSig,
     tx: tx,
     nin: nin,
     flags: flags,
     satoshisBN: satoshisBN,
-    sighashScript: sighashScript,
   });
-  var stackCopy;
 
   if ((flags & Interpreter.SCRIPT_VERIFY_SIGPUSHONLY) !== 0 && !scriptSig.isPushOnly()) {
     this.errstr = 'SCRIPT_ERR_SIG_PUSHONLY';
@@ -96,10 +83,6 @@ Interpreter.prototype.verify = function (
     return false;
   }
 
-  if (flags & Interpreter.SCRIPT_VERIFY_P2SH) {
-    stackCopy = this.stack.copy();
-  }
-
   var stack = this.stack;
   this.initialize();
   this.set({
@@ -109,7 +92,6 @@ Interpreter.prototype.verify = function (
     nin: nin,
     flags: flags,
     satoshisBN: satoshisBN,
-    sighashScript: sighashScript,
   });
 
   // evaluate scriptPubkey
@@ -128,69 +110,6 @@ Interpreter.prototype.verify = function (
     return false;
   }
 
-  // Additional validation for spend-to-script-hash transactions:
-  if (flags & Interpreter.SCRIPT_VERIFY_P2SH && scriptPubkey.isScriptHashOut()) {
-    // scriptSig must be literals-only or validation fails
-    if (!scriptSig.isPushOnly()) {
-      this.errstr = 'SCRIPT_ERR_SIG_PUSHONLY';
-      return false;
-    }
-
-    // stackCopy cannot be empty here, because if it was the
-    // P2SH  HASH <> EQUAL  scriptPubKey would be evaluated with
-    // an empty stack and the EvalScript above would return false.
-    if (stackCopy.length === 0) {
-      throw new Error('internal error - stack copy empty');
-    }
-
-    var redeemScriptSerialized = stackCopy.stacktop(-1);
-    var redeemScript = Script.fromBuffer(redeemScriptSerialized);
-    stackCopy.pop();
-
-    this.initialize();
-    this.set({
-      script: redeemScript,
-      stack: stackCopy,
-      tx: tx,
-      nin: nin,
-      flags: flags,
-      satoshisBN: satoshisBN,
-    });
-
-    // evaluate redeemScript
-    if (!this.evaluate()) {
-      return false;
-    }
-
-    if (stackCopy.length === 0) {
-      this.errstr = 'SCRIPT_ERR_EVAL_FALSE_NO_P2SH_STACK';
-      return false;
-    }
-
-    if (!Interpreter.castToBool(stackCopy.stacktop(-1))) {
-      this.errstr = 'SCRIPT_ERR_EVAL_FALSE_IN_P2SH_STACK';
-      return false;
-    }
-  }
-
-  // The CLEANSTACK check is only performed after potential P2SH evaluation,
-  // as the non-P2SH evaluation of a P2SH script will obviously not result in
-  // a clean stack (the P2SH inputs remain). The same holds for witness
-  // evaluation.
-  if ((flags & Interpreter.SCRIPT_VERIFY_CLEANSTACK) !== 0) {
-    // Disallow CLEANSTACK without P2SH, as otherwise a switch
-    // CLEANSTACK->P2SH+CLEANSTACK would be possible, which is not a
-    // softfork (and P2SH should be one).
-    // if ((flags & Interpreter.SCRIPT_VERIFY_P2SH) === 0) {
-    //   throw new Error('internal error - CLEANSTACK without P2SH')
-    // }
-
-    if (this.stack.length !== 1) {
-      this.errstr = 'SCRIPT_ERR_CLEANSTACK';
-      return false;
-    }
-  }
-
   return true;
 };
 
@@ -203,6 +122,7 @@ Interpreter.prototype.initialize = function (obj) {
   this.pbegincodehash = 0;
   this.nOpCount = 0;
   this.vfExec = [];
+  this.vfElse = [];
   this.errstr = '';
   this.flags = 0;
   // if OP_RETURN is found in executed branches after genesis is activated,
@@ -223,19 +143,15 @@ Interpreter.prototype.set = function (obj) {
     typeof obj.pbegincodehash !== 'undefined' ? obj.pbegincodehash : this.pbegincodehash;
   this.nOpCount = typeof obj.nOpCount !== 'undefined' ? obj.nOpCount : this.nOpCount;
   this.vfExec = obj.vfExec || this.vfExec;
+  this.vfElse = obj.vfElse || this.vfElse;
   this.errstr = obj.errstr || this.errstr;
   this.flags = typeof obj.flags !== 'undefined' ? obj.flags : this.flags;
-  this.sighashScript = obj.sighashScript || this.sighashScript;
 };
 
 Interpreter.prototype.subscript = function () {
-  if (this.sighashScript) {
-    return this.sighashScript.clone();
-  } else {
     // Subset of script starting at the most recent codeseparator
     // CScript scriptCode(pbegincodehash, pend);
     return Script.fromChunks(this.script.chunks.slice(this.pbegincodehash));
-  }
 };
 
 Interpreter.getTrue = () => Buffer.from([1]);
@@ -250,9 +166,6 @@ Interpreter.LOCKTIME_THRESHOLD_BN = new BN(Interpreter.LOCKTIME_THRESHOLD);
 // flags taken from bitcoind
 // bitcoind commit: b5d1b1092998bc95313856d535c632ea5a8f9104
 Interpreter.SCRIPT_VERIFY_NONE = 0;
-
-// Evaluate P2SH subscripts (softfork safe, BIP16).
-Interpreter.SCRIPT_VERIFY_P2SH = 1 << 0;
 
 // Passing a non-strict-DER signature or one with undefined hashtype to a checksig operation causes script failure.
 // Passing a pubkey that is not (0x04 + 64 bytes) or (0x02 or 0x03 + 32 bytes) to checksig causes that pubkey to be
@@ -289,14 +202,6 @@ Interpreter.SCRIPT_VERIFY_MINIMALDATA = 1 << 6;
 // executed, e.g.  within an unexecuted IF ENDIF block, are *not* rejected.
 Interpreter.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS = 1 << 7;
 
-// Require that only a single stack element remains after evaluation. This
-// changes the success criterion from "At least one stack element must
-// remain, and when interpreted as a boolean, it must be true" to "Exactly
-// one stack element must remain, and when interpreted as a boolean, it must
-// be true".
-// (softfork safe, BIP62 rule 6)
-// Note: CLEANSTACK should never be used without P2SH or WITNESS.
-Interpreter.SCRIPT_VERIFY_CLEANSTACK = 1 << 8;
 
 // CLTV See BIP65 for details.
 Interpreter.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY = 1 << 9;
@@ -306,25 +211,12 @@ Interpreter.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY = 1 << 9;
 // See BIP112 for details
 Interpreter.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY = 1 << 10;
 
-// Segwit script only: Require the argument of OP_IF/NOTIF to be exactly
-// 0x01 or empty vector
-//
-Interpreter.SCRIPT_VERIFY_MINIMALIF = 1 << 13;
-
 // Signature(s) must be empty vector if an CHECK(MULTI)SIG operation failed
 //
 Interpreter.SCRIPT_VERIFY_NULLFAIL = 1 << 14;
 
 // Public keys in scripts must be compressed
 Interpreter.SCRIPT_VERIFY_COMPRESSED_PUBKEYTYPE = 1 << 15;
-
-// Do we accept signature using SIGHASH_FORKID
-//
-Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID = 1 << 16;
-
-// Do we accept activate replay protection using a different fork id.
-//
-Interpreter.SCRIPT_ENABLE_REPLAY_PROTECTION = 1 << 17;
 
 // Enable new opcodes.
 //
@@ -359,11 +251,9 @@ Interpreter.MAX_SCRIPT_SIZE = Number.MAX_SAFE_INTEGER;
 Interpreter.MAX_OPCODE_COUNT = Number.MAX_SAFE_INTEGER;
 
 Interpreter.DEFAULT_FLAGS =
-  // Interp.SCRIPT_VERIFY_P2SH | Interp.SCRIPT_VERIFY_CLEANSTACK | // no longer applies now p2sh is deprecated: cleanstack only applies to p2sh
   Interpreter.SCRIPT_ENABLE_MAGNETIC_OPCODES |
   Interpreter.SCRIPT_ENABLE_MONOLITH_OPCODES |
   Interpreter.SCRIPT_VERIFY_STRICTENC |
-  Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID |
   Interpreter.SCRIPT_VERIFY_LOW_S |
   Interpreter.SCRIPT_VERIFY_NULLFAIL |
   Interpreter.SCRIPT_VERIFY_DERSIG |
@@ -371,8 +261,7 @@ Interpreter.DEFAULT_FLAGS =
   Interpreter.SCRIPT_VERIFY_NULLDUMMY |
   Interpreter.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS |
   Interpreter.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY |
-  Interpreter.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY |
-  Interpreter.SCRIPT_VERIFY_CLEANSTACK;
+  Interpreter.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY;
 
 Interpreter.castToBool = function (buf) {
   for (var i = 0; i < buf.length; i++) {
@@ -419,22 +308,6 @@ Interpreter.prototype.checkSignatureEncoding = function (buf) {
     sig = Signature.fromTxFormat(buf);
     if (!sig.hasDefinedHashtype()) {
       this.errstr = 'SCRIPT_ERR_SIG_HASHTYPE';
-      return false;
-    }
-
-    if (
-      !(this.flags & Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID) &&
-      sig.nhashtype & Signature.SIGHASH_FORKID
-    ) {
-      this.errstr = 'SCRIPT_ERR_ILLEGAL_FORKID';
-      return false;
-    }
-
-    if (
-      this.flags & Interpreter.SCRIPT_ENABLE_SIGHASH_FORKID &&
-      !(sig.nhashtype & Signature.SIGHASH_FORKID)
-    ) {
-      this.errstr = 'SCRIPT_ERR_MUST_USE_FORKID';
       return false;
     }
   }
@@ -986,16 +859,6 @@ Interpreter.prototype.step = function (scriptType) {
           }
           buf = stacktop(-1);
 
-          if (this.flags & Interpreter.SCRIPT_VERIFY_MINIMALIF) {
-            if (buf.length > 1) {
-              this.errstr = 'SCRIPT_ERR_MINIMALIF';
-              return false;
-            }
-            if (buf.length === 1 && buf[0] !== 1) {
-              this.errstr = 'SCRIPT_ERR_MINIMALIF';
-              return false;
-            }
-          }
           fValue = Interpreter.castToBool(buf);
           if (opcodenum === Opcode.OP_NOTIF) {
             fValue = !fValue;
@@ -1003,14 +866,16 @@ Interpreter.prototype.step = function (scriptType) {
           this.stack.pop();
         }
         this.vfExec.push(fValue);
+        this.vfElse.push(false);
         break;
 
       case Opcode.OP_ELSE:
-        if (this.vfExec.length === 0) {
+        if (this.vfExec.length === 0 || this.vfElse[this.vfElse.length - 1] === true) {
           this.errstr = 'SCRIPT_ERR_UNBALANCED_CONDITIONAL';
           return false;
         }
         this.vfExec[this.vfExec.length - 1] = !this.vfExec[this.vfExec.length - 1];
+        this.vfElse[this.vfElse.length - 1] = true;
         break;
 
       case Opcode.OP_ENDIF:
@@ -1019,6 +884,7 @@ Interpreter.prototype.step = function (scriptType) {
           return false;
         }
         this.vfExec.pop();
+        this.vfElse.pop();
         break;
 
       case Opcode.OP_VERIFY:
@@ -1039,7 +905,6 @@ Interpreter.prototype.step = function (scriptType) {
         break;
 
       case Opcode.OP_RETURN:
-        if ((this.flags & Interpreter.SCRIPT_VERIFY_P2SH) === 0) {
           // utxo_after_genesis
           if (this.vfExec.length === 0) {
             // Terminate the execution as successful. The remaining of the script does not affect the validity (even in
@@ -1049,10 +914,6 @@ Interpreter.prototype.step = function (scriptType) {
           }
           // op_return encountered inside if statement after genesis --> check for invalid grammar
           this.nonTopLevelReturnAfterGenesis = true;
-        } else {
-          return false;
-        }
-
         break;
 
       //
@@ -1669,6 +1530,7 @@ Interpreter.prototype.step = function (scriptType) {
             this.flags,
           );
         } catch (e) {
+          console.error('invalid sig or pubkey', e);
           // invalid sig or pubkey
           fSuccess = false;
         }

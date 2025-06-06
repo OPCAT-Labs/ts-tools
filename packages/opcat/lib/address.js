@@ -8,19 +8,18 @@ var Networks = require('./networks');
 var Hash = require('./crypto/hash');
 var JSUtil = require('./util/js');
 var PublicKey = require('./publickey');
-
 /**
- * Instantiate an address from an address String or Buffer, a public key or script hash Buffer,
- * or an instance of {@link PublicKey} or {@link Script}.
+ * Instantiate an address from an address String or Buffer, a public key hash Buffer,
+ * or an instance of {@link PublicKey}.
  *
  * This is an immutable class, and if the first parameter provided to this constructor is an
  * `Address` instance, the same argument will be returned.
  *
  * An address has two key properties: `network` and `type`. The type is either
- * `Address.PayToPublicKeyHash` (value is the `'pubkeyhash'` string)
- * or `Address.PayToScriptHash` (the string `'scripthash'`). The network is an instance of {@link Network}.
+ * `Address.PayToPublicKeyHash` (value is the `'pubkeyhash'` string).
+ * The network is an instance of {@link Network}.
  * You can quickly check whether an address is of a given kind by using the methods
- * `isPayToPublicKeyHash` and `isPayToScriptHash`
+ * `isPayToPublicKeyHash`
  *
  * @example
  * ```javascript
@@ -39,17 +38,13 @@ var PublicKey = require('./publickey');
  *
  * @param {*} data - The encoded data in various formats
  * @param {Network|String|number=} network - The network: 'livenet' or 'testnet'
- * @param {string=} type - The type of address: 'script' or 'pubkey'
+ * @param {string=} type - The type of address: 'pubkey'
  * @returns {Address} A new valid and frozen instance of an Address
  * @constructor
  */
 function Address(data, network, type) {
   if (!(this instanceof Address)) {
     return new Address(data, network, type);
-  }
-
-  if (_.isArray(data) && _.isNumber(network)) {
-    return Address.createMultisig(data, network, type);
   }
 
   if (data instanceof Address) {
@@ -67,8 +62,8 @@ function Address(data, network, type) {
     throw new TypeError('Second argument must be "livenet", "testnet", or "regtest".');
   }
 
-  if (type && type !== Address.PayToPublicKeyHash && type !== Address.PayToScriptHash) {
-    throw new TypeError('Third argument must be "pubkeyhash" or "scripthash".');
+  if (type && type !== Address.PayToPublicKeyHash) {
+    throw new TypeError('Third argument must be "pubkeyhash".');
   }
 
   var info = this._classifyArguments(data, network, type);
@@ -90,7 +85,7 @@ function Address(data, network, type) {
  * Internal function used to split different kinds of arguments of the constructor
  * @param {*} data - The encoded data in various formats
  * @param {Network|String|number=} network - The network: 'livenet' or 'testnet'
- * @param {string=} type - The type of address: 'script' or 'pubkey'
+ * @param {string=} type - The type of address: 'pubkey'
  * @returns {Object} An "info" object with "type", "network", and "hashBuffer"
  */
 Address.prototype._classifyArguments = function (data, network, type) {
@@ -115,8 +110,6 @@ Address.prototype._classifyArguments = function (data, network, type) {
 
 /** @static */
 Address.PayToPublicKeyHash = 'pubkeyhash';
-/** @static */
-Address.PayToScriptHash = 'scripthash';
 
 /**
  * @param {Buffer} hash - An instance of a hash Buffer
@@ -164,15 +157,11 @@ Address._classifyFromVersion = function (buffer) {
   var version = {};
 
   var pubkeyhashNetwork = Networks.get(buffer[0], 'pubkeyhash');
-  var scripthashNetwork = Networks.get(buffer[0], 'scripthash');
 
   if (pubkeyhashNetwork) {
     version.network = pubkeyhashNetwork;
     version.type = Address.PayToPublicKeyHash;
-  } else if (scripthashNetwork) {
-    version.network = scripthashNetwork;
-    version.type = Address.PayToScriptHash;
-  }
+  } 
 
   return version;
 };
@@ -252,29 +241,11 @@ Address._transformScript = function (script, network) {
 };
 
 /**
- * Creates a P2SH address from a set of public keys and a threshold.
- *
- * The addresses will be sorted lexicographically, as that is the trend in bitcoin.
- * To create an address from unsorted public keys, use the {@link Script#buildMultisigOut}
- * interface.
- *
- * @param {Array} publicKeys - a set of public keys to create an address
- * @param {number} threshold - the number of signatures needed to release the funds
- * @param {String|Network} network - either a Network instance, 'livenet', or 'testnet'
- * @return {Address}
- */
-Address.createMultisig = function (publicKeys, threshold, network) {
-  var Script = require('./script');
-  network = network || publicKeys[0].network || Networks.defaultNetwork;
-  return Address.payingTo(Script.buildMultisigOut(publicKeys, threshold), network);
-};
-
-/**
  * Internal function to transform a bitcoin cash address string
  *
  * @param {string} data
  * @param {String|Network=} network - either a Network instance, 'livenet', or 'testnet'
- * @param {string=} type - The type: 'pubkeyhash' or 'scripthash'
+ * @param {string=} type - The type: 'pubkeyhash'
  * @returns {Object} An object with keys: hashBuffer, network and type
  * @private
  */
@@ -333,38 +304,6 @@ Address.fromPublicKeyHash = function (hash, network) {
   var info = Address._transformHash(hash);
   return new Address(info.hashBuffer, network, Address.PayToPublicKeyHash);
 };
-
-/**
- * Instantiate an address from a ripemd160 script hash
- *
- * @param {Buffer} hash - An instance of buffer of the hash
- * @param {String|Network} network - either a Network instance, 'livenet', or 'testnet'
- * @returns {Address} A new valid and frozen instance of an Address
- */
-Address.fromScriptHash = function (hash, network) {
-  $.checkArgument(hash, 'hash parameter is required');
-  var info = Address._transformHash(hash);
-  return new Address(info.hashBuffer, network, Address.PayToScriptHash);
-};
-
-/**
- * Builds a p2sh address paying to script. This will hash the script and
- * use that to create the address.
- * If you want to extract an address associated with a script instead,
- * see {{Address#fromScript}}
- *
- * @param {Script} script - An instance of Script
- * @param {String|Network} network - either a Network instance, 'livenet', or 'testnet'
- * @returns {Address} A new valid and frozen instance of an Address
- */
-Address.payingTo = function (script, network) {
-  var Script = require('./script');
-  $.checkArgument(script, 'script is required');
-  $.checkArgument(script instanceof Script, 'script must be instance of Script');
-
-  return Address.fromScriptHash(Hash.sha256ripemd160(script.toBuffer()), network);
-};
-
 /**
  * Extract address from a Script. The script must be of one
  * of the following types: p2pkh input, p2pkh output, p2sh input
@@ -389,7 +328,7 @@ Address.fromScript = function (script, network) {
  *
  * @param {Buffer} buffer - An instance of buffer of the address
  * @param {String|Network=} network - either a Network instance, 'livenet', or 'testnet'
- * @param {string=} type - The type of address: 'script' or 'pubkey'
+ * @param {string=} type - The type of address: 'pubkey'
  * @returns {Address} A new valid and frozen instance of an Address
  */
 Address.fromBuffer = function (buffer, network, type) {
@@ -406,7 +345,7 @@ Address.fromHex = function (hex, network, type) {
  *
  * @param {string} str - An string of the bitcoin address
  * @param {String|Network=} network - either a Network instance, 'livenet', or 'testnet'
- * @param {string=} type - The type of address: 'script' or 'pubkey'
+ * @param {string=} type - The type of address: 'pubkey'
  * @returns {Address} A new valid and frozen instance of an Address
  */
 Address.fromString = function (str, network, type) {
@@ -440,7 +379,7 @@ Address.fromObject = function fromObject(obj) {
  *
  * @param {string} data - The encoded data
  * @param {String|Network} network - either a Network instance, 'livenet', or 'testnet'
- * @param {string} type - The type of address: 'script' or 'pubkey'
+ * @param {string} type - The type of address: 'pubkey'
  * @returns {null|Error} The corresponding error message
  */
 Address.getValidationError = function (data, network, type) {
@@ -463,7 +402,7 @@ Address.getValidationError = function (data, network, type) {
  *
  * @param {string} data - The encoded data
  * @param {String|Network} network - either a Network instance, 'livenet', or 'testnet'
- * @param {string} type - The type of address: 'script' or 'pubkey'
+ * @param {string} type - The type of address: 'pubkey'
  * @returns {boolean} The corresponding error message
  */
 Address.isValid = function (data, network, type) {
@@ -479,14 +418,6 @@ Address.prototype.isPayToPublicKeyHash = function () {
 };
 
 /**
- * Returns true if an address is of pay to script hash type
- * @return boolean
- */
-Address.prototype.isPayToScriptHash = function () {
-  return this.type === Address.PayToScriptHash;
-};
-
-/**
  * Will return a buffer representation of the address
  *
  * @returns {Buffer} Bitcoin address buffer
@@ -497,8 +428,20 @@ Address.prototype.toBuffer = function () {
   return buf;
 };
 
+/**
+ * Converts the address to a hexadecimal string representation.
+ * @returns {string} The hexadecimal string representation of the address.
+ */
 Address.prototype.toHex = function () {
   return this.toBuffer().toString('hex');
+};
+
+/**
+ * Converts the address to a publickey hash string representation.
+ * @returns {string} The hexadecimal string of the publickey hash buffer.
+ */
+Address.prototype.toPublickeyHash = function () {
+  return this.hashBuffer.toString('hex');
 };
 
 /**

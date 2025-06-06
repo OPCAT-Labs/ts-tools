@@ -22,10 +22,24 @@ describe('UnspentOutput', function () {
     address: 'mgBCJAsvzgT2qNNeXsoECg2uPKrUsZ76up',
     scriptPubKey: '76a914073b7eae2823efa349e3b9155b8a735526463a0f88ac',
     amount: 0.0108,
+    data: ""
+  };
+
+    var sampleData3 = {
+    txid: 'e42447187db5a29d6db161661e4bc66d61c3e499690fe5ea47f87b79ca573986',
+    vout: 1,
+    address: 'mgBCJAsvzgT2qNNeXsoECg2uPKrUsZ76up',
+    scriptPubKey: '76a914073b7eae2823efa349e3b9155b8a735526463a0f88ac',
+    amount: 0.0108,
+    data: "68656c6c6f206f70636174"
   };
 
   it('roundtrip from raw data', function () {
     expect(UnspentOutput(sampleData2).toObject()).to.deep.equal(sampleData2);
+  });
+
+  it('roundtrip from raw data', function () {
+    expect(UnspentOutput(sampleData3).toObject()).to.deep.equal(sampleData3);
   });
 
   it('can be created without "new" operand', function () {

@@ -355,46 +355,6 @@ Script.prototype.isPublicKeyIn = function () {
 };
 
 /**
- * @returns {boolean} if this is a p2sh output script
- */
-Script.prototype.isScriptHashOut = function () {
-  var buf = this.toBuffer();
-  return (
-    buf.length === 23 &&
-    buf[0] === Opcode.OP_HASH160 &&
-    buf[1] === 0x14 &&
-    buf[buf.length - 1] === Opcode.OP_EQUAL
-  );
-};
-
-/**
- * @returns {boolean} if this is a p2sh input script
- * Note that these are frequently indistinguishable from pubkeyhashin
- */
-Script.prototype.isScriptHashIn = function () {
-  if (this.chunks.length <= 1) {
-    return false;
-  }
-  var redeemChunk = this.chunks[this.chunks.length - 1];
-  var redeemBuf = redeemChunk.buf;
-  if (!redeemBuf) {
-    return false;
-  }
-
-  var redeemScript;
-  try {
-    redeemScript = Script.fromBuffer(redeemBuf);
-  } catch (e) {
-    if (e instanceof errors.Script.InvalidBuffer) {
-      return false;
-    }
-    throw e;
-  }
-  var type = redeemScript.classify();
-  return type !== Script.types.UNKNOWN;
-};
-
-/**
  * @returns {boolean} if this is a mutlsig output script
  */
 Script.prototype.isMultisigOut = function () {
@@ -447,7 +407,7 @@ Script.prototype.isSafeDataOut = function () {
 
 /**
  * Retrieve the associated data for this script.
- * In the case of a pay to public key hash or P2SH, return the hash.
+ * In the case of a pay to public key hash, return the hash.
  * In the case of safe OP_RETURN data, return an array of buffers
  * In the case of a standard deprecated OP_RETURN, return the data
  * @returns {Buffer}
@@ -458,7 +418,7 @@ Script.prototype.getData = function () {
     var buffers = chunks.map((chunk) => chunk.buf);
     return buffers;
   }
-  if (this.isDataOut() || this.isScriptHashOut()) {
+  if (this.isDataOut()) {
     if (_.isUndefined(this.chunks[1])) {
       return Buffer.alloc(0);
     } else {
@@ -520,7 +480,6 @@ Script.outputIdentifiers = {};
 Script.outputIdentifiers.PUBKEY_OUT = Script.prototype.isPublicKeyOut;
 Script.outputIdentifiers.PUBKEYHASH_OUT = Script.prototype.isPublicKeyHashOut;
 Script.outputIdentifiers.MULTISIG_OUT = Script.prototype.isMultisigOut;
-Script.outputIdentifiers.SCRIPTHASH_OUT = Script.prototype.isScriptHashOut;
 Script.outputIdentifiers.DATA_OUT = Script.prototype.isDataOut;
 Script.outputIdentifiers.SAFE_DATA_OUT = Script.prototype.isSafeDataOut;
 
@@ -541,7 +500,6 @@ Script.inputIdentifiers = {};
 Script.inputIdentifiers.PUBKEY_IN = Script.prototype.isPublicKeyIn;
 Script.inputIdentifiers.PUBKEYHASH_IN = Script.prototype.isPublicKeyHashIn;
 Script.inputIdentifiers.MULTISIG_IN = Script.prototype.isMultisigIn;
-Script.inputIdentifiers.SCRIPTHASH_IN = Script.prototype.isScriptHashIn;
 
 /**
  * @returns {object} The Script type if it is a known form,
@@ -800,34 +758,6 @@ Script.buildMultisigIn = function (pubkeys, threshold, signatures, opts) {
 };
 
 /**
- * A new P2SH Multisig input script for the given public keys, requiring m of those public keys to spend
- *
- * @param {PublicKey[]} pubkeys list of all public keys controlling the output
- * @param {number} threshold amount of required signatures to spend the output
- * @param {Array} signatures and array of signature buffers to append to the script
- * @param {Object=} opts
- * @param {boolean=} opts.noSorting don't sort the given public keys before creating the script (false by default)
- * @param {Script=} opts.cachedMultisig don't recalculate the redeemScript
- *
- * @returns {Script}
- */
-Script.buildP2SHMultisigIn = function (pubkeys, threshold, signatures, opts) {
-  $.checkArgument(_.isArray(pubkeys));
-  $.checkArgument(_.isNumber(threshold));
-  $.checkArgument(_.isArray(signatures));
-  opts = opts || {};
-  var s = new Script();
-  s.add(Opcode.OP_0);
-  _.each(signatures, function (signature) {
-    $.checkArgument(Buffer.isBuffer(signature), 'Signatures must be an array of Buffers');
-    // TODO: allow signatures to be an array of Signature objects
-    s.add(signature);
-  });
-  s.add((opts.cachedMultisig || Script.buildMultisigOut(pubkeys, threshold, opts)).toBuffer());
-  return s;
-};
-
-/**
  * @returns {Script} a new pay to public key hash output for the given
  * address or public key
  * @param {(Address|PublicKey)} to - destination address or public key
@@ -901,23 +831,6 @@ Script.buildSafeDataOut = function (data, encoding) {
   return s1;
 };
 
-/**
- * @param {Script|Address} script - the redeemScript for the new p2sh output.
- *    It can also be a p2sh address
- * @returns {Script} new pay to script hash script for given script
- */
-Script.buildScriptHashOut = function (script) {
-  $.checkArgument(
-    script instanceof Script || (script instanceof Address && script.isPayToScriptHash()),
-  );
-  var s = new Script();
-  s.add(Opcode.OP_HASH160)
-    .add(script instanceof Address ? script.hashBuffer : Hash.sha256ripemd160(script.toBuffer()))
-    .add(Opcode.OP_EQUAL);
-
-  s._network = script._network || script.network;
-  return s;
-};
 
 /**
  * Builds a scriptSig (a script for an input) that signs a public key output script.
@@ -964,20 +877,11 @@ Script.empty = function () {
 };
 
 /**
- * @returns {Script} a new pay to script hash script that pays to this script
- */
-Script.prototype.toScriptHashOut = function () {
-  return Script.buildScriptHashOut(this);
-};
-
-/**
  * @return {Script} an output script built from the address
  */
 Script.fromAddress = function (address) {
   address = Address(address);
-  if (address.isPayToScriptHash()) {
-    return Script.buildScriptHashOut(address);
-  } else if (address.isPayToPublicKeyHash()) {
+  if (address.isPayToPublicKeyHash()) {
     return Script.buildPublicKeyHashOut(address);
   }
   throw new errors.Script.UnrecognizedAddress(address);
@@ -1008,10 +912,7 @@ Script.prototype.getAddressInfo = function (opts) {
  */
 Script.prototype._getOutputAddressInfo = function () {
   var info = {};
-  if (this.isScriptHashOut()) {
-    info.hashBuffer = this.getData();
-    info.type = Address.PayToScriptHash;
-  } else if (this.isPublicKeyHashOut()) {
+  if (this.isPublicKeyHashOut()) {
     info.hashBuffer = this.getData();
     info.type = Address.PayToPublicKeyHash;
   } else {
@@ -1031,10 +932,6 @@ Script.prototype._getInputAddressInfo = function () {
     // hash the publickey found in the scriptSig
     info.hashBuffer = Hash.sha256ripemd160(this.chunks[1].buf);
     info.type = Address.PayToPublicKeyHash;
-  } else if (this.isScriptHashIn()) {
-    // hash the redeemscript found at the end of the scriptSig
-    info.hashBuffer = Hash.sha256ripemd160(this.chunks[this.chunks.length - 1].buf);
-    info.type = Address.PayToScriptHash;
   } else {
     return false;
   }

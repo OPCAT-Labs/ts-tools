@@ -48,6 +48,7 @@ function UnspentOutput(data) {
     'Must provide an amount for the output',
   );
   var amount = !_.isUndefined(data.amount) ? Math.round(data.amount * 1e8) : data.satoshis;
+  var outputData = !_.isUndefined(data.data) ? Buffer.from(data.data, 'hex') : Buffer.from([])
   $.checkArgument(_.isNumber(amount), 'Amount must be a number');
   JSUtil.defineImmutable(this, {
     address: address,
@@ -55,6 +56,7 @@ function UnspentOutput(data) {
     outputIndex: outputIndex,
     script: script,
     satoshis: amount,
+    data: outputData,
   });
 }
 
@@ -104,6 +106,7 @@ UnspentOutput.prototype.toObject = UnspentOutput.prototype.toJSON = function toO
     vout: this.outputIndex,
     scriptPubKey: this.script.toBuffer().toString('hex'),
     amount: Number.parseFloat((this.satoshis / 1e8).toFixed(8)),
+    data: this.data.toString('hex')
   };
 };
 

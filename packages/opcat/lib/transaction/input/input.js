@@ -122,22 +122,36 @@ Input.fromBufferReader = function (br) {
   input._scriptBuffer = br.readVarLengthBuffer();
   input.sequenceNumber = br.readUInt32LE();
   // TODO: return different classes according to which input it is
-  // e.g: CoinbaseInput, PublicKeyHashInput, MultiSigScriptHashInput, etc.
+  // e.g: CoinbaseInput, PublicKeyHashInput, etc.
   return input;
 };
 
-Input.prototype.toBufferWriter = function (writer) {
+Input.prototype.toBufferWriter = function (hashScriptSig, writer) {
+  $.checkArgument(typeof hashScriptSig === 'boolean', 'hashScriptSig should be boolean')
   if (!writer) {
-    writer = new BufferWriter();
+    writer = new BufferWriter()
   }
-  writer.writeReverse(this.prevTxId);
-  writer.writeUInt32LE(this.outputIndex);
-  var script = this._scriptBuffer;
-  writer.writeVarintNum(script.length);
-  writer.write(script);
-  writer.writeUInt32LE(this.sequenceNumber);
-  return writer;
-};
+  writer.writeReverse(this.prevTxId)
+  writer.writeUInt32LE(this.outputIndex)
+  var script = this._scriptBuffer
+  if(hashScriptSig) {
+    writer.write(Hash.sha256(script))
+  } else {
+    writer.writeVarintNum(script.length)
+    writer.write(script)
+  }
+  writer.writeUInt32LE(this.sequenceNumber)
+  return writer
+}
+
+
+Input.prototype.toPrevout = function () {
+  let writer = new BufferWriter()
+  writer.writeReverse(this.prevTxId)
+  writer.writeUInt32LE(this.outputIndex)
+  return writer.toBuffer()
+}
+
 
 Input.prototype.setScript = function (script) {
   this._script = null;
@@ -172,12 +186,12 @@ Input.prototype.setScript = function (script) {
  * @param {Transaction} transaction - the transaction to be signed
  * @param {PrivateKey | Array} privateKeys - the private key to use when signing
  * @param {number} inputIndex - the index of this input in the provided transaction
- * @param {number} sigType - defaults to Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID
+ * @param {number} sigType - defaults to Signature.SIGHASH_ALL
  * @abstract
  */
 Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, sigtype) {
   $.checkState(this.output instanceof Output);
-  sigtype = sigtype || Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+  sigtype = sigtype || Signature.SIGHASH_ALL;
   var results = [];
   if (privateKeys instanceof PrivateKey) {
     results.push(
@@ -191,8 +205,6 @@ Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, 
           privateKeys,
           sigtype,
           inputIndex,
-          this.output.script,
-          this.output.satoshisBN,
         ),
         sigtype: sigtype,
       }),
@@ -203,7 +215,7 @@ Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, 
     _.each(privateKeys, function (privateKey, index) {
       var sigtype_ = sigtype;
       if (_.isArray(sigtype)) {
-        sigtype_ = sigtype[index] || Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+        sigtype_ = sigtype[index] || Signature.SIGHASH_ALL;
       }
       results.push(
         new TransactionSignature({
@@ -216,8 +228,6 @@ Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, 
             privateKey,
             sigtype_,
             inputIndex,
-            self.output.script,
-            self.output.satoshisBN,
           ),
           sigtype: sigtype_,
         }),
@@ -232,20 +242,17 @@ Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, 
  *
  * @param {Transaction} transaction - the transaction to be signed
  * @param {number} inputIndex - the index of this input in the provided transaction
- * @param {number} sigType - defaults to Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID
+ * @param {number} sigType - defaults to Signature.SIGHASH_ALL
  * @param {boolean} isLowS - true if the sig hash is safe for low s.
- * @param {number} csIdx - the index of OP_CODESEPARATOR
  * @abstract
  */
-Input.prototype.getPreimage = function (transaction, inputIndex, sigtype, isLowS, csIdx) {
+Input.prototype.getPreimage = function (transaction, inputIndex, sigtype, isLowS) {
   $.checkState(this.output instanceof Output);
-  sigtype = sigtype || Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+  sigtype = sigtype || Signature.SIGHASH_ALL;
   isLowS = isLowS || false;
-  var subscript =
-    typeof csIdx === 'number' ? this.output.script.subScript(csIdx) : this.output.script;
   return isLowS
-    ? getLowSPreimage(transaction, sigtype, inputIndex, subscript, this.output.satoshisBN)
-    : Sighash.sighashPreimage(transaction, sigtype, inputIndex, subscript, this.output.satoshisBN);
+    ? getLowSPreimage(transaction, sigtype, inputIndex)
+    : Sighash.sighashPreimage(transaction, sigtype, inputIndex);
 };
 
 Input.prototype.isFullySigned = function () {
@@ -256,7 +263,9 @@ Input.prototype.isFinal = function () {
   return this.sequenceNumber === Input.MAXINT;
 };
 
-Input.prototype.addSignature = function () {
+Input.prototype.addSignature = function (transaction, signature) {
+  const s = Script.buildPublicKeyIn(signature.signature.toDER(), signature.sigtype)
+  console.log("s:", s.toHex())
   // throw new errors.AbstractMethodInvoked('Input#addSignature')
 };
 
@@ -289,7 +298,7 @@ Input.prototype.isNull = function () {
 };
 
 Input.prototype._estimateSize = function () {
-  return this.toBufferWriter().toBuffer().length;
+  return this.toBufferWriter(false).toBuffer().length;
 };
 
 Input.prototype.verify = function (transaction, inputIndex) {

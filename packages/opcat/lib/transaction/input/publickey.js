@@ -29,7 +29,7 @@ inherits(PublicKeyInput, Input);
  */
 PublicKeyInput.prototype.getSignatures = function (transaction, privateKey, index, sigtype) {
   $.checkState(this.output instanceof Output);
-  sigtype = sigtype || Signature.SIGHASH_ALL | Signature.SIGHASH_FORKID;
+  sigtype = sigtype || Signature.SIGHASH_ALL;
   var publicKey = privateKey.toPublicKey();
   if (publicKey.toString() === this.output.script.getPublicKey().toString('hex')) {
     return [
@@ -43,8 +43,6 @@ PublicKeyInput.prototype.getSignatures = function (transaction, privateKey, inde
           privateKey,
           sigtype,
           index,
-          this.output.script,
-          this.output.satoshisBN,
         ),
         sigtype: sigtype,
       }),

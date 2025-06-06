@@ -656,68 +656,6 @@ describe('Script', function () {
     });
   });
 
-  describe('#isScriptHashIn', function () {
-    it('should identify this known scripthashin', function () {
-      var sstr =
-        'OP_0 73 0x30460221008ca148504190c10eea7f5f9c283c719a37be58c3ad617928011a1bb9570901d2022100ced371a23e86af6f55ff4ce705c57d2721a09c4d192ca39d82c4239825f75a9801 72 0x30450220357011fd3b3ad2b8f2f2d01e05dc6108b51d2a245b4ef40c112d6004596f0475022100a8208c93a39e0c366b983f9a80bfaf89237fcd64ca543568badd2d18ee2e1d7501 OP_PUSHDATA1 105 0x5221024c02dff2f0b8263a562a69ec875b2c95ffad860f428acf2f9e8c6492bd067d362103546324a1351a6b601c623b463e33b6103ca444707d5b278ece1692f1aa7724a42103b1ad3b328429450069cc3f9fa80d537ee66ba1120e93f3f185a5bf686fb51e0a53ae';
-      var s = Script(sstr);
-      s.toString().should.equal(sstr);
-      s.isScriptHashIn().should.equal(true);
-    });
-
-    it('should identify this known non-scripthashin', function () {
-      Script('20 0x0000000000000000000000000000000000000000 OP_CHECKSIG')
-        .isScriptHashIn()
-        .should.equal(false);
-    });
-
-    it('should identify this problematic non-scripthashin scripts', function () {
-      var s = new Script(
-        '0x47 0x3044022017053dad84aa06213749df50a03330cfd24d6' +
-          'b8e7ddbb6de66c03697b78a752a022053bc0faca8b4049fb3944a05fcf7c93b2861' +
-          '734d39a89b73108f605f70f5ed3401 33 0x0225386e988b84248dc9c30f784b06e' +
-          '02fdec57bbdbd443768eb5744a75ce44a4c',
-      );
-      var s2 = new Script(
-        'OP_RETURN 32 0x19fdb20634911b6459e6086658b3a6ad2dc6576bd6826c73ee86a5f9aec14ed9',
-      );
-      s.isScriptHashIn().should.equal(false);
-      s2.isScriptHashIn().should.equal(false);
-    });
-    it('identifies this other problematic non-p2sh in', function () {
-      var s = Script.fromString(
-        '73 0x3046022100dc7a0a812de14acc479d98ae209402cc9b5e0692bc74b9fe0a2f083e2f9964b002210087caf04a711bebe5339fd7554c4f7940dc37be216a3ae082424a5e164faf549401',
-      );
-      s.isScriptHashIn().should.equal(false);
-    });
-  });
-
-  describe('#isScripthashOut', function () {
-    it('should identify this known p2shout as p2shout', function () {
-      Script('OP_HASH160 20 0x0000000000000000000000000000000000000000 OP_EQUAL')
-        .isScriptHashOut()
-        .should.equal(true);
-    });
-
-    it('should identify result of .isScriptHashOut() as p2sh', function () {
-      Script(
-        'OP_DUP OP_HASH160 20 0x0000000000000000000000000000000000000000 OP_EQUALVERIFY OP_CHECKSIG',
-      )
-        .toScriptHashOut()
-        .isScriptHashOut()
-        .should.equal(true);
-    });
-
-    it('should identify these known non-p2shout as not p2shout', function () {
-      Script('OP_HASH160 20 0x0000000000000000000000000000000000000000 OP_EQUAL OP_EQUAL')
-        .isScriptHashOut()
-        .should.equal(false);
-      Script('OP_HASH160 21 0x000000000000000000000000000000000000000000 OP_EQUAL')
-        .isScriptHashOut()
-        .should.equal(false);
-    });
-  });
-
   describe('#isPushOnly', function () {
     it("should know these scripts are or aren't push only", function () {
       Script('OP_NOP 1 0x01').isPushOnly().should.equal(false);
@@ -750,13 +688,6 @@ describe('Script', function () {
       Script('OP_HASH160 20 0x0000000000000000000000000000000000000000 OP_EQUAL')
         .classifyInput()
         .should.equal(Script.types.UNKNOWN);
-    });
-    it('should classify script hash in', function () {
-      Script(
-        'OP_0 73 0x30460221008ca148504190c10eea7f5f9c283c719a37be58c3ad617928011a1bb9570901d2022100ced371a23e86af6f55ff4ce705c57d2721a09c4d192ca39d82c4239825f75a9801 72 0x30450220357011fd3b3ad2b8f2f2d01e05dc6108b51d2a245b4ef40c112d6004596f0475022100a8208c93a39e0c366b983f9a80bfaf89237fcd64ca543568badd2d18ee2e1d7501 OP_PUSHDATA1 105 0x5221024c02dff2f0b8263a562a69ec875b2c95ffad860f428acf2f9e8c6492bd067d362103546324a1351a6b601c623b463e33b6103ca444707d5b278ece1692f1aa7724a42103b1ad3b328429450069cc3f9fa80d537ee66ba1120e93f3f185a5bf686fb51e0a53ae',
-      )
-        .classifyInput()
-        .should.equal(Script.types.SCRIPTHASH_IN);
     });
     it("shouldn't classify MULTISIG out", function () {
       Script(
@@ -792,11 +723,6 @@ describe('Script', function () {
     it('should classify unknown', function () {
       Script('OP_TRUE OP_FALSE').classifyInput().should.equal(Script.types.UNKNOWN);
     });
-    it("should classify scriptHashIn, eventhough it's opreturn", function () {
-      Script('6a1c3630fd3792f7e847ae5e27985dfb127542ef37ac2a5147c3b9cec7ba')
-        .classifyInput()
-        .should.equal(Script.types.SCRIPTHASH_IN);
-    });
   });
 
   describe('#classifyOutput', function () {
@@ -813,11 +739,6 @@ describe('Script', function () {
       )
         .classifyOutput()
         .should.equal(Script.types.UNKNOWN);
-    });
-    it('should classify script hash out', function () {
-      Script('OP_HASH160 20 0x0000000000000000000000000000000000000000 OP_EQUAL')
-        .classifyOutput()
-        .should.equal(Script.types.SCRIPTHASH_OUT);
     });
     it("shouldn't classify script hash in", function () {
       Script(
@@ -882,18 +803,6 @@ describe('Script', function () {
         .classify()
         .should.equal(Script.types.PUBKEYHASH_IN);
     });
-    it('should classify script hash out', function () {
-      Script('OP_HASH160 20 0x0000000000000000000000000000000000000000 OP_EQUAL')
-        .classify()
-        .should.equal(Script.types.SCRIPTHASH_OUT);
-    });
-    it('should classify script hash in', function () {
-      Script(
-        'OP_0 73 0x30460221008ca148504190c10eea7f5f9c283c719a37be58c3ad617928011a1bb9570901d2022100ced371a23e86af6f55ff4ce705c57d2721a09c4d192ca39d82c4239825f75a9801 72 0x30450220357011fd3b3ad2b8f2f2d01e05dc6108b51d2a245b4ef40c112d6004596f0475022100a8208c93a39e0c366b983f9a80bfaf89237fcd64ca543568badd2d18ee2e1d7501 OP_PUSHDATA1 105 0x5221024c02dff2f0b8263a562a69ec875b2c95ffad860f428acf2f9e8c6492bd067d362103546324a1351a6b601c623b463e33b6103ca444707d5b278ece1692f1aa7724a42103b1ad3b328429450069cc3f9fa80d537ee66ba1120e93f3f185a5bf686fb51e0a53ae',
-      )
-        .classify()
-        .should.equal(Script.types.SCRIPTHASH_IN);
-    });
     it('should classify MULTISIG out', function () {
       Script(
         'OP_2 0x21 0x038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508 0x21 0x038282263212c609d9ea2a6e3e172de238d8c39cabd5ac1ca10646e23fd5f51508 OP_2 OP_CHECKMULTISIG',
@@ -930,9 +839,6 @@ describe('Script', function () {
     });
     it('should classify opreturn eventhough it also looks like a scriptHashIn', function () {
       Script('6a1c3630fd3792f7e847ae5e27985dfb127542ef37ac2a5147c3b9cec7ba')
-        .classifyInput()
-        .should.equal(Script.types.SCRIPTHASH_IN);
-      Script('6a1c3630fd3792f7e847ae5e27985dfb127542ef37ac2a5147c3b9cec7ba')
         .classify()
         .should.equal(Script.types.DATA_OUT);
     });
@@ -940,9 +846,6 @@ describe('Script', function () {
       Script('6a1c3630fd3792f7e847ae5e27985dfb127542ef37ac2a5147c3b9cec7ba')
         .classify()
         .should.equal(Script.types.DATA_OUT);
-      var s = Script('6a1c3630fd3792f7e847ae5e27985dfb127542ef37ac2a5147c3b9cec7ba');
-      s._isInput = true; // this is normally set by when Script is initiated as part if Input or Output objects
-      s.classify().should.equal(Script.types.SCRIPTHASH_IN);
     });
     it('should classify unknown eventhough it is public key hash when marked as input', function () {
       Script(
@@ -1327,45 +1230,6 @@ describe('Script', function () {
       s.isSafeDataOut().should.equal(true);
     });
   });
-  describe('#buildScriptHashOut', function () {
-    it('should create script from another script', function () {
-      var inner = new Script(
-        'OP_DUP OP_HASH160 20 0x06c06f6d931d7bfba2b5bd5ad0d19a8f257af3e3 OP_EQUALVERIFY OP_CHECKSIG',
-      );
-      var s = Script.buildScriptHashOut(inner);
-      should.exist(s);
-      s.toString().should.equal(
-        'OP_HASH160 20 0x45ea3f9133e7b1cef30ba606f8433f993e41e159 OP_EQUAL',
-      );
-      s.isScriptHashOut().should.equal(true);
-    });
-
-    it('inherits network property from other script', function () {
-      var s1 = Script.fromAddress(new Address('1FSMWkjVPAxzUNjbxT52p3mVKC971rfW3S'));
-      var s2 = Script.buildScriptHashOut(s1);
-      should.exist(s1._network);
-      s1._network.should.equal(s2._network);
-    });
-
-    it('inherits network property form an address', function () {
-      var address = new Address('34Nn91aTGaULqWsZiunrBPHzFBDrZ3B8XS');
-      var script = Script.buildScriptHashOut(address);
-      should.exist(script._network);
-      script._network.should.equal(address.network);
-    });
-  });
-  describe('#toScriptHashOut', function () {
-    it('should create script from another script', function () {
-      var s = new Script(
-        'OP_DUP OP_HASH160 20 0x06c06f6d931d7bfba2b5bd5ad0d19a8f257af3e3 OP_EQUALVERIFY OP_CHECKSIG',
-      );
-      var sho = s.toScriptHashOut();
-      sho
-        .toString()
-        .should.equal('OP_HASH160 20 0x45ea3f9133e7b1cef30ba606f8433f993e41e159 OP_EQUAL');
-      sho.isScriptHashOut().should.equal(true);
-    });
-  });
 
   describe('#removeCodeseparators', function () {
     it('should remove any OP_CODESEPARATORs', function () {
@@ -1430,11 +1294,7 @@ describe('Script', function () {
       var script = Script.buildPublicKeyHashOut(address);
       expect(script.getData().equals(address.hashBuffer)).to.equal(true);
     });
-    it('for a P2SH address', function () {
-      var address = Address.fromString('3GhtMmAbWrUf6Y8vDxn9ETB14R6V7Br3mt');
-      var script = new Script(address);
-      expect(script.getData().equals(address.hashBuffer)).to.equal(true);
-    });
+
     it('for a old-style opreturn output', function () {
       expect(
         Script('OP_RETURN 1 0xFF')
@@ -1487,12 +1347,7 @@ describe('Script', function () {
       var script = new Script(address);
       script.toAddress().toString().should.equal(stringAddress);
     });
-    it('for a P2SH address', function () {
-      var stringAddress = '3GhtMmAbWrUf6Y8vDxn9ETB14R6V7Br3mt';
-      var address = new Address(stringAddress);
-      var script = new Script(address);
-      script.toAddress().toString().should.equal(stringAddress);
-    });
+
     it('fails if content is not recognized', function () {
       Script().toAddress(Networks.livenet).should.equal(false);
     });
@@ -1516,19 +1371,6 @@ describe('Script', function () {
         '0x47 0x3044022017053dad84aa06213749df50a03330cfd24d6b8e7ddbb6de66c03697b78a752a022053bc0faca8b4049fb3944a05fcf7c93b2861734d39a89b73108f605f70f5ed3401 33 0x0225386e988b84248dc9c30f784b06e02fdec57bbdbd443768eb5744a75ce44a4c',
       );
       s2.toAddress().toString().should.equal('17VArX6GRE6i6MVscBUZoXwi6NhnHa68B7');
-    });
-
-    it('works for p2sh output', function () {
-      // taken from tx fe1f764299dc7f3b5a8fae912050df2b633bf99554c68bf1c456edb9c2b63585
-      var script = new Script('OP_HASH160 20 0x99d29051af0c29adcb9040034752bba7dde33e35 OP_EQUAL');
-      script.toAddress().toString().should.equal('3FiMZ7stbfH2WG5JQ7CiuzrFo7CEnGUcAP');
-    });
-    it('works for p2sh input', function () {
-      // taken from tx fe1f764299dc7f3b5a8fae912050df2b633bf99554c68bf1c456edb9c2b63585
-      var script = new Script(
-        'OP_FALSE 72 0x3045022100e824fbe979fac5834d0062dd5a4e82a898e00ac454bd254cd708ad28530816f202206251ff0fa4dd70c0524c690d4e4deb2bd167297e7bbdf6743b4a8050d681555001 37 0x512102ff3ae0aaa4679ea156d5581dbe6695cc0c311df0aa42af76670d0debbd8f672951ae',
-      );
-      script.toAddress().toString().should.equal('3GYicPxCvsKvbJmZNBBeWkC3cLuGFhtrQi');
     });
 
     // no address scripts
@@ -1582,14 +1424,6 @@ describe('Script', function () {
       var s2 = Script.buildMultisigOut(sortKeys, 1);
       Script(s2).getSignatureOperationsCount(true).should.equal(3);
       Script(s2).getSignatureOperationsCount(false).should.equal(20);
-    });
-    it('should handle P2SH-multisig-in scripts from utility', function () {
-      // create a well-formed signature, does not need to match pubkeys
-      var signature = opcat.crypto.Signature.fromString('30060201FF0201FF');
-      var signatures = [signature.toBuffer()];
-      var p2sh = Script.buildP2SHMultisigIn(pubKeyHexes, 1, signatures, {});
-      p2sh.getSignatureOperationsCount(true).should.equal(0);
-      p2sh.getSignatureOperationsCount(false).should.equal(0);
     });
     it('should default the one and only argument to true', function () {
       var s1 = 'OP_1 01 0xFF OP_2 OP_CHECKMULTISIG';

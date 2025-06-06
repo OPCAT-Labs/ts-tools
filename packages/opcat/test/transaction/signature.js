@@ -55,28 +55,6 @@ describe('TransactionSignature', function () {
     expect(new TransactionSignature(signature)).to.equal(signature);
   });
 
-  it('gets returned by a P2SH multisig output', function () {
-    var private1 = new PrivateKey(
-      '6ce7e97e317d2af16c33db0b9270ec047a91bff3eff8558afb5014afb2bb5976',
-    );
-    var private2 = new PrivateKey(
-      'c9b26b0f771a0d2dad88a44de90f05f416b3b385ff1d989343005546a0032890',
-    );
-    var public1 = private1.publicKey;
-    var public2 = private2.publicKey;
-    var utxo = {
-      txId: '0000000000000000000000000000000000000000000000000000000000000000', // Not relevant
-      outputIndex: 0,
-      script: Script.buildMultisigOut([public1, public2], 2).toScriptHashOut(),
-      satoshis: 100000,
-    };
-    var transaction = new Transaction().from(utxo, [public1, public2], 2);
-    var signatures = transaction.getSignatures(private1);
-    expect(signatures[0] instanceof TransactionSignature).to.equal(true);
-    signatures = transaction.getSignatures(private2);
-    expect(signatures[0] instanceof TransactionSignature).to.equal(true);
-  });
-
   it('can be aplied to a Transaction with Transaction#addSignature', function () {
     var transaction = new Transaction();
     transaction.from(simpleUtxoWith100000Satoshis);

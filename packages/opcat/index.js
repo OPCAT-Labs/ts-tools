@@ -54,7 +54,6 @@ opcat.PrivateKey = require('./lib/privatekey.js');
 opcat.PublicKey = require('./lib/publickey.js');
 opcat.Script = require('./lib/script/index.js');
 opcat.Transaction = require('./lib/transaction/index.js');
-opcat.ECIES = require('./lib/ecies/index.js');
 opcat.HashCache = require('./lib/hash-cache.js');
 
 // dependencies, subject to change
