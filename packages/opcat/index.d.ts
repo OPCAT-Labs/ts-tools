@@ -797,6 +797,7 @@ declare module '@opcat-labs/opcat' {
             outputIndex: number;
             script: string;
             satoshis: number;
+            data?: Buffer | string;
         }
         class UnspentOutput {
             static fromObject(o: IUnspentOutput): UnspentOutput;
@@ -810,6 +811,7 @@ declare module '@opcat-labs/opcat' {
             readonly script: Script;
             readonly satoshis: number;
             readonly satoshisBN: crypto.BN;
+            readonly data: Buffer;
             spentTxId: string | null;
             constructor(data: {
                 script: Script,

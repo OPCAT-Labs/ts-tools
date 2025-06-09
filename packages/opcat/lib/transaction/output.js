@@ -43,6 +43,14 @@ Object.defineProperty(Output.prototype, 'script', {
   },
 });
 
+Object.defineProperty(Output.prototype, 'data', {
+  configurable: false,
+  enumerable: true,
+  get: function () {
+    return this._data;
+  },
+});
+
 Object.defineProperty(Output.prototype, 'satoshis', {
   configurable: false,
   enumerable: true,
@@ -96,19 +104,19 @@ Output.prototype.toObject = Output.prototype.toJSON = function toObject() {
     satoshis: this.satoshis,
   };
   obj.script = this._script.toBuffer().toString('hex');
-  obj.data = this.data.toString('hex')
+  obj.data = this._data.toString('hex')
   return obj;
 };
 
 Output.prototype.setData = function (data) {
   if (!data) {
-    this.data = Buffer.from([])
+    this._data = Buffer.from([])
     return;
   }
   if (Buffer.isBuffer(data)) {
-    this.data = data
+    this._data = data
   } else if (_.isString(data) && JSUtil.isHexa(data)) {
-    this.data = Buffer.from(data, 'hex')
+    this._data = Buffer.from(data, 'hex')
   } else {
     throw new TypeError('Invalid argument type: data for output.setData')
   }
@@ -185,7 +193,7 @@ Output.prototype.toBufferWriter = function (hashScriptPubkey, writer) {
   }
   writer.writeUInt64LEBN(this._satoshisBN);
   var script = this._script.toBuffer();
-  var data = this.data
+  var data = this._data
   if(hashScriptPubkey) {
     writer.write(Hash.sha256(script))
     writer.write(Hash.sha256(data))
