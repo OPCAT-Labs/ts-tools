@@ -1,0 +1,4 @@
+/docs
+**/assets
+!**/assets/.templates/asm.scrypt.tpl
+

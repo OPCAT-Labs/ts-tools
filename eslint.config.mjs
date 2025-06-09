@@ -28,7 +28,7 @@ export default [
         },
       },
     },
-    files: ['packages/scrypt-ts-btc/**/*.ts'],
+    files: ['packages/scrypt-ts-opcat/**/*.ts'],
     rules: requireExtension.configs.recommended.rules,
   },
 

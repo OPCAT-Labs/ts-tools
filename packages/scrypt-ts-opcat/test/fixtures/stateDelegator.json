@@ -1,0 +1,370 @@
+{
+  "version": 10,
+  "compilerVersion": "1.20.0+commit.693498a",
+  "contract": "StateDelegator",
+  "md5": "21ecc94f6d6e6b692728c6268abbccdf",
+  "structs": [
+    {
+      "name": "ChainTxVerifyResponse",
+      "params": [
+        {
+          "name": "prevPrevScript",
+          "type": "bytes"
+        },
+        {
+          "name": "prevPrevOutpoint",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "MergePrevoutsResponse",
+      "params": [
+        {
+          "name": "prevouts",
+          "type": "bytes"
+        },
+        {
+          "name": "inputCount",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "DelegatorState",
+      "params": [
+        {
+          "name": "delegated",
+          "type": "bool"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "DelegateeState",
+      "params": [
+        {
+          "name": "total",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "TxOut",
+      "params": [
+        {
+          "name": "script",
+          "type": "bytes"
+        },
+        {
+          "name": "satoshis",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "TxIn",
+      "params": [
+        {
+          "name": "prevTxHash",
+          "type": "bytes"
+        },
+        {
+          "name": "prevOutputIndexVal",
+          "type": "int"
+        },
+        {
+          "name": "sequence",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "TxHashPreimage1",
+      "params": [
+        {
+          "name": "version",
+          "type": "bytes"
+        },
+        {
+          "name": "inputCountVal",
+          "type": "int"
+        },
+        {
+          "name": "inputList",
+          "type": "bytes[6]"
+        },
+        {
+          "name": "outputCountVal",
+          "type": "int"
+        },
+        {
+          "name": "outputSatoshisList",
+          "type": "bytes[6]"
+        },
+        {
+          "name": "outputScriptList",
+          "type": "bytes[6]"
+        },
+        {
+          "name": "locktime",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "TxHashPreimage2",
+      "params": [
+        {
+          "name": "version",
+          "type": "bytes"
+        },
+        {
+          "name": "inputCountVal",
+          "type": "int"
+        },
+        {
+          "name": "inputList",
+          "type": "bytes[6]"
+        },
+        {
+          "name": "outputCountVal",
+          "type": "int"
+        },
+        {
+          "name": "hashRoot",
+          "type": "bytes"
+        },
+        {
+          "name": "suffixList",
+          "type": "bytes[4]"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "BacktraceInfo",
+      "params": [
+        {
+          "name": "prevTxInput",
+          "type": "TxIn"
+        },
+        {
+          "name": "prevTxInputIndexVal",
+          "type": "int"
+        },
+        {
+          "name": "prevPrevTxPreimage",
+          "type": "TxHashPreimage1"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "SHPreimage",
+      "params": [
+        {
+          "name": "nVersion",
+          "type": "bytes"
+        },
+        {
+          "name": "nLockTime",
+          "type": "bytes"
+        },
+        {
+          "name": "shaPrevouts",
+          "type": "bytes"
+        },
+        {
+          "name": "shaSpentAmounts",
+          "type": "bytes"
+        },
+        {
+          "name": "shaSpentScripts",
+          "type": "bytes"
+        },
+        {
+          "name": "shaSequences",
+          "type": "bytes"
+        },
+        {
+          "name": "shaOutputs",
+          "type": "bytes"
+        },
+        {
+          "name": "spendType",
+          "type": "bytes"
+        },
+        {
+          "name": "inputIndex",
+          "type": "bytes"
+        },
+        {
+          "name": "tapLeafHash",
+          "type": "bytes"
+        },
+        {
+          "name": "keyVersion",
+          "type": "bytes"
+        },
+        {
+          "name": "codeSepPos",
+          "type": "bytes"
+        },
+        {
+          "name": "_eWithoutLastByte",
+          "type": "bytes"
+        },
+        {
+          "name": "_eLastByte",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "Outpoint",
+      "params": [
+        {
+          "name": "txHash",
+          "type": "bytes"
+        },
+        {
+          "name": "outputIndex",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "InputStateProof",
+      "params": [
+        {
+          "name": "txHashPreimage",
+          "type": "TxHashPreimage2"
+        },
+        {
+          "name": "outputIndexVal",
+          "type": "int"
+        },
+        {
+          "name": "stateHashes",
+          "type": "bytes[5]"
+        }
+      ],
+      "genericTypes": []
+    }
+  ],
+  "library": [
+    {
+      "name": "ContextUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    },
+    {
+      "name": "TxProof",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    },
+    {
+      "name": "StateUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    },
+    {
+      "name": "Backtrace",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    },
+    {
+      "name": "StateLib",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    },
+    {
+      "name": "TxUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    },
+    {
+      "name": "DelegatorStateLib",
+      "params": [],
+      "properties": [],
+      "genericTypes": [],
+      "stateType": "DelegatorState"
+    },
+    {
+      "name": "DelegateeStateLib",
+      "params": [],
+      "properties": [],
+      "genericTypes": [],
+      "stateType": "DelegateeState"
+    },
+    {
+      "name": "StdUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    }
+  ],
+  "alias": [],
+  "abi": [
+    {
+      "type": "function",
+      "name": "unlock",
+      "index": 0,
+      "params": [
+        {
+          "name": "__scrypt_ts_shPreimage",
+          "type": "SHPreimage"
+        },
+        {
+          "name": "__scrypt_ts_inputIndexVal",
+          "type": "int"
+        },
+        {
+          "name": "__scrypt_ts_prevout",
+          "type": "Outpoint"
+        },
+        {
+          "name": "__scrypt_ts_prevouts",
+          "type": "bytes[6]"
+        },
+        {
+          "name": "__scrypt_ts_spentAmounts",
+          "type": "bytes[6]"
+        },
+        {
+          "name": "__scrypt_ts_spentScripts",
+          "type": "bytes[6]"
+        }
+      ]
+    },
+    {
+      "type": "constructor",
+      "params": [
+        {
+          "name": "delegateeScript",
+          "type": "bytes"
+        }
+      ]
+    }
+  ],
+  "stateProps": [],
+  "stateType": "DelegatorState",
+  "buildType": "release",
+  "file": "../stateDelegator.scrypt",
+  "hex": "2079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179841f40a48df4b2a70c8b4924bf2654661ed3d95fd66a313eb87237597c628e4a031f40a48df4b2a70c8b4924bf2654661ed3d95fd66a313eb87237597c628e4a031004c807bb52d7a9fef58323eb1bf7a407db382d2f3f2d81bb1224f49fe518f6d48d37c7bb52d7a9fef58323eb1bf7a407db382d2f3f2d81bb1224f49fe518f6d48d37c79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179879be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179800<delegateeScript>770126790126790126790126790126790126790126790126790126790126790126790126790126790126795d798277549d5c798277549d5b79827701209d5a79827701209d5979827701209d5879827701209d5779827701209d5679528855798277549d5479827701209d537901008852798277549d607901007e5e797e5d797e5c797e5b797e5a797e59797e58797e57797e56797e55797e54797e53797ea86079787ea853798277011f9d5279017f9f695279009c6301006752796878557952797e8801147955797e54798b7e6b6d6d6d6d6d6d6d6d6c775479ad0118797600a2637655a16700686976760087630100776876030000007e7777011f7988011579011579011579011579011579011579011d79011d79012c7901217959795979597959795979597955766b796c7555766b796c757e54766b796c757e53766b796c757e52766b796c757e51766b796c757e0078827d7701249c6377517c677601489c63527b757c6776016c9c63537b757c67760290009c63547b757c677602b4009c63557b757c677602d8009c63567b757c67006968686868686858766b796c7582770053799f637601249d6776009d687557766b796c7582775153799f637601249d6776009d687556766b796c7582775253799f637601249d6776009d687555766b796c7582775353799f637601249d6776009d687554766b796c7582775453799f637601249d6776009d687553766b796c7582775553799f637601249d6776009d68756f75726d726d726d726d7b7578a8547988557955797e5c54797600a26976569f6994766b796c75886b6d6d6d6d6d6c775a795a795a795a795a795a790129795779577957795779577957795779567956766b796c7582770052799f637600a0696776009d687555766b796c7582775152799f637600a0696776009d687554766b796c7582775252799f637600a0696776009d687553766b796c7582775352799f637600a0696776009d687552766b796c7582775452799f637600a0696776009d687551766b796c7582775552799f637600a0696776009d68750057766b796c756e827752797e7e777756766b796c756e827752797e7e777755766b796c756e827752797e7e777754766b796c756e827752797e7e777753766b796c756e827752797e7e777752766b796c756e827752797e7e7b756b6d6d6d6d6ca85279886d6d6d6d607960796079607960796079012a795779577957795779577957795779567956766b796c7582770052799f6376589d6776009d687555766b796c7582775152799f6376589d6776009d687554766b796c7582775252799f6376589d6776009d687553766b796c7582775352799f6376589d6776009d687552766b796c7582775452799f6376589d6776009d687551766b796c7582775552799f6376589d6776009d687556766b796c7556766b796c757e55766b796c757e54766b796c757e53766b796c757e52766b796c757e6b6d6d6d6c77a85279886d6d6d6d59766b796c755279876b6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6c"
+}

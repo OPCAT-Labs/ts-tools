@@ -1,0 +1,53 @@
+{
+  "version": 9,
+  "compilerVersion": "1.19.0+commit.72eaeba",
+  "contract": "CSV",
+  "md5": "83acad8900d80ae4cf517f97fe1ffe81",
+  "structs": [
+    {
+      "name": "SortedItem",
+      "params": [
+        {
+          "name": "item",
+          "type": "T"
+        },
+        {
+          "name": "idx",
+          "type": "int"
+        }
+      ],
+      "genericTypes": ["T"]
+    }
+  ],
+  "library": [
+    {
+      "name": "__scrypt_ASM",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    }
+  ],
+  "alias": [
+    {
+      "name": "PubKeyHash",
+      "type": "Ripemd160"
+    }
+  ],
+  "abi": [
+    {
+      "type": "function",
+      "name": "unlock",
+      "index": 0,
+      "params": []
+    },
+    {
+      "type": "constructor",
+      "params": []
+    }
+  ],
+  "stateProps": [],
+  "buildType": "debug",
+  "file": "..\\csv.scrypt",
+  "hex": "011461b2",
+  "sourceMapFile": ""
+}

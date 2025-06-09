@@ -1,0 +1,167 @@
+import { assert, int32ToByteString, toByteString } from './fns/index.js';
+import { Bool, ByteString, Int32, PrimitiveTypes } from './types/primitives.js';
+import * as tools from 'uint8array-tools';
+import { Script } from './types/script.js';
+import { BufferReader } from '@scrypt-inc/bitcoinjs-lib';
+import { uint8ArrayToHex } from '../utils/common.js';
+import { TX_IO_INDEX_VAL_MIN, TX_IO_INDEX_VAL_MAX } from './consts.js';
+import { Outpoint } from './types/structs.js';
+/**
+ * @ignore
+ * int to little-endian signed magnitude
+ */
+export function int2hex(n: Int32): string {
+  if (n === BigInt(0)) {
+    return '00';
+  } else if (n === BigInt(-1)) {
+    return '4f';
+  } else if (n > BigInt(0) && n <= BigInt(16)) {
+    n += BigInt(80);
+    return n.toString(16);
+  }
+  return Script.fromASM(int32ToByteString(n)).toHex();
+}
+
+/**
+ * @ignore
+ * @param n
+ * @returns
+ */
+export function int2Witness(n: Int32): Uint8Array {
+  if (n === BigInt(0)) {
+    return tools.fromHex('');
+  }
+
+  return tools.fromHex(int32ToByteString(n));
+}
+
+/**
+ * @ignore
+ * @param b
+ * @returns
+ */
+export function bool2hex(b: Bool): string {
+  if (b) {
+    return '51';
+  }
+  return '00';
+}
+
+/**
+ * @ignore
+ * @param b
+ * @returns
+ */
+export function bool2Witness(b: Bool): Uint8Array {
+  if (b) {
+    return tools.fromHex('01');
+  }
+  return tools.fromHex('');
+}
+
+/**
+ * @ignore
+ * @param b
+ * @returns
+ */
+export function bytes2hex(b: ByteString): string {
+  if (b) {
+    if (b.length / 2 > 1) {
+      return Script.fromASM(b).toHex();
+    }
+
+    const intValue = parseInt(b, 16);
+
+    if (intValue >= 1 && intValue <= 16) {
+      return BigInt(intValue + 80).toString(16);
+    }
+
+    return Script.fromASM(b).toHex();
+  }
+  return '00';
+}
+
+/**
+ * @ignore
+ * @param b
+ * @returns
+ */
+export function bytes2Witness(b: ByteString): Uint8Array {
+  return tools.fromHex(b);
+}
+
+/**
+ * @ignore
+ * @param x
+ * @returns
+ */
+export function toScriptHex(x: PrimitiveTypes): string {
+  if (typeof x === 'number' || typeof x === 'bigint') {
+    return int2hex(x as bigint);
+  } else if (typeof x === 'boolean') {
+    return bool2hex(x as boolean);
+  } else if (typeof x === 'string') {
+    return bytes2hex(x);
+  }
+
+  throw new Error(`unsupport PrimitiveTypes: ${x}`);
+}
+
+/**
+ * @ignore
+ * @param x
+ * @returns
+ */
+export function toWitness(x: PrimitiveTypes): Uint8Array {
+  if (typeof x === 'number' || typeof x === 'bigint') {
+    return int2Witness(x as bigint);
+  } else if (typeof x === 'boolean') {
+    return bool2Witness(x as boolean);
+  } else if (typeof x === 'string') {
+    return bytes2Witness(x);
+  }
+  throw new Error(`unsupport PrimitiveTypes: ${x}`);
+}
+
+/**
+ * @ignore
+ * @param indexVal
+ * @returns
+ */
+export function indexValueToBytes(indexVal: Int32): ByteString {
+  assert(indexVal >= TX_IO_INDEX_VAL_MIN && indexVal <= TX_IO_INDEX_VAL_MAX);
+  let indexBytes = int32ToByteString(indexVal);
+  if (indexBytes == toByteString('')) {
+    indexBytes = toByteString('00');
+  }
+  return indexBytes + toByteString('000000');
+}
+
+/**
+ * @ignore
+ * @param outpoint
+ * @returns
+ */
+export function outpointToBytes(outpoint: Outpoint): ByteString {
+  return outpoint.txHash + outpoint.outputIndex;
+}
+
+/**
+ * @ignore
+ * @param outputsByte
+ * @returns
+ */
+export function deserializeOutputs(outputsByte: ByteString): { value: bigint; script: string }[] {
+  const reader = new BufferReader(tools.fromHex(outputsByte));
+  const outputs = [];
+  try {
+    while (reader.offset < reader.buffer.length) {
+      const value = reader.readInt64();
+      const script = uint8ArrayToHex(reader.readVarSlice());
+      outputs.push({ value, script });
+    }
+  } catch (_error) {
+    throw new Error(`Invalid format of serialized outputs: ${outputsByte}`);
+  }
+  return outputs;
+}

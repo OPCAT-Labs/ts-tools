@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dev_dist",
+    "rootDir": ".",
+    "noImplicitAny": false,
+    "strict": false /* Enable all strict type-checking options. */
+  },
+  "include": ["./src/**/*", "test/**/*"]
+}

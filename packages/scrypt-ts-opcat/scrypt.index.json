@@ -1,0 +1,77 @@
+{
+  "scryptBase": "assets/.templates",
+  "bindings": [
+    {
+      "symbol": "TxOut",
+      "path": "smart-contract/types/structs.scrypt.tpl"
+    },
+    {
+      "symbol": "TxIn",
+      "path": "smart-contract/types/structs.scrypt.tpl"
+    },
+    {
+      "symbol": "TxUtils",
+      "path": "smart-contract/builtin-libs/txUtils.scrypt.tpl"
+    },
+    {
+      "symbol": "MergePrevoutsResponse",
+      "path": "smart-contract/builtin-libs/txUtils.scrypt.tpl"
+    },
+    {
+      "symbol": "CompactTxHashPreimage",
+      "path": "smart-contract/types/structs.scrypt.tpl"
+    },
+    {
+      "symbol": "HashRootTxHashPreimage",
+      "path": "smart-contract/types/structs.scrypt.tpl"
+    },
+    {
+      "symbol": "TxProof",
+      "path": "smart-contract/builtin-libs/txProof.scrypt.tpl"
+    },
+    {
+      "symbol": "BacktraceInfo",
+      "path": "smart-contract/types/structs.scrypt.tpl"
+    },
+    {
+      "symbol": "Backtrace",
+      "path": "smart-contract/builtin-libs/backtrace.scrypt.tpl"
+    },
+    {
+      "symbol": "ChainTxVerifyResponse",
+      "path": "smart-contract/builtin-libs/backtrace.scrypt.tpl"
+    },
+    {
+      "symbol": "SHPreimage",
+      "path": "smart-contract/types/structs.scrypt.tpl"
+    },
+    {
+      "symbol": "Outpoint",
+      "path": "smart-contract/types/structs.scrypt.tpl"
+    },
+    {
+      "symbol": "ContextUtils",
+      "path": "smart-contract/builtin-libs/contextUtils.scrypt.tpl"
+    },
+    {
+      "symbol": "InputStateProof",
+      "path": "smart-contract/types/structs.scrypt.tpl"
+    },
+    {
+      "symbol": "StateUtils",
+      "path": "smart-contract/builtin-libs/stateUtils.scrypt.tpl"
+    },
+    {
+      "symbol": "StdUtils",
+      "path": "smart-contract/builtin-libs/stdUtils.scrypt.tpl"
+    },
+    {
+      "symbol": "StateLib",
+      "path": "smart-contract/builtin-libs/stateLib.scrypt.tpl"
+    },
+    {
+      "symbol": "__scrypt_ASM",
+      "path": "asm.scrypt.tpl"
+    }
+  ]
+}
