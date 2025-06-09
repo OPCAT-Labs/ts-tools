@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "opcat base SDK",
   "main": "./index.js",
+  "types": "./index.d.ts",
   "scripts": {
     "lint": "standard --fix",
-    "build": "parcel build --no-cache",
     "test": "mocha"
   },
   "dependencies": {
