@@ -57,7 +57,7 @@ describe('Transaction.Input', function () {
       expect(function () {
         var input = new Input({});
         input.toString();
-      }).to.throw('Need a script to create an input');
+      }).to.throw('Invalid params: require prevTxId and outputIndex.');
     });
     it('fromObject should work', function () {
       var jsonData = JSON.parse(coinbaseJSON);

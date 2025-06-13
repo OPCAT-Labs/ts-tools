@@ -73,6 +73,11 @@ Input.fromObject = function (obj) {
 };
 
 Input.prototype._fromObject = function (params) {
+
+  if(_.isUndefined(params.prevTxId) 
+    || _.isUndefined(params.outputIndex)) {
+     throw new errors.Transaction.Input.InvalidParams('require prevTxId and outputIndex');
+  }
   var prevTxId;
   if (_.isString(params.prevTxId) && JSUtil.isHexa(params.prevTxId)) {
     prevTxId = Buffer.from(params.prevTxId, 'hex');
@@ -91,10 +96,7 @@ Input.prototype._fromObject = function (params) {
       ? DEFAULT_SEQNUMBER
       : params.seqnum
     : params.sequenceNumber;
-  if (_.isUndefined(params.script) && _.isUndefined(params.scriptBuffer)) {
-    throw new errors.Transaction.Input.MissingScript();
-  }
-  this.setScript(params.scriptBuffer || params.script);
+  this.setScript(params.scriptBuffer || params.script || Script.empty());
   return this;
 };
 

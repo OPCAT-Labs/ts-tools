@@ -143,24 +143,8 @@ Object.defineProperty(Transaction.prototype, 'outputAmount', ioProperty);
  * @return {Buffer}
  */
 Transaction.prototype._getHash = function () {
-  return Hash.sha256sha256(this.toTxHashPreimageBuffer());
+  return Hash.sha256sha256(this.toBufferWriter(true).toBuffer());
 };
-
-
-Transaction.prototype.toTxHashPreimageBuffer = function () {
-  var writer = new BufferWriter()
-  writer.writeUInt32LE(this.version)
-  writer.writeVarintNum(this.inputs.length)
-  _.each(this.inputs, function (input) {
-    input.toBufferWriter(true, writer)
-  })
-  writer.writeVarintNum(this.outputs.length)
-  _.each(this.outputs, function (output) {
-    output.toBufferWriter(true, writer)
-  })
-  writer.writeUInt32LE(this.nLockTime)
-  return writer.toBuffer()
-}
 
 /**
  * Retrieve a hexa string that can be used with bitcoind's CLI interface
@@ -183,7 +167,11 @@ Transaction.prototype.serialize = function (unsafe) {
   }
 };
 
-Transaction.prototype.uncheckedSerialize = Transaction.prototype.toString = function () {
+Transaction.prototype.clone = function () {
+  return Transaction.fromString(this.uncheckedSerialize())
+};
+
+Transaction.prototype.uncheckedSerialize = Transaction.prototype.toString = Transaction.prototype.toHex = function () {
   return this.toBuffer().toString('hex');
 };
 
@@ -299,18 +287,32 @@ Transaction.prototype.inspect = function () {
 
 Transaction.prototype.toBuffer = function () {
   var writer = new BufferWriter();
-  return this.toBufferWriter(writer).toBuffer();
+  return this.toBufferWriter(false, writer).toBuffer();
 };
 
-Transaction.prototype.toBufferWriter = function (writer) {
+Transaction.prototype.hashForSignature = function (inputIndex, hashType) {
+  var preimage = this.getPreimage(inputIndex, hashType);
+  var ret = Hash.sha256sha256(preimage)
+  return new BufferReader(ret).readReverse()
+}
+
+Transaction.prototype.toTxHashPreimage = function () {
+  var writer = new BufferWriter();
+  return this.toBufferWriter(true, writer).toBuffer();
+}
+
+
+Transaction.prototype.toBufferWriter = function (forTxHash, writer) {
+  $.checkArgument(typeof forTxHash === 'boolean', 'forTxHash parameter must be a boolean');
+  writer = writer || new BufferWriter();
   writer.writeUInt32LE(this.version);
   writer.writeVarintNum(this.inputs.length);
   _.each(this.inputs, function (input) {
-    input.toBufferWriter(false, writer);
+    input.toBufferWriter(forTxHash, writer);
   });
   writer.writeVarintNum(this.outputs.length);
   _.each(this.outputs, function (output) {
-    output.toBufferWriter(false, writer);
+    output.toBufferWriter(forTxHash, writer);
   });
   writer.writeUInt32LE(this.nLockTime);
   return writer;
@@ -615,7 +617,7 @@ Transaction.prototype._fromUTXO = function (utxo) {
  * @param {number} satoshis
  * @return Transaction this, for chaining
  */
-Transaction.prototype.addInput = function (input, outputScript, satoshis) {
+Transaction.prototype.addInput = function (input, outputScript, satoshis, data) {
   $.checkArgumentType(input, Input, 'input');
   if (!input.output && (_.isUndefined(outputScript) || _.isUndefined(satoshis))) {
     throw new errors.Transaction.NeedMoreInfo(
@@ -625,9 +627,11 @@ Transaction.prototype.addInput = function (input, outputScript, satoshis) {
   if (!input.output && outputScript && !_.isUndefined(satoshis)) {
     outputScript = outputScript instanceof Script ? outputScript : new Script(outputScript);
     $.checkArgumentType(satoshis, 'number', 'satoshis');
+
     input.output = new Output({
       script: outputScript,
       satoshis: satoshis,
+      data: data,
     });
   }
   return this.uncheckedAddInput(input);
@@ -1504,8 +1508,7 @@ Transaction.prototype.getPreimage = function (inputIndex, sigtype, isLowS) {
   sigtype = sigtype || Signature.SIGHASH_ALL;
   isLowS = isLowS || false;
   inputIndex = inputIndex || 0;
-  var preimage = this.inputs[inputIndex].getPreimage(this, inputIndex, sigtype, isLowS);
-  return preimage.toString('hex');
+  return this.inputs[inputIndex].getPreimage(this, inputIndex, sigtype, isLowS);
 };
 
 Transaction.prototype.getSignature = function (inputIndex, privateKeys, sigtypes) {

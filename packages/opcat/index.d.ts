@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/ban-types */
 // Type definitions for bsv 1.5.6
 // Project: https://github.com/moneybutton/bsv
@@ -727,7 +728,7 @@ declare module '@opcat-labs/opcat' {
         }
 
         namespace ECDSA {
-            function sign(message: Buffer, key: PrivateKey): Signature;
+            function sign(message: Buffer, key: PrivateKey, endian?: 'little' | 'big'): Signature;
             function verify(
                 hashbuf: Buffer,
                 sig: Signature,
@@ -809,13 +810,13 @@ declare module '@opcat-labs/opcat' {
 
         class Output {
             readonly script: Script;
-            readonly satoshis: number;
+            satoshis: number;
             readonly satoshisBN: crypto.BN;
             readonly data: Buffer;
-            spentTxId: string | null;
             constructor(data: {
                 script: Script,
                 satoshis: number
+                data?: Buffer | string;
             });
 
             setScript(script: Script | string | Buffer): this;
@@ -832,22 +833,18 @@ declare module '@opcat-labs/opcat' {
             sequenceNumber: number;
             readonly script: Script;
             output?: Output;
-            constructor(params: object);
+            constructor(params: {
+                prevTxId: Buffer,
+                outputIndex: number,
+                sequenceNumber?: number,
+                script?: Script,
+                output?: Output,
+            });
             isValidSignature(tx: Transaction, sig: any): boolean;
             setScript(script: Script): this;
             getSignatures(tx: Transaction, privateKey: PrivateKey, inputIndex: number, sigtype?: number): any;
-            getPreimage(tx: Transaction, inputIndex: number, sigtype?: number, isLowS?: boolean, csIdx?: number): any;
+            getPreimage(tx: Transaction, inputIndex: number, sigtype?: number, isLowS?: boolean, csIdx?: number): Buffer;
         }
-
-
-        namespace Input {
-            class PublicKeyHash extends Input {
-
-            }
-        }
-
-
-
 
         class Signature {
             constructor(arg: Signature | string | object);
@@ -917,6 +914,10 @@ declare module '@opcat-labs/opcat' {
 
         constructor(raw?: string);
 
+        static fromBuffer(buffer: Buffer): Transaction;
+        static fromString(rawTxHex: string): Transaction;
+        static fromObject(obj: any): Transaction;
+
         from(
             utxos: Transaction.IUnspentOutput | Transaction.IUnspentOutput[]
         ): this;
@@ -935,13 +936,20 @@ declare module '@opcat-labs/opcat' {
         addInput(
             input: Transaction.Input,
             outputScript?: Script | string,
-            satoshis?: number
+            satoshis?: number,
+            data?: Buffer | string
         ): this;
         removeInput(txId: string, outputIndex: number): void;
         addOutput(output: Transaction.Output): this;
         addData(value: Buffer | string): this;
         lockUntilDate(time: Date | number): this;
         lockUntilBlockHeight(height: number): this;
+
+        toBufferWriter(forTxHash: boolean, writer?: encoding.BufferWriter): encoding.BufferWriter;
+
+        hashForSignature(inputIndex: number, hashType: number): Buffer;
+
+        toTxHashPreimage(): Buffer;
 
         hasWitnesses(): boolean;
         getFee(): number;
@@ -1010,6 +1018,10 @@ declare module '@opcat-labs/opcat' {
         };
         getInputAmount(inputIndex: number): number;
         getOutputAmount(outputIndex: number): number;
+
+        clone(): Transaction;
+
+        toHex(): string;
     }
 
     export class ECIES {
@@ -1267,51 +1279,16 @@ declare module '@opcat-labs/opcat' {
 
         function empty(): Script;
 
-        namespace Interpreter {
-            interface InterpretState {
-                step: any;
-                mainstack: any;
-                altstack: any;
-            }
-            type StepListenerFunction = (
-                step: any,
-                stack: any[],
-                altstack: any[]
-            ) => void;
-        }
 
-        export class Interpreter {
-            static SCRIPT_ENABLE_MAGNETIC_OPCODES: number;
-            static SCRIPT_ENABLE_MONOLITH_OPCODES: number;
-            static SCRIPT_VERIFY_STRICTENC: number;
-            static SCRIPT_ENABLE_SIGHASH_FORKID: number;
-            static SCRIPT_VERIFY_LOW_S: number;
-            static SCRIPT_VERIFY_NULLFAIL: number;
-            static SCRIPT_VERIFY_DERSIG: number;
-            static SCRIPT_VERIFY_MINIMALDATA: number;
-            static SCRIPT_VERIFY_NULLDUMMY: number;
-            static SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS: number;
-            static SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY: number;
-            static SCRIPT_VERIFY_CHECKSEQUENCEVERIFY: number;
-            static MAX_SCRIPT_ELEMENT_SIZE: number;
-            static MAXIMUM_ELEMENT_SIZE: number;
-            static SCRIPT_VERIFY_CLEANSTACK: number;
-            static DEFAULT_FLAGS: number;
-            stepListener?: Interpreter.StepListenerFunction;
-            errstr?: string;
-            verify: (
-                inputScript: Script,
-                outputScript: Script,
-                txn: Transaction,
-                nin: number,
-                flags: any,
-                satoshisBN: crypto.BN
-            ) => boolean;
-        }
+        function decodeMultisigOut(): {
+            m: number;
+            n: number;
+            pubkeys: Buffer[];
+        };
     }
 
     export class Script {
-        constructor(data: string | object);
+        constructor(data: Buffer | Address | Script | string);
 
         chunks: Array<Script.IOpChunk>;
         length: number;
@@ -1372,6 +1349,54 @@ declare module '@opcat-labs/opcat' {
 
         static fromChunks(chunks: Array<Script.IOpChunk>): Script
 
+        decodeMultisigOut(): {
+            m: number;
+            n: number;
+            pubkeys: Buffer[];
+        };
+
+    }
+
+    export namespace Interpreter {
+        interface InterpretState {
+            step: any;
+            mainstack: any;
+            altstack: any;
+        }
+        type StepListenerFunction = (
+            step: any,
+            stack: any[],
+            altstack: any[]
+        ) => void;
+    }
+
+    export class Interpreter {
+        static SCRIPT_ENABLE_MAGNETIC_OPCODES: number;
+        static SCRIPT_ENABLE_MONOLITH_OPCODES: number;
+        static SCRIPT_VERIFY_STRICTENC: number;
+        static SCRIPT_ENABLE_SIGHASH_FORKID: number;
+        static SCRIPT_VERIFY_LOW_S: number;
+        static SCRIPT_VERIFY_NULLFAIL: number;
+        static SCRIPT_VERIFY_DERSIG: number;
+        static SCRIPT_VERIFY_MINIMALDATA: number;
+        static SCRIPT_VERIFY_NULLDUMMY: number;
+        static SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS: number;
+        static SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY: number;
+        static SCRIPT_VERIFY_CHECKSEQUENCEVERIFY: number;
+        static MAX_SCRIPT_ELEMENT_SIZE: number;
+        static MAXIMUM_ELEMENT_SIZE: number;
+        static SCRIPT_VERIFY_CLEANSTACK: number;
+        static DEFAULT_FLAGS: number;
+        stepListener?: Interpreter.StepListenerFunction;
+        errstr?: string;
+        verify: (
+            scriptSig: Script,
+            scriptPubkey: Script,
+            txn: Transaction,
+            nin: number,
+            flags: number,
+            satoshis: number,
+        ) => boolean;
     }
 
     export interface Util {
@@ -1391,6 +1416,7 @@ declare module '@opcat-labs/opcat' {
         const livenet: Network;
         const mainnet: Network;
         const testnet: Network;
+        const regtest: Network;
         const defaultNetwork: Network;
 
         function add(data: any): Network;
@@ -1497,7 +1523,6 @@ declare module '@opcat-labs/opcat' {
         static fromBuffer(buf: Buffer): HashCache
         static fromJSON(json: object): HashCache
         static fromHex(hex: string): HashCache
-        
         toBuffer(): HashCache
         toJSON(): HashCache
         toHex(): HashCache

@@ -102,6 +102,10 @@ module.exports = [
             name: 'MissingInput',
             message: 'Invalid inputIndex.',
           },
+          {
+            name: 'InvalidParams',
+            message: 'Invalid params: {0}.',
+          },
         ],
       },
       {

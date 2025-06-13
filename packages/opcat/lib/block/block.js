@@ -172,7 +172,7 @@ Block.prototype.toBufferWriter = function toBufferWriter(bw) {
   bw.write(this.header.toBuffer());
   bw.writeVarintNum(this.transactions.length);
   for (var i = 0; i < this.transactions.length; i++) {
-    this.transactions[i].toBufferWriter(bw);
+    this.transactions[i].toBufferWriter(false, bw);
   }
   return bw;
 };

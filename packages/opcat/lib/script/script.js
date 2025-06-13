@@ -369,6 +369,28 @@ Script.prototype.isMultisigOut = function () {
   );
 };
 
+
+/**
+ * Decodes a multisig output script into its components.
+ * @returns {Object} An object containing:
+ *   - m {number} The required number of signatures (m-of-n)
+ *   - n {number} The total number of public keys
+ *   - pubkeys {Buffer[]} Array of public keys involved in the multisig
+ */
+Script.prototype.decodeMultisigOut = function () {
+  $.checkState(this.isMultisigOut(), "Can't decode a non-multisig output script");
+  const OP_INT_BASE = Opcode.OP_RESERVED; // OP_1 - 1
+  const m = this.chunks[0].opcodenum - OP_INT_BASE
+  const n = (this.chunks[0][this.chunks[0].length - 2]) - OP_INT_BASE;
+  const pubkeys = this.chunks.slice(1, -2).map((chunk) => chunk.buf);
+
+  return {
+    m,
+    n,
+    pubkeys
+  };
+};
+
 /**
  * @returns {boolean} if this is a multisig input script
  */
