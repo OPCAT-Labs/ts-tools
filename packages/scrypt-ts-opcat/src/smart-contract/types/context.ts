@@ -1,28 +1,21 @@
-import { PsbtTxInput, PsbtTxOutput } from '@scrypt-inc/bitcoinjs-lib';
-import { StatefulCovenantUtxo } from '../../covenant.js';
-import { InputIndex } from '../../globalTypes.js';
+import { PsbtTxInput, PsbtTxOutput } from '../../psbt/psbt.js';
+import { InputIndex, StatefulContractUtxo } from '../../globalTypes.js';
 import { ByteString, Int32, SigHashType } from './primitives.js';
 import {
   SHPreimage,
   SpentScripts,
   SpentAmounts,
-  StateHashes,
-  InputStateProof,
   Prevouts,
-  InputStateProofs,
   Outpoint,
   TxOut,
+  SpentDataHashes,
 } from './structs.js';
 
 /**
  * The context of the current contract, can be accessed by `this.ctx` in the contract.
  */
 export interface IContext extends SHPreimage, DerivedCtx {
-  /**
-   * @type {Int32}
-   * Index of this input in the transaction input vector. Starts from 0.
-   */
-  inputIndexVal: Int32;
+
 
   /**
    * @type {FixedArray<Outpoint, typeof TX_INPUT_COUNT_MAX>}
@@ -44,16 +37,10 @@ export interface IContext extends SHPreimage, DerivedCtx {
   spentAmounts: SpentAmounts;
 
   /**
-   * @type {StateHashes}
-   * The hashes of the next(new) states in the outputs of the current transaction.
+   * @type {SpentDataHashes}
+   * The data of the inputs.
    */
-  nextStateHashes: StateHashes;
-
-  /**
-   * @type {InputStateProofs}
-   * The state proofs of the inputs.
-   */
-  inputStateProofs: InputStateProofs;
+  spentDataHashes: SpentDataHashes;
 }
 
 export type InputContext = ParamCtx & DerivedCtx;
@@ -62,13 +49,11 @@ export type InputContext = ParamCtx & DerivedCtx;
  * The context provided by the parameters of the unlocking script for the current input.
  */
 type ParamCtx = {
-  inputIndexVal: Int32;
   shPreimage: SHPreimage;
   prevouts: Prevouts;
   spentScripts: SpentScripts;
   spentAmounts: SpentAmounts;
-  nextStateHashes: StateHashes;
-  inputStateProofs?: InputStateProofs;
+  spentDataHashes: SpentDataHashes;
 };
 
 /**
@@ -98,13 +83,13 @@ type DerivedCtx = {
    * @type {ByteString}
    * The amount of the current input.
    */
-  spentAmount: ByteString;
+  spentAmount: Int32;
 
   /**
-   * @type {InputStateProof}
-   * The state proof of the current input.
+   * @type {ByteString}
+   * The data of the current input.
    */
-  inputStateProof: InputStateProof;
+  spentData: ByteString;
 };
 
 /**
@@ -176,12 +161,12 @@ export interface Contextual {
    * Get the output state hashes of the current transaction
    * @returns the output state hashes of the current transaction
    */
-  getTxoStateHashes(): StateHashes;
+  getTxoStateHashes(): SpentDataHashes;
 
   /**
    * Get the stateful covenant utxo of the current input
    * @param inputIndex the index of the input in the PSBT
    * @returns the stateful covenant utxo of the current input
    */
-  getStatefulInputUtxo(inputIndex: InputIndex): StatefulCovenantUtxo | undefined;
+  getStatefulInputUtxo(inputIndex: InputIndex): StatefulContractUtxo | undefined;
 }

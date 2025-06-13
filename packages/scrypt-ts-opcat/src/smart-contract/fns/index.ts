@@ -5,3 +5,4 @@ export { toByteString, int32ToByteString, byteStringToInt32, len } from './byteS
 export { pubKey2Addr } from './pubKey2Addr.js';
 export { max, min, within, abs } from './math.js';
 export { equals } from './equals.js';
+export { slice } from './slice.js';

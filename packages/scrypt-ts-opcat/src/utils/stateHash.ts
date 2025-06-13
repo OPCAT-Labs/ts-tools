@@ -2,7 +2,7 @@ import { scriptNumber } from '@scrypt-inc/bitcoinjs-lib';
 import { uint8ArrayToHex } from './common.js';
 import { ABICoder } from '../smart-contract/abi.js';
 import { hash160 } from '../smart-contract/fns/index.js';
-import { Ripemd160, StructObject } from '../smart-contract/types/primitives.js';
+import { Ripemd160, OpcatState } from '../smart-contract/types/primitives.js';
 import { Artifact } from '../smart-contract/types/artifact.js';
 import { MAX_FLAT_FIELDS_IN_STATE } from '../smart-contract/consts.js';
 import { getUnRenamedSymbol } from '../smart-contract/abiutils.js';
@@ -13,7 +13,7 @@ import { getUnRenamedSymbol } from '../smart-contract/abiutils.js';
 export function calculateStateHash(
   artifact: Artifact,
   stateType: string,
-  state: StructObject,
+  state: OpcatState,
 ): Ripemd160 {
   const abiCoder = new ABICoder(artifact);
 

@@ -28,9 +28,7 @@ export {
   type TxHashPreimage,
   type CompactTxHashPreimage,
   type HashRootTxHashPreimage,
-  type StateHashes,
-  type InputStateProof,
-  type InputStateProofs,
+  type SpentDataHashes as StateHashes,
   type BacktraceInfo,
 } from './structs.js';
 

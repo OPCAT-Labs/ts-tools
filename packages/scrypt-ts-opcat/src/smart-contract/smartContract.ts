@@ -7,20 +7,18 @@ import { checkSigImpl } from './methods/checkSig.js';
 import { ByteString, PubKey, SHPreimage, Sig } from './types/index.js';
 import { ABICoder, Arguments } from './abi.js';
 import { Script } from './types/script.js';
-import { Tap } from '@cmdcode/tapscript'; // Requires node >= 19
-import { TAPROOT_ONLY_SCRIPT_SPENT_KEY } from './consts.js';
-import { InputIndex, TapScript, Taprootable, Witness } from '../globalTypes.js';
-import { hexToUint8Array, textToHex, uint8ArrayToHex, calcArtifactHexMD5 } from '../utils/index.js';
+import { ExtUtxo, InputIndex, Optional, RawArgs, UTXO } from '../globalTypes.js';
+import { textToHex, uint8ArrayToHex, calcArtifactHexMD5, cloneDeep } from '../utils/index.js';
 import { Contextual, InputContext, IContext } from './types/context.js';
 import {
   Int32,
   Ripemd160,
   SigHashType,
-  StructObject,
+  OpcatState,
   SupportedParamType,
 } from './types/primitives.js';
 import { isFinal } from '@scrypt-inc/bitcoinjs-lib';
-import { hash160, sha256 } from './fns/hashes.js';
+import { hash160, hash256 } from './fns/hashes.js';
 import { int32ToByteString, len, toByteString } from './fns/byteString.js';
 import { checkInputStateHashImpl } from './methods/checkInputStateHash.js';
 import { deserializeOutputs } from './serializer.js';
@@ -30,13 +28,15 @@ import { calculateStateHash } from '../utils/stateHash.js';
 import { OpCode } from './types/opCode.js';
 import { getUnRenamedSymbol } from './abiutils.js';
 
+
+
 /**
  * Used to invoke public methods of a contract, corresponding to the witness of a Taproot input
  */
 interface MethodCallData {
   method: string;
   args: SupportedParamType[];
-  witness: Witness;
+  rawArgs: RawArgs;
 }
 
 interface StateVars {
@@ -56,29 +56,6 @@ interface StateVars {
   stateRoots: ByteString;
 }
 
-const cblockCache: Record<string, string> = {};
-
-const tapScriptCache: Record<string, string> = {};
-
-const getCblock = function (target, tapTree): string {
-  const k = `${target.toString()}${JSON.stringify(tapTree)}`;
-  if (!cblockCache[k]) {
-    const [, cBlock] = Tap.getPubKey(TAPROOT_ONLY_SCRIPT_SPENT_KEY, {
-      target: target,
-      tree: tapTree,
-    });
-    cblockCache[k] = cBlock;
-  }
-  return cblockCache[k];
-};
-
-const encodeScript = function (script: Script): string {
-  const k = script.toString();
-  if (!tapScriptCache[k]) {
-    tapScriptCache[k] = Tap.encodeScript(script);
-  }
-  return tapScriptCache[k];
-};
 
 /**
  * Prepend the locking script with a tag and a md5 hash of the artifact hex.
@@ -126,9 +103,8 @@ export function prependLockingScript(lockingScript: Script, artifact: Artifact):
  * ```
  * @category SmartContract
  */
-export class SmartContract<StateT extends StructObject = undefined>
+export class SmartContract<StateT extends OpcatState = undefined>
   extends AbstractContract
-  implements Taprootable
 {
   /**
    * Bitcoin Contract Artifact
@@ -150,6 +126,8 @@ export class SmartContract<StateT extends StructObject = undefined>
     const clazz = this.constructor as typeof SmartContract;
     return clazz.stateType;
   }
+
+  utxo?: UTXO;
 
   /**
    * The state of the contract UTXO, usually committed to the first OP_RETURN output, is revealed when spending.
@@ -176,6 +154,7 @@ export class SmartContract<StateT extends StructObject = undefined>
     return this;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   constructor(...args: SupportedParamType[]) {
     super();
     const ContractClazz = this.constructor as typeof SmartContract;
@@ -195,26 +174,17 @@ export class SmartContract<StateT extends StructObject = undefined>
       }
     }
     if (!SmartContract.newFromCreate) {
-      this.generateTaproot(...args);
+      this.generateLockingScript(...args);
     }
   }
 
-  /**
+    /**
    * @ignore
    * @param args
    */
-  private generateTaproot(...args: SupportedParamType[]) {
+  private generateLockingScript(...args: SupportedParamType[]) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this as any).lockingScript = prependLockingScript(
-      this._abiCoder.encodeConstructorCall(args),
-      this._abiCoder.artifact,
-    );
-    const [tPubkey, cBlock] = Tap.getPubKey(TAPROOT_ONLY_SCRIPT_SPENT_KEY, {
-      target: this.tapScript,
-    });
-
-    this.tweakedPubkey = tPubkey;
-    this.controlBlock = cBlock;
+    (this as any).lockingScript = this._abiCoder.encodeConstructorCall(args);
   }
 
   /**
@@ -230,7 +200,7 @@ export class SmartContract<StateT extends StructObject = undefined>
     SmartContract.newFromCreate = true;
     const instance = new this(...args);
     SmartContract.newFromCreate = false;
-    (instance as SmartContract).generateTaproot(...(args as SupportedParamType[]));
+    (instance as SmartContract).generateLockingScript(...(args as SupportedParamType[]));
     return instance;
   }
 
@@ -339,7 +309,7 @@ export class SmartContract<StateT extends StructObject = undefined>
    * @param state state of the contract
    * @returns hash160 of the state
    */
-  static override stateHash<T extends StructObject>(
+  static override stateHash<T extends OpcatState>(
     this: { new (...args: unknown[]): SmartContract<T> },
     state: T,
   ): Ripemd160 {
@@ -369,9 +339,9 @@ export class SmartContract<StateT extends StructObject = undefined>
    */
   override checkInputStateHash(inputIndex: Int32, stateHash: ByteString): boolean {
     checkInputStateHashImpl(
-      this.inputContext.inputStateProofs![Number(inputIndex)],
+      Number(inputIndex),
+      this.inputContext.spentDataHashes,
       stateHash,
-      this.ctx.prevouts[Number(inputIndex)],
     );
     return true;
   }
@@ -393,30 +363,26 @@ export class SmartContract<StateT extends StructObject = undefined>
   get ctx(): IContext {
     const {
       shPreimage,
-      inputIndexVal,
       inputCount,
       prevouts,
       prevout,
       spentScripts,
       spentAmounts,
-      inputStateProofs,
-      inputStateProof,
-      nextStateHashes,
+      spentDataHashes,
+      spentData,
     } = this.inputContext;
     return {
       ...shPreimage,
-      inputIndexVal,
       inputCount,
       prevouts,
       prevout,
       spentScripts,
       spentAmounts,
-      nextStateHashes,
-      inputStateProofs,
+      spentDataHashes,
       // derived context below
-      spentScript: spentScripts[Number(inputIndexVal)],
-      spentAmount: spentAmounts[Number(inputIndexVal)],
-      inputStateProof,
+      spentScript: spentScripts[Number(shPreimage.inputIndex)],
+      spentAmount: spentAmounts[Number(shPreimage.inputIndex)],
+      spentData: spentData,
     };
   }
 
@@ -450,13 +416,6 @@ export class SmartContract<StateT extends StructObject = undefined>
 
   private _abiCoder: ABICoder;
 
-  /**
-   * tapScript
-   */
-  get tapScript(): TapScript {
-    return encodeScript(this.lockingScript);
-  }
-
   private _methodCall?: MethodCallData;
 
   /**
@@ -469,14 +428,12 @@ export class SmartContract<StateT extends StructObject = undefined>
       this._autoInject(method, args, autoCheckInputStateHash);
     }
 
-    const argsWitness = this._abiCoder.encodePubFunctionCall(method, args);
-    const taprootWitness: Witness = [this.lockingScript, hexToUint8Array(this.controlBlock)];
-    const witness = [...argsWitness, ...taprootWitness];
+    const rawArgs = this._abiCoder.encodePubFunctionCall(method, args);
 
     this._methodCall = {
       method,
       args,
-      witness,
+      rawArgs,
     };
   }
 
@@ -508,9 +465,7 @@ export class SmartContract<StateT extends StructObject = undefined>
       prevout,
       spentScripts,
       spentAmounts,
-      nextStateHashes,
-      inputStateProof,
-      inputStateProofs,
+      spentDataHashes,
     } = this.inputContext;
 
     checkCtxImpl(
@@ -521,6 +476,7 @@ export class SmartContract<StateT extends StructObject = undefined>
       prevout,
       spentScripts,
       spentAmounts,
+      spentDataHashes,
     );
 
     const curState = this.state;
@@ -543,34 +499,21 @@ export class SmartContract<StateT extends StructObject = undefined>
         } else if (param.name === '__scrypt_ts_prevout') {
           args.push(prevout);
         } else if (param.name === '__scrypt_ts_spentScripts') {
-          const { spentScripts } = this.inputContext;
           args.push(spentScripts);
         } else if (param.name === '__scrypt_ts_spentAmounts') {
-          const { spentAmounts } = this.inputContext;
           args.push(spentAmounts);
-        } else if (param.name === '__scrypt_ts_nextStateHashes') {
-          // TODO: verify nextStateHashes
-          args.push(nextStateHashes);
+        } else if (param.name === '__scrypt_ts_stateHashes') {
+          args.push(spentDataHashes);
         } else if (param.name === '__scrypt_ts_curState') {
           this._checkState();
           if (autoCheckInputStateHash) {
             checkInputStateHashImpl(
-              inputStateProof,
-              (this.constructor as typeof SmartContract<StructObject>).stateHash(curState),
-              prevouts[this._curInputIndex],
+              this._curInputIndex,
+              spentDataHashes,
+              (this.constructor as typeof SmartContract<OpcatState>).stateHash(curState),
             );
           }
           args.push(curState);
-        } else if (param.name === '__scrypt_ts_inputStateProof') {
-          if (!inputStateProof) {
-            throw new Error(`missing inputStateProof for auto injection!`);
-          }
-          args.push(inputStateProof);
-        } else if (param.name === '__scrypt_ts_inputStateProofs') {
-          if (!inputStateProofs) {
-            throw new Error(`missing inputStateProofs for auto injection!`);
-          }
-          args.push(inputStateProofs);
         }
       });
     }
@@ -638,52 +581,43 @@ export class SmartContract<StateT extends StructObject = undefined>
    * @onchain
    */
   override checkOutputs(outputs: ByteString): boolean {
-    if (this.ctx.shaOutputs !== sha256(outputs)) {
+    if (this.ctx.hashOutputs !== hash256(outputs)) {
       this.debug.diffOutputs(outputs);
       return false;
     }
     return true;
   }
 
-  /**
-   * get all witness
-   * @returns all witness that call the contract
-   */
 
-  methodCallToWitness(): Witness {
+  /**
+   * Returns the raw arguments from the call data of the smart contract.
+   * @returns The raw arguments extracted from the call data.
+   */
+  getRawArgsOfCallData(): RawArgs {
+    return this.getCallData().rawArgs;
+  }
+
+
+  /**
+   * Gets the method call data for the current smart contract.
+   * @throws {Error} If no method call is found.
+   * @returns {MethodCallData} The method call data object.
+   */
+  getCallData(): MethodCallData {
     if (!this._methodCall) {
       throw new Error('No method call found!');
     }
-    return this._methodCall.witness;
+    return this._methodCall;
   }
 
   /**
-   * Transform witness testimony into arguments previously used to invoke the contract.
+   * Transform raw arguments from the testimony into arguments previously used to invoke the contract.
    * @ignore
-   * @param _witness
+   * @param _args
    * @param _method
    */
-  witnessToContractCallArgs(_witness: Witness, _method: string): Arguments {
+  rawArgsToCallData(_args: RawArgs, _method: string): Arguments {
     throw new Error('Method not implemented.');
-  }
-
-  /**
-   * In Taproot, a control block is a data structure used during script path spends to prove that a particular script is part of the Taproot output's script tree.
-   */
-  controlBlock: string;
-
-  /**
-   * In Taproot, tweaking a public key involves modifying an existing public key to create a new one that embeds additional information, such as commitments to scripts or data.
-   */
-  tweakedPubkey: string;
-
-  /**
-   *
-   * @ignore
-   */
-  asTapLeaf(tapTree: TapScript[], tPubkey: string) {
-    this.tweakedPubkey = tPubkey;
-    this.controlBlock = getCblock(this.tapScript, tapTree);
   }
 
   /**
@@ -835,5 +769,44 @@ export class SmartContract<StateT extends StructObject = undefined>
    */
   override backtraceToScript(backtraceInfo: BacktraceInfo, genesisScript: ByteString): boolean {
     return backtraceToScriptImpl(this, backtraceInfo, genesisScript);
+  }
+
+
+  /**
+   * Get a new contract instance with the new state.
+   * @param newState the new state
+   * @returns the new covenant
+   */
+  next(newState: StateT): SmartContract<StateT> {
+    const next = cloneDeep(this);
+    next.state = newState;
+    next.utxo = undefined;
+    return next;
+  }
+
+
+  /**
+   * Binds the smart contract to a UTXO by verifying and setting its script.
+   * @param utxo - The UTXO to bind to (script field is optional)
+   * @returns The contract instance for chaining
+   * @throws Error if the UTXO's script exists and doesn't match the contract's locking script
+   */
+  bindToUtxo(utxo: Optional<ExtUtxo, 'script'> | Optional<UTXO, 'script'>): this {
+    if (utxo.script && this.lockingScript.toHex() !== utxo.script) {
+      throw new Error(
+        `Different script, can not bind contract '${this.constructor.name}' to this UTXO: ${JSON.stringify(utxo)}!`,
+      );
+    }
+
+    this.utxo = { ...utxo, script: this.lockingScript.toHex() };
+    return this;
+  }
+
+  /**
+   * Checks if the contract has state by verifying if the state object exists and is not empty.
+   * @returns {boolean} True if the contract has state, false otherwise.
+   */
+  isStateful(): boolean {
+    return this.state && Object.keys(this.state).length > 0
   }
 }

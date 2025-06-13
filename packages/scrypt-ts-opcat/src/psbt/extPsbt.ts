@@ -1,77 +1,47 @@
-import {
-  Psbt,
-  PsbtOptsOptional,
-  Transaction,
-  TransactionInput,
-  isFinalized,
-  address,
-  bip341,
-  bip371,
-  psbtutils,
-  psbt,
-  networks,
-  Network,
-} from '@scrypt-inc/bitcoinjs-lib';
-import { PsbtInput, Psbt as PsbtBase } from 'bip174';
-const { witnessStackToScriptWitness } = psbtutils;
-const { LEAF_VERSION_TAPSCRIPT } = bip341;
-const { isTaprootInput } = bip371;
 
+import { PsbtInput, Psbt as PsbtBase, OpcatUtxo } from 'bip174';
 import { ByteString, Sig, SigHashType, StateHashes, TxOut } from '../smart-contract/types/index.js';
 import {
-  Covenant,
+  InputIndex, OutputIndex, SupportedNetwork, RawArgs,
   ExtUtxo,
-  StatefulCovenant,
-  StatefulCovenantUtxo,
+  StatefulContractUtxo,
   StateProvableUtxo,
-} from '../covenant.js';
-import { InputIndex, OutputIndex, SupportedNetwork, Witness } from '../globalTypes.js';
+} from '../globalTypes.js';
 import { ToSignInput, SignOptions } from '../signer.js';
 import { DUST_LIMIT, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from '../smart-contract/consts.js';
 import { Script } from '../smart-contract/types/script.js';
 import { ContextProvider } from './contextProvider.js';
 import {
-  emptyStateHashes,
   hexToUint8Array,
-  toBitcoinNetwork,
   satoshiToHex,
-  toXOnly,
   uint8ArrayToHex,
 } from '../utils/common.js';
 import { InputContext } from '../smart-contract/types/context.js';
-import { IExtPsbt, SubContractCall } from './types.js';
+import { IExtPsbt, ContractCall } from './types.js';
 import * as tools from 'uint8array-tools';
 import { toByteString } from '../smart-contract/fns/byteString.js';
-import { hash160 } from '../smart-contract/fns/index.js';
+import { hash256 } from '../smart-contract/fns/index.js';
 import { TxUtils } from '../smart-contract/builtin-libs/txUtils.js';
 
-export { type IExtPsbt } from './types.js';
+import { FinalScriptsFunc, isFinalized, Psbt, PsbtOptsOptional, PsbtOutputExtended, TransactionInput } from './psbt.js';
+import { fromSupportedNetwork } from '../networks.js';
+import { Transaction, PublicKey, Networks } from '@opcat-labs/opcat';
+import { SmartContract } from '../smart-contract/smartContract.js';
+import { OpcatState } from '../smart-contract/types/primitives.js';
+import { callArgsToStackToScript } from './bufferutils.js';
 
-const SCHNORR_SIG_LEN = 0x41; // a normal schnorr signature size with sigHashType is 65 bytes
+const P2PKH_SIG_LEN = 0x49; // 73 bytes signature
+const P2PKH_PUBKEY_LEN = 0x21; // 33 bytes pubkey
 
 type Finalizer = (
   self: ExtPsbt,
   inputIndex: number, // Which input is it?
   input: PsbtInput, // The PSBT input contents
-  tapLeafHashToFinalize?: Uint8Array,
-) => Witness;
+) => RawArgs;
 
-// type AsyncFinalizer = (
-//   self: IExtPsbt,
-//   inputIndex: number, // Which input is it?
-//   input: PsbtInput, // The PSBT input contents
-//   tapLeafHashToFinalize?: Uint8Array
-// ) => Promise<Witness>;
 
-type FinalTaprootScriptsFunc = (
-  inputIndex: number, // Which input is it?
-  input: PsbtInput, // The PSBT input contents
-  tapLeafHashToFinalize?: Uint8Array,
-) => {
-  finalScriptWitness: Uint8Array | undefined;
-};
-
-interface PsbtInputExtended extends PsbtInput, TransactionInput {
+export interface PsbtInputExtended extends PsbtInput, TransactionInput {
+  opcatUtxo: OpcatUtxo;
   finalizer?: Finalizer;
   sigRequests?: {
     inputIndex: InputIndex;
@@ -96,7 +66,7 @@ export interface ExtPsbtOpts extends Omit<PsbtOptsOptional, 'network'> {
    *
    * make sure you have set the network if you are working on btc-signet
    */
-  network?: SupportedNetwork | Network;
+  network?: Networks.Network | SupportedNetwork;
 }
 
 /**
@@ -107,24 +77,16 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   constructor(opts: ExtPsbtOpts = {}, data?: PsbtBase) {
     if (typeof opts.network === 'string') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (opts as any as PsbtOptsOptional).network = toBitcoinNetwork(opts.network);
+      (opts as any as PsbtOptsOptional).network = fromSupportedNetwork(opts.network);
     }
     super(opts as PsbtOptsOptional, data);
     this._ctxProvider = new ContextProvider(this);
-    this._txoStateHashes = emptyStateHashes();
-    if (opts.forceAddStateRootHashOutput && this.txOutputs.length === 0) {
-      this.addOutput({
-        script: this.stateHashRootScript,
-        value: BigInt(0),
-      });
-      this._stateRootAdded = true;
-    }
   }
   getSequence(inputIndex: InputIndex): number {
-    return this.unsignedTx.ins[inputIndex].sequence;
+    return this.unsignedTx.inputs[inputIndex].sequenceNumber;
   }
   getlockTime(): number {
-    return this.unsignedTx.locktime;
+    return this.unsignedTx.nLockTime;
   }
 
   static fromBase64(data: string, opts: ExtPsbtOpts = {}): ExtPsbt {
@@ -140,7 +102,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   static fromBuffer(buffer: Uint8Array, opts: ExtPsbtOpts = {}): ExtPsbt {
     if (typeof opts.network === 'string') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (opts as any as PsbtOptsOptional).network = toBitcoinNetwork(opts.network);
+      (opts as any as PsbtOptsOptional).network = fromSupportedNetwork(opts.network);
     }
     const psbt = Psbt.fromBuffer(buffer, opts as PsbtOptsOptional);
     return new ExtPsbt(opts as PsbtOptsOptional, psbt.data);
@@ -177,31 +139,29 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   get stateHashRoot(): ByteString {
     let stateRoots = '';
     for (let i = 0; i < this._txoStateHashes.length; i++) {
-      stateRoots += hash160(this._txoStateHashes[i]);
+      stateRoots += this._txoStateHashes[i];
     }
-    return hash160(stateRoots);
+    return hash256(stateRoots);
   }
 
   get stateHashRootScript(): Uint8Array {
     return hexToUint8Array(TxUtils.buildStateHashRootScript(this.stateHashRoot));
   }
 
-  get accessedInputStateProofs(): boolean {
-    return Array.from(this._inputCovenants.values()).some(
-      (covenant) => covenant.accessedInputStateProofs,
-    );
-  }
 
   private _txoStateHashes: StateHashes;
   private _sigRequests: Map<InputIndex, Omit<ToSignInput, 'index'>[]> = new Map();
   private _finalizers: Map<InputIndex, Finalizer> = new Map();
 
-  private _inputCovenants: Map<InputIndex, Covenant> = new Map();
-  private _inStateProvableUtxos: Map<InputIndex, StatefulCovenantUtxo> = new Map();
-  private _outputCovenants: Map<OutputIndex, Covenant> = new Map();
+  private _inputContracts: Map<InputIndex, SmartContract<OpcatState>> = new Map();
+  private _inStateProvableUtxos: Map<InputIndex, StatefulContractUtxo> = new Map();
+  private _outputContracts: Map<OutputIndex, SmartContract<OpcatState>> = new Map();
 
   private _changeOutputIndex: number | null = null;
   private _changeToAddr: string;
+
+  private _changeData: Uint8Array;
+
   private _changeFeeRate: number;
 
   override addInput(inputData: PsbtInputExtended): this {
@@ -212,7 +172,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       const index = this.data.inputs.length - 1;
       const input = this.data.inputs[index];
       const witness = inputData.finalizer(this, index, input);
-      this._cacheInputWitness(index, witness);
+      this._cacheInputCallArgs(index, witness);
       const finalizer = inputData.finalizer;
       this._setInputFinalizer(index, (self, idx, inp) => {
         return finalizer(self, idx, inp);
@@ -239,14 +199,15 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     for (let i = 0; i < utxos.length; i++) {
       const utxo = utxos[i];
       // verify network match
-      const sigAddress = address.fromOutputScript(hexToUint8Array(utxo.script), this.network);
-      if (utxo.address && sigAddress !== utxo.address) {
+      const sigAddress = Script.fromHex(utxo.script).toAddress(this.network);
+      if (utxo.address && sigAddress.toString() !== utxo.address) {
         throw new Error('The address of the utxo does not match the network of the psbt');
       }
       this.addInput({
         hash: utxo.txId,
         index: utxo.outputIndex,
-        witnessUtxo: {
+        opcatUtxo: {
+          data: hexToUint8Array(utxo.data),
           script: hexToUint8Array(utxo.script),
           value: BigInt(utxo.satoshis),
         },
@@ -254,7 +215,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
           {
             inputIndex: this.txInputs.length,
             options: {
-              address: address.fromOutputScript(hexToUint8Array(utxo.script), this.network),
+              address: sigAddress.toString(),
             },
           },
         ],
@@ -262,13 +223,13 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
       if (utxo.txoStateHashes && utxo.txHashPreimage) {
         const inputIndex = this.data.inputs.length - 1;
-        this._inStateProvableUtxos.set(inputIndex, utxo as StatefulCovenantUtxo);
+        this._inStateProvableUtxos.set(inputIndex, utxo as StatefulContractUtxo);
       }
     }
     return this;
   }
 
-  override addOutput(outputData: psbt.PsbtOutputExtended): this {
+  override addOutput(outputData: PsbtOutputExtended): this {
     super.addOutput(outputData);
     this._checkOutputCnt();
     this._checkSealed("can't add more output");
@@ -290,60 +251,38 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return super.setInputSequence(inputIndex, sequence);
   }
 
-  addCovenantInput(covenant: Covenant, subContractAlias?: string): this {
-    const fromUtxo = covenant.utxo;
+  addContractInput(contract: SmartContract<OpcatState>): this {
+    const fromUtxo = contract.utxo;
     if (!fromUtxo) {
       throw new Error(
-        `The covenant input '${covenant.constructor.name}' does not bind to any UTXO`,
+        `The contract input '${contract.constructor.name}' does not bind to any UTXO`,
       );
     }
-    // verify network match
-    if (this.network !== toBitcoinNetwork(covenant.network)) {
-      throw new Error('The network of the psbt does not match the network of the covenant');
-    }
 
-    const script = Script.fromHex(fromUtxo.script);
-    if (!script.equals(covenant.lockingScript)) {
-      throw new Error('The covenant is not from the utxo');
-    }
-
-    const subContract = covenant.getSubContract(subContractAlias);
-    if (!subContract) {
-      throw new Error(
-        `SubContract '${subContractAlias}' not found in covenant '${covenant.constructor.name}'`,
-      );
-    }
 
     this.addInput({
       hash: fromUtxo.txId,
       index: fromUtxo.outputIndex,
-      witnessUtxo: {
-        script,
+      opcatUtxo: {
+        script: hexToUint8Array(fromUtxo.script),
+        data: hexToUint8Array(fromUtxo.data),
         value: BigInt(fromUtxo.satoshis),
       },
-      tapLeafScript: [
-        {
-          leafVersion: LEAF_VERSION_TAPSCRIPT,
-          script: subContract.lockingScript,
-          controlBlock: hexToUint8Array(subContract.controlBlock),
-        },
-      ],
     });
     this._checkInputCnt();
 
     const inputIndex = this.data.inputs.length - 1;
-    this._inputCovenants.set(inputIndex, covenant);
-    const _covenant = covenant as StatefulCovenant<undefined>;
-    if (_covenant.utxo && _covenant.utxo.txHashPreimage && _covenant.utxo.txoStateHashes) {
-      this._inStateProvableUtxos.set(inputIndex, _covenant.utxo);
+    this._inputContracts.set(inputIndex, contract);
+    if ("txHashPreimage" in fromUtxo && 'txoStateHashes' in fromUtxo) {
+      this._inStateProvableUtxos.set(inputIndex, contract.utxo as StatefulContractUtxo);
     }
     return this;
   }
 
   removeInput(inputIndex: number): this {
-    this.unsignedTx.ins.splice(inputIndex, 1);
+    this.unsignedTx.inputs.splice(inputIndex, 1);
     this.data.inputs.splice(inputIndex, 1);
-    this._inputCovenants.delete(inputIndex);
+    this._inputContracts.delete(inputIndex);
     this._inStateProvableUtxos.delete(inputIndex);
     this._finalizers.delete(inputIndex);
     this._sigRequests.delete(inputIndex);
@@ -359,103 +298,70 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
-  updateCovenantInput(
+  updateContractInput(
     inputIndex: number,
-    covenant: Covenant,
-    subContractCall: SubContractCall,
+    contractCall: ContractCall,
   ): this {
-    const tapLeafScript = this.data.inputs[inputIndex].tapLeafScript;
 
-    const subContract = covenant.getSubContract(subContractCall.contractAlias);
-
-    if (!subContract) {
-      throw new Error(`subContract ${subContractCall.contractAlias} not found.`);
+    const contract = this._inputContracts.get(inputIndex);
+    if (!contract) {
+      throw new Error(`No contract found for input index ${inputIndex}`);
     }
 
-    if (tools.compare(subContract.lockingScript, tapLeafScript![0].script) !== 0) {
-      throw new Error('tapLeafScript not match.');
-    }
+
     // update the contract binding to the current psbt input
-    subContract.spentFromInput(this, inputIndex);
+    contract.spentFromInput(this, inputIndex);
 
-    subContractCall.invokeMethod(subContract, this);
-    const witness = subContract.methodCallToWitness();
-    covenant.verifyWitnessProgram(witness);
-    this._cacheInputWitness(inputIndex, witness);
+    contractCall(contract, this);
+    const callArgs = contract.getRawArgsOfCallData();
+
+    this._cacheInputCallArgs(inputIndex, callArgs);
 
     const finalizer: Finalizer = (
       _self: ExtPsbt,
       _inputIndex: number, // Which input is it?
       _input: PsbtInput, // The PSBT input contents
-      _tapLeafHashToFinalize?: Uint8Array,
     ) => {
-      subContractCall.invokeMethod(subContract, this);
-      return subContract.methodCallToWitness();
+      contractCall(contract, this);
+      return contract.getRawArgsOfCallData();
     };
     this._setInputFinalizer(inputIndex, finalizer);
 
     return this;
   }
 
-  private _stateRootAdded: boolean;
+  addContractOutput(contract: SmartContract<OpcatState>, satoshis: number, data: Uint8Array): this {
 
-  addCovenantOutput(covenant: Covenant, satoshis: number): this {
-    const isStatefulCovenant = covenant instanceof StatefulCovenant;
-    if (isStatefulCovenant) {
-      if (this.txOutputs.length === 0) {
-        // add state hash root output as the first output
-        this.addOutput({
-          script: this.stateHashRootScript,
-          value: BigInt(0),
-        });
-        this._stateRootAdded = true;
-      }
-
-      if (!this._stateRootAdded) {
-        throw new Error('The state output should be added before all non-state outputs');
-      }
-    }
-
-    // verify network match
-    if (this.network !== toBitcoinNetwork(covenant.network)) {
-      throw new Error('The network of the psbt does not match the network of the covenant');
-    }
 
     this.addOutput({
-      script: covenant.lockingScript,
+      script: contract.lockingScript.toBuffer(),
       value: BigInt(satoshis),
+      data,
     });
 
     const outputIndex = this.txOutputs.length - 1;
-    if (this._stateRootAdded && isStatefulCovenant) {
-      this._updateStateHashRootOutput(outputIndex, covenant.stateHash);
-    }
 
-    this._outputCovenants.set(outputIndex, covenant);
+    this._outputContracts.set(outputIndex, contract);
 
     return this;
   }
 
-  private _updateStateHashRootOutput(outputIndex: number, stateHash: ByteString) {
-    this._txoStateHashes[outputIndex - 1] = stateHash;
-    this.unsignedTx.outs[0].script = this.stateHashRootScript;
-  }
-
   get inputAmount(): number {
-    return this.data.inputs.reduce((total, input) => total + Number(input.witnessUtxo!.value), 0);
+    return this.data.inputs.reduce((total, input) => total + Number(input.opcatUtxo!.value), 0);
   }
 
   get outputAmount(): number {
     return this.txOutputs.reduce((total, output) => total + Number(output.value), 0);
   }
 
-  change(toAddr: string, feeRate: number): this {
-    const changeScript = address.toOutputScript(toAddr, this.network);
-
+  change(toAddr: string, feeRate: number, data?: Uint8Array): this {
+    const changeScript = Script.fromAddress(toAddr);
+    data = data || new Uint8Array(0)
     if (this._changeOutputIndex === null) {
       super.addOutput({
-        script: changeScript,
+        script: changeScript.toBuffer(),
         value: BigInt(0),
+        data: data,
       });
 
       const index = this.txOutputs.length - 1;
@@ -463,6 +369,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }
     this._changeToAddr = toAddr;
     this._changeFeeRate = feeRate;
+    this._changeData = data;
     return this;
   }
 
@@ -480,8 +387,8 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }
 
     if (changeAmount >= DUST_LIMIT) {
-      const outputs = this.unsignedTx.outs;
-      outputs[this._changeOutputIndex].value = BigInt(changeAmount);
+      const outputs = this.unsignedTx.outputs;
+      outputs[this._changeOutputIndex].satoshis = changeAmount;
     } else {
       this.txOutputs.splice(this._changeOutputIndex, 1);
       this._changeOutputIndex = null;
@@ -514,16 +421,16 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return c.__TX;
   }
 
-  private get network(): Network {
+  private get network(): Networks.Network {
     // make this get function private to avoid user to call it privately
     // it makes confuse if user pass in a network string to the constructor, but here returns a network object
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (this as any).opts.network || networks.bitcoin;
+    return (this as any).opts.network || Networks.livenet;
   }
 
   estimateVSize(): number {
     const compensation = 1; // vsize diff compensation in bytes
-    return this.unsignedTx.virtualSize() + this._unfinalizedWitnessVsize() + compensation;
+    return this.unsignedTx.getEstimateSize() + this._unfinalizedCallArgsSize() + compensation;
   }
 
   estimateFee(feeRate: number): number {
@@ -550,18 +457,18 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   override finalizeAllInputs(): this {
     this._finalizing = true;
     this.data.inputs.forEach((input, idx) => {
-      let finalFunc: FinalTaprootScriptsFunc | undefined = undefined;
+      let finalFunc: FinalScriptsFunc | undefined = undefined;
       const finalizer = this._finalizers.get(idx);
       if (finalizer) {
         try {
-          const witness = finalizer(this, idx, input);
+          const callArgs = finalizer(this, idx, input);
           finalFunc = (
             _inputIdx: number,
             _input: PsbtInput,
-            _tapLeafHashToFinalize?: Uint8Array,
+            _script: Uint8Array, // The "meaningful" locking script Buffer
           ) => {
             return {
-              finalScriptWitness: witnessStackToScriptWitness(witness),
+              finalScriptSig: callArgsToStackToScript(callArgs),
             };
           };
         } catch (error) {
@@ -577,20 +484,22 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   private _bindCovenantUtxo() {
-    this._outputCovenants.forEach((covenant, outputIndex) => {
+    this._outputContracts.forEach((covenant, outputIndex) => {
       const utxo = this.txOutputs[outputIndex];
-      if (covenant instanceof StatefulCovenant) {
+      if (covenant.state && Object.keys(covenant.state).length > 0) {
         covenant.bindToUtxo({
-          txId: this.unsignedTx.getId(),
+          txId: this.unsignedTx.id,
           outputIndex,
+          data: uint8ArrayToHex(utxo.data),
           satoshis: Number(utxo.value),
           txoStateHashes: this._txoStateHashes,
-          txHashPreimage: uint8ArrayToHex(this.unsignedTx.toBuffer(undefined, 0, false)),
+          txHashPreimage: uint8ArrayToHex(this.unsignedTx.toTxHashPreimage()),
         });
       } else {
         covenant.bindToUtxo({
-          txId: this.unsignedTx.getId(),
+          txId: this.unsignedTx.id,
           outputIndex,
+          data: uint8ArrayToHex(utxo.data),
           satoshis: Number(utxo.value),
         });
       }
@@ -603,9 +512,9 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }, true);
   }
 
-  private _cacheInputWitness(inputIndex: InputIndex, witness: Witness) {
+  private _cacheInputCallArgs(inputIndex: InputIndex, callArgs: RawArgs) {
     // put witness into unknownKeyVals to support autoFinalize in signer
-    witness.forEach((wit, widx) => {
+    callArgs.forEach((wit, widx) => {
       this.data.addUnknownKeyValToInput(inputIndex, {
         key: tools.fromUtf8(widx.toString()),
         value: wit,
@@ -613,51 +522,46 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     });
   }
 
-  private _unfinalizedWitnessVsize(): number {
+  /**
+   * Checks if the input at the specified index is a contract input.
+   * @param inputIndex - The index of the input to check.
+   * @returns True if the input is a contract input, false otherwise.
+   */
+  isContractInput(inputIndex: InputIndex): boolean {
+    return this._inputContracts.has(inputIndex);
+  }
+
+  private _unfinalizedCallArgsSize(): number {
     let size = 0;
     this.data.inputs.forEach((input, _inputIndex) => {
-      if (!isTaprootInput(input)) {
-        // p2wpkh
-        const P2WPKH_SIG_LEN = 0x49; // 73 bytes signature
-        const P2WPKH_PUBKEY_LEN = 0x21; // 33 bytes pubkey
-        size += P2WPKH_SIG_LEN + P2WPKH_PUBKEY_LEN;
+      if (!this.isContractInput(_inputIndex)) {
+        // p2pkh
+        size += P2PKH_SIG_LEN + P2PKH_PUBKEY_LEN;
       } else {
         // p2tr
         if (!isFinalized(input)) {
           if ((input.unknownKeyVals || []).length > 0) {
             // use unknownKeyVals as a place to store witness before sign
             const unfinalizedWitness = (input.unknownKeyVals || []).map((v) => v.value);
-            size += witnessStackToScriptWitness(unfinalizedWitness).length;
-          } else if ((input.tapLeafScript || []).length > 0) {
-            const tapLeafScript = (input.tapLeafScript || [])[0];
-            const buffer = new ArrayBuffer(SCHNORR_SIG_LEN);
-            const unfinalizedWitness = [
-              new Uint8Array(buffer),
-              tapLeafScript.script,
-              tapLeafScript.controlBlock,
-            ];
-            size += witnessStackToScriptWitness(unfinalizedWitness).length;
-          } else if ((input.tapKeySig || []).length > 0) {
-            size += (input.tapKeySig || []).length;
+            size += callArgsToStackToScript(unfinalizedWitness).length;
           } else {
-            const buffer = new ArrayBuffer(SCHNORR_SIG_LEN);
-            const unfinalizedWitness = [new Uint8Array(buffer)];
-            size += witnessStackToScriptWitness(unfinalizedWitness).length;
+            // if no unknownKeyVals, we assume the input is not finalized yet
+            // and we should not count the size of finalScriptSig
+            // because they are not set yet
+            size += 0;
           }
         } else {
           if (input.finalScriptSig) {
             size += input.finalScriptSig.length;
-          } else if (input.finalScriptWitness) {
-            size += input.finalScriptWitness.length;
           } else {
             throw new Error(
-              'The taproot input should be finalized with either finalScriptSig or finalScriptWitness',
+              'The input should be finalized with either finalScriptSig',
             );
           }
         }
       }
     });
-    return Math.ceil(size / 4);
+    return size;
   }
 
   private _checkInputCnt() {
@@ -669,6 +573,11 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }
   }
 
+  /**
+   * Checks if the number of outputs in the PSBT exceeds the maximum allowed limit.
+   * @throws {Error} If the output count exceeds TX_OUTPUT_COUNT_MAX
+   * @private
+   */
   private _checkOutputCnt() {
     const outputCnt = this.data.outputs.length;
     if (outputCnt > TX_OUTPUT_COUNT_MAX) {
@@ -703,93 +612,35 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return toSignInputs.length === 0
       ? undefined
       : {
-          autoFinalized,
-          toSignInputs,
-        };
+        autoFinalized,
+        toSignInputs,
+      };
   }
 
   getSig(inputIndex: InputIndex, options: Omit<ToSignInput, 'index'>): Sig {
     const input = this.data.inputs[inputIndex];
-    let signature: Uint8Array = Uint8Array.from(new Array(SCHNORR_SIG_LEN).fill(0));
+    let signature: Uint8Array = Uint8Array.from(new Array(P2PKH_SIG_LEN).fill(0));
     this._addSigRequest(inputIndex, options);
 
-    if (input.tapScriptSig) {
-      const tsSig = input.tapScriptSig.find((tapScriptSig) => {
-        const tapleafHashMatch =
-          !options.tapLeafHashToSign ||
-          tools.toHex(tapScriptSig.leafHash) === options.tapLeafHashToSign;
-
-        if (options.publicKey) {
-          const isPubKeyMatch = (sigPubKey: Uint8Array, reqPubKey: string) => {
-            const p2trXOnlyPubKey = toXOnly(reqPubKey, true);
-            const p2wpkhXOnlyPubKey = toXOnly(reqPubKey, false);
-            const sigPubKeyHex = tools.toHex(sigPubKey);
-            return p2trXOnlyPubKey === sigPubKeyHex || p2wpkhXOnlyPubKey === sigPubKeyHex;
-          };
-          const pubKeyMatch = isPubKeyMatch(tapScriptSig.pubkey, options.publicKey);
-          return tapleafHashMatch && pubKeyMatch;
-        }
-
-        if (options.address) {
-          const isP2WPKHPubKeyMatch = (sigPubKey: Uint8Array, hash160PubKey: Uint8Array) => {
-            // sigPubKey is an xonly pubkey, so it has no prefix
-            const hash160PubKeyHex = tools.toHex(hash160PubKey);
-            // prefix refer to https://en.bitcoin.it/wiki/BIP_0137
-            const prefixs = ['', '02', '03'];
-            for (let i = 0; i < prefixs.length; i++) {
-              const prefix = prefixs[i];
-              const hash160Res = hash160(prefix + tools.toHex(sigPubKey));
-              if (hash160Res === hash160PubKeyHex) {
-                return true;
-              }
-            }
-            return false;
-          };
-
-          const isP2TRPubKeyMatch = (sigPubKey: Uint8Array, tweakedPubKey: Uint8Array) => {
-            return tools.toHex(sigPubKey) === tools.toHex(tweakedPubKey);
-          };
-
-          try {
-            const result = address.fromBech32(options.address);
-            const pubKeyMatch =
-              isP2WPKHPubKeyMatch(tapScriptSig.pubkey, result.data) ||
-              isP2TRPubKeyMatch(tapScriptSig.pubkey, result.data);
-            return tapleafHashMatch && pubKeyMatch;
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          } catch (error) {
-            /* empty */
-          }
-          return false;
-        }
-
-        return false;
-      });
-      if (tsSig) {
-        signature = tsSig.signature;
+    if (input.partialSig) {
+      const pSig = input.partialSig.find((partialSig) => {
+        const sigAddr = PublicKey.fromHex(tools.toHex(partialSig.pubkey)).toAddress(this.network).toString();
+        const reqAddr = options.address || (options.publicKey ? PublicKey.fromHex(options.publicKey).toAddress(this.network).toString() : undefined)
+        return (reqAddr === undefined || sigAddr === reqAddr)
+      })
+      if (pSig) {
+        signature = pSig.signature
       }
     }
-
-    // TODO: enable partialSig
-    // if (input.partialSig) {
-    //   const pSig = input.partialSig.find((partialSig) => {
-    //     const sigAddr = xPubkeyToAddr(tools.toHex(partialSig.pubkey))
-    //     const reqAddr = options.address || (options.publicKey ? xPubkeyToAddr(options.publicKey) : undefined)
-    //     return (reqAddr === undefined || sigAddr === reqAddr)
-    //   })
-    //   if (pSig) {
-    //     signature = pSig.signature
-    //   }
-    // }
 
     return Sig(tools.toHex(signature));
   }
 
-  getInputCovernant(inputIndex: number): Covenant | undefined {
-    return this._inputCovenants.get(inputIndex);
+  getInputContract(inputIndex: number): SmartContract<OpcatState> | undefined {
+    return this._inputContracts.get(inputIndex);
   }
 
-  getStatefulInputUtxo(inputIndex: number): StatefulCovenantUtxo | undefined {
+  getStatefulInputUtxo(inputIndex: number): StatefulContractUtxo | undefined {
     return this._inStateProvableUtxos.get(inputIndex);
   }
 
@@ -809,18 +660,22 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     if (!this.txOutputs[outputIndex]) {
       throw new Error(`Output at index ${outputIndex} is not found`);
     }
+
+    const address = Script.fromBuffer(Buffer.from(this.txOutputs[outputIndex].script)).toAddress(this.network);
+
     return {
-      txId: this.unsignedTx.getId(),
+      txId: this.unsignedTx.id,
       outputIndex: outputIndex,
       script: uint8ArrayToHex(this.txOutputs[outputIndex].script),
-      address: address.fromOutputScript(this.txOutputs[outputIndex].script, this.network),
+      data: uint8ArrayToHex(this.txOutputs[outputIndex].data),
+      address: address.toString(),
       satoshis: Number(this.txOutputs[outputIndex].value),
       txoStateHashes: this.getTxoStateHashes(),
       txHashPreimage: this.txHashPreimage(),
     };
   }
 
-  getStatefulCovenantUtxo(outputIndex: number): StatefulCovenantUtxo {
+  getStatefulCovenantUtxo(outputIndex: number): StatefulContractUtxo {
     const utxo = this.getUtxo(outputIndex);
     return {
       ...utxo,
@@ -839,7 +694,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   txHashPreimage(): string {
-    return uint8ArrayToHex(this.unsignedTx.toBuffer(undefined, 0, false));
+    return uint8ArrayToHex(this.unsignedTx.toTxHashPreimage());
   }
 
   getOutputSatoshisList(): string[] {

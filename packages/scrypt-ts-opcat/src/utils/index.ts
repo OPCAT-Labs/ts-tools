@@ -2,8 +2,6 @@ export {
   uint8ArrayToHex,
   hexToUint8Array,
   textToHex,
-  toXOnly,
-  toBitcoinNetwork,
   fillFixedArray,
   cloneDeep,
 } from './common.js';

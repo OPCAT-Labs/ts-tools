@@ -1,6 +1,6 @@
 import { IContext } from './types/context.js';
 import { ByteString, SHPreimage } from './types/index.js';
-import { Int32, PubKey, Ripemd160, Sig, StructObject } from './types/primitives.js';
+import { Int32, PubKey, Ripemd160, Sig, OpcatState } from './types/primitives.js';
 import { BacktraceInfo } from './types/structs.js';
 
 /**
@@ -101,7 +101,7 @@ export abstract class AbstractContract {
    * @onchain
    * @category State
    */
-  static stateHash<ST extends StructObject>(_state: ST): Ripemd160 {
+  static stateHash<ST extends OpcatState>(_state: ST): Ripemd160 {
     throw new Error('Not implemented');
   }
 

@@ -2,7 +2,7 @@
 import Decimal from 'decimal.js';
 import { ChainProvider } from './chainProvider.js';
 import { UtxoProvider, UtxoQueryOptions, getUtxoKey } from './utxoProvider.js';
-import { UTXO } from '../globalTypes.js';
+import { SupportedNetwork, UTXO } from '../globalTypes.js';
 import * as tools from 'uint8array-tools';
 import { duplicateFilter } from '../utils/common.js';
 /**
@@ -16,11 +16,17 @@ export class RPCProvider implements ChainProvider, UtxoProvider {
   private newUTXOs = new Map<string, UTXO>();
 
   constructor(
+    public readonly network: SupportedNetwork,
     public readonly url: string,
     public readonly walletName: string,
     public readonly username: string,
     public readonly password: string,
   ) {}
+
+  async getNetwork(): Promise<SupportedNetwork> {
+    return this.network;
+  }
+  
   getFeeRate(): Promise<number> {
     const Authorization = `Basic ${tools.toBase64(
       tools.fromUtf8(`${this.getRpcUser()}:${this.getRpcPassword()}`),

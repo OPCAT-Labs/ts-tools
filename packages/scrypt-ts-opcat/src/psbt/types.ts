@@ -1,65 +1,51 @@
-import { Psbt, Transaction } from '@scrypt-inc/bitcoinjs-lib';
-import { Covenant } from '../covenant.js';
 import { Contextual } from '../smart-contract/types/context.js';
 import { SmartContract } from '../smart-contract/smartContract.js';
 import { InputIndex } from '../globalTypes.js';
 import { ToSignInput } from '../signer.js';
-import { Sig, StructObject } from '../smart-contract/types/primitives.js';
-
+import { OpcatState, Sig } from '../smart-contract/types/primitives.js';
+import { Psbt } from './psbt.js';
+import { Transaction } from '@opcat-labs/opcat';
 /**
  * A options used to determine how to unlock the covenant.
  */
-export type SubContractCall = {
-  /**
-   * `Covenant` can contain multiple `SmartContract`. contractAlias specifies the SmartContract to unlock
-   * and determines the script path used to spend the taproot locking script.
-   */
-  contractAlias?: string;
-  /**
-   * In this callback, execute the contract's `public` method to obtain the witness of unlocking the contract.
-   */
-  invokeMethod: MethodInvocation;
-};
-/** @ignore */
-export type MethodInvocation = (
-  subContract: SmartContract<StructObject | undefined>,
+export type ContractCall = (
+  contract: SmartContract<OpcatState>,
   psbt: IExtPsbt,
 ) => void;
 
 export interface IExtPsbt extends Psbt, Contextual {
   /**
-   * Add an input to spend the covenant.
-   * @param covenant
+   * Add an input to spend the contract.
+   * @param contract
    * @param subContractAlias
    */
-  addCovenantInput(covenant: Covenant, subContractAlias?: string): this;
+  addContractInput(contract: SmartContract<OpcatState>): this;
 
   /**
-   * Add an output to create new covenant.
-   * @param covenant a new covenant
+   * Add an output to create new contract.
+   * @param covenant a new contract
    * @param satoshis the output includes the amount of satoshis.
+   * @param data the data to be included in the output, such as the raw state.
    */
-  addCovenantOutput(covenant: Covenant, satoshis: number): this;
+  addContractOutput(contract: SmartContract<OpcatState>, satoshis: number, data: Uint8Array): this;
 
   /**
-   * Populate the witness for the covenant spending input.
+   * Populate the call arguments for the contract spending input.
    * @param inputIndex index of the input
-   * @param covenant the spent covenant
    * @param subContractCall A options used to determine how to unlock the covenant.
    */
-  updateCovenantInput(
+  updateContractInput(
     inputIndex: number,
-    covenant: Covenant,
-    subContractCall: SubContractCall,
+    contractCall: ContractCall,
   ): this;
 
   /**
    * Add a change output to the transaction if neccesarry.
    * @param address the address to send the change to
    * @param feeRate the fee rate in satoshi per byte
-   * @param estimatedVsize the estimated virtual size of the transaction
+   * @param data optional data to be included in the change output
    */
-  change(address: string, feeRate: number, estimatedVsize?: number): this;
+  change(address: string, feeRate: number, data?: Uint8Array): this;
 
   /**
    * Estimate the virtual size of the transaction.

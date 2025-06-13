@@ -268,3 +268,7 @@ export interface StructObject {
  * @ignore
  */
 export type SupportedParamType = PrimitiveTypes | StructObject | SupportedParamType[];
+
+
+
+export type OpcatState = StructObject | undefined

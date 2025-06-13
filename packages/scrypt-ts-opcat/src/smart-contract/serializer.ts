@@ -27,7 +27,7 @@ export function int2hex(n: Int32): string {
  * @param n
  * @returns
  */
-export function int2Witness(n: Int32): Uint8Array {
+export function int2ScriptSig(n: Int32): Uint8Array {
   if (n === BigInt(0)) {
     return tools.fromHex('');
   }
@@ -52,7 +52,7 @@ export function bool2hex(b: Bool): string {
  * @param b
  * @returns
  */
-export function bool2Witness(b: Bool): Uint8Array {
+export function bool2ScriptSig(b: Bool): Uint8Array {
   if (b) {
     return tools.fromHex('01');
   }
@@ -86,7 +86,7 @@ export function bytes2hex(b: ByteString): string {
  * @param b
  * @returns
  */
-export function bytes2Witness(b: ByteString): Uint8Array {
+export function bytes2ScriptSig(b: ByteString): Uint8Array {
   return tools.fromHex(b);
 }
 
@@ -112,13 +112,13 @@ export function toScriptHex(x: PrimitiveTypes): string {
  * @param x
  * @returns
  */
-export function toWitness(x: PrimitiveTypes): Uint8Array {
+export function toScriptSig(x: PrimitiveTypes): Uint8Array {
   if (typeof x === 'number' || typeof x === 'bigint') {
-    return int2Witness(x as bigint);
+    return int2ScriptSig(x as bigint);
   } else if (typeof x === 'boolean') {
-    return bool2Witness(x as boolean);
+    return bool2ScriptSig(x as boolean);
   } else if (typeof x === 'string') {
-    return bytes2Witness(x);
+    return bytes2ScriptSig(x);
   }
   throw new Error(`unsupport PrimitiveTypes: ${x}`);
 }

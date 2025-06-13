@@ -1,17 +1,12 @@
-import { Tap } from '@cmdcode/tapscript';
 import {
-  hexToUint8Array,
   DefaultSigner,
   SupportedNetwork,
-  toBitcoinNetwork,
-  uint8ArrayToHex,
 } from '@opcat-labs/scrypt-ts-opcat';
-import * as ecc from '@bitcoinerlab/secp256k1';
-import ECPairFactory, { ECPairInterface } from 'ecpair';
-const ECPair = ECPairFactory(ecc);
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import { pathToFileURL } from 'url';
+import { PrivateKey } from '@opcat-labs/opcat';
+import { fromSupportedNetwork } from '../../src/index.js';
 
 // apply .env file
 dotenv.config();
@@ -19,28 +14,26 @@ dotenv.config();
 export const network: SupportedNetwork = (process.env.NETWORK ||
   'fractal-testnet') as SupportedNetwork;
 // validate network
-if (network !== 'fractal-testnet' && network !== 'btc-signet' && network !== 'fractal-mainnet') {
+if (network !== 'fractal-testnet' && network !== 'fractal-regtest' && network !== 'fractal-mainnet') {
   throw new Error(`Invalid network: ${network}`);
 }
 
 let _shouldLog = true; // only log once
-export async function genKeyPair(network: SupportedNetwork): Promise<ECPairInterface> {
+export function genKeyPair(network: SupportedNetwork): PrivateKey {
   const privKeyStr = process.env.PRIVATE_KEY;
 
-  let keyPair: ECPairInterface;
+  let keyPair: PrivateKey;
   if (privKeyStr) {
-    keyPair = ECPair.fromWIF(privKeyStr as string);
+    keyPair = PrivateKey.fromWIF(privKeyStr as string);
     _shouldLog && console.log(`Private key find, use PRIVATE_KEY in .env`);
   } else {
-    keyPair = ECPair.makeRandom({
-      network: toBitcoinNetwork(network),
-    });
+    keyPair = PrivateKey.fromRandom(fromSupportedNetwork(network));
     _shouldLog && console.log(`Private key generated and saved in "${'.env'}"`);
-    _shouldLog && console.log(`Publickey: ${uint8ArrayToHex(keyPair.publicKey)}`);
+    _shouldLog && console.log(`Publickey: ${keyPair.toPublicKey()}`);
     fs.writeFileSync('.env', `PRIVATE_KEY="${keyPair.toWIF()}"`);
   }
 
-  const address = await getP2TRAddress(keyPair, network);
+  const address = keyPair.toPublicKey().toAddress()
 
   const fundMessage = `You can fund its address '${address}' from a ${network} faucet`;
 
@@ -50,35 +43,21 @@ export async function genKeyPair(network: SupportedNetwork): Promise<ECPairInter
   return keyPair;
 }
 
-export function getTweakedKeyPair(keyPair: ECPairInterface): ECPairInterface {
-  const [tseckey] = Tap.getSecKey(keyPair.privateKey);
-  const tweakedKeyPair = ECPair.fromPrivateKey(hexToUint8Array(tseckey), {
-    network: toBitcoinNetwork(network),
-  });
-  return tweakedKeyPair;
-}
 
-export const testKeyPair = await genKeyPair(network);
-export const testTweakedKeyPair = getTweakedKeyPair(testKeyPair);
-export const testAddress = await getP2TRAddress(testKeyPair, network);
+export const testKeyPair = genKeyPair(network);
+
+
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   // module was not imported but called directly
   genKeyPair(network as SupportedNetwork);
 }
 
-export async function getP2TRAddress(
-  keyPair: ECPairInterface,
-  network: SupportedNetwork,
-): Promise<string> {
-  const signer = new DefaultSigner(keyPair, network);
-  return await signer.getAddress();
+
+export function getTestKeyPair() {
+  return genKeyPair(network as SupportedNetwork);
 }
 
-export async function getTestKeyPair() {
-  return await genKeyPair(network as SupportedNetwork);
-}
-
-export async function getTestAddress() {
-  const keyPair = await getTestKeyPair();
-  return await getP2TRAddress(keyPair, network);
+export function getTestAddress() {
+  const keyPair = getTestKeyPair();
+  return keyPair.toPublicKey().toAddress().toString();
 }

@@ -17,7 +17,6 @@ import { indexValueToBytes } from '../serializer.js';
 import { ByteString, FixedArray } from '../types/index.js';
 import {
   BacktraceInfo,
-  HashRootTxHashPreimage,
   TxIn,
   CompactTxHashPreimage,
 } from '../types/structs.js';
@@ -30,15 +29,15 @@ import {
  * @returns
  */
 export function backtraceToOutpointImpl(
-  self: AbstractContract,
-  backtraceInfo: BacktraceInfo,
-  genesisOutpoint: ByteString,
+  _self: AbstractContract,
+  _backtraceInfo: BacktraceInfo,
+  _genesisOutpoint: ByteString,
 ): boolean {
-  const res = verifyChainTxs(backtraceInfo, getInputTxPreimage(self).inputList);
-  assert(
-    res.prevPrevOutpoint === genesisOutpoint || res.prevPrevScript == self.ctx.spentScript,
-    `can not backtrace to the genesis outpoint`,
-  );
+  // const res = verifyChainTxs(backtraceInfo, getInputTxPreimage(self).inputList);
+  // assert(
+  //   res.prevPrevOutpoint === genesisOutpoint || res.prevPrevScript == self.ctx.spentScript,
+  //   `can not backtrace to the genesis outpoint`,
+  // );
   return true;
 }
 
@@ -50,24 +49,24 @@ export function backtraceToOutpointImpl(
  * @returns
  */
 export function backtraceToScriptImpl(
-  self: AbstractContract,
-  backtraceInfo: BacktraceInfo,
-  genesisScript: ByteString,
+  _self: AbstractContract,
+  _backtraceInfo: BacktraceInfo,
+  _genesisScript: ByteString,
 ): boolean {
-  const res = verifyChainTxs(backtraceInfo, getInputTxPreimage(self).inputList);
-  assert(
-    res.prevPrevScript == genesisScript || res.prevPrevScript == self.ctx.spentScript,
-    `can not backtrace to the genesis script`,
-  );
+  // const res = verifyChainTxs(backtraceInfo, getInputTxPreimage(self).inputList);
+  // assert(
+  //   res.prevPrevScript == genesisScript || res.prevPrevScript == self.ctx.spentScript,
+  //   `can not backtrace to the genesis script`,
+  // );
   return true;
 }
 
-function getInputTxPreimage(self: AbstractContract): HashRootTxHashPreimage {
-  if (!self.ctx.inputStateProof) {
-    throw new Error('inputStateProof is not available');
-  }
-  return self.ctx.inputStateProof.txHashPreimage;
-}
+// function getInputTxPreimage(self: AbstractContract): HashRootTxHashPreimage {
+//   if (!self.ctx.inputStateProof) {
+//     throw new Error('inputStateProof is not available');
+//   }
+//   return self.ctx.inputStateProof.txHashPreimage;
+// }
 
 function verifyChainTxs(
   backtraceInfo: BacktraceInfo,

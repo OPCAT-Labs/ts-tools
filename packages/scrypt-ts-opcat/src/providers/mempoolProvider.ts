@@ -2,8 +2,8 @@ import { SupportedNetwork, UTXO } from '../globalTypes.js';
 import { ChainProvider } from './chainProvider.js';
 import fetch from 'cross-fetch';
 import { UtxoProvider, UtxoQueryOptions, getUtxoKey } from './utxoProvider.js';
-import { uint8ArrayToHex, toBitcoinNetwork, duplicateFilter } from '../utils/common.js';
-import { address as Address } from '@scrypt-inc/bitcoinjs-lib';
+import { uint8ArrayToHex, duplicateFilter } from '../utils/common.js';
+import { Script } from '@opcat-labs/opcat';
 
 /**
  * The MempoolProvider is backed by [Mempool]{@link https://mempool.fractalbitcoin.io}
@@ -16,8 +16,13 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
   private newUTXOs = new Map<string, UTXO>();
 
   constructor(public readonly network: SupportedNetwork) {}
+
+  async getNetwork(): Promise<SupportedNetwork> {
+    return this.network;
+  }
+
   async getUtxos(address: string, _options?: UtxoQueryOptions): Promise<UTXO[]> {
-    const script = uint8ArrayToHex(Address.toOutputScript(address, toBitcoinNetwork(this.network)));
+    const script = uint8ArrayToHex(Script.fromAddress(address).toBuffer());
 
     const url = `${this.getMempoolApiHost()}/api/address/${address}/utxo`;
 
@@ -37,6 +42,7 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
             vout: number;
             script: string;
             value: number;
+            data: string;
           }>,
         ) =>
           utxos.map((utxo) => {
@@ -45,6 +51,7 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
               outputIndex: utxo.vout,
               script: utxo.script || script,
               satoshis: utxo.value,
+              data: utxo.data || '',
             };
           }),
       )
@@ -103,9 +110,7 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
   }
 
   private getMempoolApiHost = () => {
-    if (this.network === 'btc-signet') {
-      return 'https://mempool.space/signet';
-    } else if (this.network === 'fractal-testnet') {
+    if (this.network === 'fractal-testnet') {
       return 'https://mempool-testnet.fractalbitcoin.io';
     } else if (this.network === 'fractal-mainnet') {
       return 'https://mempool.fractalbitcoin.io';

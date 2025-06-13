@@ -5,7 +5,7 @@
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
-  "type": "module",
+  "type": "commonjs",
   "exports": {
     ".": {
       "require": "./dist/cjs/index.cjs",
@@ -69,7 +69,7 @@
   },
   "dependencies": {
     "@bitcoinerlab/secp256k1": "^1.2.0",
-    "@cmdcode/tapscript": "=1.4.6",
+    "@opcat-labs/opcat": "1.0.0",
     "@noble/curves": "^1.8.1",
     "@scrypt-inc/bitcoinjs-lib": "^1.0.11",
     "cross-fetch": "^4.1.0",

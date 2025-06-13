@@ -1,7 +1,7 @@
 import { hexToUint8Array, uint8ArrayToHex } from '../../utils/common.js';
 import { ByteString, Int32 } from '../types/primitives.js';
-import { bn } from '@scrypt-inc/bitcoinjs-lib';
 import { getValidatedHexString } from '../types/utils.js';
+import { bn2Buf, buf2BN } from '../types/bn.js';
 
 /**
  * Converts a literal to ByteString.
@@ -33,11 +33,8 @@ export function toByteString(literal: string, isUtf8: boolean = false): ByteStri
  * @returns {ByteString} returns a ByteString
  * @throws {Error} throws an error if the number is out of range
  */
-export function int32ToByteString(n: Int32): ByteString {
-  if (n > 2 ** 31 || n < -(2 ** 31)) {
-    throw new Error('int32 out of range');
-  }
-  return toByteString(uint8ArrayToHex(bn.bn2Buf(n)));
+export function int32ToByteString(n: Int32, size?: bigint): ByteString {
+  return toByteString(uint8ArrayToHex(bn2Buf(n, typeof size === 'bigint' ? Number(size) : undefined)));
 }
 
 /**
@@ -49,10 +46,7 @@ export function int32ToByteString(n: Int32): ByteString {
  * @throws {Error} throws an error if the number is out of range or
  */
 export function byteStringToInt32(a: ByteString): Int32 {
-  const n = bn.buf2BN(hexToUint8Array(a), true);
-  if (n > 2 ** 31 || n < -(2 ** 31)) {
-    throw new Error('int32 out of range');
-  }
+  const n = buf2BN(hexToUint8Array(a), false);
   return n;
 }
 

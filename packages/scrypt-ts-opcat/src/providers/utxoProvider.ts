@@ -1,7 +1,6 @@
-import { Transaction } from '@scrypt-inc/bitcoinjs-lib';
-import { UTXO } from '../globalTypes.js';
-import { ExtUtxo } from '../covenant.js';
+import { UTXO, ExtUtxo} from '../globalTypes.js';
 import { getTxId } from '../utils/common.js';
+import { Transaction } from '@opcat-labs/opcat';
 
 /**
  * The optional conditions for querying UTXO.
@@ -45,9 +44,9 @@ export interface UtxoProvider {
 
 /** @ignore */
 export function markSpent(utxoProvider: UtxoProvider, tx: Transaction) {
-  for (let i = 0; i < tx.ins.length; i++) {
-    const input = tx.ins[i];
-    utxoProvider.markSpent(getTxId(input), input.index);
+  for (let i = 0; i < tx.inputs.length; i++) {
+    const input = tx.inputs[i];
+    utxoProvider.markSpent(getTxId(input), input.outputIndex);
   }
 }
 

@@ -1,4 +1,4 @@
-import { TxId } from '../globalTypes.js';
+import { SupportedNetwork, TxId } from '../globalTypes.js';
 
 /**
  * a provider for interacting with the blockchain
@@ -27,4 +27,6 @@ export interface ChainProvider {
    * @param txId
    */
   getFeeRate(): Promise<number>;
+
+  getNetwork(): Promise<SupportedNetwork>;
 }

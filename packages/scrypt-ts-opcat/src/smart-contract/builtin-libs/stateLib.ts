@@ -1,5 +1,5 @@
 import { SmartContractLib } from '../smartContractLib.js';
-import { Ripemd160, StructObject } from '../types/primitives.js';
+import { OpcatState, Ripemd160 } from '../types/primitives.js';
 import { ABICoder } from '../abi.js';
 import { calculateStateHash } from '../../utils/stateHash.js';
 import { getUnRenamedSymbol } from '../abiutils.js';
@@ -9,7 +9,7 @@ import { getUnRenamedSymbol } from '../abiutils.js';
  * @category Library
  * @onchain
  */
-export class StateLib<T extends StructObject> extends SmartContractLib {
+export class StateLib<T extends OpcatState> extends SmartContractLib {
   /**
    * Calculate the hash of the state object
    * @param state the state object
@@ -17,7 +17,7 @@ export class StateLib<T extends StructObject> extends SmartContractLib {
    * @onchain
    * @category State
    */
-  static stateHash<ST extends StructObject>(
+  static stateHash<ST extends OpcatState>(
     this: { new (...args: unknown[]): StateLib<ST> },
     state: ST,
   ): Ripemd160 {

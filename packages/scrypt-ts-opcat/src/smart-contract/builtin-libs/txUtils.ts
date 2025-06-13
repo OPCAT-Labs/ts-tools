@@ -128,15 +128,17 @@ export class TxUtils extends SmartContractLib {
    */
   @method()
   static mergeSpentAmounts(amounts: SpentAmounts, t_inputCount: bigint): ByteString {
+    let mergedAmounts = toByteString('');
     for (let i = 0; i < TX_INPUT_COUNT_MAX; i++) {
-      const scriptLen = len(amounts[i]);
       if (i < t_inputCount) {
-        assert(scriptLen == TX_OUTPUT_SATOSHI_BYTE_LEN, 'spent amount byte length must be 8');
+
+        assert(amounts[i] >= 0n, 'invalid spent amount');
+        mergedAmounts += int32ToByteString(amounts[i], 8n);
       } else {
-        assert(scriptLen == 0n, 'invalid spent amount list');
+        assert(amounts[i] == 0n, 'invalid spent amount list');
       }
     }
-    return amounts[0] + amounts[1] + amounts[2] + amounts[3] + amounts[4] + amounts[5];
+    return mergedAmounts;
   }
 
   /**

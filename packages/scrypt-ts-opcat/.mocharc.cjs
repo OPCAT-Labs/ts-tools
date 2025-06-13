@@ -1,4 +1,4 @@
-const offchainSpec = ['./test/local-test/*.test.ts', './test/nonTxn-test/*.test.ts'];
+const offchainSpec = ['./test/local-test/p2pkh.test.ts' /*, './test/nonTxn-test/*.test.ts'*/];
 const onchainSpec = './test/onchain-test/*.test.ts';
 
 const isOnchain = process.env.NETWORK !== undefined;

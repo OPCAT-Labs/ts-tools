@@ -1,9 +1,10 @@
-import { Covenant } from '../covenant.js';
 import { ChainProvider, UtxoProvider } from '../providers/index.js';
 import { markSpent } from '../providers/utxoProvider.js';
 import { ExtPsbt } from '../psbt/extPsbt.js';
-import { SubContractCall } from '../psbt/types.js';
+import { ContractCall } from '../psbt/types.js';
 import { Signer } from '../signer.js';
+import { SmartContract } from '../smart-contract/smartContract.js';
+import { OpcatState } from '../smart-contract/types/primitives.js';
 
 /**
  * call a covenant
@@ -11,15 +12,15 @@ import { Signer } from '../signer.js';
  * @param signer a signer, such as {@link DefaultSigner}  or {@link UnisatSigner}
  * @param provider a  {@link UtxoProvider}
  * @param chainProvider a  {@link ChainProvider}
- * @param covenant the covenant
+ * @param contract the covenant
  * @returns the called psbt
  */
 export async function call(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
-  covenant: Covenant,
-  subContractCall: SubContractCall,
-  newCovenant?: { covenant: Covenant; satoshis: number },
+  contract: SmartContract<OpcatState>,
+  contractCall: ContractCall,
+  newContract?: { contract: SmartContract<OpcatState>; satoshis: number, data?: Uint8Array },
 ): Promise<ExtPsbt> {
   const address = await signer.getAddress();
 
@@ -27,16 +28,18 @@ export async function call(
 
   const utxos = await provider.getUtxos(address);
 
-  const psbt = new ExtPsbt({ network: covenant.network })
-    .addCovenantInput(covenant)
+  const network = await provider.getNetwork();
+
+  const psbt = new ExtPsbt({ network: network })
+    .addContractInput(contract)
     .spendUTXO(utxos);
 
-  if (newCovenant) {
-    psbt.addCovenantOutput(newCovenant.covenant, newCovenant.satoshis);
+  if (newContract) {
+    psbt.addContractOutput(newContract.contract, newContract.satoshis, newContract.data || new Uint8Array(0));
   }
   psbt.change(address, feeRate);
 
-  psbt.updateCovenantInput(0, covenant, subContractCall);
+  psbt.updateContractInput(0, contractCall);
   psbt.seal();
 
   const signedPsbtHex = await signer.signPsbt(psbt.toHex(), psbt.psbtOptions());

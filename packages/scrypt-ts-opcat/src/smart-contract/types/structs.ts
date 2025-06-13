@@ -1,5 +1,4 @@
 import {
-  STATE_OUTPUT_COUNT_MAX,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
   TX_HASH_PREIMAGE2_SUFFIX_ARRAY_SIZE,
@@ -55,98 +54,77 @@ export type SHPreimage = {
    * version number of the transaction
    * nVersion defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
    */
-  nVersion: ByteString;
-
-  /**
-   * 4 bytes.
-   * locktime of the transaction
-   * nLockTime defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
-   */
-  nLockTime: ByteString;
+  nVersion: Int32;
 
   /**
    * 32 bytes.
-   * the SHA256 of the serialization of all input outpoints.
+   * the double SHA256 of the serialization of all input outpoints.
    * If the ANYONECANPAY SIGHASH type is not set, it's double SHA256 of the serialization of all input outpoints.
    * Otherwise, it's a uint256 of 0x0000......0000.
    * sha_prevouts defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
    */
-  shaPrevouts: ByteString;
+  hashPrevouts: ByteString;
+
+  /** scriptHash of the input (serialized as scripts inside CTxOuts) */
+  spentScriptHash: ByteString;
+
+  /** dataHash of the input (serialized as scripts inside CTxOuts) */
+  spentDataHash: ByteString;
+
+  /** value of the output spent by this input (8-byte little endian) */
+  spentAmount: Int32;
+
+  /** nSequence of the input (4-byte little endian) */
+  sequence: Int32;
 
   /**
    * 32 bytes.
    * the SHA256 of the serialization of all input amounts.
    * sha_amounts defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
    */
-  shaSpentAmounts: ByteString;
+  hashSpentAmounts: ByteString;
 
   /**
    * 32 bytes.
    * the SHA256 of all spent outputs' scriptPubKeys, serialized as script inside CTxOut
    * sha_scriptpubkeys defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
    */
-  shaSpentScripts: ByteString;
+  hashSpentScripts: ByteString;
+
+  /**  */
+  hashSpentDatas: ByteString;
 
   /**
    * 32 bytes.
    * the SHA256 of the serialization of all input nSequence.
    * sha_sequences defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
    */
-  shaSequences: ByteString;
+  hashSequences: ByteString;
 
   /**
    * 32 bytes
    * the SHA256 of the serialization of all outputs.
    * sha_outputs defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
    */
-  shaOutputs: ByteString;
-
-  /**
-   * 1 byte.
-   * equal to (ext_flag * 2) + annex_present, where annex_present is 0 if no annex is present, or 1 otherwise (the original witness stack has two or more witness elements, and the first byte of the last element is 0x50)
-   * spendType defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
-   */
-  spendType: ByteString;
+  hashOutputs: ByteString;
 
   /**
    * 4 bytes
    * index of this input in the transaction input vector. Index of the first input is 0x00000000.
    * input_index defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
    */
-  inputIndex: ByteString;
-
-  /**
-   * 32 bytes.
-   * the tap leaf hash of the input
-   * tapleaf_hash defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki#common-signature-message-extension | BIP342}
-   */
-  tapLeafHash: ByteString;
-
-  /**
-   * 1 byte.
-   * a constant value 0x00 representing the current version of public keys in the tapscript signature opcode execution.
-   * key_version defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki#common-signature-message-extension | BIP342}
-   */
-  keyVersion: ByteString;
+  inputIndex: Int32;
 
   /**
    * 4 bytes.
-   * the opcode position of the last executed OP_CODESEPARATOR before the currently executed signature opcode, with the value in little endian (or 0xffffffff if none executed). The first opcode in a script has a position of 0. A multi-byte push opcode is counted as one opcode, regardless of the size of data being pushed. Opcodes in parsed but unexecuted branches count towards this value as well.
-   * codesep_pos defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki#common-signature-message-extension | BIP342}
+   * locktime of the transaction
+   * nLockTime defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
    */
-  codeSepPos: ByteString;
+  nLockTime: Int32;
 
-  /**
-   * 31 bytes
-   * e is sha256 of the sighash, but without last byte
-   */
-  _eWithoutLastByte: ByteString;
+  /** sighash type of the signature (4-byte little endian) */
+  sighashType: Int32;
 
-  /**
-   * 1 bytes
-   * last byte of e
-   */
-  _eLastByte: Int32;
 };
 
 /**
@@ -172,7 +150,19 @@ export type SpentScripts = FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
  * @category Types
  * @onchain
  */
-export type SpentAmounts = FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
+export type SpentAmounts = FixedArray<Int32, typeof TX_INPUT_COUNT_MAX>;
+
+
+export type SpentDatas = FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
+
+/**
+ * An array of hashes representing the states of all stateful covenants included in the transaction.
+ * A transaction output can contain up to 5 stateful covenants.
+ * @category Types
+ * @onchain
+ */
+export type SpentDataHashes = FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
+
 
 /**
  * The digest data used to calculate the Traditional Transaction ID (txid) consists of the transaction's
@@ -237,46 +227,6 @@ export type HashRootTxHashPreimage = {
 };
 
 /**
- * An array of hashes representing the states of all stateful covenants included in the transaction.
- * A transaction output can contain up to 5 stateful covenants.
- * @category Types
- * @onchain
- */
-export type StateHashes = FixedArray<ByteString, typeof STATE_OUTPUT_COUNT_MAX>;
-
-/**
- * A structure used to verify the contract state contained in the input
- * @category Types
- * @onchain
- */
-export type InputStateProof = {
-  /**
-   * @type {HashRootTxHashPreimage}
-   * the preimage of the previous transaction
-   */
-  txHashPreimage: HashRootTxHashPreimage;
-
-  /**
-   * @type {Int32}
-   * index of this output in the transaction output vector. Starts from 0.
-   */
-  outputIndexVal: Int32;
-
-  /**
-   * @type {StateHashes}
-   * the txo state hashes of the previous transaction
-   */
-  stateHashes: StateHashes;
-};
-
-/**
- * A array representing all input state proofs
- * @category Types
- * @onchain
- */
-export type InputStateProofs = FixedArray<InputStateProof, typeof TX_INPUT_COUNT_MAX>;
-
-/**
  * Used for contract traceability to ensure that the spent contract comes from a unique outpoint
  * @category Types
  * @onchain
@@ -300,3 +250,5 @@ export type BacktraceInfo = {
    */
   prevPrevTxPreimage: CompactTxHashPreimage;
 };
+
+

@@ -71,7 +71,8 @@ export function method(options: MethodDecoratorOptions = { autoCheckInputStateHa
           // if public @method of smart contract is called
           if (isSmartContractMethod) {
             if (this.isPubFunction(methodName)) {
-              const self = this as SmartContract;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const self = this as SmartContract<any>;
               const curPsbt = self.spentPsbt;
 
               self.setSighashType(sigHashType);

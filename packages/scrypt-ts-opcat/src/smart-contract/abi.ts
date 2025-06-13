@@ -16,11 +16,11 @@ import {
   StaticEntity,
   StructEntity,
 } from './types/artifact.js';
-import { int2Witness, toScriptHex, toWitness } from './serializer.js';
+import { int2ScriptSig, toScriptHex, toScriptSig } from './serializer.js';
 import { SymbolType, TypeInfo, TypeResolver, isScryptType } from './types/abi.js';
 import { PrimitiveTypes, StructObject, SupportedParamType } from './types/primitives.js';
 import { Script } from './types/script.js';
-import { Witness } from '../globalTypes.js';
+import { RawArgs } from '../globalTypes.js';
 
 /**
  * @ignore
@@ -176,7 +176,7 @@ export class ABICoder {
     );
   }
 
-  encodePubFunctionCall(method: string, args: SupportedParamType[]): Witness {
+  encodePubFunctionCall(method: string, args: SupportedParamType[]): RawArgs {
     const resolver = buildTypeResolverFromArtifact(this.artifact);
     const methodABI = this.artifact.abi.find(
       (entity) => entity.name === method && entity.type === ABIEntityType.FUNCTION,
@@ -200,15 +200,15 @@ export class ABICoder {
       return flatternArg(a, resolver, { state: false, ignoreValue: false });
     });
 
-    const witness = flatteredArgs.map((a) => toWitness(a.value as PrimitiveTypes));
+    const callArgs = flatteredArgs.map((a) => toScriptSig(a.value as PrimitiveTypes));
 
     if (this.artifact.abi.length > 2 && methodABI.index !== undefined) {
       // selector when there are multiple public functions
       const pubFuncIndex = methodABI.index;
-      witness.push(int2Witness(BigInt(pubFuncIndex)));
+      callArgs.push(int2ScriptSig(BigInt(pubFuncIndex)));
     }
 
-    return witness;
+    return callArgs;
   }
 
   flattenStruct(arg: StructObject, type: string): Arguments {

@@ -1,4 +1,4 @@
-import { UTXO } from '../globalTypes.js';
+import { SupportedNetwork, UTXO } from '../globalTypes.js';
 import { ChainProvider } from './chainProvider.js';
 import { UtxoProvider, UtxoQueryOptions, getUtxoKey } from './utxoProvider.js';
 import { uint8ArrayToHex } from '../utils/common.js';
@@ -16,6 +16,9 @@ export class DummyProvider implements ChainProvider, UtxoProvider {
   private newUTXOs = new Map<string, UTXO>();
 
   constructor() {}
+  async getNetwork(): Promise<SupportedNetwork> {
+    return 'fractal-mainnet';
+  }
   async getUtxos(address: string, _options?: UtxoQueryOptions): Promise<UTXO[]> {
     const script = uint8ArrayToHex(Address.toOutputScript(address));
 
@@ -25,6 +28,7 @@ export class DummyProvider implements ChainProvider, UtxoProvider {
         outputIndex: 0,
         script: script,
         satoshis: 2147483647, // 2**31 - 1
+        data: '',
       },
     ]);
   }

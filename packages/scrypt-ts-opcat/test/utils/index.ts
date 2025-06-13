@@ -3,11 +3,10 @@ import { readFileSync } from 'fs';
 import { randomBytes } from 'crypto';
 import { getTestAddress, network } from './privateKey.js';
 import { address } from '@scrypt-inc/bitcoinjs-lib';
-import { uint8ArrayToHex, UTXO, SupportedNetwork, toBitcoinNetwork } from '../../src/index.js';
+import { uint8ArrayToHex, UTXO, SupportedNetwork, toBitcoinNetwork, ExtUtxo } from '../../src/index.js';
 import { emptyStateHashes } from '../../src/utils/common.js';
 
 import * as dotenv from 'dotenv';
-import { ExtUtxo } from '../../src/covenant.js';
 dotenv.config({
   path: '.env',
 });

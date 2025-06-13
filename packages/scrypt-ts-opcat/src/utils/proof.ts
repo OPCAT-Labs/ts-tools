@@ -11,7 +11,6 @@ import {
   FixedArray,
   HashRootTxHashPreimage,
   CompactTxHashPreimage,
-  InputStateProof,
   TxIn,
   TxHashPreimage,
 } from '../smart-contract/types/index.js';
@@ -213,18 +212,6 @@ export const createEmptyHashRootTxHashPreimage = function (): HashRootTxHashPrei
   };
 };
 
-/** @ignore */
-export const createInputStateProofArray = function (): FixedArray<
-  InputStateProof,
-  typeof TX_INPUT_COUNT_MAX
-> {
-  const item: InputStateProof = {
-    txHashPreimage: createEmptyHashRootTxHashPreimage(),
-    outputIndexVal: 0n,
-    stateHashes: fill(emptyString, STATE_OUTPUT_COUNT_MAX),
-  };
-  return fill(item, TX_INPUT_COUNT_MAX);
-};
 
 /** @ignore */
 export const txHexToHashRootTxHashPreimage = function (txHex: string): HashRootTxHashPreimage {

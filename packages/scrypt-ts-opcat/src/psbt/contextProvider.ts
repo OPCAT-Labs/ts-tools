@@ -2,26 +2,26 @@ import { InputIndex } from '../globalTypes.js';
 import {
   SpentScripts,
   SpentAmounts,
-  InputStateProof,
   Prevouts,
   Outpoint,
+  SpentDatas,
+  SHPreimage,
+  SpentDataHashes,
 } from '../smart-contract/types/structs.js';
 import { InputContext } from '../smart-contract/types/context.js';
 import { IExtPsbt } from './types.js';
 import {
   emptyByteString,
   fillFixedArray,
-  hexToUint8Array,
   uint8ArrayToHex,
-  sigHashTypeToNumber,
   bigintToByteString,
-  emptyInputStateProof,
+  hexToUint8Array,
 } from '../utils/common.js';
-import { shPreimageGetE, splitSighashPreimage, toSHPreimageObj } from '../utils/preimage.js';
-import { Tap } from '@cmdcode/tapscript';
+import { decodeSHPreimage } from '../utils/preimage.js';
 import { TX_INPUT_COUNT_MAX } from '../smart-contract/consts.js';
-import { FixedArray, SigHashType } from '../smart-contract/types/index.js';
-import { toHashRootTxHashPreimage, toTxHashPreimage } from '../utils/proof.js';
+import {  crypto} from '@opcat-labs/opcat';
+import { sha256 } from '../smart-contract/fns/hashes.js';
+
 
 /** @ignore */
 export class ContextProvider {
@@ -52,14 +52,18 @@ export class ContextProvider {
 
   calculateInputCtxs(): void {
     const spentScripts: SpentScripts = fillFixedArray(emptyByteString(), TX_INPUT_COUNT_MAX);
-    const spentAmounts: SpentAmounts = fillFixedArray(emptyByteString(), TX_INPUT_COUNT_MAX);
+    const spentAmounts: SpentAmounts = fillFixedArray(0n, TX_INPUT_COUNT_MAX);
+    const spentDatas: SpentDatas = fillFixedArray(emptyByteString(), TX_INPUT_COUNT_MAX);
+    const spentDataHashes: SpentDataHashes = fillFixedArray(emptyByteString(), TX_INPUT_COUNT_MAX);
     spentScripts.length = TX_INPUT_COUNT_MAX;
     spentAmounts.length = TX_INPUT_COUNT_MAX;
     this._curPsbt.data.inputs.forEach((input, inputIndex) => {
-      const script = input.witnessUtxo?.script;
+      const {script, data, value} = input.opcatUtxo!;
       if (script) {
         spentScripts[inputIndex] = uint8ArrayToHex(script);
-        spentAmounts[inputIndex] = bigintToByteString(BigInt(input.witnessUtxo?.value), 8n);
+        spentDatas[inputIndex] = uint8ArrayToHex(data)
+        spentDataHashes[inputIndex] = sha256(uint8ArrayToHex(data));
+        spentAmounts[inputIndex] = value;
       }
     });
 
@@ -70,30 +74,18 @@ export class ContextProvider {
         `${uint8ArrayToHex(input.hash)}${bigintToByteString(BigInt(input.index), 4n)}`;
     });
 
-    // get tapLeafHashes for each input with tapLeafScript
-    const inputTapLeafHashes = this._curPsbt.data.inputs
-      .map((input, inputIndex) => {
-        if (input.tapLeafScript) {
+    const inputs = this._curPsbt.data.inputs
+      .map((_, inputIndex) => {
           return {
             inputIndex,
-            tapLeafHash: Tap.encodeScript(input.tapLeafScript[0].script),
           };
-        } else {
-          return {
-            inputIndex,
-            tapLeafHash: undefined,
-          };
-        }
       })
-      .filter((input) => input.tapLeafHash !== undefined);
 
-    const preimages = this.calculateInputSHPreimages(inputTapLeafHashes);
-
-    const inputStateProofs = this.calculateInputProofs();
+    const preimages = this.calculateInputSHPreimages();
 
     // calculate input context for input which has tapLeafScript
     // cache input context at this._inputContexts
-    inputTapLeafHashes.forEach((inputTapLeafHash, index) => {
+    inputs.forEach((inputTapLeafHash, index) => {
       const { inputIndex } = inputTapLeafHash;
       const prevout: Outpoint = {
         txHash: uint8ArrayToHex(this._curPsbt.txInputs[inputIndex].hash),
@@ -101,126 +93,32 @@ export class ContextProvider {
       };
       const spentScript = spentScripts[inputIndex];
       const spentAmount = spentAmounts[inputIndex];
-      const shPreimage = preimages[index].SHPreimageObj;
-      const nextStateHashes = this._curPsbt.getTxoStateHashes();
+      const spentData = spentDatas[inputIndex];
+      const shPreimage = preimages[index];
       this._inputContexts.set(inputIndex, {
-        inputIndexVal: BigInt(inputIndex),
         shPreimage,
         prevouts,
         // prevout can not be derived due to the size of outpoint is bigger than 1, so it would introduce OP_MUL for random access of `prevouts`
         prevout,
         spentScripts,
         spentAmounts,
-        nextStateHashes,
-        inputStateProof: inputStateProofs[inputIndex],
-        inputStateProofs,
+        spentDataHashes,
         // derived
         inputCount: BigInt(this._curPsbt.txInputs.length),
         spentScript,
         spentAmount,
+        spentData,
       });
     });
   }
 
-  calculateInputProofs(): FixedArray<InputStateProof, typeof TX_INPUT_COUNT_MAX> {
-    const inputStateProofs = fillFixedArray(emptyInputStateProof(), TX_INPUT_COUNT_MAX);
 
-    this._curPsbt.txInputs.forEach((_, inputIndex) => {
-      const utxo = this._curPsbt.getStatefulInputUtxo(inputIndex);
-      if (utxo) {
-        const txHashPreimg = toHashRootTxHashPreimage(
-          toTxHashPreimage(hexToUint8Array(utxo.txHashPreimage)),
-        );
-        inputStateProofs[inputIndex] = {
-          txHashPreimage: txHashPreimg,
-          outputIndexVal: BigInt(utxo.outputIndex),
-          stateHashes: utxo.txoStateHashes,
-        };
-      }
-    });
+  calculateInputSHPreimages(): SHPreimage[] {
 
-    return inputStateProofs;
-  }
+    return this._curPsbt.unsignedTx.inputs.map((_, inputIndex) => {
+      const rawSHPreimage = this._curPsbt.unsignedTx.getPreimage(inputIndex, crypto.Signature.SIGHASH_ALL);
 
-  calculateInputSHPreimages(inputTapLeafHashes: { inputIndex: number; tapLeafHash: string }[]) {
-    const tx = this._curPsbt.unsignedTx;
-    const spentScripts: Uint8Array[] = this._curPsbt.data.inputs.map((input) => {
-      return input.witnessUtxo.script;
-    });
-    const spentValues: bigint[] = this._curPsbt.data.inputs.map((input) => input.witnessUtxo.value);
-
-    let eBuffList: Array<any> = []; // eslint-disable-line @typescript-eslint/no-explicit-any
-    let sighashList: Array<{
-      preimage: Uint8Array;
-      hash: Uint8Array;
-    }> = [];
-
-    let found = false;
-    const lastInput = tx.ins[tx.ins.length - 1];
-
-    while (true) {
-      sighashList = inputTapLeafHashes.map((input) => {
-        let sighashType = this._curPsbt.getSigHashType(input.inputIndex);
-        if (sighashType === undefined) {
-          // sighashType is not set, using default value SigHash.DEFAULT
-          sighashType = SigHashType.DEFAULT;
-        }
-        // todo: confirm the value of annex
-        const annex = undefined;
-        // todo: confirm the value of codeSeparatorPos
-        const codeSeparatorPos = 0xffffffff;
-        const sighash = tx.hashForWitnessV1(
-          input.inputIndex,
-          spentScripts,
-          spentValues,
-          sigHashTypeToNumber(sighashType),
-          hexToUint8Array(input.tapLeafHash),
-          annex,
-          codeSeparatorPos,
-        );
-        const preimage = tx.shPreimageForWitnessV1(
-          input.inputIndex,
-          spentScripts,
-          spentValues,
-          sigHashTypeToNumber(sighashType),
-          hexToUint8Array(input.tapLeafHash),
-          annex,
-          codeSeparatorPos,
-        );
-
-        return {
-          preimage,
-          hash: sighash,
-        };
-      });
-      eBuffList = sighashList.map((sighash) => shPreimageGetE(sighash.hash));
-
-      if (
-        eBuffList.every((eBuff) => {
-          const lastByte = eBuff[eBuff.length - 1];
-          return lastByte < 127;
-        })
-      ) {
-        found = true;
-        break;
-      }
-      lastInput.sequence -= 1;
-    }
-    if (!found) {
-      throw new Error('No valid preimage found!');
-    }
-
-    return inputTapLeafHashes.map((_, index) => {
-      const eBuff = eBuffList[index];
-      const sighash = sighashList[index];
-      const _e = eBuff.slice(0, eBuff.length - 1); // e' - e without last byte
-      const lastByte = eBuff[eBuff.length - 1];
-      const preimageParts = splitSighashPreimage(sighash.preimage);
-
-      return {
-        SHPreimageObj: toSHPreimageObj(preimageParts, _e, lastByte),
-        sighash: sighash,
-      };
-    });
+      return decodeSHPreimage(hexToUint8Array(rawSHPreimage))
+    })
   }
 }

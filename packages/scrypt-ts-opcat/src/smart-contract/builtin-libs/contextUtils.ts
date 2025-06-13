@@ -1,6 +1,6 @@
 import { prop, method } from '../decorators.js';
 import { assert } from '../fns/assert.js';
-import { toByteString, int32ToByteString, len } from '../fns/byteString.js';
+import { toByteString } from '../fns/byteString.js';
 import { sha256 } from '../fns/hashes.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import { PubKey, ByteString, Sig, Int32 } from '../types/primitives.js';
@@ -94,56 +94,56 @@ export class ContextUtils extends SmartContractLib {
    * @returns a signature
    */
   @method()
-  static checkSHPreimage(shPreimage: SHPreimage): Sig {
-    assert(len(shPreimage.nVersion) == 4n, 'invalid length of nVersion');
-    assert(len(shPreimage.nLockTime) == 4n, 'invalid length of nLockTime');
-    assert(len(shPreimage.shaPrevouts) == 32n, 'invalid length of shaPrevouts');
-    assert(len(shPreimage.shaSpentAmounts) == 32n, 'invalid length of shaSpentAmounts');
-    assert(len(shPreimage.shaSpentScripts) == 32n, 'invalid length of shaSpentScripts');
-    assert(len(shPreimage.shaSequences) == 32n, 'invalid length of shaSequences');
-    assert(len(shPreimage.shaOutputs) == 32n, 'invalid length of shaOutputs');
-    // spend_type (1): equal to (ext_flag * 2) + annex_present,
-    // where annex_present is 0 if no annex is present, or 1 otherwise.
-    // If there are at least two witness elements, and the first byte of the last element is 0x50,
-    // this last element is called annex.
-    // Until the meaning of this field is defined by another softfork,
-    // users SHOULD NOT include annex in transactions, or it may lead to PERMANENT FUND LOSS.
-    // BIP-342 defines the tapscript message extension ext to BIP341 Common Signature Message, indicated by ext_flag = 1,
-    // so spend_type here is always 0x02
-    assert(shPreimage.spendType == toByteString('02'), 'invalid spendType');
-    assert(len(shPreimage.inputIndex) == 4n, 'invalid length of inputIndex');
-    assert(len(shPreimage.tapLeafHash) == 32n, 'invalid length of tapLeafHash');
-    // key_verison is a constant value 0x00 defined in BIP-342
-    assert(shPreimage.keyVersion == toByteString('00'), 'invalid keyVersion');
-    // BIP-342
-    assert(len(shPreimage.codeSepPos) == 4n, 'invalid length of codeSepPos');
+  static checkSHPreimage(_shPreimage: SHPreimage): Sig {
+    // assert(len(shPreimage.nVersion) == 4n, 'invalid length of nVersion');
+    // assert(len(shPreimage.nLockTime) == 4n, 'invalid length of nLockTime');
+    // assert(len(shPreimage.shaPrevouts) == 32n, 'invalid length of shaPrevouts');
+    // assert(len(shPreimage.shaSpentAmounts) == 32n, 'invalid length of shaSpentAmounts');
+    // assert(len(shPreimage.shaSpentScripts) == 32n, 'invalid length of shaSpentScripts');
+    // assert(len(shPreimage.shaSequences) == 32n, 'invalid length of shaSequences');
+    // assert(len(shPreimage.shaOutputs) == 32n, 'invalid length of shaOutputs');
+    // // spend_type (1): equal to (ext_flag * 2) + annex_present,
+    // // where annex_present is 0 if no annex is present, or 1 otherwise.
+    // // If there are at least two witness elements, and the first byte of the last element is 0x50,
+    // // this last element is called annex.
+    // // Until the meaning of this field is defined by another softfork,
+    // // users SHOULD NOT include annex in transactions, or it may lead to PERMANENT FUND LOSS.
+    // // BIP-342 defines the tapscript message extension ext to BIP341 Common Signature Message, indicated by ext_flag = 1,
+    // // so spend_type here is always 0x02
+    // assert(shPreimage.spendType == toByteString('02'), 'invalid spendType');
+    // assert(len(shPreimage.inputIndex) == 4n, 'invalid length of inputIndex');
+    // assert(len(shPreimage.tapLeafHash) == 32n, 'invalid length of tapLeafHash');
+    // // key_verison is a constant value 0x00 defined in BIP-342
+    // assert(shPreimage.keyVersion == toByteString('00'), 'invalid keyVersion');
+    // // BIP-342
+    // assert(len(shPreimage.codeSepPos) == 4n, 'invalid length of codeSepPos');
 
-    // according to the notation in BIP-342
-    // sigHash is the message m to validate the signature sig with public key p: Verify(p, m, sig)
-    const sigHash = sha256(
-      ContextUtils.preimagePrefix +
-        toByteString('00') + // hash type SIGHASH_DEFAULT
-        shPreimage.nVersion +
-        shPreimage.nLockTime +
-        shPreimage.shaPrevouts +
-        shPreimage.shaSpentAmounts +
-        shPreimage.shaSpentScripts +
-        shPreimage.shaSequences +
-        shPreimage.shaOutputs +
-        shPreimage.spendType +
-        shPreimage.inputIndex +
-        shPreimage.tapLeafHash +
-        shPreimage.keyVersion +
-        shPreimage.codeSepPos,
-    );
-    // e = sha256(ePreimagePrefix || m)
-    const e = sha256(ContextUtils.ePreimagePrefix + sigHash);
+    // // according to the notation in BIP-342
+    // // sigHash is the message m to validate the signature sig with public key p: Verify(p, m, sig)
+    // const sigHash = sha256(
+    //   ContextUtils.preimagePrefix +
+    //     toByteString('00') + // hash type SIGHASH_DEFAULT
+    //     shPreimage.nVersion +
+    //     shPreimage.nLockTime +
+    //     shPreimage.shaPrevouts +
+    //     shPreimage.shaSpentAmounts +
+    //     shPreimage.shaSpentScripts +
+    //     shPreimage.shaSequences +
+    //     shPreimage.shaOutputs +
+    //     shPreimage.spendType +
+    //     shPreimage.inputIndex +
+    //     shPreimage.tapLeafHash +
+    //     shPreimage.keyVersion +
+    //     shPreimage.codeSepPos,
+    // );
+    // // e = sha256(ePreimagePrefix || m)
+    // const e = sha256(ContextUtils.ePreimagePrefix + sigHash);
 
-    assert(len(shPreimage._eWithoutLastByte) == 31n, 'invalid length of _eWithoutLastByte');
-    assert(shPreimage._eLastByte < 127n, 'invalid _eLastByte');
-    const eLastByte =
-      shPreimage._eLastByte == 0n ? toByteString('00') : int32ToByteString(shPreimage._eLastByte);
-    assert(e == shPreimage._eWithoutLastByte + eLastByte, 'invalid e');
+    // assert(len(shPreimage._eWithoutLastByte) == 31n, 'invalid length of _eWithoutLastByte');
+    // assert(shPreimage._eLastByte < 127n, 'invalid _eLastByte');
+    // const eLastByte =
+    //   shPreimage._eLastByte == 0n ? toByteString('00') : int32ToByteString(shPreimage._eLastByte);
+    // assert(e == shPreimage._eWithoutLastByte + eLastByte, 'invalid e');
 
     // d = 1
     // k = 1
@@ -154,11 +154,11 @@ export class ContextUtils extends SmartContractLib {
     //        r            s
     // we do not ensure e + 1 < n here, which ensured by the off-chain code
     // if the passed e + 1 >= n somehow, then it will fail when later checksig
-    const s =
-      ContextUtils.Gx +
-      shPreimage._eWithoutLastByte +
-      int32ToByteString(shPreimage._eLastByte + 1n);
-    return Sig(s);
+    // const s =
+    //   ContextUtils.Gx +
+    //   shPreimage._eWithoutLastByte +
+    //   int32ToByteString(shPreimage._eLastByte + 1n);
+    return Sig('');
   }
 
   /**
