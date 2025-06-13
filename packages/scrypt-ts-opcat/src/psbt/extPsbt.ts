@@ -1,5 +1,5 @@
 
-import { PsbtInput, Psbt as PsbtBase, OpcatUtxo } from 'bip174';
+import { PsbtInput, Psbt as PsbtBase, OpcatUtxo } from '@opcat-labs/bip174';
 import { ByteString, Sig, SigHashType, StateHashes, TxOut } from '../smart-contract/types/index.js';
 import {
   InputIndex, OutputIndex, SupportedNetwork, RawArgs,

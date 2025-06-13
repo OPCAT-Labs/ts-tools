@@ -1,7 +1,5 @@
-import { crypto } from '@scrypt-inc/bitcoinjs-lib';
-import { sha256 as sha256_ } from '@noble/hashes/sha256';
-import { ripemd160 as ripemd160_ } from '@noble/hashes/ripemd160';
-import { sha1 as sha1_ } from '@noble/hashes/sha1';
+import { sha256 as sha256_ } from '@noble/hashes/sha2';
+import { ripemd160 as ripemd160_, sha1 as sha1_ } from '@noble/hashes/legacy';
 import { ByteString, Ripemd160, Sha1, Sha256 } from '../types/index.js';
 import { hexToUint8Array, uint8ArrayToHex } from '../../utils/common.js';
 
@@ -18,7 +16,7 @@ import { hexToUint8Array, uint8ArrayToHex } from '../../utils/common.js';
  * @returns {Ripemd160} The hash in the form of a string.
  */
 export function hash160(a: ByteString): Ripemd160 {
-  return uint8ArrayToHex(crypto.hash160(hexToUint8Array(a))) as Ripemd160;
+  return uint8ArrayToHex(ripemd160_(sha256_(hexToUint8Array(a)))) as Ripemd160;
 }
 
 /**
@@ -48,7 +46,7 @@ export function sha256(a: ByteString): Sha256 {
  * @returns {Sha256} The hash in the form of a string.
  */
 export function hash256(a: ByteString): Sha256 {
-  return uint8ArrayToHex(crypto.hash256(hexToUint8Array(a))) as Sha256;
+  return sha256(sha256(a)) as Sha256;
 }
 
 /**

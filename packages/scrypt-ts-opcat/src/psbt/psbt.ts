@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Psbt as PsbtBase } from 'bip174';
+import { Psbt as PsbtBase } from '@opcat-labs/bip174';
 import {
   Bip32Derivation,
   KeyValue,
@@ -13,7 +13,7 @@ import {
   TransactionFromBuffer,
   checkForInput, 
   checkForOutput,
-} from 'bip174';
+} from '@opcat-labs/bip174';
 import { Transaction, Address, Script, crypto, Networks } from '@opcat-labs/opcat'
 import * as signatureutils from './signatureutils.js';
 import { cloneBuffer, reverseBuffer } from './bufferutils.js';

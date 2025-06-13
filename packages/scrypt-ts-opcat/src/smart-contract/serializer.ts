@@ -2,10 +2,10 @@ import { assert, int32ToByteString, toByteString } from './fns/index.js';
 import { Bool, ByteString, Int32, PrimitiveTypes } from './types/primitives.js';
 import * as tools from 'uint8array-tools';
 import { Script } from './types/script.js';
-import { BufferReader } from '@scrypt-inc/bitcoinjs-lib';
 import { uint8ArrayToHex } from '../utils/common.js';
 import { TX_IO_INDEX_VAL_MIN, TX_IO_INDEX_VAL_MAX } from './consts.js';
 import { Outpoint } from './types/structs.js';
+import { BufferReader } from '../psbt/bufferutils.js';
 /**
  * @ignore
  * int to little-endian signed magnitude

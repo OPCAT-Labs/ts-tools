@@ -2,8 +2,8 @@ import { SupportedNetwork, UTXO } from '../globalTypes.js';
 import { ChainProvider } from './chainProvider.js';
 import { UtxoProvider, UtxoQueryOptions, getUtxoKey } from './utxoProvider.js';
 import { uint8ArrayToHex } from '../utils/common.js';
-import { address as Address, Transaction } from '@scrypt-inc/bitcoinjs-lib';
 import * as utils from '@noble/hashes/utils';
+import { Script, Transaction } from '@opcat-labs/opcat';
 
 /**
  * A DummyProvider is build for test purpose only, it always returns a dummy utxo for `getUtxos` request.
@@ -20,13 +20,13 @@ export class DummyProvider implements ChainProvider, UtxoProvider {
     return 'fractal-mainnet';
   }
   async getUtxos(address: string, _options?: UtxoQueryOptions): Promise<UTXO[]> {
-    const script = uint8ArrayToHex(Address.toOutputScript(address));
+    const script = Script.fromAddress(address)
 
     return Promise.resolve([
       {
         txId: uint8ArrayToHex(utils.randomBytes(32)),
         outputIndex: 0,
-        script: script,
+        script: script.toHex(),
         satoshis: 2147483647, // 2**31 - 1
         data: '',
       },
@@ -51,9 +51,9 @@ export class DummyProvider implements ChainProvider, UtxoProvider {
     return Promise.resolve(1);
   }
   async broadcast(txHex: string): Promise<string> {
-    const tx = Transaction.fromHex(txHex);
-    this.broadcastedTxs.set(tx.getId(), txHex);
-    return tx.getId();
+    const tx = Transaction.fromString(txHex);
+    this.broadcastedTxs.set(tx.id, txHex);
+    return tx.id;
   }
 
   async getRawTransaction(txId: string): Promise<string> {

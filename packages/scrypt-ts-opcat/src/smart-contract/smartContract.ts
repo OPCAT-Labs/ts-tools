@@ -8,7 +8,7 @@ import { ByteString, PubKey, SHPreimage, Sig } from './types/index.js';
 import { ABICoder, Arguments } from './abi.js';
 import { Script } from './types/script.js';
 import { ExtUtxo, InputIndex, Optional, RawArgs, UTXO } from '../globalTypes.js';
-import { textToHex, uint8ArrayToHex, calcArtifactHexMD5, cloneDeep } from '../utils/index.js';
+import { textToHex, uint8ArrayToHex, calcArtifactHexMD5, cloneDeep, isFinal } from '../utils/index.js';
 import { Contextual, InputContext, IContext } from './types/context.js';
 import {
   Int32,
@@ -17,7 +17,6 @@ import {
   OpcatState,
   SupportedParamType,
 } from './types/primitives.js';
-import { isFinal } from '@scrypt-inc/bitcoinjs-lib';
 import { hash160, hash256 } from './fns/hashes.js';
 import { int32ToByteString, len, toByteString } from './fns/byteString.js';
 import { checkInputStateHashImpl } from './methods/checkInputStateHash.js';

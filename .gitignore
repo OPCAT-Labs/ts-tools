@@ -52,3 +52,5 @@ compiler
 
 # templates
 *.tar.gz
+
+tool.js

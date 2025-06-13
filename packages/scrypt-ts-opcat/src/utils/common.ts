@@ -232,3 +232,9 @@ export function duplicateFilter<T>(uniqueFn: (item: T) => any) {
     return uniqueIndex === index;
   };
 }
+
+const MAXINT = 0xffffffff; // Math.pow(2, 32) - 1;
+
+export function isFinal(sequenceNumber: number) {
+  return sequenceNumber !== MAXINT;
+}

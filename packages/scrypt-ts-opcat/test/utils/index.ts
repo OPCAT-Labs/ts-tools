@@ -2,11 +2,11 @@ import { join } from 'path';
 import { readFileSync } from 'fs';
 import { randomBytes } from 'crypto';
 import { getTestAddress, network } from './privateKey.js';
-import { address } from '@scrypt-inc/bitcoinjs-lib';
-import { uint8ArrayToHex, UTXO, SupportedNetwork, toBitcoinNetwork, ExtUtxo } from '../../src/index.js';
+import { UTXO, SupportedNetwork, ExtUtxo } from '../../src/index.js';
 import { emptyStateHashes } from '../../src/utils/common.js';
 
 import * as dotenv from 'dotenv';
+import { Script } from '@opcat-labs/opcat';
 dotenv.config({
   path: '.env',
 });
@@ -25,8 +25,9 @@ export async function getDummyUtxo(addr?: string, satoshis?: number): Promise<UT
   return {
     txId: randomBytes(32).toString('hex'),
     outputIndex: 0,
-    script: uint8ArrayToHex(address.toOutputScript(addr, toBitcoinNetwork(NETWORK))),
+    script: Script.fromAddress(addr).toHex(),
     satoshis: satoshis || inputSatoshis,
+    data: ''
   };
 }
 
