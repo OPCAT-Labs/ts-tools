@@ -77,7 +77,8 @@ export function checkSigImpl(self: AbstractContract, signature: Sig, publickey: 
 
     const shPreimage = self.ctx;
 
-    const hashbuf = Buffer.from(hash256(encodeSHPreimage(shPreimage)), 'hex').reverse();
+    const byteString = encodeSHPreimage(shPreimage);
+    const hashbuf = Buffer.from(hash256(byteString), 'hex').reverse();
 
     fSuccess = crypto.ECDSA.verify(hashbuf, sig, pubkey, 'little')
   } catch (_err) {

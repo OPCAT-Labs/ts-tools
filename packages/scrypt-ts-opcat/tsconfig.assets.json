@@ -1,29 +1,28 @@
 {
-    "compilerOptions": {
-      "types": ["reflect-metadata", "mocha"],
-      "module": "commonjs",
-      "target": "es2021",
-      "moduleResolution": "node",
-      "allowJs": false,
-      "checkJs": false,
-      "sourceMap": true,
-      "esModuleInterop": true,
-      "experimentalDecorators": true,
-      "emitDecoratorMetadata": true,
-      "skipLibCheck": true,
-      "noEmit": true,
-      "lib": ["es2021", "DOM"],
-      "rootDir": "src",
-      "plugins": [
-        {
-          "transform": "../scrypt-ts-transpiler-btc/dist/index.js",
-          "transformProgram": "true",
-          "outDir": "./assets",
-          "debug": true
-        }
-      ]
-    },
-    "include": ["src/smart-contract/builtin-libs/*.ts"],
-    "exclude": ["out", "artifacts"]
-  }
-  
+  "compilerOptions": {
+    "types": ["reflect-metadata", "mocha"],
+    "module": "commonjs",
+    "target": "es2021",
+    "moduleResolution": "node",
+    "allowJs": false,
+    "checkJs": false,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "lib": ["es2021", "DOM"],
+    "rootDir": "src",
+    "plugins": [
+      {
+        "transform": "../scrypt-ts-transpiler-opcat/dist/index.js",
+        "transformProgram": "true",
+        "outDir": "./assets",
+        "debug": true
+      }
+    ]
+  },
+  "include": ["src/smart-contract/builtin-libs/*.ts"],
+  "exclude": ["out", "artifacts"]
+}

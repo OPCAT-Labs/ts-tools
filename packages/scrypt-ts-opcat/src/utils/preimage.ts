@@ -1,6 +1,6 @@
 import * as tools from 'uint8array-tools';
 import { ByteString, SHPreimage } from '../smart-contract/types/index.js';
-import { byteStringToInt32, int32ToByteString } from '../smart-contract/fns/byteString.js';
+import { byteStringToInt32, intToByteString, num2bin, toByteString } from '../smart-contract/fns/byteString.js';
 import { reverseBuffer } from '../psbt/bufferutils.js';
 
 
@@ -27,20 +27,20 @@ import { reverseBuffer } from '../psbt/bufferutils.js';
  */
 export function decodeSHPreimage(preimage: Uint8Array): SHPreimage {
   return {
-    nVersion: byteStringToInt32(tools.toHex(preimage.subarray(0, 4))),
+    nVersion: toByteString(tools.toHex(preimage.subarray(0, 4))),
     hashPrevouts: tools.toHex(preimage.subarray(4, 36)),
     spentScriptHash: tools.toHex(preimage.subarray(36, 68)),
     spentDataHash: tools.toHex(preimage.subarray(68, 100)),
-    spentAmount: byteStringToInt32(tools.toHex(preimage.subarray(100, 108))),
-    sequence: byteStringToInt32(tools.toHex(preimage.subarray(108, 112))),
+    value: byteStringToInt32(tools.toHex(preimage.subarray(100, 108))),
+    nSequence: toByteString(tools.toHex(preimage.subarray(108, 112))),
     hashSpentAmounts: tools.toHex(preimage.subarray(112, 144)),
-    hashSpentScripts: tools.toHex(preimage.subarray(144, 176)),
-    hashSpentDatas: tools.toHex(preimage.subarray(176, 208)),
+    hashSpentScriptHashes: tools.toHex(preimage.subarray(144, 176)),
+    hashSpentDataHashes: tools.toHex(preimage.subarray(176, 208)),
     hashSequences: tools.toHex(preimage.subarray(208, 240)),
     hashOutputs: tools.toHex(preimage.subarray(240, 272)),
     inputIndex: byteStringToInt32(tools.toHex(preimage.subarray(272, 276))),
     nLockTime: byteStringToInt32(tools.toHex(preimage.subarray(276, 280))),
-    sighashType: byteStringToInt32(tools.toHex(preimage.subarray(280, 284))),
+    sigHashType: tools.toHex(preimage.subarray(280, 284)),
   };
 }
 
@@ -53,24 +53,20 @@ export function decodeSHPreimage(preimage: Uint8Array): SHPreimage {
  * @returns The concatenated ByteString representation of the SHPreimage
  */
 export function encodeSHPreimage(shPreimage: SHPreimage): ByteString {
-
-  const num2bin = function(n: bigint, size: bigint) {
-      return tools.toHex(reverseBuffer(tools.fromHex(int32ToByteString(n, size))))
-  }
-  const rawSHPreimage = num2bin(shPreimage.nVersion, 4n)
+  const rawSHPreimage = shPreimage.nVersion
     + shPreimage.hashPrevouts
     + shPreimage.spentScriptHash
     + shPreimage.spentDataHash
-    + num2bin(shPreimage.spentAmount, 8n)
-    + num2bin(shPreimage.sequence, 4n)
+    + num2bin(shPreimage.value, 8n)
+    + shPreimage.nSequence
     + shPreimage.hashSpentAmounts
-    + shPreimage.hashSpentScripts
-    + shPreimage.hashSpentDatas
+    + shPreimage.hashSpentScriptHashes
+    + shPreimage.hashSpentDataHashes
     + shPreimage.hashSequences
     + shPreimage.hashOutputs
     + num2bin(shPreimage.inputIndex, 4n)
     + num2bin(shPreimage.nLockTime, 4n)
-    + num2bin(shPreimage.sighashType, 4n);
+    + shPreimage.sigHashType;
 
   return rawSHPreimage
 }

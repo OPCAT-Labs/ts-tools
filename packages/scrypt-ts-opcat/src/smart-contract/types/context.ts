@@ -1,21 +1,20 @@
 import { PsbtTxInput, PsbtTxOutput } from '../../psbt/psbt.js';
 import { InputIndex, StatefulContractUtxo } from '../../globalTypes.js';
-import { ByteString, Int32, SigHashType } from './primitives.js';
+import { ByteString, Int32, SigHashType, UInt32, UInt64 } from './primitives.js';
 import {
   SHPreimage,
-  SpentScripts,
   SpentAmounts,
   Prevouts,
   Outpoint,
   TxOut,
   SpentDataHashes,
+  SpentScriptHashes,
 } from './structs.js';
 
 /**
  * The context of the current contract, can be accessed by `this.ctx` in the contract.
  */
 export interface IContext extends SHPreimage, DerivedCtx {
-
 
   /**
    * @type {FixedArray<Outpoint, typeof TX_INPUT_COUNT_MAX>}
@@ -28,7 +27,7 @@ export interface IContext extends SHPreimage, DerivedCtx {
    * @type {SpentScripts}
    *
    */
-  spentScripts: SpentScripts;
+  spentScriptHashes: SpentScriptHashes;
 
   /**
    * @type {SpentAmounts}
@@ -51,7 +50,7 @@ export type InputContext = ParamCtx & DerivedCtx;
 type ParamCtx = {
   shPreimage: SHPreimage;
   prevouts: Prevouts;
-  spentScripts: SpentScripts;
+  spentScriptHashes: SpentScriptHashes;
   spentAmounts: SpentAmounts;
   spentDataHashes: SpentDataHashes;
 };
@@ -62,34 +61,16 @@ type ParamCtx = {
  */
 type DerivedCtx = {
   /**
-   * @type {Int32}
+   * @type {UInt32}
    * input count of the current transaction
    */
-  inputCount: Int32;
+  inputCount: UInt32;
 
   /**
    * @type {Outpoint}
    * The outpoint of the current input.
    */
   prevout: Outpoint;
-
-  /**
-   * @type {ByteString}
-   * The locking script of the current input.
-   */
-  spentScript: ByteString;
-
-  /**
-   * @type {ByteString}
-   * The amount of the current input.
-   */
-  spentAmount: Int32;
-
-  /**
-   * @type {ByteString}
-   * The data of the current input.
-   */
-  spentData: ByteString;
 };
 
 /**

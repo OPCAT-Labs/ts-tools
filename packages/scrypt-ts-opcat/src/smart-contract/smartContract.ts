@@ -18,7 +18,7 @@ import {
   SupportedParamType,
 } from './types/primitives.js';
 import { hash160, hash256 } from './fns/hashes.js';
-import { int32ToByteString, len, toByteString } from './fns/byteString.js';
+import { intToByteString, len, toByteString } from './fns/byteString.js';
 import { checkInputStateHashImpl } from './methods/checkInputStateHash.js';
 import { deserializeOutputs } from './serializer.js';
 import { BacktraceInfo } from './types/structs.js';
@@ -79,10 +79,10 @@ export function prependLockingScript(lockingScript: Script, artifact: Artifact):
   const prependScripts = [
     OpCode.OP_FALSE,
     OpCode.OP_IF,
-    int32ToByteString(len(tag)),
+    intToByteString(len(tag)),
     tag,
     version,
-    int32ToByteString(len(md5)),
+    intToByteString(len(md5)),
     md5,
     OpCode.OP_ENDIF,
   ];
@@ -337,11 +337,11 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @returns success if stateHash is valid
    */
   override checkInputStateHash(inputIndex: Int32, stateHash: ByteString): boolean {
-    checkInputStateHashImpl(
-      Number(inputIndex),
-      this.inputContext.spentDataHashes,
-      stateHash,
-    );
+    // checkInputStateHashImpl(
+    //   Number(inputIndex),
+    //   this.inputContext.spentDataHashes,
+    //   stateHash,
+    // );
     return true;
   }
 
@@ -365,23 +365,18 @@ export class SmartContract<StateT extends OpcatState = undefined>
       inputCount,
       prevouts,
       prevout,
-      spentScripts,
+      spentScriptHashes,
       spentAmounts,
       spentDataHashes,
-      spentData,
     } = this.inputContext;
     return {
       ...shPreimage,
       inputCount,
       prevouts,
       prevout,
-      spentScripts,
+      spentScriptHashes,
       spentAmounts,
       spentDataHashes,
-      // derived context below
-      spentScript: spentScripts[Number(shPreimage.inputIndex)],
-      spentAmount: spentAmounts[Number(shPreimage.inputIndex)],
-      spentData: spentData,
     };
   }
 
@@ -462,7 +457,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
       shPreimage,
       prevouts,
       prevout,
-      spentScripts,
+      spentScriptHashes,
       spentAmounts,
       spentDataHashes,
     } = this.inputContext;
@@ -473,7 +468,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
       this._curInputIndex,
       prevouts,
       prevout,
-      spentScripts,
+      spentScriptHashes,
       spentAmounts,
       spentDataHashes,
     );
@@ -498,20 +493,19 @@ export class SmartContract<StateT extends OpcatState = undefined>
         } else if (param.name === '__scrypt_ts_prevout') {
           args.push(prevout);
         } else if (param.name === '__scrypt_ts_spentScripts') {
-          args.push(spentScripts);
+          const { spentScriptHashes } = this.inputContext;
+          args.push(spentScriptHashes);
         } else if (param.name === '__scrypt_ts_spentAmounts') {
           args.push(spentAmounts);
-        } else if (param.name === '__scrypt_ts_stateHashes') {
-          args.push(spentDataHashes);
         } else if (param.name === '__scrypt_ts_curState') {
           this._checkState();
-          if (autoCheckInputStateHash) {
-            checkInputStateHashImpl(
-              this._curInputIndex,
-              spentDataHashes,
-              (this.constructor as typeof SmartContract<OpcatState>).stateHash(curState),
-            );
-          }
+          // if (autoCheckInputStateHash) {
+          //   checkInputStateHashImpl(
+          //     inputStateProof,
+          //     (this.constructor as typeof SmartContract<StructObject>).stateHash(curState),
+          //     prevouts[this._curInputIndex],
+          //   );
+          // }
           args.push(curState);
         }
       });

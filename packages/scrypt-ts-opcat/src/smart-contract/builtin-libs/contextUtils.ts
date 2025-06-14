@@ -1,10 +1,11 @@
 import { prop, method } from '../decorators.js';
 import { assert } from '../fns/assert.js';
-import { toByteString } from '../fns/byteString.js';
-import { sha256 } from '../fns/hashes.js';
+import { slice, toByteString } from '../fns/byteString.js';
+import { hash256, sha256 } from '../fns/hashes.js';
 import { SmartContractLib } from '../smartContractLib.js';
-import { PubKey, ByteString, Sig, Int32 } from '../types/primitives.js';
-import { SHPreimage, SpentScripts, SpentAmounts, Prevouts, Outpoint } from '../types/structs.js';
+import { PubKey, ByteString, Sig, Int32, UInt32 } from '../types/primitives.js';
+import { SHPreimage, SpentScriptHashes, SpentAmounts, Prevouts, Outpoint } from '../types/structs.js';
+import { StdUtils } from './stdUtils.js';
 import { TxUtils } from './txUtils.js';
 
 /**
@@ -165,63 +166,59 @@ export class ContextUtils extends SmartContractLib {
    * Verify that the prevouts context passed in by the user is authentic
    * @param prevouts prevouts context passed in by the user that need to be verified
    * @param prevout prevout context passed in by the user that need to be verified
-   * @param t_shaPrevouts shaPrevouts in preimage which is trustable
-   * @param t_inputIndexVal the index of the input, which is trustable
+   * @param t_hashPrevouts hashPrevouts in preimage which is trustable
+   * @param t_inputIndex the index of the input, which is trustable
    * @returns the number of inputs, which is trustable
    */
   @method()
   static checkPrevouts(
     prevouts: Prevouts,
     prevout: Outpoint,
-    t_shaPrevouts: ByteString,
-    t_inputIndexVal: Int32,
+    t_hashPrevouts: ByteString,
+    t_inputIndex: UInt32,
   ): Int32 {
     // check prevouts
-    const res = TxUtils.mergePrevouts(prevouts);
-    assert(sha256(res.prevouts) == t_shaPrevouts, 'shaPrevouts mismatch');
+    assert(hash256(prevouts) == t_hashPrevouts, 'hashPrevouts mismatch');
+    const inputCount = StdUtils.checkLenDivisibleBy(prevouts, 36n);
+    assert(t_inputIndex < inputCount, 'invalid prevouts');
 
     // check prevout
     assert(
-      prevout.txHash + prevout.outputIndex == prevouts[Number(t_inputIndexVal)],
+      (prevout.txHash + StdUtils.uint32ToByteString(prevout.outputIndex)) == slice(prevouts, t_inputIndex * 36n, (t_inputIndex + 1n) * 36n),
       'invalid prevout',
     );
-
-    return res.inputCount;
+    return inputCount;
   }
 
   /**
    * Check if the spent scripts array passed in matches the shaSpentScripts
    * @param spentScripts array of spent scripts passed in that need to be verified
-   * @param t_shaSpentScripts the hash of the merged spent scripts, which comes from preimage and is trustable
+   * @param t_hashSpentScripts the hash of the merged spent scripts, which comes from preimage and is trustable
    * @param t_inputCount must be trustable, the number of inputs
    */
   @method()
   static checkSpentScripts(
-    spentScripts: SpentScripts,
-    t_shaSpentScripts: ByteString,
+    spentScripts: SpentScriptHashes,
+    t_hashSpentScripts: ByteString,
     t_inputCount: bigint,
   ): void {
-    assert(
-      sha256(TxUtils.mergeSpentScripts(spentScripts, t_inputCount)) == t_shaSpentScripts,
-      'shaSpentScripts mismatch',
-    );
+    assert(hash256(spentScripts) == t_hashSpentScripts, 'hashSpentScripts mismatch');
+    assert(t_inputCount == StdUtils.checkLenDivisibleBy(spentScripts, 32n), 'invalid spentScripts');
   }
 
   /**
    * Check if the spent amounts array passed in matches the shaSpentAmounts
    * @param spentAmounts array of spent amounts passed in that need to be verified
-   * @param t_shaSpentAmounts the hash of the merged spent amounts, which comes from preimage and is trustable
+   * @param t_hashSpentAmounts the hash of the merged spent amounts, which comes from preimage and is trustable
    * @param t_inputCount must be trustable, the number of inputs
    */
   @method()
   static checkSpentAmounts(
     spentAmounts: SpentAmounts,
-    t_shaSpentAmounts: ByteString,
+    t_hashSpentAmounts: ByteString,
     t_inputCount: bigint,
   ): void {
-    assert(
-      sha256(TxUtils.mergeSpentAmounts(spentAmounts, t_inputCount)) == t_shaSpentAmounts,
-      'shaSpentAmounts mismatch',
-    );
+    assert(hash256(spentAmounts) == t_hashSpentAmounts, 'hashSpentAmounts mismatch');
+    assert(t_inputCount == StdUtils.checkLenDivisibleBy(spentAmounts, 8n), 'invalid spentAmounts');
   }
 }

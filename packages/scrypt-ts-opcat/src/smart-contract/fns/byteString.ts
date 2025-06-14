@@ -33,9 +33,20 @@ export function toByteString(literal: string, isUtf8: boolean = false): ByteStri
  * @returns {ByteString} returns a ByteString
  * @throws {Error} throws an error if the number is out of range
  */
-export function int32ToByteString(n: Int32, size?: bigint): ByteString {
-  return toByteString(uint8ArrayToHex(bn2Buf(n, typeof size === 'bigint' ? Number(size) : undefined)));
+export function intToByteString(n: bigint): ByteString {
+  return toByteString(uint8ArrayToHex(bn2Buf(n).reverse()));
 }
+
+
+export function num2bin(n: bigint, size: bigint): ByteString {
+  return toByteString(uint8ArrayToHex(bn2Buf(n, typeof size === 'bigint' ? Number(size) : undefined).reverse()));
+}
+
+export function unpack(b: ByteString): bigint {
+  const n = buf2BN(hexToUint8Array(b), false);
+  return n;
+}
+
 
 /**
  * ByteString can be converted to bigint with byteString2Int.
@@ -60,3 +71,33 @@ export function byteStringToInt32(a: ByteString): Int32 {
 export function len(a: ByteString): Int32 {
   return BigInt(a.length / 2);
 }
+
+
+/**
+ * Returns a section of a ByteString.
+ * @param byteString The ByteString.
+ * @param start The beginning byte index of the specified portion of ByteString, included.
+ * @param end The end byte index of the specified portion of ByteString, excluded.
+ *  If this value is not specified, the sub-section continues to the end of ByteString.
+ */
+export function slice(byteString: ByteString, start: BigInt, end?: BigInt): ByteString {
+  const startIndex = Number(start) * 2
+  const endIndex = typeof end === 'bigint' ? Number(end) * 2 : byteString.length;
+  if (startIndex < 0 || endIndex < 0) {
+      throw new Error('index should not be negative')
+  }
+  if (typeof end === 'bigint' && startIndex > endIndex) {
+      throw new Error('start index should be less than or equal to end index')
+  }
+
+  if (startIndex > byteString.length) {
+      throw new Error('start index should not be greater than the length')
+  }
+
+  if (endIndex > byteString.length) {
+      throw new Error('end index should not be greater than the length')
+  }
+
+  return byteString.slice(startIndex, endIndex)
+}
+

@@ -14,13 +14,14 @@ import { readArtifact } from '../utils/index.js';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { P2PKH } from '../contracts/p2pkh.js';
+import { PrivateKey } from '@opcat-labs/opcat';
 
 dotenv.config();
 
 use(chaiAsPromised);
 
 describe('Test P2PKH', () => {
-  const testSigner = new DefaultSigner();
+  const testSigner = new DefaultSigner('fractal-mainnet', PrivateKey.fromWIF('cQfb2vnBvKryZjG7MuWwDoeMpvHBNAqaNyJH3cNxdHxnHWd6Kv7f'));
   before(() => {
     P2PKH.loadArtifact(readArtifact('p2pkh.json'));
   });

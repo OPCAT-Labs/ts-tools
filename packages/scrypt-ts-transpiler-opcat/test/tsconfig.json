@@ -1,0 +1,53 @@
+{
+  "compilerOptions": {
+    "types": ["reflect-metadata", "mocha"],
+    "module": "commonjs",
+    "target": "es2021",
+    "moduleResolution": "node",
+    "allowJs": false,
+    "checkJs": false,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "lib": ["es2021", "DOM"],
+    "plugins": [
+      {
+        "transform": "../dist/index.js",
+        "transformProgram": "true",
+        "outDir": "artifacts",
+        "debug": true
+      }
+    ]
+  },
+  "include": ["./contracts/*.ts", "./contracts/invalid/*.ts"],
+  "exclude": [
+    "out",
+    "artifacts",
+
+    // todo: should transpile successfully but not
+    // # other field types in state type
+
+    // todo: have interface but not implemented
+    // # this.cltv
+    "./contracts/auction.ts",
+    "./contracts/timeLock.ts", // dep this.cltv, not implemented
+    "./contracts/csv.ts", // dep this.csv, not implemented
+    "./contracts/cltv.ts", // dep this.cltv, not implemented
+
+    // todo: no interface
+    // # this.insertCodeSeparator()
+    "./contracts/ocs.ts",
+    "./contracts/invalid/ocs1.ts",
+    "./contracts/invalid/ocs2.ts",
+    "./contracts/invalid/ocs3.ts",
+    // # this.checkMultiSig()
+    "./contracts/checkMultisig.ts",
+
+    // todo: not supported
+    // # SigHashType
+    "./contracts/invalid/sigHashChange.ts"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/mocharc.json",
+  "require": ["tsx"],
+  "extension": ["ts"],
+  "package": "../package.json",
+  "spec": ["./specs/**/*.spec.*"],
+  "timeout": 8000
+}
