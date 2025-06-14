@@ -1,0 +1,7 @@
+test/artifacts/
+compiler/
+test/specs/compile.spec.ts
+test/specs/compile-*.spec.ts
+test/specs/invalid_transpile.spec.ts
+test/specs/valid_transpile.spec.ts
+.env

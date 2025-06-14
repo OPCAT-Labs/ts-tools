@@ -1,14 +1,12 @@
 import { assert } from '../fns/assert.js';
-import { toByteString, len, int32ToByteString } from '../fns/byteString.js';
+import { toByteString, len, intToByteString } from '../fns/byteString.js';
 import {
-  STATE_HASH_ROOT_BYTE_LEN,
   TX_OUTPUT_SATOSHI_BYTE_LEN,
   TX_P2TR_OUTPUT_SCRIPT_BYTE_LEN,
 } from '../consts.js';
 import { Contextual } from '../types/context.js';
-import { ByteString, Int32, StateHashes } from '../types/index.js';
+import { ByteString, Int32 } from '../types/index.js';
 import { hash160 } from '../fns/index.js';
-import { TxUtils } from '../builtin-libs/txUtils.js';
 
 /**
  * @ignore
@@ -16,15 +14,16 @@ import { TxUtils } from '../builtin-libs/txUtils.js';
  * @returns
  */
 export function buildChangeOutputImpl(psbt: Contextual): ByteString {
-  const changeInfo = psbt.getChangeInfo();
-  if (len(changeInfo.satoshis) === 0n) {
-    return toByteString('');
-  }
+  // const changeInfo = psbt.getChangeInfo();
+  // if (len(changeInfo.satoshis) === 0n) {
+  //   return toByteString('');
+  // }
 
-  const nlen = len(changeInfo.script);
-  assert(nlen <= TX_P2TR_OUTPUT_SCRIPT_BYTE_LEN);
+  // const nlen = len(changeInfo.script);
+  // assert(nlen <= TX_P2TR_OUTPUT_SCRIPT_BYTE_LEN);
 
-  return changeInfo.satoshis + int32ToByteString(nlen) + changeInfo.script;
+  // return changeInfo.satoshis + int32ToByteString(nlen) + changeInfo.script;
+  return toByteString('');
 }
 
 /**
@@ -39,12 +38,13 @@ export function buildStateOutputsImpl(
   stateRoots: ByteString,
   stateCount: Int32,
   stateOutputs: ByteString,
-  nextStateHashes: StateHashes,
+  nextStateHashes: any,
 ): ByteString {
-  const hashRoot = hash160(stateRoots + padEmptyStateRoots(stateCount));
-  checkStateHashRoot(nextStateHashes, hashRoot);
-  const hashRootOutput = buildStateHashRootOutput(hashRoot);
-  return hashRootOutput + stateOutputs;
+  // const hashRoot = hash160(stateRoots + padEmptyStateRoots(stateCount));
+  // checkStateHashRoot(nextStateHashes, hashRoot);
+  // const hashRootOutput = buildStateHashRootOutput(hashRoot);
+  // return hashRootOutput + stateOutputs;
+  return toByteString('');
 }
 
 function padEmptyStateRoots(stateCount: Int32): ByteString {
@@ -59,7 +59,7 @@ function padEmptyStateRoots(stateCount: Int32): ByteString {
   return padding;
 }
 
-function checkStateHashRoot(stateHashes: StateHashes, hashRoot: ByteString): void {
+function checkStateHashRoot(stateHashes: any, hashRoot: ByteString): void {
   let stateRoots = toByteString('');
   for (let i = 0; i < 5; i++) {
     const stateHash = stateHashes[i];
@@ -74,10 +74,5 @@ function buildOutput(script: ByteString, satoshis: ByteString): ByteString {
   const scriptLen = len(script);
   assert(scriptLen > 0 && scriptLen <= TX_P2TR_OUTPUT_SCRIPT_BYTE_LEN);
   assert(len(satoshis) == TX_OUTPUT_SATOSHI_BYTE_LEN);
-  return satoshis + int32ToByteString(scriptLen) + script;
-}
-
-function buildStateHashRootOutput(hashRoot: ByteString): ByteString {
-  assert(len(hashRoot) == STATE_HASH_ROOT_BYTE_LEN);
-  return buildOutput(toByteString('6a1863617401') + hashRoot, TxUtils.ZERO_SATS);
+  return satoshis + intToByteString(scriptLen) + script;
 }

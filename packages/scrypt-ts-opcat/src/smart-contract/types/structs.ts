@@ -3,7 +3,7 @@ import {
   TX_OUTPUT_COUNT_MAX,
   TX_HASH_PREIMAGE2_SUFFIX_ARRAY_SIZE,
 } from '../consts.js';
-import { ByteString, FixedArray, Int32 } from './primitives.js';
+import { ByteString, FixedArray, Int32, UInt32, UInt64 } from './primitives.js';
 
 /**
  * The structure used to refer to a particular transaction output
@@ -19,7 +19,7 @@ export type Outpoint = {
   /**
    * The index of the output in the transaction.
    */
-  outputIndex: ByteString;
+  outputIndex: UInt32;
 };
 
 /**
@@ -28,8 +28,9 @@ export type Outpoint = {
  * @onchain
  */
 export type TxOut = {
-  script: ByteString;
-  satoshis: ByteString;
+  scriptHash: ByteString;
+  dataHash: ByteString;
+  satoshis: UInt64;
 };
 
 /**
@@ -38,9 +39,29 @@ export type TxOut = {
  * @onchain
  */
 export type TxIn = {
+  /**
+   * 32 bytes.
+   * input's prevout transaction hash
+   */
   prevTxHash: ByteString;
-  prevOutputIndexVal: Int32;
-  sequence: ByteString;
+
+  /**
+   * 4 bytes little endian.
+   * input's prevout output index
+   */
+  prevOutputIndex: UInt32;
+
+  /**
+   * 4 bytes little endian.
+   * input's sequence number
+   */
+  sequence: UInt32;
+
+  /**
+   * 32 bytes.
+   * input's unlocking script hash
+   */
+  scriptHash: ByteString;
 };
 
 /**
@@ -52,116 +73,120 @@ export type SHPreimage = {
   /**
    * 4 bytes.
    * version number of the transaction
-   * nVersion defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
    */
-  nVersion: Int32;
+  nVersion: ByteString;
 
   /**
    * 32 bytes.
-   * the double SHA256 of the serialization of all input outpoints.
-   * If the ANYONECANPAY SIGHASH type is not set, it's double SHA256 of the serialization of all input outpoints.
-   * Otherwise, it's a uint256 of 0x0000......0000.
-   * sha_prevouts defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
+   * hash256(Prevouts)
    */
   hashPrevouts: ByteString;
 
-  /** scriptHash of the input (serialized as scripts inside CTxOuts) */
-  spentScriptHash: ByteString;
-
-  /** dataHash of the input (serialized as scripts inside CTxOuts) */
-  spentDataHash: ByteString;
-
-  /** value of the output spent by this input (8-byte little endian) */
-  spentAmount: Int32;
-
-  /** nSequence of the input (4-byte little endian) */
-  sequence: Int32;
+  /**
+   * 32 bytes.
+   * current input's prevout script hash
+   */
+  spentScriptHash: ByteString
 
   /**
    * 32 bytes.
-   * the SHA256 of the serialization of all input amounts.
-   * sha_amounts defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
+   * current input's prevout data hash
+   */
+  spentDataHash: ByteString;
+
+  /**
+   * 8 bytes little endian. spent amount;
+   */
+  value: UInt64;
+
+  /**
+   * 4 bytes little endian.
+   */
+  nSequence: ByteString;
+
+  /**
+   * 32 bytes.
+   * hash256(SpentAmounts)
    */
   hashSpentAmounts: ByteString;
 
   /**
    * 32 bytes.
-   * the SHA256 of all spent outputs' scriptPubKeys, serialized as script inside CTxOut
-   * sha_scriptpubkeys defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
+   * hash256(SpentScriptHashes)
    */
-  hashSpentScripts: ByteString;
-
-  /**  */
-  hashSpentDatas: ByteString;
+  hashSpentScriptHashes: ByteString;
 
   /**
    * 32 bytes.
-   * the SHA256 of the serialization of all input nSequence.
-   * sha_sequences defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
+   * hash256(SpentDataHashes)
+   */
+  hashSpentDataHashes: ByteString;
+
+  /**
+   * 32 bytes.
+   * hash256(SpentSequences)
    */
   hashSequences: ByteString;
 
   /**
-   * 32 bytes
-   * the SHA256 of the serialization of all outputs.
-   * sha_outputs defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
+   * 32 bytes.
+   * hash256(Outputs)
    */
   hashOutputs: ByteString;
 
   /**
-   * 4 bytes
-   * index of this input in the transaction input vector. Index of the first input is 0x00000000.
-   * input_index defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
+   * 4 bytes little endian.
    */
-  inputIndex: Int32;
+  inputIndex: UInt32;
+
+  
+  /**
+   * 4 bytes little endian.
+   */
+  nLockTime: UInt32;
 
   /**
-   * 4 bytes.
-   * locktime of the transaction
-   * nLockTime defined in @see {@link https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message | BIP341}
+   * 4 bytes little endian.
    */
-  nLockTime: Int32;
-
-  /** sighash type of the signature (4-byte little endian) */
-  sighashType: Int32;
-
+  sigHashType: ByteString
 };
 
 /**
- * An array refers to the outputs from previous transactions that are being spent as inputs in the current transaction.
+ * An bytestring refers to the outputs from previous transactions that are being spent as inputs in the current transaction.
+ * prevout = prevTxHash(32 bytes) + prevOutputIndex(4 bytes)
+ * prevouts1 + prevouts2 + ... + prevoutsN
  * @category Types
  * @onchain
  */
-export type Prevouts = FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
+export type Prevouts = ByteString;
 
 /**
  * The context of the spent scripts.
- * spentScripts is an array of the spent scripts, that is the script of the previous output. [spentScript1, spentScript2, ...], length is MAX_INPUT. The rest is empty ByteString if inputs are less than MAX_INPUT.
- * each non-empty element is a ByteString, which is the script of the previous output.
+ * spentScriptHash = scriptHash(32 bytes)
+ * spentScriptHash1 + spentScriptHash2 + ... + spentScriptHashN
  * @category Types
  * @onchain
  */
-export type SpentScripts = FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
+export type SpentScriptHashes = ByteString;
+
+/**
+ * The context of the spent data hashes.
+ * spentDataHash = dataHash(32 bytes)
+ * spentDataHash1 + spentDataHash2 + ... + spentDataHashN
+ * @category Types
+ * @onchain
+ */
+export type SpentDataHashes = ByteString;
 
 /**
  * The context of the spent amounts.
- * spentAmounts is an array of the spent amounts, that is the amount of the previous output. [spentAmount1, spentAmount2, ...], length is MAX_INPUT. The rest is empty ByteString if inputs are less than MAX_INPUT.
- * each non-empty element is a ByteString of 8 bytes, which is the amount of the previous output.
+ * spentAmount = amount(8 bytes)
+ * spentAmount1 + spentAmount2 + ... + spentAmountN
  * @category Types
  * @onchain
  */
-export type SpentAmounts = FixedArray<Int32, typeof TX_INPUT_COUNT_MAX>;
+export type SpentAmounts = ByteString;
 
-
-export type SpentDatas = FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
-
-/**
- * An array of hashes representing the states of all stateful covenants included in the transaction.
- * A transaction output can contain up to 5 stateful covenants.
- * @category Types
- * @onchain
- */
-export type SpentDataHashes = FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
 
 
 /**
@@ -171,60 +196,30 @@ export type SpentDataHashes = FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
  * @onchain
  */
 export type TxHashPreimage = {
+  /**
+   * 4 bytes little endian.
+   */
   version: ByteString;
-  inputCount: ByteString;
-  inputPrevTxHashList: FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
-  inputPrevOutputIndexList: FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
-  inputScriptList: FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
-  inputSequenceList: FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
-  outputCount: ByteString;
-  outputSatoshisList: FixedArray<ByteString, typeof TX_OUTPUT_COUNT_MAX>;
-  outputScriptLenList: FixedArray<ByteString, typeof TX_OUTPUT_COUNT_MAX>;
-  outputScriptList: FixedArray<ByteString, typeof TX_OUTPUT_COUNT_MAX>;
-  locktime: ByteString;
+
+  /**
+   * input = prevout(36 bytes) + unlockScriptHash(32 bytes) + sequence(4 bytes)
+   * input1 + input2 + ... + inputN
+   */
+  inputList: ByteString;
+
+  /**
+   * output = amount(8 bytes) + lockingScriptHash(32 bytes) + dataHash(32 bytes)
+   * output1 + output2 + ... + outputN
+   */
+  outputList: ByteString;
+
+  /**
+   * 4 bytes little endian.
+   */
+  nLockTime: ByteString;
 };
 
-/**
- * Same as `TxHashPreimage`, but more compact because it incorporates data about the inputs included in the transaction
- * @category Types
- * @onchain
- */
-export type CompactTxHashPreimage = {
-  // version
-  version: ByteString;
-  // the number of inputs
-  inputCountVal: Int32;
-  // input list, each element represents an individual input
-  inputList: FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
-  // the number of outputs
-  outputCountVal: Int32;
-  // output list
-  outputSatoshisList: FixedArray<ByteString, typeof TX_OUTPUT_COUNT_MAX>;
-  outputScriptList: FixedArray<ByteString, typeof TX_OUTPUT_COUNT_MAX>;
-  // locktime
-  locktime: ByteString;
-};
 
-/**
- * Same as `CompactTxHashPreimage`, but can more easily parse out the HashRoot contained in the transaction
- * @onchain
- * @category Types
- */
-export type HashRootTxHashPreimage = {
-  // version
-  version: ByteString;
-  // the number of inputs
-  inputCountVal: Int32;
-  // input list, each element represents an individual input
-  inputList: FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>;
-  // the number of outputs
-  outputCountVal: Int32;
-  // state hash root, used to build the first output
-  hashRoot: ByteString;
-  // suffixes, including outputs except for the first output, and lock time,
-  // elements are split by byte length
-  suffixList: FixedArray<ByteString, typeof TX_HASH_PREIMAGE2_SUFFIX_ARRAY_SIZE>;
-};
 
 /**
  * Used for contract traceability to ensure that the spent contract comes from a unique outpoint
@@ -242,13 +237,13 @@ export type BacktraceInfo = {
    * @type {Int32}
    * the index of the traceable input in the previous transaction
    */
-  prevTxInputIndexVal: Int32;
+  prevTxInputIndex: Int32;
 
   /**
-   * @type {CompactTxHashPreimage}
+   * @type {TxHashPreimage}
    * the preimage of the previous previous transaction
    */
-  prevPrevTxPreimage: CompactTxHashPreimage;
+  prevPrevTxPreimage: TxHashPreimage;
 };
 
 

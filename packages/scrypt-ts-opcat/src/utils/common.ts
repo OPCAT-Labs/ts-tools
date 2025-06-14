@@ -4,7 +4,6 @@ import {
   ByteString,
   FixedArray,
   SigHashType,
-  StateHashes,
 } from '../smart-contract/types/index.js';
 import * as tools from 'uint8array-tools';
 import { TX_INPUT_COUNT_MAX } from '../smart-contract/consts.js';
@@ -99,7 +98,8 @@ export function getTxId(input: Transaction.Input): string {
  * create StateHashes with empty value
  * @returns
  */
-export function emptyStateHashes(): StateHashes {
+export function emptyStateHashes(): any {
+  throw new Error('not implemented');
   return fillFixedArray(emptyByteString(), TX_INPUT_COUNT_MAX);
 }
 

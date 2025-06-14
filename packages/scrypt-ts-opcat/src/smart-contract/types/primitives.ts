@@ -15,6 +15,9 @@ export type ByteString = Flavor<string, 'bytes'>;
  */
 export type Int32 = Flavor<bigint, 'int'>;
 
+export type UInt32 = Flavor<bigint, 'int'>;
+export type UInt64 = Flavor<bigint, 'int'>;
+
 /**
  * A Bool represents a boolean. A simple value true or false.
  * @category Types

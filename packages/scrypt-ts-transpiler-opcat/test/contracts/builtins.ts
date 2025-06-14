@@ -1,0 +1,45 @@
+import {
+  method,
+  SmartContract,
+  assert,
+  ByteString,
+  toByteString,
+  int32ToByteString,
+  max,
+  min,
+  within,
+  abs,
+} from '@scrypt-inc/scrypt-ts-btc';
+
+export class Builtins extends SmartContract {
+  @method()
+  public unlockInt2ByteString(data: ByteString, n: bigint) {
+    assert(int32ToByteString(n) == data, 'bad `int2ByteString` function');
+  }
+
+  @method()
+  public testMath() {
+    assert(max(1n, 2n) == 2n);
+    assert(max(0n, 2n) == 2n);
+    assert(max(-1n, 2n) == 2n);
+    assert(max(-1n, -1n) == -1n);
+    assert(max(0n, 0n) == 0n);
+
+    assert(min(1n, 2n) == 1n);
+    assert(min(0n, 2n) == 0n);
+    assert(min(-1n, 2n) == -1n);
+    assert(min(-1n, -1n) == -1n);
+    assert(min(0n, 0n) == 0n);
+
+    assert(within(0n, -1n, 1n));
+    assert(within(-1n, -1n, 1n));
+    assert(within(1n, -1n, 1n) == false);
+
+    assert(abs(0n) == 0n);
+    assert(abs(1n) == 1n);
+    assert(abs(-1n) == 1n);
+
+    const a: ByteString = toByteString('00');
+    assert(a == toByteString('00'));
+  }
+}

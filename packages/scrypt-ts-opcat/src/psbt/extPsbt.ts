@@ -1,6 +1,6 @@
 
 import { PsbtInput, Psbt as PsbtBase, OpcatUtxo } from '@opcat-labs/bip174';
-import { ByteString, Sig, SigHashType, StateHashes, TxOut } from '../smart-contract/types/index.js';
+import { ByteString, Sig, SigHashType, TxOut } from '../smart-contract/types/index.js';
 import {
   InputIndex, OutputIndex, SupportedNetwork, RawArgs,
   ExtUtxo,
@@ -132,8 +132,9 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this._ctxProvider.getInputCtx(inputIndex);
   }
 
-  getTxoStateHashes(): StateHashes {
-    return this._txoStateHashes;
+  getTxoStateHashes() {
+    // return this._txoStateHashes;
+    return '' as any;
   }
 
   get stateHashRoot(): ByteString {
@@ -145,11 +146,11 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   get stateHashRootScript(): Uint8Array {
-    return hexToUint8Array(TxUtils.buildStateHashRootScript(this.stateHashRoot));
+    return '' as any
+    // return hexToUint8Array(TxUtils.buildStateHashRootScript(this.stateHashRoot));
   }
 
-
-  private _txoStateHashes: StateHashes;
+  private _txoStateHashes: any;
   private _sigRequests: Map<InputIndex, Omit<ToSignInput, 'index'>[]> = new Map();
   private _finalizers: Map<InputIndex, Finalizer> = new Map();
 
@@ -398,21 +399,22 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   getChangeInfo(): TxOut {
-    if (this._changeOutputIndex !== null) {
-      const changeOutput = this.txOutputs[this._changeOutputIndex];
-      if (!changeOutput) {
-        throw new Error(`Change output is not found at index ${this._changeOutputIndex}`);
-      }
-      return {
-        script: tools.toHex(changeOutput.script),
-        satoshis: satoshiToHex(changeOutput.value),
-      };
-    } else {
-      return {
-        script: toByteString(''),
-        satoshis: toByteString(''),
-      };
-    }
+    // if (this._changeOutputIndex !== null) {
+    //   const changeOutput = this.txOutputs[this._changeOutputIndex];
+    //   if (!changeOutput) {
+    //     throw new Error(`Change output is not found at index ${this._changeOutputIndex}`);
+    //   }
+    //   return {
+    //     script: tools.toHex(changeOutput.script),
+    //     satoshis: satoshiToHex(changeOutput.value),
+    //   };
+    // } else {
+    //   return {
+    //     script: toByteString(''),
+    //     satoshis: toByteString(''),
+    //   };
+    // }
+    return {} as any
   }
 
   get unsignedTx(): Transaction {

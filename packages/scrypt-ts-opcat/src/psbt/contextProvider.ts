@@ -1,10 +1,9 @@
 import { InputIndex } from '../globalTypes.js';
 import {
-  SpentScripts,
+  SpentScriptHashes,
   SpentAmounts,
   Prevouts,
   Outpoint,
-  SpentDatas,
   SHPreimage,
   SpentDataHashes,
 } from '../smart-contract/types/structs.js';
@@ -16,11 +15,14 @@ import {
   uint8ArrayToHex,
   bigintToByteString,
   hexToUint8Array,
+  byteStringToBigInt,
 } from '../utils/common.js';
 import { decodeSHPreimage } from '../utils/preimage.js';
-import { TX_INPUT_COUNT_MAX } from '../smart-contract/consts.js';
+import { TX_INPUT_COUNT_MAX, TX_OUTPUT_DATA_HASH_LEN, TX_OUTPUT_SATOSHI_BYTE_LEN, TX_OUTPUT_SCRIPT_HASH_LEN } from '../smart-contract/consts.js';
 import {  crypto} from '@opcat-labs/opcat';
 import { sha256 } from '../smart-contract/fns/hashes.js';
+import { slice, toByteString } from '../smart-contract/fns/byteString.js';
+import { StdUtils } from '../smart-contract/builtin-libs/index.js';
 
 
 /** @ignore */
@@ -51,27 +53,23 @@ export class ContextProvider {
   }
 
   calculateInputCtxs(): void {
-    const spentScripts: SpentScripts = fillFixedArray(emptyByteString(), TX_INPUT_COUNT_MAX);
-    const spentAmounts: SpentAmounts = fillFixedArray(0n, TX_INPUT_COUNT_MAX);
-    const spentDatas: SpentDatas = fillFixedArray(emptyByteString(), TX_INPUT_COUNT_MAX);
-    const spentDataHashes: SpentDataHashes = fillFixedArray(emptyByteString(), TX_INPUT_COUNT_MAX);
-    spentScripts.length = TX_INPUT_COUNT_MAX;
-    spentAmounts.length = TX_INPUT_COUNT_MAX;
+    let spentDataHashes: SpentDataHashes = toByteString('')
+    let spentScriptHashes: SpentScriptHashes = toByteString('')
+    let spentAmounts: SpentAmounts = toByteString('')
+
     this._curPsbt.data.inputs.forEach((input, inputIndex) => {
       const {script, data, value} = input.opcatUtxo!;
       if (script) {
-        spentScripts[inputIndex] = uint8ArrayToHex(script);
-        spentDatas[inputIndex] = uint8ArrayToHex(data)
-        spentDataHashes[inputIndex] = sha256(uint8ArrayToHex(data));
-        spentAmounts[inputIndex] = value;
+        spentScriptHashes += sha256(uint8ArrayToHex(script));
+        spentDataHashes += sha256(uint8ArrayToHex(data));
+        spentAmounts += bigintToByteString(value, 8n);
       }
     });
 
-    // get prevouts for all inputs
-    const prevouts: Prevouts = fillFixedArray(emptyByteString(), TX_INPUT_COUNT_MAX);
+    // // get prevouts for all inputs
+    let prevouts: Prevouts = toByteString('');
     this._curPsbt.txInputs.forEach((input, inputIndex) => {
-      prevouts[inputIndex] =
-        `${uint8ArrayToHex(input.hash)}${bigintToByteString(BigInt(input.index), 4n)}`;
+      prevouts += `${uint8ArrayToHex(input.hash)}${bigintToByteString(BigInt(input.index), 4n)}`;
     });
 
     const inputs = this._curPsbt.data.inputs
@@ -89,25 +87,19 @@ export class ContextProvider {
       const { inputIndex } = inputTapLeafHash;
       const prevout: Outpoint = {
         txHash: uint8ArrayToHex(this._curPsbt.txInputs[inputIndex].hash),
-        outputIndex: bigintToByteString(BigInt(this._curPsbt.txInputs[inputIndex].index), 4n),
+        outputIndex: BigInt(this._curPsbt.txInputs[inputIndex].index),
       };
-      const spentScript = spentScripts[inputIndex];
-      const spentAmount = spentAmounts[inputIndex];
-      const spentData = spentDatas[inputIndex];
       const shPreimage = preimages[index];
       this._inputContexts.set(inputIndex, {
+        // ParamCtx
         shPreimage,
         prevouts,
-        // prevout can not be derived due to the size of outpoint is bigger than 1, so it would introduce OP_MUL for random access of `prevouts`
-        prevout,
-        spentScripts,
+        spentScriptHashes,
         spentAmounts,
         spentDataHashes,
-        // derived
+        // DerivedCtx
+        prevout,
         inputCount: BigInt(this._curPsbt.txInputs.length),
-        spentScript,
-        spentAmount,
-        spentData,
       });
     });
   }

@@ -1,4 +1,4 @@
-import { assert, int32ToByteString, toByteString } from './fns/index.js';
+import { assert, intToByteString, toByteString } from './fns/index.js';
 import { Bool, ByteString, Int32, PrimitiveTypes } from './types/primitives.js';
 import * as tools from 'uint8array-tools';
 import { Script } from './types/script.js';
@@ -19,7 +19,7 @@ export function int2hex(n: Int32): string {
     n += BigInt(80);
     return n.toString(16);
   }
-  return Script.fromASM(int32ToByteString(n)).toHex();
+  return Script.fromASM(intToByteString(n)).toHex();
 }
 
 /**
@@ -32,7 +32,7 @@ export function int2ScriptSig(n: Int32): Uint8Array {
     return tools.fromHex('');
   }
 
-  return tools.fromHex(int32ToByteString(n));
+  return tools.fromHex(intToByteString(n));
 }
 
 /**
@@ -130,7 +130,7 @@ export function toScriptSig(x: PrimitiveTypes): Uint8Array {
  */
 export function indexValueToBytes(indexVal: Int32): ByteString {
   assert(indexVal >= TX_IO_INDEX_VAL_MIN && indexVal <= TX_IO_INDEX_VAL_MAX);
-  let indexBytes = int32ToByteString(indexVal);
+  let indexBytes = intToByteString(indexVal);
   if (indexBytes == toByteString('')) {
     indexBytes = toByteString('00');
   }

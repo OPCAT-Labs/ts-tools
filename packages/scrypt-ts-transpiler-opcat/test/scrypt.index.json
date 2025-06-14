@@ -1,0 +1,772 @@
+{
+ "scryptBase": "artifacts/.templates",
+ "bindings": [
+  {
+   "symbol": "AbsTimeLock",
+   "path": "contracts/absTimeLock.scrypt.tpl",
+   "md5": "518c79811085a3a335c9ffcf3dcf25c2"
+  },
+  {
+   "symbol": "AccessContext",
+   "path": "contracts/accessContext.scrypt.tpl",
+   "md5": "7a5cbfcee1bb129e7f6787a02b3f9e3d"
+  },
+  {
+   "symbol": "AccumulatorMultiSig",
+   "path": "contracts/accumulatorMultiSig.scrypt.tpl",
+   "md5": "e525ea0969f6d6d3c0d0a66a7925f249"
+  },
+  {
+   "symbol": "TxUtils",
+   "path": "../../../../scrypt-ts-btc/assets/.templates/smart-contract/builtin-libs/txUtils.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "AnyoneCanSpend",
+   "path": "contracts/acs.scrypt.tpl",
+   "md5": "f950f6cddcb920dd595090ef74caa890"
+  },
+  {
+   "symbol": "ArrayTest",
+   "path": "contracts/array.scrypt.tpl",
+   "md5": "43c730d6e7d91bbd3174e785714c2634"
+  },
+  {
+   "symbol": "BacktraceInfo",
+   "path": "../../../../scrypt-ts-btc/assets/.templates/smart-contract/types/structs.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "B2G",
+   "path": "contracts/b2G.scrypt.tpl",
+   "md5": "104982dc8dc468ddf9013201cb74a332"
+  },
+  {
+   "symbol": "B2G2",
+   "path": "contracts/b2G2.scrypt.tpl",
+   "md5": "c1b8f8a4fde26000a049893d063eb0f7"
+  },
+  {
+   "symbol": "B2GState",
+   "path": "contracts/b2GState.scrypt.tpl",
+   "md5": "aac2d6190a0d425095e9a2fefef59f6d",
+   "stateType": "State"
+  },
+  {
+   "symbol": "State",
+   "path": "contracts/b2GState.scrypt.tpl"
+  },
+  {
+   "symbol": "BaseCounter",
+   "path": "contracts/basecounter.scrypt.tpl",
+   "md5": "d37ddf4516f544c513798db56a519d72",
+   "stateType": "BaseCounterState"
+  },
+  {
+   "symbol": "BaseCounterState",
+   "path": "contracts/basecounter.scrypt.tpl"
+  },
+  {
+   "symbol": "BaseDemo",
+   "path": "contracts/basedemo.scrypt.tpl",
+   "md5": "b2a83d8cef4f4824e4f564d3193e05c7"
+  },
+  {
+   "symbol": "Builtins",
+   "path": "contracts/builtins.scrypt.tpl",
+   "md5": "075f131490a08c50930ff6e00513f6a1"
+  },
+  {
+   "symbol": "ByteStringTest",
+   "path": "contracts/byteString.scrypt.tpl",
+   "md5": "94af6c162b2cbffd8ffef41ba70457d0"
+  },
+  {
+   "symbol": "Callee",
+   "path": "contracts/callee.scrypt.tpl",
+   "md5": "3ea0ba4f8f247eaf89b4e6dea1adfda7"
+  },
+  {
+   "symbol": "Coeff",
+   "path": "contracts/callee.scrypt.tpl"
+  },
+  {
+   "symbol": "ChangeAmountExample",
+   "path": "contracts/changeAmountExample.scrypt.tpl",
+   "md5": "d34c3e403d4730d3f798c53bd41ebf0f"
+  },
+  {
+   "symbol": "Clone",
+   "path": "contracts/clone.scrypt.tpl",
+   "md5": "5dba7d4e874789a2547bd69d9362f0ba"
+  },
+  {
+   "symbol": "CounterState",
+   "path": "contracts/counterState.scrypt.tpl"
+  },
+  {
+   "symbol": "CounterStateLib",
+   "path": "contracts/counter.scrypt.tpl",
+   "stateType": "CounterState"
+  },
+  {
+   "symbol": "Counter",
+   "path": "contracts/counter.scrypt.tpl",
+   "md5": "9b0c8d01494905982f799f7a7a960b3a",
+   "stateType": "CounterState"
+  },
+  {
+   "symbol": "Counter2",
+   "path": "contracts/counter2.scrypt.tpl",
+   "md5": "0bb60aa8d7d0ea40e34368da687d6d1e",
+   "stateType": "Counter2State"
+  },
+  {
+   "symbol": "Counter2State",
+   "path": "contracts/counter2.scrypt.tpl"
+  },
+  {
+   "symbol": "Counter3",
+   "path": "contracts/counter3.scrypt.tpl",
+   "md5": "9b0c8d01494905982f799f7a7a960b3a",
+   "stateType": "Counter3State"
+  },
+  {
+   "symbol": "Counter3State",
+   "path": "contracts/counter3.scrypt.tpl"
+  },
+  {
+   "symbol": "CounterP2PKH",
+   "path": "contracts/counterP2PKH.scrypt.tpl",
+   "md5": "5496dc92f2c2650f4c4d882be29422ca",
+   "stateType": "CounterP2PKHState"
+  },
+  {
+   "symbol": "CounterP2PKHState",
+   "path": "contracts/counterP2PKH.scrypt.tpl"
+  },
+  {
+   "symbol": "CtcBigNumber",
+   "path": "contracts/ctcBigNumber.scrypt.tpl",
+   "md5": "40bb691df435ebed4a4be98be2cba7e1"
+  },
+  {
+   "symbol": "CtcExpression",
+   "path": "contracts/ctcExpression.scrypt.tpl",
+   "md5": "7dd80bee99d8a04ee5b8541daf5688ae"
+  },
+  {
+   "symbol": "FFF",
+   "path": "contracts/ctcImportDefined.scrypt.tpl"
+  },
+  {
+   "symbol": "CtcImport",
+   "path": "contracts/ctcImport.scrypt.tpl",
+   "md5": "83f0e008bbb6bfb21757e5adcfff3f23"
+  },
+  {
+   "symbol": "CtcImportLib",
+   "path": "contracts/ctcImportlib.scrypt.tpl",
+   "md5": "83f0e008bbb6bfb21757e5adcfff3f23"
+  },
+  {
+   "symbol": "CtcParameter",
+   "path": "contracts/ctcParameter.scrypt.tpl",
+   "md5": "bfba252ca19a1901de8fb9c9fdde19ef"
+  },
+  {
+   "symbol": "CtorWithNonProp",
+   "path": "contracts/ctorWithNonProp.scrypt.tpl",
+   "md5": "369a6a0e21215586a1cd0db394fe1918"
+  },
+  {
+   "symbol": "CTX",
+   "path": "contracts/ctx.scrypt.tpl",
+   "md5": "4cd8d1adc6d5e3ee7ab58069f8b83333"
+  },
+  {
+   "symbol": "CTX2",
+   "path": "contracts/ctx2.scrypt.tpl",
+   "md5": "d98c0161e0e8a840feec596bc28bac88"
+  },
+  {
+   "symbol": "CTX3",
+   "path": "contracts/ctx3.scrypt.tpl",
+   "md5": "a2135ea0f3bcbc9002774e35ef20a376"
+  },
+  {
+   "symbol": "DebugFunctionsTest",
+   "path": "contracts/debugFunctions.scrypt.tpl",
+   "md5": "fc08856d5afe5c2f66f3c18cc5ce492a",
+   "stateType": "DebugFunctionsTestState"
+  },
+  {
+   "symbol": "DebugFunctionsTestState",
+   "path": "contracts/debugFunctions.scrypt.tpl"
+  },
+  {
+   "symbol": "Demo",
+   "path": "contracts/demo.scrypt.tpl",
+   "md5": "b2a83d8cef4f4824e4f564d3193e05c7"
+  },
+  {
+   "symbol": "DemoBigInt",
+   "path": "contracts/demoBigInt.scrypt.tpl",
+   "md5": "ad8f76129566fe52b0f6ca08dc005aa2"
+  },
+  {
+   "symbol": "DesignatedReceivers",
+   "path": "contracts/designatedReceivers.scrypt.tpl",
+   "md5": "57c5aa3a9304db6048ff36e70300aaad"
+  },
+  {
+   "symbol": "DomainSubtypes",
+   "path": "contracts/domainSubtypes.scrypt.tpl",
+   "md5": "308e531f6d85fbe073bb7349a0e994ad"
+  },
+  {
+   "symbol": "EndingAssert",
+   "path": "contracts/ending_assert.scrypt.tpl",
+   "md5": "095ca6d2e90ff7bc4d12ae885f14c364"
+  },
+  {
+   "symbol": "EnumC",
+   "path": "contracts/enum.scrypt.tpl",
+   "md5": "c3ae4ea427e6665ea123d08e6fd5a7f3"
+  },
+  {
+   "symbol": "EnumExample",
+   "path": "contracts/enum.scrypt.tpl"
+  },
+  {
+   "symbol": "Enum2",
+   "path": "contracts/enum2.scrypt.tpl",
+   "md5": "17e2beb5dceca0ae13bf8e851c588974"
+  },
+  {
+   "symbol": "Status",
+   "path": "contracts/enum2.scrypt.tpl"
+  },
+  {
+   "symbol": "Examples",
+   "path": "contracts/examples.scrypt.tpl",
+   "md5": "7ca346e933f81053ae3de4638917e463"
+  },
+  {
+   "symbol": "Expr",
+   "path": "contracts/expr.scrypt.tpl",
+   "md5": "ef827ffbb0b989a7b69356a96f0b772c"
+  },
+  {
+   "symbol": "STS",
+   "path": "contracts/expr.scrypt.tpl"
+  },
+  {
+   "symbol": "STT",
+   "path": "contracts/expr.scrypt.tpl"
+  },
+  {
+   "symbol": "FillFixedArray",
+   "path": "contracts/fillFixedArray.scrypt.tpl",
+   "md5": "fc7b9b69216cd058d6e026c448161e28"
+  },
+  {
+   "symbol": "St",
+   "path": "contracts/fillFixedArray.scrypt.tpl"
+  },
+  {
+   "symbol": "FixedArrayDemo",
+   "path": "contracts/fixedArray.scrypt.tpl",
+   "md5": "191308da606261ff26a891c4b6d50637"
+  },
+  {
+   "symbol": "FixedArrayDemo2",
+   "path": "contracts/fixedArray2.scrypt.tpl",
+   "md5": "417b9bb7a8b3a962cf3fc33abaa04db2"
+  },
+  {
+   "symbol": "GetterSetter",
+   "path": "contracts/getterSetter.scrypt.tpl",
+   "md5": "2838023a778dfaecdc212708f721b788"
+  },
+  {
+   "symbol": "HashPuzzle",
+   "path": "contracts/hashpuzzle.scrypt.tpl",
+   "md5": "6e7a00751d746fbe3ae5d776b11d83f9"
+  },
+  {
+   "symbol": "HeritageCounter",
+   "path": "contracts/heritageCounter.scrypt.tpl",
+   "md5": "06cd74e68965eb96e195493de54e035a",
+   "stateType": "BaseCounterState"
+  },
+  {
+   "symbol": "HeritageCounter2",
+   "path": "contracts/heritageCounter2.scrypt.tpl",
+   "md5": "9fe6f225ccd2935884b3c623ed9219eb",
+   "stateType": "HeritageCounter2State"
+  },
+  {
+   "symbol": "HeritageCounter2State",
+   "path": "contracts/heritageCounter2.scrypt.tpl"
+  },
+  {
+   "symbol": "HeritageDemo",
+   "path": "contracts/heritageDemo.scrypt.tpl",
+   "md5": "975d7554aa6aed61f7baac36f2364c53"
+  },
+  {
+   "symbol": "HeritageDemo1",
+   "path": "contracts/heritageDemo1.scrypt.tpl",
+   "md5": "7e04b6bb5c5167380ec93704f9f839c7"
+  },
+  {
+   "symbol": "HeritageDemo2",
+   "path": "contracts/heritageDemo2.scrypt.tpl",
+   "md5": "3892e20c65f984d6f0b643adb7c655f3"
+  },
+  {
+   "symbol": "Issue102",
+   "path": "contracts/issue102.scrypt.tpl",
+   "md5": "3cb3a2f065cd5e0eb6d7683bb70b0f93"
+  },
+  {
+   "symbol": "Point",
+   "path": "contracts/onlystruct.scrypt.tpl"
+  },
+  {
+   "symbol": "Signature",
+   "path": "contracts/onlystruct.scrypt.tpl"
+  },
+  {
+   "symbol": "Issue170",
+   "path": "contracts/issue170.scrypt.tpl",
+   "md5": "01ec810ab385f0c00fb3314c5a5004d2"
+  },
+  {
+   "symbol": "STInOtherFile",
+   "path": "contracts/onlystruct.scrypt.tpl"
+  },
+  {
+   "symbol": "Issue170_1",
+   "path": "contracts/issue170_1.scrypt.tpl",
+   "md5": "01ec810ab385f0c00fb3314c5a5004d2"
+  },
+  {
+   "symbol": "LastAssert",
+   "path": "contracts/lastAssert.scrypt.tpl",
+   "md5": "2838023a778dfaecdc212708f721b788"
+  },
+  {
+   "symbol": "Lib",
+   "path": "contracts/lib.scrypt.tpl"
+  },
+  {
+   "symbol": "SS",
+   "path": "contracts/lib.scrypt.tpl"
+  },
+  {
+   "symbol": "TestLibST",
+   "path": "contracts/libST.scrypt.tpl",
+   "md5": "95e00ba80debb3d4ce844c68d22a74a3"
+  },
+  {
+   "symbol": "TestLib",
+   "path": "contracts/libTest.scrypt.tpl",
+   "md5": "880684984e8d37d6f788e59a6bb52d58"
+  },
+  {
+   "symbol": "Matrix",
+   "path": "contracts/matrix.scrypt.tpl",
+   "md5": "7a52dd11930ba84ba6ce34620c105e1c"
+  },
+  {
+   "symbol": "MerklePath",
+   "path": "contracts/merklePath.scrypt.tpl"
+  },
+  {
+   "symbol": "Node",
+   "path": "contracts/merklePath.scrypt.tpl"
+  },
+  {
+   "symbol": "MerklePathTest",
+   "path": "contracts/merklePath.scrypt.tpl",
+   "md5": "206d58a6f2ba6551784dc20c6fdf40cf"
+  },
+  {
+   "symbol": "NonPublicMethodWithoutReturn",
+   "path": "contracts/nonPublicMethodWithoutReturn.scrypt.tpl",
+   "md5": "7c4795d51eec6041f528b1b3c2a2a4d2"
+  },
+  {
+   "symbol": "Operator",
+   "path": "contracts/operator.scrypt.tpl",
+   "md5": "ad9cd4d2c2c0578d1b2f44ffb707bb0c"
+  },
+  {
+   "symbol": "P2PKH",
+   "path": "contracts/p2pkh.scrypt.tpl",
+   "md5": "c5af93cb4966b9a0201c93e84ac386be"
+  },
+  {
+   "symbol": "Recallable",
+   "path": "contracts/recallable.scrypt.tpl",
+   "md5": "7b4d55da51d5f2d7d5560abdcbb3909f",
+   "stateType": "RecallableState"
+  },
+  {
+   "symbol": "RecallableState",
+   "path": "contracts/recallable.scrypt.tpl"
+  },
+  {
+   "symbol": "RelTimeLock",
+   "path": "contracts/relTimeLock.scrypt.tpl",
+   "md5": "5d134334e653518fa2a5f60df54828e4"
+  },
+  {
+   "symbol": "ScryptParserCase1",
+   "path": "contracts/scryptParserCase1.scrypt.tpl",
+   "md5": "5c05dc3d9b94d3f988d58c4580bf37b1"
+  },
+  {
+   "symbol": "ScryptParserCase1T",
+   "path": "contracts/scryptParserCase1.scrypt.tpl"
+  },
+  {
+   "symbol": "SHPreimage",
+   "path": "../../../../scrypt-ts-btc/assets/.templates/smart-contract/types/structs.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "Outpoint",
+   "path": "../../../../scrypt-ts-btc/assets/.templates/smart-contract/types/structs.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "SigHashUtils",
+   "path": "contracts/sigHashUtils.scrypt.tpl"
+  },
+  {
+   "symbol": "StateTest",
+   "path": "contracts/state.scrypt.tpl",
+   "md5": "1854de01319c414b0deb30eb7dddaa44",
+   "stateType": "A"
+  },
+  {
+   "symbol": "A",
+   "path": "contracts/state.scrypt.tpl"
+  },
+  {
+   "symbol": "B",
+   "path": "contracts/state.scrypt.tpl"
+  },
+  {
+   "symbol": "C",
+   "path": "contracts/state.scrypt.tpl"
+  },
+  {
+   "symbol": "DelegatorStateLib",
+   "path": "contracts/stateLibs.scrypt.tpl",
+   "stateType": "DelegatorState"
+  },
+  {
+   "symbol": "DelegatorState",
+   "path": "contracts/stateLibs.scrypt.tpl"
+  },
+  {
+   "symbol": "DelegateeStateLib",
+   "path": "contracts/stateLibs.scrypt.tpl",
+   "md5": "d41d8cd98f00b204e9800998ecf8427e",
+   "stateType": "DelegateeState"
+  },
+  {
+   "symbol": "DelegateeState",
+   "path": "contracts/stateLibs.scrypt.tpl"
+  },
+  {
+   "symbol": "StateDelegatee",
+   "path": "contracts/stateDelegatee.scrypt.tpl",
+   "md5": "0e2497d7245e2e66bb6702903f0fe23e",
+   "stateType": "DelegateeState"
+  },
+  {
+   "symbol": "StateDelegator",
+   "path": "contracts/stateDelegator.scrypt.tpl",
+   "md5": "21ecc94f6d6e6b692728c6268abbccdf",
+   "stateType": "DelegatorState"
+  },
+  {
+   "symbol": "StateMethods",
+   "path": "contracts/stateMethods.scrypt.tpl",
+   "md5": "418ec4019d94f21dd9138a5d13de828e"
+  },
+  {
+   "symbol": "StateType",
+   "path": "contracts/stateType.scrypt.tpl",
+   "md5": "e64e8b2d2bf85593ad373f32622ec778",
+   "stateType": "StateTypeState"
+  },
+  {
+   "symbol": "StateTypeState",
+   "path": "contracts/stateType.scrypt.tpl"
+  },
+  {
+   "symbol": "CustomStruct",
+   "path": "contracts/stateType.scrypt.tpl"
+  },
+  {
+   "symbol": "Statement",
+   "path": "contracts/statement.scrypt.tpl",
+   "md5": "08f5cd92c1940ff9af7e6deefa71ee19"
+  },
+  {
+   "symbol": "StaticProp",
+   "path": "contracts/staticProp.scrypt.tpl",
+   "md5": "c54932b4afd7f396537e87a42b458ce0"
+  },
+  {
+   "symbol": "Struct1",
+   "path": "contracts/struct1.scrypt.tpl",
+   "md5": "b7eb67aaa7aa40468eb7878c9876ec53"
+  },
+  {
+   "symbol": "ST11",
+   "path": "contracts/struct1.scrypt.tpl"
+  },
+  {
+   "symbol": "ST12",
+   "path": "contracts/struct1.scrypt.tpl"
+  },
+  {
+   "symbol": "LocalPoint",
+   "path": "contracts/struct1.scrypt.tpl"
+  },
+  {
+   "symbol": "Struct2",
+   "path": "contracts/struct2.scrypt.tpl",
+   "md5": "d0155566e0af82b7c0bdd75e0d59d404"
+  },
+  {
+   "symbol": "ST21",
+   "path": "contracts/struct2.scrypt.tpl"
+  },
+  {
+   "symbol": "ST22",
+   "path": "contracts/struct2.scrypt.tpl"
+  },
+  {
+   "symbol": "TestCtx",
+   "path": "contracts/testCtx.scrypt.tpl",
+   "md5": "7a5cbfcee1bb129e7f6787a02b3f9e3d"
+  },
+  {
+   "symbol": "TicTacToe",
+   "path": "contracts/tictactoe.scrypt.tpl",
+   "md5": "7332f7b1899564f55589ee33f9bb9e21",
+   "stateType": "TicTacToeState"
+  },
+  {
+   "symbol": "TicTacToeState",
+   "path": "contracts/tictactoe.scrypt.tpl"
+  },
+  {
+   "symbol": "Types",
+   "path": "contracts/types.scrypt.tpl",
+   "md5": "6e9c4d2faa784b0df33c67d2a3e256c4"
+  },
+  {
+   "symbol": "S",
+   "path": "contracts/types.scrypt.tpl"
+  },
+  {
+   "symbol": "W",
+   "path": "contracts/types.scrypt.tpl"
+  },
+  {
+   "symbol": "Util",
+   "path": "contracts/util.scrypt.tpl",
+   "md5": "33912e36d20bb747cb466943e8e7f22e"
+  },
+  {
+   "symbol": "UtilsA",
+   "path": "contracts/utils.scrypt.tpl"
+  },
+  {
+   "symbol": "ChangeInfo",
+   "path": "contracts/utils.scrypt.tpl"
+  },
+  {
+   "symbol": "ContextUtils",
+   "path": "../../../../scrypt-ts-btc/assets/.templates/smart-contract/builtin-libs/contextUtils.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "VerifyContext",
+   "path": "contracts/verifyContext.scrypt.tpl",
+   "md5": "bc6deb4550b5a752a959d4b9038a20dd"
+  },
+  {
+   "symbol": "VirtualUTXO",
+   "path": "contracts/virtualUTXO.scrypt.tpl",
+   "md5": "27cbb8c3a1d7415d0ccc6f6b8ea10651",
+   "stateType": "VirtualUTXOState"
+  },
+  {
+   "symbol": "VirtualUTXOState",
+   "path": "contracts/virtualUTXO.scrypt.tpl"
+  },
+  {
+   "symbol": "VoidReturn",
+   "path": "contracts/voidReturn.scrypt.tpl",
+   "md5": "c8c814dad85471d6ada6f32904735f20"
+  },
+  {
+   "symbol": "AccessNonProp",
+   "path": "contracts/invalid/accessNonProp.scrypt.tpl"
+  },
+  {
+   "symbol": "BadTypes",
+   "path": "contracts/invalid/badTypes.scrypt.tpl"
+  },
+  {
+   "symbol": "ByteStringSlice",
+   "path": "contracts/invalid/byteStringSlice.scrypt.tpl"
+  },
+  {
+   "symbol": "CallMethod",
+   "path": "contracts/invalid/callMethod.scrypt.tpl"
+  },
+  {
+   "symbol": "Constructor1",
+   "path": "contracts/invalid/constructor1.scrypt.tpl"
+  },
+  {
+   "symbol": "Constructor2",
+   "path": "contracts/invalid/constructor2.scrypt.tpl"
+  },
+  {
+   "symbol": "ContractLib1",
+   "path": "contracts/invalid/contractLib1.scrypt.tpl"
+  },
+  {
+   "symbol": "ContractLibWrapper1",
+   "path": "contracts/invalid/contractLib1.scrypt.tpl"
+  },
+  {
+   "symbol": "ContractLib2",
+   "path": "contracts/invalid/contractLib2.scrypt.tpl"
+  },
+  {
+   "symbol": "ContractLibWrapper2",
+   "path": "contracts/invalid/contractLib2.scrypt.tpl"
+  },
+  {
+   "symbol": "Counter4",
+   "path": "contracts/invalid/counter4.scrypt.tpl"
+  },
+  {
+   "symbol": "Ctc",
+   "path": "contracts/invalid/ctc.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidCTX",
+   "path": "contracts/invalid/ctx.scrypt.tpl"
+  },
+  {
+   "symbol": "CTX1",
+   "path": "contracts/invalid/ctx1.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidEnumC",
+   "path": "contracts/invalid/enum.scrypt.tpl"
+  },
+  {
+   "symbol": "ExplicitReturn",
+   "path": "contracts/invalid/explicitReturn.scrypt.tpl"
+  },
+  {
+   "symbol": "ExplicitReturn2",
+   "path": "contracts/invalid/explicitReturn2.scrypt.tpl"
+  },
+  {
+   "symbol": "ForLoop",
+   "path": "contracts/invalid/forLoop.scrypt.tpl"
+  },
+  {
+   "symbol": "HeritageDemoInvalid3",
+   "path": "contracts/invalid/heritageDemoInvalid3.scrypt.tpl"
+  },
+  {
+   "symbol": "HeritageDemoInvalid4",
+   "path": "contracts/invalid/heritageDemoInvalid4.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidB2G",
+   "path": "contracts/invalid/invalidB2G.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidCtx2",
+   "path": "contracts/invalid/invalidCtx2.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidFillFixedArray",
+   "path": "contracts/invalid/invalidFillFixedArray.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidState",
+   "path": "contracts/invalid/invalidState.scrypt.tpl",
+   "stateType": "InvalidStateState"
+  },
+  {
+   "symbol": "InvalidStateState",
+   "path": "contracts/invalid/invalidState.scrypt.tpl"
+  },
+  {
+   "symbol": "Issue292",
+   "path": "contracts/invalid/issue292.scrypt.tpl"
+  },
+  {
+   "symbol": "NonPublicMethod2",
+   "path": "contracts/invalid/nonPublicMethod2.scrypt.tpl"
+  },
+  {
+   "symbol": "OperatorRequiresBoolean",
+   "path": "contracts/invalid/operatorRequiresBoolean.scrypt.tpl"
+  },
+  {
+   "symbol": "PropInitialization1",
+   "path": "contracts/invalid/propInitialization1.scrypt.tpl"
+  },
+  {
+   "symbol": "PropInitialization2",
+   "path": "contracts/invalid/propInitialization2.scrypt.tpl"
+  },
+  {
+   "symbol": "PublicMethod1",
+   "path": "contracts/invalid/publicMethod1.scrypt.tpl"
+  },
+  {
+   "symbol": "PublicMethod2",
+   "path": "contracts/invalid/publicMethod2.scrypt.tpl"
+  },
+  {
+   "symbol": "Recursion",
+   "path": "contracts/invalid/recursion.scrypt.tpl"
+  },
+  {
+   "symbol": "Recursion2",
+   "path": "contracts/invalid/recursion2.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidStaticProp",
+   "path": "contracts/invalid/staticProp.scrypt.tpl"
+  },
+  {
+   "symbol": "StringLiteral",
+   "path": "contracts/invalid/stringLiteral.scrypt.tpl"
+  },
+  {
+   "symbol": "ToByteString",
+   "path": "contracts/invalid/toByteString.scrypt.tpl"
+  },
+  {
+   "symbol": "TypeNonSpecified",
+   "path": "contracts/invalid/typeNospecified.scrypt.tpl"
+  }
+ ]
+}

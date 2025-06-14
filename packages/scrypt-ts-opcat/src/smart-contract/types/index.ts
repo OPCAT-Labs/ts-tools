@@ -1,6 +1,7 @@
 export {
   type ByteString,
   type Int32,
+  type UInt64,
   type Bool,
   type FixedArray,
   type StructObject,
@@ -23,13 +24,10 @@ export {
   type Outpoint,
   type Prevouts,
   type SHPreimage,
-  type SpentScripts,
   type SpentAmounts,
   type TxHashPreimage,
-  type CompactTxHashPreimage,
-  type HashRootTxHashPreimage,
-  type SpentDataHashes as StateHashes,
   type BacktraceInfo,
+  type SpentScriptHashes,
 } from './structs.js';
 
 export { OpCode } from './opCode.js';

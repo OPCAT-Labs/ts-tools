@@ -25,12 +25,21 @@ export const TX_HASH_BYTE_LEN = HASH256_HASH_LEN;
 export const RIPEMD160_HASH_LEN = 20n;
 /** @ignore */
 export const HASH160_HASH_LEN = RIPEMD160_HASH_LEN;
+
 /** @ignore */
-export const STATE_HASH_BYTE_LEN = HASH160_HASH_LEN;
+export const TX_OUTPUT_SCRIPT_HASH_LEN = SHA256_HASH_LEN;
 /** @ignore */
-export const STATE_HASH_ROOT_BYTE_LEN = HASH160_HASH_LEN;
+export const TX_OUTPUT_DATA_HASH_LEN = SHA256_HASH_LEN;
+/** @ignore
+ * prevout (32 + 4) + unlockScriptHash(32) + sequence(4) = 72 
+ */
+export const TX_INPUT_BYTE_LEN = 72n;
+/** @ignore
+ * satoshis(8) + scriptHash(32) + dataHash(32) = 72
+ */
+export const TX_OUTPUT_BYTE_LEN = 72n;
 /** @ignore */
-export const X_ONLY_PUBKEY_BYTE_LEN = 32n;
+export const TX_INPUT_SCRIPT_HASH_BYTE_LEN = 32n;
 
 /**
  * @ignore

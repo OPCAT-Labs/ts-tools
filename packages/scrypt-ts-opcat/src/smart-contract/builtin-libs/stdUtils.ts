@@ -1,36 +1,33 @@
-import { assert } from '../fns/assert.js';
-import { method } from '../decorators.js';
-import { int32ToByteString, len, toByteString } from '../fns/index.js';
-import { SmartContractLib } from '../smartContractLib.js';
-import { Int32, ByteString } from '../types/index.js';
+import { method } from "../decorators.js";
+import { assert } from "../fns/assert.js";
+import { len } from "../fns/byteString.js";
+import { num2bin } from "../fns/byteString.js";
+import { SmartContractLib } from "../smartContractLib.js";
+import { ByteString, UInt32, UInt64 } from "../types/primitives.js";
+
+
+export const UINT64_MAX = 0xffffffffffffffffn;
+export const UINT64_MIN = 0n;
+export const UINT32_MAX = 0xffffffffn;
+export const UINT32_MIN = 0n;
 
 export class StdUtils extends SmartContractLib {
-  /**
-   * Checks if a ByteString is equivalent to a number
-   * @category Library
-   * @onchain
-   * @param i a number
-   * @param b a ByteString
-   * @returns true if success
-   */
   @method()
-  static checkInt32(i: Int32, b: ByteString): boolean {
-    const iByte = int32ToByteString(i);
-    const l = len(iByte);
-    let fullByte = toByteString('');
-    if (l == 0n) {
-      fullByte = toByteString('00000000');
-    } else if (l == 1n) {
-      fullByte = iByte + toByteString('000000');
-    } else if (l == 2n) {
-      fullByte = iByte + toByteString('0000');
-    } else if (l == 3n) {
-      fullByte = iByte + toByteString('00');
-    } else if (l == 4n) {
-      fullByte = iByte;
-    } else {
-      assert(false, 'num overflow!');
-    }
-    return fullByte == b;
+  static checkLenDivisibleBy(b: ByteString, n: bigint): bigint {
+    assert(len(b) % n == 0n, 'length of b is not divisible by n');
+    return len(b) / n;
+  }
+
+
+  @method()
+  static uint64ToByteString(n: UInt64): ByteString {
+    assert(n >= UINT64_MIN && n <= UINT64_MAX, 'uint64 out of range');
+    return num2bin(n, 8n);
+  }
+
+  @method()
+  static uint32ToByteString(n: UInt32): ByteString {
+    assert(n >= UINT32_MIN && n <= UINT32_MAX, 'uint32 out of range');
+    return num2bin(n, 4n);
   }
 }
