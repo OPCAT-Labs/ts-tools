@@ -7,7 +7,7 @@ import {
   StatefulContractUtxo,
   StateProvableUtxo,
 } from '../globalTypes.js';
-import { ToSignInput, SignOptions } from '../signer.js';
+import { ToSignInput, SignOptions, Signer } from '../signer.js';
 import { DUST_LIMIT, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from '../smart-contract/consts.js';
 import { Script } from '../smart-contract/types/script.js';
 import { ContextProvider } from './contextProvider.js';
@@ -20,8 +20,7 @@ import { InputContext } from '../smart-contract/types/context.js';
 import { IExtPsbt, ContractCall } from './types.js';
 import * as tools from 'uint8array-tools';
 import { toByteString } from '../smart-contract/fns/byteString.js';
-import { hash256 } from '../smart-contract/fns/index.js';
-import { TxUtils } from '../smart-contract/builtin-libs/txUtils.js';
+import { hash256, sha256 } from '../smart-contract/fns/index.js';
 
 import { FinalScriptsFunc, isFinalized, Psbt, PsbtOptsOptional, PsbtOutputExtended, TransactionInput } from './psbt.js';
 import { fromSupportedNetwork } from '../networks.js';
@@ -29,6 +28,7 @@ import { Transaction, PublicKey, Networks } from '@opcat-labs/opcat';
 import { SmartContract } from '../smart-contract/smartContract.js';
 import { OpcatState } from '../smart-contract/types/primitives.js';
 import { callArgsToStackToScript } from './bufferutils.js';
+import { SpentDataHashes } from '../smart-contract/types/structs.js';
 
 const P2PKH_SIG_LEN = 0x49; // 73 bytes signature
 const P2PKH_PUBKEY_LEN = 0x21; // 33 bytes pubkey
@@ -82,6 +82,12 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     super(opts as PsbtOptsOptional, data);
     this._ctxProvider = new ContextProvider(this);
   }
+
+  async sign(signer: Signer): Promise<void> {
+    const signedPsbtHex = await signer.signPsbt(this.toHex(), this.psbtOptions());
+    this.combine(ExtPsbt.fromHex(signedPsbtHex)).finalizeAllInputs();
+  }
+
   getSequence(inputIndex: InputIndex): number {
     return this.unsignedTx.inputs[inputIndex].sequenceNumber;
   }
@@ -132,25 +138,30 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this._ctxProvider.getInputCtx(inputIndex);
   }
 
-  getTxoStateHashes() {
-    // return this._txoStateHashes;
-    return '' as any;
-  }
+  getTxoStateHashes(): SpentDataHashes {
 
-  get stateHashRoot(): ByteString {
-    let stateRoots = '';
-    for (let i = 0; i < this._txoStateHashes.length; i++) {
-      stateRoots += this._txoStateHashes[i];
+    let spentDataHashes: SpentDataHashes = toByteString('');
+    for (let i = 0; i < this.data.inputs.length; i++) {
+      spentDataHashes += sha256(tools.toHex(this.data.inputs[i].opcatUtxo.data));
     }
-    return hash256(stateRoots);
+
+    return spentDataHashes;
   }
 
-  get stateHashRootScript(): Uint8Array {
-    return '' as any
-    // return hexToUint8Array(TxUtils.buildStateHashRootScript(this.stateHashRoot));
+  get hashSpentDatas(): ByteString {
+
+    const spentDataHashes = this.getTxoStateHashes();
+
+    let spentDataHashesJoin = '';
+    for (let i = 0; i < spentDataHashes.length; i++) {
+      if(spentDataHashes[i]) {
+        spentDataHashesJoin += spentDataHashes[i]
+      }
+    }
+    return hash256(spentDataHashesJoin);
   }
 
-  private _txoStateHashes: any;
+
   private _sigRequests: Map<InputIndex, Omit<ToSignInput, 'index'>[]> = new Map();
   private _finalizers: Map<InputIndex, Finalizer> = new Map();
 
@@ -161,8 +172,6 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   private _changeOutputIndex: number | null = null;
   private _changeToAddr: string;
 
-  private _changeData: Uint8Array;
-
   private _changeFeeRate: number;
 
   override addInput(inputData: PsbtInputExtended): this {
@@ -172,8 +181,8 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     if (inputData.finalizer) {
       const index = this.data.inputs.length - 1;
       const input = this.data.inputs[index];
-      const witness = inputData.finalizer(this, index, input);
-      this._cacheInputCallArgs(index, witness);
+      const callArgs = inputData.finalizer(this, index, input);
+      this._cacheInputCallArgs(index, callArgs);
       const finalizer = inputData.finalizer;
       this._setInputFinalizer(index, (self, idx, inp) => {
         return finalizer(self, idx, inp);
@@ -260,7 +269,6 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       );
     }
 
-
     this.addInput({
       hash: fromUtxo.txId,
       index: fromUtxo.outputIndex,
@@ -331,13 +339,15 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
-  addContractOutput(contract: SmartContract<OpcatState>, satoshis: number, data: Uint8Array): this {
+  addContractOutput(contract: SmartContract<OpcatState>, satoshis: number): this {
 
+
+    const Contract = Object.getPrototypeOf(contract).constructor as typeof SmartContract;
 
     this.addOutput({
       script: contract.lockingScript.toBuffer(),
       value: BigInt(satoshis),
-      data,
+      data: tools.fromHex(Contract.stateSerialize(contract.state)),
     });
 
     const outputIndex = this.txOutputs.length - 1;
@@ -370,7 +380,6 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }
     this._changeToAddr = toAddr;
     this._changeFeeRate = feeRate;
-    this._changeData = data;
     return this;
   }
 
@@ -379,7 +388,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       return this;
     }
 
-    const estVSize = this.estimateVSize(); // NOTE: this may be inaccurate due to the unknown witness size
+    const estVSize = this.estimateVSize(); // NOTE: this may be inaccurate due to the unknown call args size
 
     const changeAmount = this.inputAmount - this.outputAmount - estVSize * this._changeFeeRate;
 
@@ -399,22 +408,23 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   getChangeInfo(): TxOut {
-    // if (this._changeOutputIndex !== null) {
-    //   const changeOutput = this.txOutputs[this._changeOutputIndex];
-    //   if (!changeOutput) {
-    //     throw new Error(`Change output is not found at index ${this._changeOutputIndex}`);
-    //   }
-    //   return {
-    //     script: tools.toHex(changeOutput.script),
-    //     satoshis: satoshiToHex(changeOutput.value),
-    //   };
-    // } else {
-    //   return {
-    //     script: toByteString(''),
-    //     satoshis: toByteString(''),
-    //   };
-    // }
-    return {} as any
+    if (this._changeOutputIndex !== null) {
+      const changeOutput = this.txOutputs[this._changeOutputIndex];
+      if (!changeOutput) {
+        throw new Error(`Change output is not found at index ${this._changeOutputIndex}`);
+      }
+      return {
+        scriptHash: sha256(tools.toHex(changeOutput.script)),
+        satoshis: changeOutput.value,
+        dataHash: sha256(tools.toHex(changeOutput.data)),
+      };
+    } else {
+      return {
+        scriptHash: sha256(toByteString('')),
+        satoshis: -1n,
+        dataHash: sha256(toByteString('')),
+      };
+    }
   }
 
   get unsignedTx(): Transaction {
@@ -480,25 +490,25 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       this.finalizeInput(idx, finalFunc);
     });
 
-    this._bindCovenantUtxo();
+    this._bindcontractsUtxo();
 
     return this;
   }
 
-  private _bindCovenantUtxo() {
-    this._outputContracts.forEach((covenant, outputIndex) => {
+  private _bindcontractsUtxo() {
+    this._outputContracts.forEach((contract, outputIndex) => {
       const utxo = this.txOutputs[outputIndex];
-      if (covenant.state && Object.keys(covenant.state).length > 0) {
-        covenant.bindToUtxo({
+      if (contract.state && Object.keys(contract.state).length > 0) {
+        contract.bindToUtxo({
           txId: this.unsignedTx.id,
           outputIndex,
           data: uint8ArrayToHex(utxo.data),
           satoshis: Number(utxo.value),
-          txoStateHashes: this._txoStateHashes,
+          txoStateHashes: this.getTxoStateHashes(),
           txHashPreimage: uint8ArrayToHex(this.unsignedTx.toTxHashPreimage()),
         });
       } else {
-        covenant.bindToUtxo({
+        contract.bindToUtxo({
           txId: this.unsignedTx.id,
           outputIndex,
           data: uint8ArrayToHex(utxo.data),
@@ -515,7 +525,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   private _cacheInputCallArgs(inputIndex: InputIndex, callArgs: RawArgs) {
-    // put witness into unknownKeyVals to support autoFinalize in signer
+    // put call args into unknownKeyVals to support autoFinalize in signer
     callArgs.forEach((wit, widx) => {
       this.data.addUnknownKeyValToInput(inputIndex, {
         key: tools.fromUtf8(widx.toString()),
@@ -543,7 +553,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
         // p2tr
         if (!isFinalized(input)) {
           if ((input.unknownKeyVals || []).length > 0) {
-            // use unknownKeyVals as a place to store witness before sign
+            // use unknownKeyVals as a place to store call args before sign
             const unfinalizedWitness = (input.unknownKeyVals || []).map((v) => v.value);
             size += callArgsToStackToScript(unfinalizedWitness).length;
           } else {

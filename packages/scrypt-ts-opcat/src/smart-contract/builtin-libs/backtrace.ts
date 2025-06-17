@@ -4,7 +4,7 @@ import { SmartContractLib } from '../smartContractLib.js';
 import { ByteString } from '../types/index.js';
 import { BacktraceInfo } from '../types/structs.js';
 import { TxUtils } from './txUtils.js';
-import { TX_INPUT_BYTE_LEN, TX_INPUT_COUNT_BYTE_LEN, TX_INPUT_COUNT_MAX, TX_OUTPUT_BYTE_LEN } from '../consts.js';
+import { TX_INPUT_BYTE_LEN, TX_OUTPUT_BYTE_LEN } from '../consts.js';
 import { slice } from '../fns/byteString.js';
 import { StdUtils } from './stdUtils.js';
 

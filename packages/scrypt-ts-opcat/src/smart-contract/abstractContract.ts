@@ -1,6 +1,6 @@
 import { IContext } from './types/context.js';
 import { ByteString, SHPreimage } from './types/index.js';
-import { Int32, PubKey, Ripemd160, Sig, OpcatState } from './types/primitives.js';
+import { Int32, PubKey, Sig, OpcatState } from './types/primitives.js';
 import { BacktraceInfo } from './types/structs.js';
 
 /**
@@ -61,23 +61,13 @@ export abstract class AbstractContract {
   abstract relTimeLock(nSequence: bigint): boolean;
 
   /**
-   * Appends the state output with its state hash to the outputs.
-   * @param output the state output
-   * @param stateHash the hash of the state for the output
-   * @returns the number of state outputs
-   * @onchain
-   * @category State
-   */
-  abstract appendStateOutput(output: ByteString, stateHash: Ripemd160): Int32;
-
-  /**
    * Build the state related outputs.
    * @returns the serialized outputs (state hash root output + other state outputs)
    * @onchain
    * @category State
    *
    */
-  abstract buildStateOutputs(): ByteString;
+  abstract buildStateOutput(satoshis: Int32): ByteString;
 
   /**
    * Check the outputs with the context of current transaction.
@@ -101,7 +91,7 @@ export abstract class AbstractContract {
    * @onchain
    * @category State
    */
-  static stateHash<ST extends OpcatState>(_state: ST): Ripemd160 {
+  static stateSerialize<ST extends OpcatState>(_state: ST): ByteString {
     throw new Error('Not implemented');
   }
 
@@ -113,7 +103,7 @@ export abstract class AbstractContract {
    * @onchain
    * @category State
    */
-  abstract checkInputStateHash(inputIndex: Int32, inputStateHash: ByteString): boolean;
+  abstract checkInputState(inputIndex: Int32, inputState: ByteString): boolean;
 
   /**
    * Check whether the contract can be traced back to the genesis outpoint.

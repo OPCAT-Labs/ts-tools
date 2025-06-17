@@ -5,34 +5,6 @@
   "md5": "9b0c8d01494905982f799f7a7a960b3a",
   "structs": [
     {
-      "name": "ChainTxVerifyResponse",
-      "params": [
-        {
-          "name": "prevPrevScript",
-          "type": "bytes"
-        },
-        {
-          "name": "prevPrevOutpoint",
-          "type": "bytes"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
-      "name": "MergePrevoutsResponse",
-      "params": [
-        {
-          "name": "prevouts",
-          "type": "bytes"
-        },
-        {
-          "name": "inputCount",
-          "type": "int"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
       "name": "CounterState",
       "params": [
         {
@@ -52,6 +24,10 @@
         {
           "name": "satoshis",
           "type": "bytes"
+        },
+        {
+          "name": "data",
+          "type": "bytes"
         }
       ],
       "genericTypes": []
@@ -64,94 +40,12 @@
           "type": "bytes"
         },
         {
-          "name": "prevOutputIndexVal",
+          "name": "inputIndex",
           "type": "int"
         },
         {
           "name": "sequence",
-          "type": "bytes"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
-      "name": "TxHashPreimage1",
-      "params": [
-        {
-          "name": "version",
-          "type": "bytes"
-        },
-        {
-          "name": "inputCountVal",
           "type": "int"
-        },
-        {
-          "name": "inputList",
-          "type": "bytes[6]"
-        },
-        {
-          "name": "outputCountVal",
-          "type": "int"
-        },
-        {
-          "name": "outputSatoshisList",
-          "type": "bytes[6]"
-        },
-        {
-          "name": "outputScriptList",
-          "type": "bytes[6]"
-        },
-        {
-          "name": "locktime",
-          "type": "bytes"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
-      "name": "TxHashPreimage2",
-      "params": [
-        {
-          "name": "version",
-          "type": "bytes"
-        },
-        {
-          "name": "inputCountVal",
-          "type": "int"
-        },
-        {
-          "name": "inputList",
-          "type": "bytes[6]"
-        },
-        {
-          "name": "outputCountVal",
-          "type": "int"
-        },
-        {
-          "name": "hashRoot",
-          "type": "bytes"
-        },
-        {
-          "name": "suffixList",
-          "type": "bytes[4]"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
-      "name": "BacktraceInfo",
-      "params": [
-        {
-          "name": "prevTxInput",
-          "type": "TxIn"
-        },
-        {
-          "name": "prevTxInputIndexVal",
-          "type": "int"
-        },
-        {
-          "name": "prevPrevTxPreimage",
-          "type": "TxHashPreimage1"
         }
       ],
       "genericTypes": []
@@ -161,58 +55,58 @@
       "params": [
         {
           "name": "nVersion",
+          "type": "int"
+        },
+        {
+          "name": "hashPrevouts",
           "type": "bytes"
         },
         {
-          "name": "nLockTime",
+          "name": "spentScriptHash",
           "type": "bytes"
         },
         {
-          "name": "shaPrevouts",
+          "name": "spentDataHash",
           "type": "bytes"
         },
         {
-          "name": "shaSpentAmounts",
+          "name": "spentAmount",
+          "type": "int"
+        },
+        {
+          "name": "sequence",
+          "type": "int"
+        },
+        {
+          "name": "hashSpentAmounts",
           "type": "bytes"
         },
         {
-          "name": "shaSpentScripts",
+          "name": "hashSpentScripts",
           "type": "bytes"
         },
         {
-          "name": "shaSequences",
+          "name": "hashSpentDatas",
           "type": "bytes"
         },
         {
-          "name": "shaOutputs",
+          "name": "hashSequences",
           "type": "bytes"
         },
         {
-          "name": "spendType",
+          "name": "hashOutputs",
           "type": "bytes"
         },
         {
           "name": "inputIndex",
-          "type": "bytes"
+          "type": "int"
         },
         {
-          "name": "tapLeafHash",
-          "type": "bytes"
+          "name": "nLockTime",
+          "type": "int"
         },
         {
-          "name": "keyVersion",
-          "type": "bytes"
-        },
-        {
-          "name": "codeSepPos",
-          "type": "bytes"
-        },
-        {
-          "name": "_eWithoutLastByte",
-          "type": "bytes"
-        },
-        {
-          "name": "_eLastByte",
+          "name": "sighashType",
           "type": "int"
         }
       ],
@@ -227,25 +121,7 @@
         },
         {
           "name": "outputIndex",
-          "type": "bytes"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
-      "name": "InputStateProof",
-      "params": [
-        {
-          "name": "txHashPreimage",
-          "type": "TxHashPreimage2"
-        },
-        {
-          "name": "outputIndexVal",
           "type": "int"
-        },
-        {
-          "name": "stateHashes",
-          "type": "bytes[5]"
         }
       ],
       "genericTypes": []
@@ -258,48 +134,6 @@
       "properties": [],
       "genericTypes": [],
       "stateType": "CounterState"
-    },
-    {
-      "name": "ContextUtils",
-      "params": [],
-      "properties": [],
-      "genericTypes": []
-    },
-    {
-      "name": "TxProof",
-      "params": [],
-      "properties": [],
-      "genericTypes": []
-    },
-    {
-      "name": "StateUtils",
-      "params": [],
-      "properties": [],
-      "genericTypes": []
-    },
-    {
-      "name": "Backtrace",
-      "params": [],
-      "properties": [],
-      "genericTypes": []
-    },
-    {
-      "name": "StateLib",
-      "params": [],
-      "properties": [],
-      "genericTypes": []
-    },
-    {
-      "name": "TxUtils",
-      "params": [],
-      "properties": [],
-      "genericTypes": []
-    },
-    {
-      "name": "StdUtils",
-      "params": [],
-      "properties": [],
-      "genericTypes": []
     }
   ],
   "alias": [],
@@ -314,10 +148,6 @@
           "type": "SHPreimage"
         },
         {
-          "name": "__scrypt_ts_inputIndexVal",
-          "type": "int"
-        },
-        {
           "name": "__scrypt_ts_changeInfo",
           "type": "TxOut"
         },
@@ -330,20 +160,12 @@
           "type": "CounterState"
         },
         {
-          "name": "__scrypt_ts_inputStateProof",
-          "type": "InputStateProof"
-        },
-        {
-          "name": "__scrypt_ts_nextStateHashes",
-          "type": "bytes[5]"
-        },
-        {
           "name": "__scrypt_ts_prevouts",
           "type": "bytes[6]"
         },
         {
           "name": "__scrypt_ts_spentAmounts",
-          "type": "bytes[6]"
+          "type": "int[6]"
         },
         {
           "name": "__scrypt_ts_spentScripts",

@@ -48,11 +48,8 @@ describe('Test P2PKH', () => {
         p2pkh.unlock(sig, PubKey(pubKey));
       });
 
-    const signedPsbtHex = await testSigner.signPsbt(psbt.toHex(), psbt.psbtOptions());
-
     expect(() => {
-      const sss = ExtPsbt.fromHex(signedPsbtHex)
-      psbt.combine(sss).finalizeAllInputs();
+      psbt.sign(testSigner)
       expect(bvmVerify(psbt, 0)).to.eq(true);
     }).not.throw();
   });

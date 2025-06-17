@@ -1,7 +1,7 @@
 import { Contextual } from '../smart-contract/types/context.js';
 import { SmartContract } from '../smart-contract/smartContract.js';
 import { InputIndex } from '../globalTypes.js';
-import { ToSignInput } from '../signer.js';
+import { Signer, ToSignInput } from '../signer.js';
 import { OpcatState, Sig } from '../smart-contract/types/primitives.js';
 import { Psbt } from './psbt.js';
 import { Transaction } from '@opcat-labs/opcat';
@@ -27,7 +27,7 @@ export interface IExtPsbt extends Psbt, Contextual {
    * @param satoshis the output includes the amount of satoshis.
    * @param data the data to be included in the output, such as the raw state.
    */
-  addContractOutput(contract: SmartContract<OpcatState>, satoshis: number, data: Uint8Array): this;
+  addContractOutput(contract: SmartContract<OpcatState>, satoshis: number): this;
 
   /**
    * Populate the call arguments for the contract spending input.
@@ -72,4 +72,8 @@ export interface IExtPsbt extends Psbt, Contextual {
    * @returns the signature, if no signature found, return a dummy signature.
    */
   getSig(inputIndex: InputIndex, options: Omit<ToSignInput, 'index'>): Sig;
+
+
+
+  sign(singer: Signer): Promise<void>;
 }

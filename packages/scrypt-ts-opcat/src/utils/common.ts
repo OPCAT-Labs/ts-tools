@@ -3,7 +3,6 @@ import { crypto, Transaction } from '@opcat-labs/opcat';
 import {
   ByteString,
   FixedArray,
-  SigHashType,
 } from '../smart-contract/types/index.js';
 import * as tools from 'uint8array-tools';
 import { TX_INPUT_COUNT_MAX } from '../smart-contract/consts.js';
@@ -29,24 +28,6 @@ export function hexToUint8Array(hex: string): Uint8Array {
   return tools.fromHex(hex);
 }
 
-/**
- * convert bigint to `ByteString`
- * @param n
- * @param size
- * @returns
- */
-export function bigintToByteString(n: bigint, size: bigint): ByteString {
-  let hex = n.toString(16);
-  hex = hex.padStart(Number(size) * 2, '0');
-
-  if (hex.length > Number(size) * 2) {
-    throw new Error(`bigint out of range, bigint: ${n}, size: ${size}`);
-  }
-
-  // to little endian
-  const le = tools.fromHex(hex).reverse();
-  return tools.toHex(le);
-}
 
 /**
  * create a FixedArray and fill it with initial value
@@ -72,14 +53,6 @@ export function emptyByteString(): ByteString {
 }
 
 
-/**
- * convert SigHashType to a number
- * @param sighashType
- * @returns
- */
-export function sigHashTypeToNumber(sighashType: SigHashType): number {
-  return parseInt(sighashType, 16);
-}
 
 /** @ignore */
 export function requireTrue(res: boolean, message: string) {
@@ -119,6 +92,10 @@ export function cloneDeep<T>(obj: T, hash = new WeakMap()): T {
 
   if (obj instanceof RegExp) {
     return new RegExp(obj) as unknown as T;
+  }
+
+  if (Buffer.isBuffer(obj)) {
+    return obj.subarray(0) as unknown as T;
   }
 
   if (ArrayBuffer.isView(obj) && !(obj instanceof DataView)) {

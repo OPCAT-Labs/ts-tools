@@ -1,7 +1,6 @@
 import * as tools from 'uint8array-tools';
 import { ByteString, SHPreimage } from '../smart-contract/types/index.js';
-import { byteStringToInt32, intToByteString, num2bin, toByteString } from '../smart-contract/fns/byteString.js';
-import { reverseBuffer } from '../psbt/bufferutils.js';
+import { byteStringToInt32, num2bin, toByteString } from '../smart-contract/fns/byteString.js';
 
 
 
@@ -40,7 +39,7 @@ export function decodeSHPreimage(preimage: Uint8Array): SHPreimage {
     hashOutputs: tools.toHex(preimage.subarray(240, 272)),
     inputIndex: byteStringToInt32(tools.toHex(preimage.subarray(272, 276))),
     nLockTime: byteStringToInt32(tools.toHex(preimage.subarray(276, 280))),
-    sigHashType: tools.toHex(preimage.subarray(280, 284)),
+    sigHashType: byteStringToInt32(tools.toHex(preimage.subarray(280, 284))),
   };
 }
 

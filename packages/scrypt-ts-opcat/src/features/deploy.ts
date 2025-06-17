@@ -18,7 +18,6 @@ export async function deploy(
   provider: UtxoProvider & ChainProvider,
   contract: SmartContract<OpcatState>,
   satoshis: number = 330,
-  data: Uint8Array = new Uint8Array(0)
 ): Promise<ExtPsbt> {
   const address = await signer.getAddress();
 
@@ -29,7 +28,7 @@ export async function deploy(
   const network = await provider.getNetwork();
   const psbt = new ExtPsbt({ network: network });
 
-  psbt.spendUTXO(utxos).addContractOutput(contract, satoshis, data).change(address, feeRate).seal();
+  psbt.spendUTXO(utxos).addContractOutput(contract, satoshis).change(address, feeRate).seal();
 
   // sign the psbts
   const signedPsbtHex = await signer.signPsbt(psbt.toHex(), psbt.psbtOptions());

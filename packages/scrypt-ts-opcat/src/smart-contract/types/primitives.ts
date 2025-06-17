@@ -209,14 +209,13 @@ export type FixedArray<T, N extends number> = Array<T> & { length: N };
  * ref https://github.com/bitcoin/bitcoin/blob/c288c790cd9abe91e53164aba5d975ef1e26ee3f/src/script/interpreter.h#L30-L33
  */
 export const enum SigHashType {
-  DEFAULT = '00',
-  ALL = '01',
-  NONE = '02',
-  SINGLE = '03',
-  ANYONECANPAY = '80',
-  ANYONECANPAY_ALL = '81',
-  ANYONECANPAY_NONE = '82',
-  ANYONECANPAY_SINGLE = '83',
+  ALL = 0x01,
+  NONE = 0x02,
+  SINGLE = 0x03,
+  ANYONECANPAY = 0x80,
+  ANYONECANPAY_ALL = 0x81,
+  ANYONECANPAY_NONE = 0x82,
+  ANYONECANPAY_SINGLE = 0x83,
 }
 
 /**

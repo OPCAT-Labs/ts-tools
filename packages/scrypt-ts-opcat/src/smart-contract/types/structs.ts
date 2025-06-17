@@ -1,9 +1,4 @@
-import {
-  TX_INPUT_COUNT_MAX,
-  TX_OUTPUT_COUNT_MAX,
-  TX_HASH_PREIMAGE2_SUFFIX_ARRAY_SIZE,
-} from '../consts.js';
-import { ByteString, FixedArray, Int32, UInt32, UInt64 } from './primitives.js';
+import { ByteString, Int32, UInt32, UInt64 } from './primitives.js';
 
 /**
  * The structure used to refer to a particular transaction output
@@ -148,7 +143,7 @@ export type SHPreimage = {
   /**
    * 4 bytes little endian.
    */
-  sigHashType: ByteString
+  sigHashType: UInt32
 };
 
 /**

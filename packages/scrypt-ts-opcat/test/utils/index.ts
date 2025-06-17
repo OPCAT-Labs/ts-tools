@@ -20,10 +20,13 @@ export function readArtifact(artifactFileName: string) {
   return JSON.parse(readFileSync(filePath, 'utf-8'));
 }
 
-export async function getDummyUtxo(addr?: string, satoshis?: number): Promise<UTXO> {
-  addr ||= await getTestAddress();
+export function getDummyUtxo(addr?: string , satoshis?: number): UTXO {
+
+  if (!addr) {
+    addr = getTestAddress();
+  }
   return {
-    txId: randomBytes(32).toString('hex'),
+    txId: 'fa42b98cbd50338096f0dd3eecebb636f47ccaaa6fa7ebb50f3fee6567fa47d2',
     outputIndex: 0,
     script: Script.fromAddress(addr).toHex(),
     satoshis: satoshis || inputSatoshis,
@@ -31,9 +34,9 @@ export async function getDummyUtxo(addr?: string, satoshis?: number): Promise<UT
   };
 }
 
-export async function getDummyExtUtxo(addr?: string, satoshis?: number): Promise<ExtUtxo> {
+export function getDummyExtUtxo(addr?: string, satoshis?: number): ExtUtxo {
   return {
-    ...(await getDummyUtxo(addr, satoshis)),
+    ...(getDummyUtxo(addr, satoshis)),
     txHashPreimage:
       '02000000019ffd5845b0424732af076e67b28a05354bddda631e87784b0d65f52675cc60c10000000000ffffffff0300000000000000001a6a18636174013e8cd53bfc578703365087c18c60f8a7f08d5958e803000000000000225120f6d19fba042c55172f89cab22944e6efc4f780ba17f15392bf3717eb1bf908759a3d0f0000000000225120fac1f72fc3e3fb2d3098249d9eaab3fdadf5b2d6f7dd695373cd273176cc9e9000000000',
     txoStateHashes: emptyStateHashes(),

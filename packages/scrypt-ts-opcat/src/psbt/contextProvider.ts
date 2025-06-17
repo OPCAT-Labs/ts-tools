@@ -10,20 +10,17 @@ import {
 import { InputContext } from '../smart-contract/types/context.js';
 import { IExtPsbt } from './types.js';
 import {
-  emptyByteString,
-  fillFixedArray,
   uint8ArrayToHex,
-  bigintToByteString,
   hexToUint8Array,
-  byteStringToBigInt,
 } from '../utils/common.js';
 import { decodeSHPreimage } from '../utils/preimage.js';
-import { TX_INPUT_COUNT_MAX, TX_OUTPUT_DATA_HASH_LEN, TX_OUTPUT_SATOSHI_BYTE_LEN, TX_OUTPUT_SCRIPT_HASH_LEN } from '../smart-contract/consts.js';
 import {  crypto} from '@opcat-labs/opcat';
 import { sha256 } from '../smart-contract/fns/hashes.js';
-import { slice, toByteString } from '../smart-contract/fns/byteString.js';
+import { toByteString } from '../smart-contract/fns/byteString.js';
 import { StdUtils } from '../smart-contract/builtin-libs/index.js';
 
+import { reverseBuffer } from './bufferutils.js';
+import * as tools from 'uint8array-tools';
 
 /** @ignore */
 export class ContextProvider {
@@ -56,27 +53,33 @@ export class ContextProvider {
     let spentDataHashes: SpentDataHashes = toByteString('')
     let spentScriptHashes: SpentScriptHashes = toByteString('')
     let spentAmounts: SpentAmounts = toByteString('')
+    //let spentDatas: SpentDatas = toByteString('');
 
-    this._curPsbt.data.inputs.forEach((input, inputIndex) => {
-      const {script, data, value} = input.opcatUtxo!;
+    this._curPsbt.data.inputs.forEach((input) => {
+      const { script, data, value } = input.opcatUtxo!;
       if (script) {
         spentScriptHashes += sha256(uint8ArrayToHex(script));
         spentDataHashes += sha256(uint8ArrayToHex(data));
-        spentAmounts += bigintToByteString(value, 8n);
+        spentAmounts += StdUtils.uint64ToByteString(value);
       }
     });
 
     // // get prevouts for all inputs
     let prevouts: Prevouts = toByteString('');
-    this._curPsbt.txInputs.forEach((input, inputIndex) => {
-      prevouts += `${uint8ArrayToHex(input.hash)}${bigintToByteString(BigInt(input.index), 4n)}`;
+    this._curPsbt.txInputs.forEach((input) => {
+
+      const hash = typeof input.hash === 'string'
+        ? reverseBuffer(tools.fromHex(input.hash))
+        : input.hash;
+
+      prevouts += `${uint8ArrayToHex(hash)}${StdUtils.uint32ToByteString(BigInt(input.index))}`;
     });
 
     const inputs = this._curPsbt.data.inputs
       .map((_, inputIndex) => {
-          return {
-            inputIndex,
-          };
+        return {
+          inputIndex,
+        };
       })
 
     const preimages = this.calculateInputSHPreimages();

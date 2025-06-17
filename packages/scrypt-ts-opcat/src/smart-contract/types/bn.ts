@@ -52,7 +52,7 @@ export function bn2Buf(bn: bigint, size?: number): Uint8Array {
       throw new Error(`script number overflow, cannot fit in ${size} byte[s]`);
     } else if(tmp.length < size) {
       const padding = new Uint8Array(size - tmp.length);
-      return tools.concat([padding, tmp]);
+      return tools.concat([padding, tmp]).reverse();
     }
   }
   return toSMBigEndian(bn).reverse();

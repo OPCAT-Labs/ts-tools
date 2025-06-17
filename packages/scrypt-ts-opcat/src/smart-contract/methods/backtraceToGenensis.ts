@@ -1,23 +1,8 @@
 import { AbstractContract } from '../abstractContract.js';
-import {
-  TX_VERSION_BYTE_LEN,
-  TX_INPUT_COUNT_BYTE_LEN,
-  TX_OUTPUT_COUNT_BYTE_LEN,
-  TX_INPUT_COUNT_MAX,
-  TX_SEGWIT_INPUT_BYTE_LEN,
-  TX_OUTPUT_COUNT_MAX,
-  TX_LOCKTIME_BYTE_LEN,
-  TX_INPUT_PREV_TX_HASH_BYTE_LEN,
-  TX_INPUT_SEQUENCE_BYTE_LEN,
-  TX_OUTPUT_SATOSHI_BYTE_LEN,
-  TX_P2TR_OUTPUT_SCRIPT_BYTE_LEN,
-} from '../consts.js';
-import { assert, hash256, intToByteString, len, toByteString } from '../fns/index.js';
-import { indexValueToBytes } from '../serializer.js';
-import { ByteString, FixedArray } from '../types/index.js';
+import { ByteString } from '../types/index.js';
+
 import {
   BacktraceInfo,
-  TxIn,
 } from '../types/structs.js';
 
 /**

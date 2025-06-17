@@ -2,10 +2,8 @@ import {
   SmartContract,
   method,
   TxUtils,
-  sha256,
   assert,
   StateLib,
-  toByteString,
 } from '../../src/index.js';
 import { CounterState } from './counterState.js';
 
@@ -16,15 +14,10 @@ export class Counter extends SmartContract<CounterState> {
   public increase() {
     this.state.count++;
 
-    this.appendStateOutput(
-      // new output of the contract
-      TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-      // new state hash of the contract
-      // Counter.stateHash(this.state),
-      CounterStateLib.stateHash(this.state),
-    );
+    let data = Counter.stateSerialize(this.state);
+    let outputs = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, data);
 
-    const outputs = this.buildStateOutputs() + this.buildChangeOutput();
+    outputs += this.buildChangeOutput();
 
     assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
   }

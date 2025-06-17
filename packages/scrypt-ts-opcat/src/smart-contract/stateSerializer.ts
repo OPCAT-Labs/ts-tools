@@ -1,20 +1,21 @@
-import { uint8ArrayToHex } from './common.js';
-import { ABICoder } from '../smart-contract/abi.js';
-import { hash160 } from '../smart-contract/fns/index.js';
-import { Ripemd160, OpcatState } from '../smart-contract/types/primitives.js';
-import { Artifact } from '../smart-contract/types/artifact.js';
-import { MAX_FLAT_FIELDS_IN_STATE } from '../smart-contract/consts.js';
-import { getUnRenamedSymbol } from '../smart-contract/abiutils.js';
-import * as scriptNumber from './script_number.js';
+import { uint8ArrayToHex } from '../utils/common.js';
+import { ABICoder } from './abi.js';
+import { hash160, toByteString } from './fns/index.js';
+import { OpcatState, ByteString } from './types/primitives.js';
+import { Artifact } from './types/artifact.js';
+import { MAX_FLAT_FIELDS_IN_STATE } from './consts.js';
+import { getUnRenamedSymbol } from './abiutils.js';
+import * as scriptNumber from '../utils/script_number.js';
+import { VarWriter } from './builtin-libs/txUtils.js';
 
 /**
  * @ignore
  */
-export function calculateStateHash(
+export function stateSerialize(
   artifact: Artifact,
   stateType: string,
   state: OpcatState,
-): Ripemd160 {
+): ByteString {
   const abiCoder = new ABICoder(artifact);
 
   const stateStruct = abiCoder.artifact.structs.find(
@@ -35,21 +36,32 @@ export function calculateStateHash(
     );
   }
 
+  let data = toByteString('');
+
   const fieldHashes = fields.map((field) => {
     if (typeof field.value === 'number' || typeof field.value === 'bigint') {
-      return hash160(uint8ArrayToHex(scriptNumber.encode(Number(field.value))));
+      const val = uint8ArrayToHex(scriptNumber.encode(Number(field.value)));
+      data += VarWriter.writeBytes(val)
+      return hash160(val);
     }
 
     if (typeof field.value === 'boolean') {
-      return hash160(field.value ? '01' : '');
+      const val = field.value ? '01' : ''
+      data += VarWriter.writeBytes(val)
+      return hash160(val);
     }
 
     if (typeof field.value === 'string') {
-      return hash160(field.value);
+      const val = field.value;
+      data += VarWriter.writeBytes(val)
+      return hash160(val);
     }
 
     throw new Error(`Unflattened struct field: ${field.type}`);
   });
 
-  return hash160(fieldHashes.join(''));
+  const dataHash = hash160(fieldHashes.join(''));
+
+  data += dataHash;
+  return data;
 }

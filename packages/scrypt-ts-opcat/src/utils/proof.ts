@@ -1,9 +1,5 @@
-import * as varuint from 'varuint-bitcoin';
-import { TxUtils } from '../smart-contract/builtin-libs/txUtils.js';
 import {
   TX_INPUT_COUNT_MAX,
-  TX_OUTPUT_COUNT_MAX,
-  TX_HASH_PREIMAGE2_SUFFIX_ARRAY_SIZE,
   STATE_OUTPUT_COUNT_MAX,
 } from '../smart-contract/consts.js';
 import { toByteString, fill, hash160, intToByteString } from '../smart-contract/fns/index.js';
@@ -11,9 +7,6 @@ import {
   FixedArray,
   TxHashPreimage,
 } from '../smart-contract/types/index.js';
-import { byteStringToBigInt, uint8ArrayToHex } from './common.js';
-import { BufferReader } from '../psbt/bufferutils.js';
-import { Transaction } from '@opcat-labs/opcat';
 
 export const emptyString = toByteString('');
 
@@ -135,21 +128,21 @@ export const getBackTraceInfo = function (
   prevPrevTxHex: string,
   prevTxInputIndex: number,
 ) {
-  return {} as any
+    return {} as any
   // const prevTxHashPreimage = toTxHashPreimage(
-  //   Transaction.fromHex(prevTxHex).toBuffer(undefined, 0, false),
+  //   Transaction.fromString(prevTxHex).toBuffer(),
   // );
   // const prevPrevTxHashPreimg = toTxHashPreimage(
-  //   Transaction.fromHex(prevPrevTxHex).toBuffer(undefined, 0, false),
+  //   Transaction.fromString(prevPrevTxHex).toBuffer(),
   // );
   // const hashRootTxHashPreimage = toHashRootTxHashPreimage(prevTxHashPreimage);
   // const prevPrevCompactTxHashPreimage = toCompactTxHashPreimage(prevPrevTxHashPreimg);
   // const prevTxInput: TxIn = {
   //   prevTxHash: prevTxHashPreimage.inputPrevTxHashList[prevTxInputIndex],
-  //   prevOutputIndexVal: byteStringToBigInt(
+  //   inputIndex: byteStringToBigInt(
   //     prevTxHashPreimage.inputPrevOutputIndexList[prevTxInputIndex],
   //   ),
-  //   sequence: prevTxHashPreimage.inputSequenceList[prevTxInputIndex],
+  //   sequence: byteStringToBigInt(prevTxHashPreimage.inputSequenceList[prevTxInputIndex]),
   // };
   // return {
   //   prevTxPreimage: hashRootTxHashPreimage,

@@ -1,6 +1,6 @@
 import { PsbtTxInput, PsbtTxOutput } from '../../psbt/psbt.js';
 import { InputIndex, StatefulContractUtxo } from '../../globalTypes.js';
-import { ByteString, Int32, SigHashType, UInt32, UInt64 } from './primitives.js';
+import { SigHashType, UInt32 } from './primitives.js';
 import {
   SHPreimage,
   SpentAmounts,

@@ -1,6 +1,6 @@
 import { AbstractContract } from './abstractContract.js';
 import { Artifact } from './types/artifact.js';
-import { buildChangeOutputImpl, buildStateOutputsImpl } from './methods/buildOutput.js';
+import { buildChangeOutputImpl, buildStateOutputImpl } from './methods/buildOutput.js';
 import { checkCtxImpl } from './methods/checkCtx.js';
 import { checkSHPreimageImpl as checkSHPreimageImpl } from './methods/checkSHPreimage.js';
 import { checkSigImpl } from './methods/checkSig.js';
@@ -12,20 +12,20 @@ import { textToHex, uint8ArrayToHex, calcArtifactHexMD5, cloneDeep, isFinal } fr
 import { Contextual, InputContext, IContext } from './types/context.js';
 import {
   Int32,
-  Ripemd160,
   SigHashType,
   OpcatState,
   SupportedParamType,
 } from './types/primitives.js';
-import { hash160, hash256 } from './fns/hashes.js';
+import { hash256, sha256 } from './fns/hashes.js';
 import { intToByteString, len, toByteString } from './fns/byteString.js';
-import { checkInputStateHashImpl } from './methods/checkInputStateHash.js';
+import { checkInputStateImpl } from './methods/checkInputState.js';
 import { deserializeOutputs } from './serializer.js';
 import { BacktraceInfo } from './types/structs.js';
 import { backtraceToOutpointImpl, backtraceToScriptImpl } from './methods/backtraceToGenensis.js';
-import { calculateStateHash } from '../utils/stateHash.js';
+import { stateSerialize } from './stateSerializer.js';
 import { OpCode } from './types/opCode.js';
 import { getUnRenamedSymbol } from './abiutils.js';
+import { checkInputStateHashesImpl } from './methods/checkInputStateHashes.js';
 
 
 
@@ -36,23 +36,6 @@ interface MethodCallData {
   method: string;
   args: SupportedParamType[];
   rawArgs: RawArgs;
-}
-
-interface StateVars {
-  /**
-   * The count of state outputs appended to the contract.
-   */
-  stateCount: Int32;
-
-  /**
-   * Serialized outputs representing the state of the contract.
-   */
-  stateOutputs: ByteString;
-
-  /**
-   * Concatenated hash roots of the state outputs.
-   */
-  stateRoots: ByteString;
 }
 
 
@@ -254,52 +237,14 @@ export class SmartContract<StateT extends OpcatState = undefined>
     );
   }
 
-  private _stateVars?: StateVars;
-
-  /**
-   * A built-in function to append an output with a new stateHash.
-   * @onchain
-   * @param output the output bytes
-   * @param stateHash the hash160 of the contract state
-   * @returns state outputs count
-   */
-  appendStateOutput(output: ByteString, stateHash: Ripemd160): Int32 {
-    if (!this._stateVars) {
-      this._stateVars = {
-        stateCount: 0n,
-        stateOutputs: toByteString(''),
-        stateRoots: toByteString(''),
-      };
-    }
-
-    this._stateVars.stateCount += 1n;
-    this._stateVars.stateOutputs += output;
-    this._stateVars.stateRoots += hash160(stateHash);
-
-    return this._stateVars.stateCount;
-  }
-
-  /**
-   *
-   * @ignore
-   */
-  clearStateVars() {
-    this._stateVars = undefined;
-  }
-
   /**
    * A built-in function to create all outputs  added by `appendStateOutput()`
    * @onchain
    * @returns an output containing the new state
    */
-  buildStateOutputs(): ByteString {
+  buildStateOutput(satoshis: Int32): ByteString {
     this._checkPsbtBinding();
-    return buildStateOutputsImpl(
-      this._stateVars?.stateRoots || toByteString(''),
-      this._stateVars?.stateCount || 0n,
-      this._stateVars?.stateOutputs || toByteString(''),
-      this._curPsbt!.getTxoStateHashes(),
-    );
+    return buildStateOutputImpl(this, this.state, satoshis, toByteString(this.lockingScript.toHex()));
   }
 
   /**
@@ -308,10 +253,10 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @param state state of the contract
    * @returns hash160 of the state
    */
-  static override stateHash<T extends OpcatState>(
+  static override stateSerialize<T extends OpcatState>(
     this: { new (...args: unknown[]): SmartContract<T> },
     state: T,
-  ): Ripemd160 {
+  ): ByteString {
     const selfClazz = this as typeof SmartContract;
 
     const artifact = selfClazz.artifact;
@@ -324,7 +269,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
       throw new Error(`State struct \`${stateType}\` is not defined!`);
     }
 
-    return calculateStateHash(artifact, stateType, state);
+    return stateSerialize(artifact, stateType, state);
   }
 
   /**
@@ -333,15 +278,15 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * option in the `@method()` decorator to false.
    * @onchain
    * @param inputIndex index of the input
-   * @param stateHash stateHash of the input
-   * @returns success if stateHash is valid
+   * @param stateData the state data of the input
+   * @returns success if stateData is valid
    */
-  override checkInputStateHash(inputIndex: Int32, stateHash: ByteString): boolean {
-    // checkInputStateHashImpl(
-    //   Number(inputIndex),
-    //   this.inputContext.spentDataHashes,
-    //   stateHash,
-    // );
+  override checkInputState(inputIndex: Int32, stateData: ByteString): boolean {
+    const stateHash = this.inputContext.spentDataHashes[Number(inputIndex)];
+    checkInputStateImpl(
+      stateHash,
+      stateData
+    );
     return true;
   }
 
@@ -460,6 +405,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
       spentScriptHashes,
       spentAmounts,
       spentDataHashes,
+      inputCount,
     } = this.inputContext;
 
     checkCtxImpl(
@@ -497,15 +443,19 @@ export class SmartContract<StateT extends OpcatState = undefined>
           args.push(spentScriptHashes);
         } else if (param.name === '__scrypt_ts_spentAmounts') {
           args.push(spentAmounts);
+        } else if (param.name === '__scrypt_ts_spentScript') {
+          args.push(this.lockingScript.toHex());
+        } else if (param.name === '__scrypt_ts_stateHashes') {
+          checkInputStateHashesImpl(Number(inputCount), shPreimage.hashSpentDataHashes, spentDataHashes)
+          args.push(spentDataHashes);
         } else if (param.name === '__scrypt_ts_curState') {
           this._checkState();
-          // if (autoCheckInputStateHash) {
-          //   checkInputStateHashImpl(
-          //     inputStateProof,
-          //     (this.constructor as typeof SmartContract<StructObject>).stateHash(curState),
-          //     prevouts[this._curInputIndex],
-          //   );
-          // }
+          if (autoCheckInputStateHash) {
+            checkInputStateImpl(
+              shPreimage.spentDataHash,
+              (this.constructor as typeof SmartContract<OpcatState>).stateSerialize(curState),
+            );
+          }
           args.push(curState);
         }
       });
@@ -551,7 +501,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
         }
 
         this._curPsbt?.txOutputs.forEach((output, index) => {
-          const script = uint8ArrayToHex(output.script);
+          const script = sha256(uint8ArrayToHex(output.script));
           if (outputs[index]?.script !== script) {
             console.warn(
               `Output[${index}] script is different: ${outputs[index]?.script}(#contract) vs ${script}(#context)`,
@@ -770,7 +720,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @param newState the new state
    * @returns the new covenant
    */
-  next(newState: StateT): SmartContract<StateT> {
+  next(newState: StateT): this {
     const next = cloneDeep(this);
     next.state = newState;
     next.utxo = undefined;

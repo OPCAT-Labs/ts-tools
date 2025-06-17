@@ -42,7 +42,7 @@ export type StateProvable = {
   /**
    * The state hashes of all the outputs of the transaction to which the UTXO belongs.
    */
-  txoStateHashes: string[];
+  txoStateHashes: string;
 
   /**
    * The preimage of the tx to which the UTXO belongs.

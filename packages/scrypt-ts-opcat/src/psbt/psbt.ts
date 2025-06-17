@@ -60,7 +60,7 @@ const DEFAULT_OPTS: PsbtOpts = {
    * A bitcoinjs Network object. This is only used if you pass an `address`
    * parameter to addOutput. Otherwise it is not needed and can be left default.
    */
-  network: Networks.mainnet,
+  network: Networks.testnet,
   /**
    * When extractTransaction is called, the fee rate is checked.
    * THIS IS NOT TO BE RELIED ON.
@@ -199,7 +199,7 @@ export class Psbt {
 
   get txInputs(): PsbtTxInput[] {
     return this.__CACHE.__TX.inputs.map(input => ({
-      hash: Buffer.from(input.prevTxId),
+      hash: Buffer.from(input.prevTxId).reverse(),
       index: input.outputIndex,
       sequence: input.sequenceNumber,
     }));
@@ -903,12 +903,12 @@ class PsbtTransaction implements ITransaction {
     ) {
       throw new Error('Error adding input.');
     }
-    const hash =
-      typeof input.hash === 'string'
-        ? reverseBuffer(tools.fromHex(input.hash))
-        : input.hash;
+    const prevTxId = typeof input.hash === 'string'
+        ? input.hash
+        : reverseBuffer(tools.fromHex(input.hash));
+      
     this.tx.addInput(new Transaction.Input({
-      prevTxId: Buffer.from(hash),
+      prevTxId: prevTxId,
       outputIndex: input.index,
       sequenceNumber: input.sequence
     }), Script.fromBuffer(Buffer.from(input.opcatUtxo.script)), Number(input.opcatUtxo.value), Buffer.from(input.opcatUtxo.data));
@@ -1274,7 +1274,7 @@ function getUnlockingScript(
 
         if(ls.isPublicKeyHashOut()) {
           unlockingScript = Script.fromASM(
-            `${tools.toHex(partialSig[0].pubkey)}} ${tools.toHex(partialSig[0].signature)}}`,
+            `${tools.toHex(partialSig[0].pubkey)} ${tools.toHex(partialSig[0].signature)}`,
           );
         } else {
           throw new Error(

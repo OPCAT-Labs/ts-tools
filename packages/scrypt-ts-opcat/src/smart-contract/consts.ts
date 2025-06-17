@@ -90,17 +90,10 @@ export const TX_OUTPUT_COUNT_BYTE_LEN = 1n;
 /** @ignore */
 export const TX_OUTPUT_SATOSHI_BYTE_LEN = 8n;
 /** @ignore */
-export const TX_P2TR_OUTPUT_SCRIPT_LEN_BYTE_LEN = 1n;
-/** @ignore */
-export const TX_P2TR_OUTPUT_SCRIPT_BYTE_LEN = 34n;
-/** @ignore */
-export const TX_P2TR_OUTPUT_BYTE_LEN = 43n;
-/** @ignore */
 export const TX_LOCKTIME_BYTE_LEN = 4n;
 /** @ignore byte length of token owner address owned by user*/
 export const OWNER_ADDR_P2WPKH_BYTE_LEN = 22n; // p2wpkh locking script
 /** @ignore */
-export const OWNER_ADDR_P2TR_BYTE_LEN = TX_P2TR_OUTPUT_SCRIPT_BYTE_LEN; // p2tr locking script
 /** @ignore  owned by contract */
 export const OWNER_ADDR_CONTRACT_HASH_BYTE_LEN = HASH160_HASH_LEN; // contract script hash
 /** @ignore the maximum number of flattened fields in a state object. */

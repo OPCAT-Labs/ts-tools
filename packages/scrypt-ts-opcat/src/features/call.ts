@@ -20,7 +20,7 @@ export async function call(
   provider: UtxoProvider & ChainProvider,
   contract: SmartContract<OpcatState>,
   contractCall: ContractCall,
-  newContract?: { contract: SmartContract<OpcatState>; satoshis: number, data?: Uint8Array },
+  newContract?: { contract: SmartContract<OpcatState>; satoshis: number},
 ): Promise<ExtPsbt> {
   const address = await signer.getAddress();
 
@@ -35,7 +35,7 @@ export async function call(
     .spendUTXO(utxos);
 
   if (newContract) {
-    psbt.addContractOutput(newContract.contract, newContract.satoshis, newContract.data || new Uint8Array(0));
+    psbt.addContractOutput(newContract.contract, newContract.satoshis);
   }
   psbt.change(address, feeRate);
 
