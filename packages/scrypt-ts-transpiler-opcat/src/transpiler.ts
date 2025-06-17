@@ -1,4 +1,4 @@
-import ts, { ClassDeclaration, MethodDeclaration } from 'typescript';
+import ts, { ClassDeclaration, isAutoAccessorPropertyDeclaration, MethodDeclaration } from 'typescript';
 import { tsquery } from '@phenomnomnominal/tsquery';
 import { Indexer, Symbol } from './indexer';
 import * as path from 'path';
@@ -22,36 +22,31 @@ import { tmpdir } from 'os';
 import { mkdtempSync, existsSync, readFileSync } from 'fs';
 import { Range, TransformationResult, TranspileError, UnknownError } from './types';
 import {
-  CALL_BUILD_STATE_OUTPUTS,
   CALL_BUILD_CHANGE_OUTPUT,
   CALL_CHECK_SHPREIMAGE,
-  CALL_CHECK_INPUT_INDEX,
-  DECLARE_STATE_VARS,
   EMPTY_CONSTRUCTOR,
   InjectedParam_ChangeInfo,
   InjectedParam_CurState,
-  InjectedParam_InputStateProof,
-  InjectedParam_NextStateHashes,
   InjectedParam_Prevouts,
   InjectedParam_SpentAmounts,
-  InjectedParam_SpentScripts,
+  InjectedParam_SpentScriptHashes,
   InjectedParam_SHPreimage,
-  InjectedParam_InputIndexVal,
   InjectedParam_Prevout,
   InjectedProp_ChangeInfo,
   InjectedProp_PrevoutsCtx,
   InjectedProp_SHPreimage,
   InjectedProp_SpentAmounts,
-  InjectedProp_SpentScripts,
-  InjectedParam_InputStateProofs,
+  InjectedProp_SpentScriptHashes,
   InjectedVar_InputCount,
-  InjectedVar_StateCount,
-  InjectedVar_StateOutputs,
-  InjectedVar_StateRoots,
-  INPUT_STATE_PROOF_EXPR,
-  InjectedVar_NextState,
   thisAssignment,
+  InjectedProp_SpentDataHashes,
+  InjectedParam_SpentDataHashes,
+  InjectedParam_CurTxHashPreimage,
+  InjectedProp_CurTxHashPreimage,
   InjectedProp_NextState,
+  InjectedVar_NextState,
+  ACCESS_INPUT_COUNT,
+  InjectedProp_Prevout,
 } from './snippets';
 import { MethodDecoratorOptions, TX_INPUT_COUNT_MAX } from '@opcat-labs/scrypt-ts-opcat';
 import { Relinker } from './relinker';
@@ -245,7 +240,7 @@ const SmartContractBuiltinMethods = [
   'checkPreimageSigHashType',
   'checkPreimage',
   'insertCodeSeparator',
-  'checkInputStateHash',
+  'checkInputState',
   'backtraceToOutpoint',
   'backtraceToScript',
   'checkOutputs',
@@ -258,20 +253,18 @@ type AccessInfo = {
   accessChangeInSubCall: boolean; // this.buildChangeOutput() in private function call
   accessState: boolean; // this.state
   accessStateInSubCall: boolean; // this.state in private function call
-  accessStateOutputs: boolean; // this.buildStateOutputs()
-  accessStateOutputsInSubCall: boolean; // this.buildStateOutputs() in private function call
   accessPrevouts: boolean; // this.ctx.prevouts
   accessPrevoutsInSubCall: boolean; // this.ctx.prevouts in private function call
+  accessPrevout: boolean; // this.ctx.prevout
+  accessPrevoutInSubCall: boolean; // this.ctx.prevout in private function call
   accessSpentScripts: boolean; // this.ctx.spentScripts
   accessSpentScriptsInSubCall: boolean; // this.ctx.spentScripts in private function call
   accessSpentAmounts: boolean; // this.ctx.spentAmounts
   accessSpentAmountsInSubCall: boolean; // this.ctx.spentAmounts in private function call
-  accessNextStateHashes: boolean; // this.ctx.nextStateHashes
-  accessNextStateHashesInSubCall: boolean; // this.ctx.nextStateHashes in private function call
-  accessInputStateProofs: boolean; // this.checkInputStateHash || this.ctx.inputStateProofss
-  accessInputStateProofsInSubCall: boolean; // this.checkInputStates in private function call
-  accessInputStateProof: boolean; // this.ctx.inputStateProof || this.backtraceToOutpoint || this.backtraceToScript
-  accessInputStateProofInSubCall: boolean; // this.ctx.inputStateProof || this.backtraceToOutpoint || this.backtraceToScript in private function call
+  accessSpentDataHashes: boolean; // this.state, this.spentDataHashes
+  accessSpentDataHashesInSubCall: boolean;
+  accessBacktrace: boolean; // this.backtraceToOutpoint, this.backtraceToScript
+  accessBacktraceInSubCall: boolean; // this.backtraceToOutpoint, this.backtraceToScript in private function call
   accessCSV: boolean;
   accessCLTV: boolean;
 };
@@ -535,8 +528,7 @@ export class Transpiler {
         // when can not find sourcemap for the certain `scryptLine`, use the first sourcemap
         const sourcemap = scryptLines[1]?.sourceMap[0];
         return new TranspileError(
-          `Internal compilation error raised for auto-generated file: ${this._scryptFullPath}:${
-            error.position[0]?.line || -1
+          `Internal compilation error raised for auto-generated file: ${this._scryptFullPath}:${error.position[0]?.line || -1
           }:${error.position[0]?.column || -1} , please report it as a bug to ${BUILDIN_PACKAGE_NAME}`,
           {
             fileName: this._srcFile.fileName,
@@ -958,7 +950,7 @@ export class Transpiler {
             this.transformMethods(membersSection, node);
 
             if (this.isStateful()) {
-              this.injectStateHashFunc(membersSection);
+              this.injectSerializeStateFunc(membersSection);
             }
 
             // if (this.accessChange()) {
@@ -1001,20 +993,24 @@ export class Transpiler {
   private injectScryptProps(section: EmittedSection) {
     if (this.shouldInjectSHPreimageProp()) {
       section.append(`\nSHPreimage ${InjectedProp_SHPreimage};`);
-      section.append(`\nint ${InjectedParam_InputIndexVal};`);
     }
     if (this.shouldInjectChangeProp()) {
       section.append(`\nTxOut ${InjectedProp_ChangeInfo};`);
     }
     if (this.shouldInjectPrevoutsProp()) {
-      section.append(`\nbytes[6] ${InjectedProp_PrevoutsCtx};`);
-      section.append(`\nOutpoint ${InjectedParam_Prevout};`);
+      section.append(`\nbytes ${InjectedProp_PrevoutsCtx};`);
+    }
+    if (this.shouldInjectPrevoutProp()) {
+      section.append(`\nOutpoint ${InjectedProp_Prevout};`);
     }
     if (this.shouldInjectSpentScriptsProp()) {
-      section.append(`\nbytes[6] ${InjectedProp_SpentScripts};`);
+      section.append(`\nbytes ${InjectedProp_SpentScriptHashes};`);
     }
     if (this.shouldInjectSpentAmountsProp()) {
-      section.append(`\nbytes[6] ${InjectedProp_SpentAmounts};`);
+      section.append(`\nbytes ${InjectedProp_SpentAmounts};`);
+    }
+    if (this.shouldInjectSpentDataHashesProp()) {
+      section.append(`\nbytes ${InjectedProp_SpentDataHashes};`);
     }
     if (this.shouldInjectCurStateProp()) {
       const stateTypeSymbol = this._stateTypeSymbols.get(this.currentContractName);
@@ -1023,25 +1019,11 @@ export class Transpiler {
       }
       section.append(`\n${stateTypeSymbol!.name} ${InjectedProp_NextState};`);
     }
-    if (this.shouldInjectInputStateProofsProp()) {
-      for (let i = 0; i < TX_INPUT_COUNT_MAX; i++) {
-        section.append(`\nInputStateProof ${InjectedParam_InputStateProof}_${i};`);
-      }
-    }
-    if (this.shouldInjectInputStateProofProp()) {
-      section.append(`\nInputStateProof ${InjectedParam_InputStateProof};`);
-    }
-    if (this.shouldInjectNextStateHashesProp()) {
-      section.append(`\nbytes[5] ${InjectedParam_NextStateHashes};`);
-      section.append(`\nint ${InjectedVar_StateCount};`);
-      section.append(`\nbytes ${InjectedVar_StateOutputs};`);
-      section.append(`\nbytes ${InjectedVar_StateRoots};`);
-    }
   }
 
-  private injectScryptStructs(_section: EmittedSection) {}
+  private injectScryptStructs(_section: EmittedSection) { }
 
-  private injectStateHashFunc(section: EmittedSection) {
+  private injectSerializeStateFunc(section: EmittedSection) {
     const stateTypeSymbol = this._stateTypeSymbols.get(this.currentContractName);
 
     if (!stateTypeSymbol) {
@@ -1165,6 +1147,31 @@ export class Transpiler {
       }
     }
 
+    function byteStringify(name: string, typeStr: string): string {
+      switch(typeStr) {
+        case 'Int32': 
+        case 'SigHashType':
+        case 'bigint': 
+          return `pack(${name})`;
+        case 'Bool':
+        case 'boolean': 
+          return `(${name} ? b'01' : b'')`;
+        case 'ByteString':
+        case 'Sha256':
+        case 'Sha1':
+        case 'Sig':
+        case 'XOnlyPubKey':
+        case 'PubKey':
+        case 'Ripemd160':
+        case 'OpCodeType':
+        case 'string':
+          return `${name}`;
+        default: {
+          throw new Error(`Unsupported type for byteStringify: ${typeStr}`);
+        }
+      }
+    }
+
     function propHash(name: string, typeStr: string): string {
       switch (typeStr) {
         case 'Int32':
@@ -1193,14 +1200,21 @@ export class Transpiler {
     const hashes = flattenProps(stateTypeSymbol, InjectedParam_CurState).map(({ name, type }) =>
       propHash(name, this.type2ResolvedName(type)),
     );
+    const dataPart = flattenProps(stateTypeSymbol, InjectedParam_CurState).map(({ name, type }) =>
+    {
+      const bytes = byteStringify(name, this.type2ResolvedName(type));
+      // return `num2bin(len(${bytes}), 1) + ${bytes}`;
+      return `StdUtils.writeVarint(${bytes})`;
+    }
+    );
 
     section
       .append('\n')
       .append(
-        `static function stateHash(${stateTypeSymbol.name} ${InjectedParam_CurState}): Ripemd160 {`,
+        `static function serializeState(${stateTypeSymbol.name} ${InjectedParam_CurState}): bytes {`,
       )
       .append('\n')
-      .append(`  return hash160(${hashes.join(' + ')});`)
+      .append(`  return ${dataPart.join(' + ')} + hash160(${hashes.join(' + ')});`)
       .append('\n')
       .append('}');
   }
@@ -1601,13 +1615,13 @@ export class Transpiler {
 
     // set default value for options
     this._currentMethodDecOptions = {
-      autoCheckInputStateHash: true,
+      autoCheckInputState: true,
     };
 
     if (ts.isCallExpression(expression) && expression.arguments[0]) {
       const argTxt = expression.arguments[0].getText();
-      this._currentMethodDecOptions.autoCheckInputStateHash =
-        !/autoCheckInputStateHash: false/.test(argTxt);
+      this._currentMethodDecOptions.autoCheckInputState =
+        !/autoCheckInputState: false/.test(argTxt);
     }
   }
 
@@ -1696,12 +1710,11 @@ export class Transpiler {
     const shouldAutoAppendSighashPreimage = this.shouldAutoAppendSighashPreimage(node);
     const shouldAutoAppendChangeAmount = this.shouldAutoAppendChangeAmount(node);
     const shouldAutoAppendPrevouts = this.shouldAutoAppendPrevouts(node);
+    const shouldAutoAppendPrevout = this.shouldAutoAppendPrevout(node);
     const shouldAutoAppendSpentScripts = this.shouldAutoAppendSpentScripts(node);
     const shouldAutoAppendSpentAmounts = this.shouldAutoAppendSpentAmounts(node);
+    const shouldAutoAppendSpentDataHashes = this.shouldAutoAppendSpentDataHashes(node);
     const shouldAutoAppendStateArgs = this.shouldAutoAppendStateArgs(node);
-    const shouldAutoAppendInputStateProofs = this.shouldAutoAppendInputStateProofs(node);
-    const shouldAutoAppendInputStateProof = this.shouldAutoAppendInputStateProof(node);
-    const shouldAutoAppendNextStateHashes = this.shouldAutoAppendNextStateHashes(node);
 
     const buildChangeOutputExpression = findBuildChangeOutputExpression(node);
     if (
@@ -1753,8 +1766,7 @@ export class Transpiler {
           if (paramLen > 0) {
             psSec.append(', ');
           }
-          psSec.append(`SHPreimage ${InjectedParam_SHPreimage}, `);
-          psSec.append(`int ${InjectedParam_InputIndexVal}`);
+          psSec.append(`SHPreimage ${InjectedParam_SHPreimage}`);
           paramLen += 2;
         }
 
@@ -1766,21 +1778,12 @@ export class Transpiler {
           psSec.append(`TxOut ${InjectedParam_ChangeInfo}`);
           paramLen += 2;
         }
-
-        if (shouldAutoAppendPrevouts.shouldAppendArguments) {
-          this._accessBuiltinsSymbols.add('Outpoint');
-          if (paramLen > 0) {
-            psSec.append(', ');
-          }
-          psSec.append(`Outpoint ${InjectedParam_Prevout}`);
-          paramLen += 2;
-        }
-
         if (shouldAutoAppendStateArgs.shouldAppendArguments) {
           if (paramLen > 0) {
             psSec.append(', ');
           }
           const stateTypeSymbol = this._stateTypeSymbols.get(this.currentContractName);
+          this._accessBuiltinsSymbols.add('StdUtils');
           if (!stateTypeSymbol) {
             throw new Error('State type symbol is not defined');
           }
@@ -1788,42 +1791,13 @@ export class Transpiler {
           paramLen += 1;
         }
 
-        if (shouldAutoAppendInputStateProofs.shouldAppendArguments) {
-          this._accessBuiltinsSymbols.add('InputStateProof');
-          if (paramLen > 0) {
-            psSec.append(', ');
-          }
-          psSec.append(`InputStateProof[${TX_INPUT_COUNT_MAX}] ${InjectedParam_InputStateProofs}`);
-          paramLen += 1;
-        }
-
-        if (
-          shouldAutoAppendInputStateProof.shouldAppendArguments &&
-          !shouldAutoAppendInputStateProofs.shouldAppendArguments
-        ) {
-          this._accessBuiltinsSymbols.add('InputStateProof');
-          if (paramLen > 0) {
-            psSec.append(', ');
-          }
-          psSec.append(`InputStateProof ${InjectedParam_InputStateProof}`);
-          paramLen += 1;
-        }
-
-        // note this should be the fourth from bottom parameter if exists
-        if (shouldAutoAppendNextStateHashes.shouldAppendArguments) {
-          if (paramLen > 0) {
-            psSec.append(', ');
-          }
-          psSec.append(`bytes[5] ${InjectedParam_NextStateHashes}`);
-          paramLen += 1;
-        }
-
         // note this should be the third from bottom parameter if exists
         if (shouldAutoAppendPrevouts.shouldAppendArguments) {
+          this._accessBuiltinsSymbols.add('Outpoint');
           if (paramLen > 0) {
             psSec.append(', ');
           }
-          psSec.append(`bytes[6] ${InjectedParam_Prevouts}`);
+          psSec.append(`bytes ${InjectedParam_Prevouts}`);
           paramLen += 1;
         }
 
@@ -1832,7 +1806,15 @@ export class Transpiler {
           if (paramLen > 0) {
             psSec.append(', ');
           }
-          psSec.append(`bytes[6] ${InjectedParam_SpentAmounts}`);
+          psSec.append(`bytes ${InjectedParam_SpentAmounts}`);
+          paramLen += 1;
+        }
+
+        if (shouldAutoAppendSpentDataHashes.shouldAppendArguments) {
+          if (paramLen > 0) {
+            psSec.append(', ');
+          }
+          psSec.append(`bytes ${InjectedParam_SpentDataHashes}`);
           paramLen += 1;
         }
 
@@ -1841,7 +1823,7 @@ export class Transpiler {
           if (paramLen > 0) {
             psSec.append(', ');
           }
-          psSec.append(`bytes[6] ${InjectedParam_SpentScripts}`);
+          psSec.append(`bytes ${InjectedParam_SpentScriptHashes}`);
           paramLen += 1;
         }
 
@@ -1876,8 +1858,6 @@ export class Transpiler {
             sec
               .append('\n')
               .append(`${CALL_CHECK_SHPREIMAGE};`)
-              .append('\n')
-              .append(`${CALL_CHECK_INPUT_INDEX};`)
               .append(`\n`);
           }
           if (shouldAutoAppendSighashPreimage.shouldAppendThisAssignment) {
@@ -1888,41 +1868,51 @@ export class Transpiler {
             sec.append(`\n`).append(thisAssignment(InjectedProp_ChangeInfo)).append(`\n`);
           }
 
+          
+          if (shouldAutoAppendSpentAmounts.shouldAppendArguments) {
+            sec
+              .append('\n')
+              .append(
+                `int ${InjectedVar_InputCount} = ContextUtils.checkSpentAmounts(${InjectedParam_SpentAmounts}, ${InjectedParam_SHPreimage}.hashSpentAmounts);`,
+              )
+              .append('\n');
+          }
+
           if (shouldAutoAppendPrevouts.shouldAppendArguments) {
             sec
               .append('\n')
               .append(
-                `int ${InjectedVar_InputCount} = ContextUtils.checkPrevouts(${InjectedParam_Prevouts}, ${InjectedParam_Prevout}, ${InjectedParam_SHPreimage}.shaPrevouts, ${InjectedParam_InputIndexVal});`,
+                `Outpoint ${InjectedProp_Prevout} = ContextUtils.checkPrevouts(${InjectedParam_Prevouts}, ${InjectedParam_SHPreimage}.hashPrevouts, ${InjectedParam_SHPreimage}.inputIndex, ${InjectedVar_InputCount});`,
               )
               .append('\n');
           }
           if (shouldAutoAppendPrevouts.shouldAppendThisAssignment) {
             sec.append(thisAssignment(InjectedProp_PrevoutsCtx)).append('\n');
           }
+          if (shouldAutoAppendPrevout.shouldAppendThisAssignment) {
+            sec.append(thisAssignment(InjectedProp_Prevout)).append('\n');
+          }
 
           if (shouldAutoAppendSpentScripts.shouldAppendArguments) {
             sec
               .append('\n')
               .append(
-                `ContextUtils.checkSpentScripts(${InjectedParam_SpentScripts}, ${InjectedParam_SHPreimage}.shaSpentScripts, ${InjectedVar_InputCount});`,
+                `ContextUtils.checkSpentScripts(${InjectedParam_SpentScriptHashes}, ${InjectedParam_SHPreimage}.hashSpentScriptHashes, ${InjectedVar_InputCount});`,
               )
               .append('\n');
           }
           if (shouldAutoAppendSpentScripts.shouldAppendThisAssignment) {
-            sec.append(thisAssignment(InjectedProp_SpentScripts)).append('\n');
+            sec.append(thisAssignment(InjectedProp_SpentScriptHashes)).append('\n');
           }
 
-          if (shouldAutoAppendSpentAmounts.shouldAppendArguments) {
+
+          if (shouldAutoAppendSpentDataHashes.shouldAppendArguments) {
             sec
               .append('\n')
               .append(
-                `ContextUtils.checkSpentAmounts(${InjectedParam_SpentAmounts}, ${InjectedParam_SHPreimage}.shaSpentAmounts, ${InjectedVar_InputCount});`,
+                `ContextUtils.checkSpentDataHashes(${InjectedParam_SpentDataHashes}, ${InjectedParam_SHPreimage}.hashSpentDataHashes, ${InjectedVar_InputCount});`,
               )
               .append('\n');
-          }
-
-          if (shouldAutoAppendNextStateHashes.shouldAppendArguments) {
-            sec.append('\n').append(`${DECLARE_STATE_VARS.declareLocal}`).append('\n');
           }
 
           if (shouldAutoAppendStateArgs.shouldAppendArguments) {
@@ -1943,26 +1933,21 @@ export class Transpiler {
           }
 
           if (
-            (shouldAutoAppendStateArgs.shouldAppendArguments ||
-              shouldAutoAppendInputStateProof.shouldAppendArguments) &&
-            this._currentMethodDecOptions.autoCheckInputStateHash
+            shouldAutoAppendStateArgs.shouldAppendArguments &&
+            this._currentMethodDecOptions.autoCheckInputState
           ) {
             // append checkInputState for current input
 
-            const stateHash = this._stateTypeSymbols.has(this.currentContractName)
-              ? `${this._currentContract.name.getText()}.stateHash(${InjectedParam_CurState})`
+            const rawState = this._stateTypeSymbols.has(this.currentContractName)
+              ? `${this._currentContract.name.getText()}.serializeState(${InjectedParam_CurState})`
               : "b''";
-
-            const inputStateProofExpr = shouldAutoAppendInputStateProofs.shouldAppendArguments
-              ? `${INPUT_STATE_PROOF_EXPR.accessArgument(InjectedParam_InputIndexVal)}`
-              : InjectedParam_InputStateProof;
 
             // here no need to access this, because it's in public function, the variable we access is in the arguments
             this._accessBuiltinsSymbols.add('StateUtils');
             sec
               .append('\n')
               .append(
-                `StateUtils.checkInputStateHash(${inputStateProofExpr}, ${stateHash}, ${InjectedParam_Prevouts}[${InjectedParam_InputIndexVal}]);`,
+                `StateUtils.checkInputState(${rawState}, ${InjectedParam_SpentDataHashes}, ${InjectedParam_SHPreimage}.inputIndex);`,
               )
               .append('\n');
           }
@@ -2121,20 +2106,18 @@ export class Transpiler {
       accessChangeInSubCall: false,
       accessState: false,
       accessStateInSubCall: false,
-      accessStateOutputs: false,
-      accessStateOutputsInSubCall: false,
       accessPrevouts: false,
       accessPrevoutsInSubCall: false,
+      accessPrevout: false,
+      accessPrevoutInSubCall: false,
       accessSpentScripts: false,
       accessSpentScriptsInSubCall: false,
       accessSpentAmounts: false,
       accessSpentAmountsInSubCall: false,
-      accessNextStateHashes: false,
-      accessNextStateHashesInSubCall: false,
-      accessInputStateProofs: false,
-      accessInputStateProofsInSubCall: false,
-      accessInputStateProof: false,
-      accessInputStateProofInSubCall: false,
+      accessSpentDataHashes: false,
+      accessSpentDataHashesInSubCall: false,
+      accessBacktrace: false,
+      accessBacktraceInSubCall: false,
       accessCSV: false,
       accessCLTV: false,
     };
@@ -2145,22 +2128,39 @@ export class Transpiler {
         if (node.expression.getText() === 'this.ctx') {
           Object.assign(accessInfo, {
             accessSHPreimage: true,
-            accessSpentAmounts: true,
-            accessPrevouts: true,
-            accessSpentScripts: true,
           });
-          if (node.name.getText() === 'nextStateHashes') {
-            Object.assign(accessInfo, {
-              accessNextStateHashes: true,
-            });
-          }
-          if (node.name.getText() === 'inputStateProofs') {
-            Object.assign(accessInfo, {
-              accessInputStateProofs: true,
-            });
+          switch (node.name.getText()) {
+            case 'prevouts':
+              Object.assign(accessInfo, {
+                accessPrevouts: true,
+                accessSpentAmounts: true,
+              });
+              break;
+            case 'prevout':
+              Object.assign(accessInfo, {
+                accessPrevout: true,
+                accessSpentAmounts: true,
+              });
+              break;
+            case 'spentAmounts':
+              Object.assign(accessInfo, {
+                accessSpentAmounts: true,
+              });
+              break;
+            case 'spentScriptHashes':
+              Object.assign(accessInfo, {
+                accessSpentAmounts: true,
+                accessSpentScripts: true,
+              });
+              break;
+            case 'spentDataHashes':
+              Object.assign(accessInfo, {
+                accessSpentAmounts: true,
+                accessSpentDataHashes: true,
+              });
+              break;
           }
         }
-
         // access properties under `this`
         if (node.expression.getText() === 'this') {
           if (node.name.getText() === 'changeInfo') {
@@ -2169,10 +2169,10 @@ export class Transpiler {
             });
           } else if (node.name.getText() === 'state') {
             Object.assign(accessInfo, {
+              accessSHPreimage: true, // accessSpentDataHashes depends on shPreimage
               accessState: true,
-              accessInputStateProof: true,
-              accessPrevouts: true, // StateUtils.checkInputState depends on prevouts
-              accessSHPreimage: true, // ContextUtils.checkPrevouts depends on shPreimage
+              accessSpentAmounts: true, // spentDataHashes depends on spentAmounts
+              accessSpentDataHashes: true, // state depends on spentDataHashes
             });
           }
         }
@@ -2190,9 +2190,11 @@ export class Transpiler {
               Object.assign(accessInfo, {
                 accessChange: true,
               });
-            } else if (methodName === 'checkInputStateHash') {
+            } else if (methodName === 'checkInputState') {
               Object.assign(accessInfo, {
-                accessInputStateProofs: true,
+                accessSHPreimage: true, // accessSpentDataHashes depends on shPreimage
+                accessState: true,
+                accessSpentDataHashes: true,
               });
             } else if (['relTimeLock'].includes(methodName)) {
               Object.assign(accessInfo, {
@@ -2201,10 +2203,6 @@ export class Transpiler {
             } else if (['absTimeLock'].includes(methodName)) {
               Object.assign(accessInfo, {
                 accessCLTV: true,
-              });
-            } else if (['appendStateOutput', 'buildStateOutputs'].includes(methodName)) {
-              Object.assign(accessInfo, {
-                accessStateOutputs: true,
               });
             } else if (['backtraceToOutpoint', 'backtraceToScript'].includes(methodName)) {
               Object.assign(accessInfo, {
@@ -2268,12 +2266,7 @@ export class Transpiler {
       if (accessInfo.accessChange) {
         throw new TranspileError(getErrorMsg(), calleeRange);
       }
-      if (
-        accessInfo.accessState ||
-        accessInfo.accessStateOutputs ||
-        accessInfo.accessInputStateProofs ||
-        accessInfo.accessInputStateProof
-      ) {
+      if (accessInfo.accessState) {
         throw new TranspileError(getErrorMsg(), calleeRange);
       }
       if (accessInfo.accessPrevouts) {
@@ -2283,6 +2276,12 @@ export class Transpiler {
         throw new TranspileError(getErrorMsg(), calleeRange);
       }
       if (accessInfo.accessSpentScripts) {
+        throw new TranspileError(getErrorMsg(), calleeRange);
+      }
+      if (accessInfo.accessSpentDataHashes) {
+        throw new TranspileError(getErrorMsg(), calleeRange);
+      }
+      if (accessInfo.accessBacktrace) {
         throw new TranspileError(getErrorMsg(), calleeRange);
       }
     }
@@ -2536,6 +2535,12 @@ export class Transpiler {
     );
   }
 
+  private shouldInjectPrevoutProp() {
+    return this.checkShouldInject(
+      (method) => this.shouldAutoAppendPrevout(method).shouldAccessThis,
+    );
+  }
+
   private shouldInjectSpentScriptsProp() {
     return this.checkShouldInject(
       (method) => this.shouldAutoAppendSpentScripts(method).shouldAccessThis,
@@ -2548,29 +2553,15 @@ export class Transpiler {
     );
   }
 
-  private shouldInjectNextStateHashesProp() {
+  private shouldInjectSpentDataHashesProp() {
     return this.checkShouldInject(
-      (method) => this.shouldAutoAppendNextStateHashes(method).shouldAccessThis,
+      (method) => this.shouldAutoAppendSpentDataHashes(method).shouldAccessThis,
     );
   }
 
   private shouldInjectCurStateProp() {
     return this.checkShouldInject(
       (method) => this.shouldAutoAppendStateArgs(method).shouldAccessThis,
-    );
-  }
-
-  private shouldInjectInputStateProofsProp() {
-    return this.checkShouldInject(
-      (method) => this.shouldAutoAppendInputStateProofs(method).shouldAccessThis,
-    );
-  }
-
-  private shouldInjectInputStateProofProp() {
-    return this.checkShouldInject(
-      (method) =>
-        this.shouldAutoAppendInputStateProof(method).shouldAccessThis ||
-        this.shouldAutoAppendInputStateProofs(method).shouldAccessThis,
     );
   }
 
@@ -2612,8 +2603,7 @@ export class Transpiler {
     const [shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis] =
       shouldFn(methodInfo);
 
-    // addtional check: if a private method is accessing , but no public method is accessing, then it should not be injected
-
+    // addtional check: if a private method is accessing , but no public method is accessing, then it should not be injected and throw an error
     if (shouldAccessThis && !methodInfo.isPublic) {
       let addtionalCheckPassed = shouldAccessThis ? false : true;
       for (const info of this.methodInfos.values()) {
@@ -2631,6 +2621,7 @@ export class Transpiler {
         );
       }
     }
+
     return { shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis };
   }
 
@@ -2652,6 +2643,17 @@ export class Transpiler {
       const shouldAppendArguments = accessPrevouts && isPublic;
       const shouldAppendThisAssignment = accessPrevouts && accessPrevoutsInSubCall && isPublic;
       const shouldAccessThis = (!isPublic || accessPrevoutsInSubCall) && accessPrevouts;
+      return [shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis];
+    });
+  }
+
+  private shouldAutoAppendPrevout(node: ts.MethodDeclaration) {
+    return this._shouldAutoAppend(node, (methodInfo) => {
+      const { accessPrevout, accessPrevoutInSubCall } = methodInfo.accessInfo;
+      const { isPublic } = methodInfo;
+      const shouldAppendArguments = accessPrevout && isPublic;
+      const shouldAppendThisAssignment = accessPrevout && accessPrevoutInSubCall && isPublic;
+      const shouldAccessThis = (!isPublic || accessPrevoutInSubCall) && accessPrevout;
       return [shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis];
     });
   }
@@ -2680,76 +2682,41 @@ export class Transpiler {
     });
   }
 
+  private shouldAutoAppendSpentDataHashes(node: ts.MethodDeclaration) {
+    return this._shouldAutoAppend(node, (methodInfo) => {
+      const { accessSpentDataHashes, accessSpentDataHashesInSubCall } = methodInfo.accessInfo;
+      const { isPublic } = methodInfo;
+      const shouldAppendArguments = accessSpentDataHashes && isPublic;
+      const shouldAppendThisAssignment = accessSpentDataHashes && accessSpentDataHashesInSubCall && isPublic;
+      const shouldAccessThis = (!isPublic || accessSpentDataHashesInSubCall) && accessSpentDataHashes;
+      return [shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis];
+    });
+  }
+
   private shouldAutoAppendStateArgs(node: ts.MethodDeclaration) {
     return this._shouldAutoAppend(node, (methodInfo) => {
       const { accessState, accessStateInSubCall } = methodInfo.accessInfo;
       const { isPublic } = methodInfo;
 
-      // for backtracing in stateful contract, we need to access the state
-      let accessInPublicMethod = accessState;
-      if (this.isStateful() && methodInfo.accessInfo.accessInputStateProof) {
-        accessInPublicMethod = true;
-      }
-      let accessInPrivateMethod = accessStateInSubCall;
-      if (this.isStateful() && methodInfo.accessInfo.accessInputStateProofInSubCall) {
-        accessInPrivateMethod = true;
-      }
-
-      const shouldAppendArguments = accessInPublicMethod && isPublic;
-      const shouldAppendThisAssignment = accessInPublicMethod && accessInPrivateMethod && isPublic;
-      const shouldAccessThis = (!isPublic || accessInPrivateMethod) && accessState;
+      const shouldAppendArguments = accessState && isPublic;
+      const shouldAppendThisAssignment = accessState && accessStateInSubCall && isPublic;
+      const shouldAccessThis = (!isPublic || accessStateInSubCall) && accessState;
 
       return [shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis];
     });
   }
 
-  private shouldAutoAppendInputStateProofs(node: ts.MethodDeclaration) {
+  private shouldAutoAppendCurTxHashPreimageArgs(node: ts.MethodDeclaration) {
     return this._shouldAutoAppend(node, (methodInfo) => {
-      const { accessInputStateProofs, accessInputStateProofsInSubCall } = methodInfo.accessInfo;
+      const { accessBacktrace, accessBacktraceInSubCall } = methodInfo.accessInfo;
       const { isPublic } = methodInfo;
-      const shouldAppendArguments = accessInputStateProofs && isPublic;
-      const shouldAppendThisAssignment =
-        accessInputStateProofs && accessInputStateProofsInSubCall && isPublic;
-      const shouldAccessThis =
-        (!isPublic || accessInputStateProofsInSubCall) && accessInputStateProofs;
+      const shouldAppendArguments = accessBacktrace && isPublic;
+      const shouldAppendThisAssignment = accessBacktrace && accessBacktraceInSubCall && isPublic;
+      const shouldAccessThis = (!isPublic || accessBacktraceInSubCall) && accessBacktrace;
       return [shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis];
     });
   }
 
-  private shouldAutoAppendInputStateProof(node: ts.MethodDeclaration) {
-    return this._shouldAutoAppend(node, (methodInfo) => {
-      const { accessInputStateProof, accessInputStateProofInSubCall, accessInputStateProofs } =
-        methodInfo.accessInfo;
-      const { isPublic } = methodInfo;
-      const shouldAppendArguments = accessInputStateProof && isPublic && !accessInputStateProofs;
-      const shouldAppendThisAssignment =
-        accessInputStateProof &&
-        accessInputStateProofInSubCall &&
-        !accessInputStateProofs &&
-        isPublic;
-      const shouldAccessThis =
-        (!isPublic || accessInputStateProofInSubCall) && accessInputStateProof;
-      return [shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis];
-    });
-  }
-
-  private shouldAutoAppendNextStateHashes(node: ts.MethodDeclaration) {
-    return this._shouldAutoAppend(node, (methodInfo) => {
-      const {
-        accessStateOutputs,
-        accessNextStateHashes,
-        accessNextStateHashesInSubCall,
-        accessStateOutputsInSubCall,
-      } = methodInfo.accessInfo;
-      const { isPublic } = methodInfo;
-      const accessInPublicMethod = accessNextStateHashes || accessStateOutputs;
-      const accessInPrivateMethod = accessNextStateHashesInSubCall || accessStateOutputsInSubCall;
-      const shouldAppendArguments = accessInPublicMethod && isPublic;
-      const shouldAppendThisAssignment = accessInPublicMethod && accessInPrivateMethod && isPublic;
-      const shouldAccessThis = (!isPublic || accessInPrivateMethod) && accessInPublicMethod;
-      return [shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis];
-    });
-  }
 
   static isStaticMethod(node: ts.Node) {
     if (ts.isMethodDeclaration(node) && hasModifier(node, ts.SyntaxKind.StaticKeyword)) {
@@ -2860,7 +2827,7 @@ export class Transpiler {
           return toSection;
         } else if (
           s.expression.kind === ts.SyntaxKind.CallExpression &&
-          /^this\.checkInputStateHash\(/.test(s.expression.getText())
+          /^this\.checkInputState\(/.test(s.expression.getText())
         ) {
           return this.transformCallCheckInputState(s.expression as ts.CallExpression, toSection);
         }
@@ -3822,8 +3789,7 @@ export class Transpiler {
             }
 
             return Transpiler.topCtcs.get(
-              `${sha1(ctcExportFile)}:${
-                symbolDecl.propertyName?.getText() || symbolDecl.name.getText()
+              `${sha1(ctcExportFile)}:${symbolDecl.propertyName?.getText() || symbolDecl.name.getText()
               }`,
             );
           }
@@ -4353,8 +4319,7 @@ export class Transpiler {
         return '!';
       default:
         throw new TranspileError(
-          `Untransformable prefix unary operator kind ${
-            ts.SyntaxKind[operator]
+          `Untransformable prefix unary operator kind ${ts.SyntaxKind[operator]
           } in: ${node.getText()}`,
           this.getRange(node),
         );
@@ -4518,14 +4483,14 @@ export class Transpiler {
           const structname =
             type.symbol === undefined
               ? this._checker.typeToString(
-                  type,
-                  undefined,
-                  ts.TypeFormatFlags.UseAliasDefinedOutsideCurrentScope,
-                )
+                type,
+                undefined,
+                ts.TypeFormatFlags.UseAliasDefinedOutsideCurrentScope,
+              )
               : (type.aliasSymbol === undefined
-                  ? type.symbol.escapedName
-                  : type.aliasSymbol.escapedName
-                ).toString();
+                ? type.symbol.escapedName
+                : type.aliasSymbol.escapedName
+              ).toString();
           throw new TranspileError(
             `field not found for struct '${structname}': '${property!.getText()}'`,
             this.getRange(e),
@@ -4653,7 +4618,6 @@ export class Transpiler {
         );
         break;
       case 'this.changeInfo':
-        // toSection.append(`this.${InjectedProp_ChangeInfo}`);
         shouldAccessThis = this.shouldAutoAppendChangeAmount(
           this.getMethodContainsTheNode(node),
         ).shouldAccessThis;
@@ -4661,193 +4625,101 @@ export class Transpiler {
         break;
       // ctx: SH Preimage
       case 'this.ctx.nVersion':
-        // toSection.append(`this.${InjectedProp_SHPreimage}.nVersion`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
         toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.nVersion`);
         break;
-      case 'this.ctx.nLockTime':
-        // toSection.append(`this.${InjectedProp_SHPreimage}.nLockTime`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.nLockTime`);
+      case 'this.ctx.hashPrevouts':
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.hashPrevouts`);
         break;
-      case 'this.ctx.shaPrevouts':
-        // toSection.append(`this.${InjectedProp_SHPreimage}.shaPrevouts`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.shaPrevouts`,
-        );
+      case 'this.ctx.spentScriptHash':
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.spentScriptHash`);
         break;
-      case 'this.ctx.shaSpentAmounts':
-        // toSection.append(`this.${InjectedProp_SHPreimage}.shaSpentAmounts`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.shaSpentAmounts`,
-        );
+      case 'this.ctx.spentDataHash':
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.spentDataHash`);
         break;
-      case 'this.ctx.shaSpentScripts':
-        // toSection.append(`this.${InjectedProp_SHPreimage}.shaSpentScripts`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.shaSpentScripts`,
-        );
+      case 'this.ctx.value':
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.value`);
         break;
-      case 'this.ctx.shaSequences':
-        // toSection.append(`this.${InjectedProp_SHPreimage}.shaSequences`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.shaSequences`,
-        );
+      case 'this.ctx.nSequence':
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.nSequence`);
         break;
-      case 'this.ctx.shaOutputs':
-        // toSection.append(`this.${InjectedProp_SHPreimage}.shaOutputs`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.shaOutputs`,
-        );
+
+      case 'this.ctx.hashSpentAmounts':
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.hashSpentAmounts`);
         break;
-      case 'this.ctx.spendType':
-        // toSection.append(`this.${InjectedProp_SHPreimage}.spendType`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.spendType`);
+      case 'this.ctx.hashSpentScriptHashes':
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.hashSpentScriptHashes`);
+        break;
+      case 'this.ctx.hashSpentDataHashes':
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.hashSpentDataHashes`);
+        break;
+      case 'this.ctx.hashSequences':
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.hashSequences`);
+        break;
+      case 'this.ctx.hashOutputs':
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.hashOutputs`);
         break;
       case 'this.ctx.inputIndex':
-        // toSection.append(`this.${InjectedProp_SHPreimage}.inputIndex`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex`,
-        );
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex`);
         break;
-      case 'this.ctx.tapLeafHash':
-        // toSection.append(`this.${InjectedProp_SHPreimage}.tapLeafHash`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.tapLeafHash`,
-        );
+      case 'this.ctx.nLockTime':
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.nLockTime`);
         break;
-      case 'this.ctx.keyVersion':
-        // toSection.append(`this.${InjectedProp_SHPreimage}.keyVersion`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.keyVersion`,
-        );
+      case 'this.ctx.sigHashType':
+        shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.sigHashType`);
         break;
-      case 'this.ctx.codeSepPos':
-        // toSection.append(`this.${InjectedProp_SHPreimage}.codeSepPos`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.codeSepPos`,
-        );
-        break;
-      case 'this.ctx._eWithoutLastByte':
-        // toSection.append(`this.${InjectedProp_SHPreimage}._eWithoutLastByte`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}._eWithoutLastByte`,
-        );
-        break;
-      case 'this.ctx._eLastByte':
-        // toSection.append(`this.${InjectedProp_SHPreimage}._eLastByte`);
-        shouldAccessThis = this.shouldAutoAppendSighashPreimage(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}._eLastByte`,
-        );
-        break;
-      // ctx: Prevouts
+
+      // ParamCtx
       case 'this.ctx.prevouts':
         // toSection.append(`${InjectedParam_Prevouts}`);
-        shouldAccessThis = this.shouldAutoAppendPrevouts(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
+        shouldAccessThis = this.shouldAutoAppendPrevouts(this.getMethodContainsTheNode(node)).shouldAccessThis;
         toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_Prevouts}`);
         break;
-      case 'this.ctx.prevout':
-        // toSection.append(`${InjectedParam_Prevout}`);
-        shouldAccessThis = this.shouldAutoAppendPrevouts(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_Prevout}`);
+      case 'this.ctx.spentScriptHashes':
+        // toSection.append(`${InjectedParam_SpentScriptHashes}`);
+        shouldAccessThis = this.shouldAutoAppendSpentScripts(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(shouldAccessThis
+          ? `this.${InjectedParam_SpentScriptHashes}`
+          : `${InjectedParam_SpentScriptHashes}`);
         break;
-      case 'this.ctx.inputIndexVal':
-        // toSection.append(`${InjectedParam_InputIndexVal}`);
-        shouldAccessThis = this.shouldAutoAppendPrevouts(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_InputIndexVal}`);
+      case 'this.ctx.spentDataHashes':
+        // toSection.append(`${InjectedParam_SpentScriptHashes}`);
+        shouldAccessThis = this.shouldAutoAppendSpentDataHashes(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(shouldAccessThis
+          ? `this.${InjectedParam_SpentDataHashes}`
+          : `${InjectedParam_SpentDataHashes}`);
         break;
-      // ctx: SpentScripts
-      case 'this.ctx.spentScripts':
-        // toSection.append(`${InjectedParam_SpentScripts}`);
-        shouldAccessThis = this.shouldAutoAppendSpentScripts(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScripts}`);
-        break;
-      // ctx: SpentAmounts
       case 'this.ctx.spentAmounts':
         // toSection.append(`${InjectedParam_SpentAmounts}`);
-        shouldAccessThis = this.shouldAutoAppendSpentAmounts(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentAmounts}`);
+        shouldAccessThis = this.shouldAutoAppendSpentAmounts(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(shouldAccessThis
+          ? `this.${InjectedParam_SpentAmounts}`
+          : `${InjectedParam_SpentAmounts}`);
         break;
-      case 'this.ctx.spentScript':
-        // toSection.append(`${InjectedParam_SpentScripts}[${InjectedParam_InputIndexVal}]`);
-        shouldAccessThis = this.shouldAutoAppendSpentScripts(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          shouldAccessThis
-            ? `this.${InjectedParam_SpentScripts}[this.${InjectedParam_InputIndexVal}]`
-            : `${InjectedParam_SpentScripts}[${InjectedParam_InputIndexVal}]`,
-        );
-        break;
-      case 'this.ctx.spentAmount':
-        // toSection.append(`${InjectedParam_SpentAmounts}[${InjectedParam_InputIndexVal}]`);
-        shouldAccessThis = this.shouldAutoAppendSpentAmounts(
-          this.getMethodContainsTheNode(node),
-        ).shouldAccessThis;
-        toSection.append(
-          shouldAccessThis
-            ? `this.${InjectedParam_SpentAmounts}[this.${InjectedParam_InputIndexVal}]`
-            : `${InjectedParam_SpentAmounts}[${InjectedParam_InputIndexVal}]`,
-        );
-        break;
-      case 'this.ctx.inputStateProof':
-        this.transformAccessCurInputStateProof(node, toSection);
+
+      case 'this.ctx.prevout':
+        // toSection.append(`${InjectedParam_Prevout}`);
+        shouldAccessThis = this.shouldAutoAppendPrevouts(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_Prevout}`);
         break;
       case 'this.ctx.inputCount':
-        toSection.append(`${InjectedVar_InputCount}`);
-        break;
-      case 'this.ctx.nextStateHashes':
-        toSection.append(`${InjectedParam_NextStateHashes}`);
+        shouldAccessThis = this.shouldAutoAppendSpentAmounts(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(shouldAccessThis
+          ? ACCESS_INPUT_COUNT.accessThis
+          : ACCESS_INPUT_COUNT.accessArgument);
         break;
       case 'this.ctx':
         throw new TranspileError(
@@ -5012,11 +4884,6 @@ export class Transpiler {
       );
     }
 
-    // process this.ctx.inputStateProofs[i]
-    if (node.getText().startsWith('this.ctx.inputStateProofs')) {
-      return this.transformAccessInputStateProofsElement(e.argumentExpression, toSection);
-    }
-
     return toSection
       .appendWith(this, (toSec) => this.transformExpression(e.expression, toSec))
       .append('[')
@@ -5132,15 +4999,6 @@ export class Transpiler {
       if (name === 'checkPreimage' || name === 'checkPreimageSigHashType') {
         return this.transformCallCheckPreimage(node, toSection);
       }
-
-      if (name === 'buildStateOutputs') {
-        return this.transformCallBuildStateOutputs(name, node, toSection);
-      }
-
-      if (name === 'appendStateOutput') {
-        return this.transformCallAppendStateOutput(name, node, toSection);
-      }
-
       if (name === 'buildChangeOutput') {
         return this.transformCallBuildChangeOutput(node, toSection);
       }
@@ -5153,7 +5011,7 @@ export class Transpiler {
         return this.transformCallCLTV(node, toSection);
       }
 
-      if (name === 'checkInputStateHash') {
+      if (name === 'checkInputState') {
         return this.transformCallCheckInputState(node, toSection);
       }
 
@@ -5609,45 +5467,6 @@ export class Transpiler {
       );
   }
 
-  private transformCallAppendStateOutput(
-    _name: string,
-    node: ts.CallExpression,
-    toSection: EmittedSection,
-  ): EmittedSection {
-    const methodNode = this.getMethodContainsTheNode(node);
-    const { shouldAccessThis } = this.shouldAutoAppendNextStateHashes(methodNode);
-
-    return toSection
-      .append('\n')
-      .append(
-        `${shouldAccessThis ? `this.${InjectedVar_StateCount} += 1;` : `${InjectedVar_StateCount} += 1;`}`,
-      )
-      .append('\n')
-      .append(
-        `${shouldAccessThis ? `this.${InjectedVar_StateOutputs} += ` : `${InjectedVar_StateOutputs} += `}`,
-      )
-      .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
-      .append(';')
-      .append('\n')
-      .append(
-        `${shouldAccessThis ? `this.${InjectedVar_StateRoots} += hash160(` : `${InjectedVar_StateRoots} += hash160(`}`,
-      )
-      .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
-      .append(')');
-  }
-
-  private transformCallBuildStateOutputs(
-    _name: string,
-    node: ts.CallExpression,
-    toSection: EmittedSection,
-  ) {
-    const methodNode = this.getMethodContainsTheNode(node);
-    const { shouldAccessThis } = this.shouldAutoAppendNextStateHashes(methodNode);
-    this._accessBuiltinsSymbols.add('StateUtils');
-    return toSection.append(
-      `${shouldAccessThis ? CALL_BUILD_STATE_OUTPUTS.accessThis : CALL_BUILD_STATE_OUTPUTS.accessArgument}`,
-    );
-  }
 
   private transformCallCheckInputState(
     node: ts.CallExpression,
@@ -5665,42 +5484,16 @@ export class Transpiler {
         .append(';\n');
     }
 
-    const transformInputIndexVar = (toSec) => {
-      if (dynamicInputIndex) {
-        toSec.append(`${inputIndexVar}`);
-      } else {
-        toSec.appendWith(this, (toSec0) => this.transformExpression(node.arguments[0], toSec0));
-      }
-      return toSec;
-    };
-
-    const transfromInputProof = (toSec) => {
-      if (dynamicInputIndex) {
-        // must use dynamic inputStateProof to avoid `OP_MUL` in the script
-        toSec.append(`${INPUT_STATE_PROOF_EXPR.accessArgument(inputIndexVar)}`);
-      } else {
-        // just transpile to inputStateProofs[ctcIndex]
-        toSec
-          .append(`${InjectedParam_InputStateProofs}`)
-          .append('[')
-          .appendWith(this, transformInputIndexVar)
-          .append(']');
-      }
-      return toSec;
-    };
-
-    // call `StateUtils.checkInputStateHash`
+    // call `StateUtils.checkInputState`
     this._accessBuiltinsSymbols.add('StateUtils');
     return toSection
       .append('\n')
-      .append(`StateUtils.checkInputStateHash(`)
-      .appendWith(this, transfromInputProof)
+      .append(`StateUtils.checkInputState(`)
+      .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
       .append(', ')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
       .append(', ')
-      .append(`${InjectedParam_Prevouts}[`)
-      .appendWith(this, transformInputIndexVar)
-      .append(`]`)
+      .appendWith(this, (toSec) => this.transformAccessCurTxHashPreimage(node, toSec))
       .append(');')
       .append('\n');
   }
@@ -5719,12 +5512,12 @@ export class Transpiler {
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
       .append(', ')
       .append(
-        `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScripts}[${shouldAccessThis ? 'this.' : ''}${InjectedParam_InputIndexVal}]`,
+        `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScriptHashes}[${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex]`,
       )
       .append(', ')
       .appendWith(this, (toSec) => {
-        return this.transformAccessCurInputStateProof(node, toSec).append(
-          `.txHashPreimage.inputList`,
+        return this.transformAccessCurTxHashPreimage(node, toSec).append(
+          `.inputList`,
         );
       })
       .append(')');
@@ -5744,66 +5537,80 @@ export class Transpiler {
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
       .append(', ')
       .append(
-        `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScripts}[${shouldAccessThis ? 'this.' : ''}${InjectedParam_InputIndexVal}]`,
+        `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScriptHashes}[${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex]`,
       )
       .append(', ')
       .appendWith(this, (toSec) => {
-        return this.transformAccessCurInputStateProof(node, toSec).append(
-          `.txHashPreimage.inputList`,
+        return this.transformAccessCurTxHashPreimage(node, toSec).append(
+          `.inputList`,
         );
       })
       .append(')');
   }
 
-  private transformAccessCurInputStateProof(
+  // private transformAccessCurInputStateProof(
+  //   node: ts.Node,
+  //   toSection: EmittedSection,
+  // ): EmittedSection {
+  //   const methodName = `${this._currentContract.name.escapedText.toString()}.${this._currentMethodName}`;
+  //   const methodInfo = this.methodInfos.get(methodName);
+  //   if (!methodInfo) {
+  //     throw new Error(`Method info not found for ${methodName}`);
+  //   }
+
+  //   const methodNode = this.getMethodContainsTheNode(node);
+  //   const { shouldAccessThis } = this.shouldAutoAppendStateArgs(methodNode);
+
+  //   const expr = methodInfo.accessInfo.accessInputStateProofs
+  //     ? `${shouldAccessThis ? INPUT_STATE_PROOF_EXPR.accessThis(InjectedParam_InputIndexVal) : INPUT_STATE_PROOF_EXPR.accessArgument(InjectedParam_InputIndexVal)}`
+  //     : `${shouldAccessThis ? 'this.' : ''}${InjectedParam_InputStateProof}`;
+  //   return toSection.append(expr);
+  // }
+
+  private transformAccessCurTxHashPreimage(
     node: ts.Node,
     toSection: EmittedSection,
   ): EmittedSection {
-    const methodName = `${this._currentContract.name.escapedText.toString()}.${this._currentMethodName}`;
-    const methodInfo = this.methodInfos.get(methodName);
-    if (!methodInfo) {
-      throw new Error(`Method info not found for ${methodName}`);
-    }
-
     const methodNode = this.getMethodContainsTheNode(node);
-    const { shouldAccessThis } = this.shouldAutoAppendInputStateProof(methodNode);
-
-    const expr = methodInfo.accessInfo.accessInputStateProofs
-      ? `${shouldAccessThis ? INPUT_STATE_PROOF_EXPR.accessThis(InjectedParam_InputIndexVal) : INPUT_STATE_PROOF_EXPR.accessArgument(InjectedParam_InputIndexVal)}`
-      : `${shouldAccessThis ? 'this.' : ''}${InjectedParam_InputStateProof}`;
+    const methodInfo = this.findMethodInfo(methodNode.name.getText());
+    if (!methodInfo) {
+      throw new Error(`Method info not found for ${methodNode.name.getText()}`);
+    }
+    const { shouldAccessThis } = this.shouldAutoAppendCurTxHashPreimageArgs(methodNode);
+    const expr = shouldAccessThis ? `this.${InjectedProp_CurTxHashPreimage}` : InjectedParam_CurTxHashPreimage;
     return toSection.append(expr);
   }
 
-  private transformAccessInputStateProofsElement(
-    indexNode: ts.Expression,
-    toSection: EmittedSection,
-  ): EmittedSection {
-    const dynamicIndex = this.isDynamicIndex(indexNode);
-    if (dynamicIndex) {
-      // similar like INPUT_STATE_PROOF_EXPR
-      toSection
-        .append(`(`)
-        .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
-        .append(` == 0 ? ${InjectedParam_InputStateProofs}[0] : (`)
-        .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
-        .append(` == 1 ? ${InjectedParam_InputStateProofs}[1] : (`)
-        .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
-        .append(` == 2 ? ${InjectedParam_InputStateProofs}[2] : (`)
-        .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
-        .append(` == 3 ? ${InjectedParam_InputStateProofs}[3] : (`)
-        .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
-        .append(
-          ` == 4 ? ${InjectedParam_InputStateProofs}[4] : ${InjectedParam_InputStateProofs}[5])))))`,
-        )
-        .append('\n');
-    } else {
-      toSection
-        .append(`${InjectedParam_InputStateProofs}[`)
-        .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
-        .append(']');
-    }
-    return toSection;
-  }
+  // private transformAccessInputStateProofsElement(
+  //   indexNode: ts.Expression,
+  //   toSection: EmittedSection,
+  // ): EmittedSection {
+  //   const dynamicIndex = this.isDynamicIndex(indexNode);
+  //   if (dynamicIndex) {
+  //     // similar like INPUT_STATE_PROOF_EXPR
+  //     toSection
+  //       .append(`(`)
+  //       .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
+  //       .append(` == 0 ? ${InjectedParam_InputStateProofs}[0] : (`)
+  //       .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
+  //       .append(` == 1 ? ${InjectedParam_InputStateProofs}[1] : (`)
+  //       .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
+  //       .append(` == 2 ? ${InjectedParam_InputStateProofs}[2] : (`)
+  //       .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
+  //       .append(` == 3 ? ${InjectedParam_InputStateProofs}[3] : (`)
+  //       .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
+  //       .append(
+  //         ` == 4 ? ${InjectedParam_InputStateProofs}[4] : ${InjectedParam_InputStateProofs}[5])))))`,
+  //       )
+  //       .append('\n');
+  //   } else {
+  //     toSection
+  //       .append(`${InjectedParam_InputStateProofs}[`)
+  //       .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
+  //       .append(']');
+  //   }
+  //   return toSection;
+  // }
 
   private isDynamicIndex(node: ts.Expression): boolean {
     const indexExpr = this.unwrapNumberConversion(node);

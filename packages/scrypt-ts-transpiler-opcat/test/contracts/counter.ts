@@ -5,7 +5,7 @@ import {
   sha256,
   assert,
   StateLib,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 import { CounterState } from './counterState.js';
 
 export class CounterStateLib extends StateLib<CounterState> {}

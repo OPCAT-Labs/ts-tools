@@ -8,7 +8,7 @@ import {
   prop,
   SmartContract,
   toByteString,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export type ST11 = {
   x: bigint;

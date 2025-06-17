@@ -5,7 +5,7 @@ import {
   SHPreimage,
   SmartContract,
   SmartContractLib,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class ContractLib2 extends SmartContractLib {
   @prop()

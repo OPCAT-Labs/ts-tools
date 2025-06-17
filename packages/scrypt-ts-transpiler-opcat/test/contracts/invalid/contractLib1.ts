@@ -1,4 +1,4 @@
-import { assert, method, prop, SmartContract, SmartContractLib } from '@scrypt-inc/scrypt-ts-btc';
+import { assert, method, prop, SmartContract, SmartContractLib } from '@opcat-labs/scrypt-ts-opcat';
 
 export class ContractLib1 extends SmartContractLib {
   // invalid, `@prop(true)` is only not allowed to be used in `SmartContractLib`

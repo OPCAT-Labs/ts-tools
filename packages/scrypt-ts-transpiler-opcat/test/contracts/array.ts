@@ -1,4 +1,4 @@
-import { method, prop, SmartContract, assert, FixedArray, equals } from '@scrypt-inc/scrypt-ts-btc';
+import { method, prop, SmartContract, assert, FixedArray, equals } from '@opcat-labs/scrypt-ts-opcat';
 
 export class ArrayTest extends SmartContract {
   @prop()

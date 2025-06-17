@@ -10,7 +10,7 @@ import {
   ByteString,
   FixedArray,
   StructObject,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export interface VirtualUTXOState extends StructObject {
   dummyStateProp: Int32;

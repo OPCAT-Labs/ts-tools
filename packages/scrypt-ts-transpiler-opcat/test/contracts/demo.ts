@@ -1,4 +1,4 @@
-import { SmartContract, prop, method, assert } from '@scrypt-inc/scrypt-ts-btc';
+import { SmartContract, prop, method, assert } from '@opcat-labs/scrypt-ts-opcat';
 
 export class Demo extends SmartContract {
   @prop()

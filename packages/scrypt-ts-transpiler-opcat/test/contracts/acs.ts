@@ -7,7 +7,7 @@ import {
   sha256,
   SmartContract,
   TxUtils,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 // todo: add sighash type
 export class AnyoneCanSpend extends SmartContract {

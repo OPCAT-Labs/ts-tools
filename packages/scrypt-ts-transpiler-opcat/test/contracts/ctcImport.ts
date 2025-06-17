@@ -6,7 +6,7 @@ import {
   fill,
   method,
   toByteString,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 import {
   FFF,
   MAX_TOKEN_OUTPUT,

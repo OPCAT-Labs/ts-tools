@@ -15,7 +15,7 @@ import {
   TxUtils,
   Int32,
   Outpoint,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class SigHashUtils extends SmartContractLib {
   // Data for checking sighash preimage:

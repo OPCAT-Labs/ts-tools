@@ -1,4 +1,4 @@
-import { StructObject, StateLib, Int32, assert, method, Bool } from '@scrypt-inc/scrypt-ts-btc';
+import { StructObject, StateLib, Int32, assert, method, Bool } from '@opcat-labs/scrypt-ts-opcat';
 
 export interface DelegateeState extends StructObject {
   total: Int32;

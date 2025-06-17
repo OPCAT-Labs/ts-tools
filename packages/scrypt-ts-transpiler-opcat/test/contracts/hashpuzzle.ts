@@ -12,7 +12,7 @@ import {
   Ripemd160,
   ripemd160,
   ByteString,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class HashPuzzle extends SmartContract {
   @prop()

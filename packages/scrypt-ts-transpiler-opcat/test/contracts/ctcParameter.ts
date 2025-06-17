@@ -7,7 +7,7 @@ import {
   equals,
   ByteString,
   toByteString,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 const M = 2;
 

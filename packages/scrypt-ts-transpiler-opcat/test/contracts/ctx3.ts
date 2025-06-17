@@ -1,4 +1,4 @@
-import { assert, method, SmartContract } from '@scrypt-inc/scrypt-ts-btc';
+import { assert, method, SmartContract } from '@opcat-labs/scrypt-ts-opcat';
 
 /// a transpilable contract for ctx, will be transpiled successfully
 export class CTX3 extends SmartContract {

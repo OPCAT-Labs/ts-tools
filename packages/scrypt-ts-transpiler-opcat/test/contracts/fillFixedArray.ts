@@ -7,7 +7,7 @@ import {
   method,
   SmartContract,
   toByteString,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 interface St {
   a: bigint;

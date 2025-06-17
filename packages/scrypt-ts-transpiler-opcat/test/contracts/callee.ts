@@ -7,7 +7,7 @@ import {
   int32ToByteString,
   method,
   prop,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 //Read Medium article about this contract
 //https://xiaohuiliu.medium.com/inter-contract-call-on-bitcoin-f51869c08be

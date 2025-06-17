@@ -7,7 +7,7 @@ import {
   ByteString,
   TxUtils,
   sha256,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class DesignatedReceivers extends SmartContract {
   @prop()

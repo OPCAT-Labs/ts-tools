@@ -6,7 +6,7 @@ import {
   FixedArray,
   equals,
   ByteString,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export type ST21 = {
   x: bigint;

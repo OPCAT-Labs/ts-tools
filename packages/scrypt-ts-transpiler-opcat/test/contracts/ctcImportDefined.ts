@@ -1,4 +1,4 @@
-import { ByteString } from '@scrypt-inc/scrypt-ts-btc';
+import { ByteString } from '@opcat-labs/scrypt-ts-opcat';
 
 export const MAX_TOKEN_OUTPUT = 5;
 

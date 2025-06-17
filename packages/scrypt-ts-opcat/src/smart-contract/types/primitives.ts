@@ -18,6 +18,11 @@ export type Int32 = Flavor<bigint, 'int'>;
 export type UInt32 = Flavor<bigint, 'int'>;
 export type UInt64 = Flavor<bigint, 'int'>;
 
+export type SigHashPreimage = ByteString & {__type: 'SigHashPreimage'};
+export function SigHashPreimage(b: ByteString): SigHashPreimage {
+  return getValidatedHexString(b, false) as SigHashPreimage;
+}
+
 /**
  * A Bool represents a boolean. A simple value true or false.
  * @category Types

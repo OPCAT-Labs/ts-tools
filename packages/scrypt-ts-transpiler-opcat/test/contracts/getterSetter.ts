@@ -1,4 +1,4 @@
-import { assert, method, SmartContract } from '@scrypt-inc/scrypt-ts-btc';
+import { assert, method, SmartContract } from '@opcat-labs/scrypt-ts-opcat';
 
 export class GetterSetter extends SmartContract {
   private _s: bigint = 1n;

@@ -5,7 +5,7 @@ import {
   method,
   SmartContract,
   TxUtils,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class Clone extends SmartContract {
   constructor() {

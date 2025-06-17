@@ -7,7 +7,7 @@ import {
   Bool,
   assert,
   Int32,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 type A = {
   a: FixedArray<Int32, 3>;

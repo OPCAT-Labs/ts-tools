@@ -1,5 +1,5 @@
-import { assert, ByteString, method, prop, SmartContract } from '@scrypt-inc/scrypt-ts-btc';
-import { BacktraceInfo } from '@scrypt-inc/scrypt-ts-btc/dist/types/smart-contract/types/structs';
+import { assert, ByteString, method, prop, SmartContract } from '@opcat-labs/scrypt-ts-opcat';
+import { BacktraceInfo } from '@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs';
 
 export class InvalidB2G extends SmartContract {
   @prop()

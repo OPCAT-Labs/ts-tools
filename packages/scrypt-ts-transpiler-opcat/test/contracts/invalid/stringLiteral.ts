@@ -16,7 +16,7 @@ import {
   toByteString,
   ByteString,
   Addr,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class StringLiteral extends SmartContract {
   @prop()

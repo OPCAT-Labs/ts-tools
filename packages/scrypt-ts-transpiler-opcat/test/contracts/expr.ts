@@ -7,7 +7,7 @@ import {
   hash160,
   FixedArray,
   ByteString,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 type STT = {
   a: bigint;

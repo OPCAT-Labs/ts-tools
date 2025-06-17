@@ -4,6 +4,8 @@ import { slice } from '../fns/byteString.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import { ByteString, Int32, UInt32 } from '../types/primitives.js';
 import { SpentDataHashes } from '../types/structs.js';
+import { TX_OUTPUT_DATA_HASH_LEN } from '../consts.js';
+import { sha256 } from '../fns/hashes.js';
 
 /**
  * spentDatas library
@@ -12,33 +14,24 @@ import { SpentDataHashes } from '../types/structs.js';
  */
 export class StateUtils extends SmartContractLib {
   /**
-   * Use trustable hashRoot and outputIndex to check passed-in stateHashes and stateHash
-   * @param stateHashes passed-in stateHashes
-   * @param stateHash passed-in stateHash
-   * @param t_hashRoot trustable hashRoot
-   * @param t_outputIndex trustable outputIndex
+   * Check if the dataHash of the passed-in raw state matches the spent data hash
+   * @param rawState passed-in raw state after serialization
+   * @param t_spentDataHashes trustable spent data hashes
+   * @param t_inputIndex trustable input index
    */
   @method()
-  static checkStateHash(
-    dataHash: ByteString,
+  static checkInputState(
+    rawState: ByteString,
     t_spentDataHashes: SpentDataHashes,
     t_inputIndex: UInt32,
   ): void {
-    assert(slice(t_spentDataHashes, t_inputIndex * 32n, (t_inputIndex + 1n) * 32n) == dataHash, 'dataHash mismatch');
+    assert(
+      slice(
+        t_spentDataHashes, 
+        t_inputIndex * TX_OUTPUT_DATA_HASH_LEN, 
+        (t_inputIndex + 1n) * TX_OUTPUT_DATA_HASH_LEN
+      ) == sha256(rawState), 
+      'dataHash of state mismatch'
+    );
   }
-
-
-  @method()
-  static checkInputState(
-    stateHashesProof: SpentDataHashes,
-    data: ByteString,
-    inputIndex: Int32,
-  ): void {
-    // const inputStateHash = stateHashesProof[Number(inputIndex)];
-    // assert(inputStateHash ==
-    //     sha256(data),
-    //   `invalid data`,
-    // );
-  }
-
 }

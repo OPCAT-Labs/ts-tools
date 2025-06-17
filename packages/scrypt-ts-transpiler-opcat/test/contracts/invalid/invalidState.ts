@@ -7,7 +7,7 @@ import {
   assert,
   ByteString,
   StructObject,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export interface InvalidStateState extends StructObject {
   count: Int32;

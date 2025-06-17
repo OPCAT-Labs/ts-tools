@@ -1,4 +1,4 @@
-import { method, SmartContract, assert, equals } from '@scrypt-inc/scrypt-ts-btc';
+import { method, SmartContract, assert, equals } from '@opcat-labs/scrypt-ts-opcat';
 
 import { SS } from './lib';
 

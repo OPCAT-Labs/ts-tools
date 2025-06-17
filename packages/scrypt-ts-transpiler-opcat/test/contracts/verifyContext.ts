@@ -13,7 +13,7 @@ import {
   len,
   sha256,
   toByteString,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class VerifyContext extends SmartContract {
   @method()

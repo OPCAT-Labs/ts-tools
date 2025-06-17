@@ -1,4 +1,4 @@
-import { FixedArray, SmartContract, assert, fill, method, prop } from '@scrypt-inc/scrypt-ts-btc';
+import { FixedArray, SmartContract, assert, fill, method, prop } from '@opcat-labs/scrypt-ts-opcat';
 
 export class Matrix extends SmartContract {
   static readonly N = 4;

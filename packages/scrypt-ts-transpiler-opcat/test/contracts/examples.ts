@@ -11,7 +11,7 @@ import {
   TxUtils,
   within,
   PubKeyHash,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class Examples extends SmartContract {
   @method()

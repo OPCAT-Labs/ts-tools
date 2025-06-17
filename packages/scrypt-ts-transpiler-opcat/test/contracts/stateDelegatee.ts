@@ -7,11 +7,11 @@ import {
   TxUtils,
   ByteString,
   TX_INPUT_COUNT_MAX,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 import { DelegateeState, DelegatorState, DelegatorStateLib } from './stateLibs.js';
 
 export class StateDelegatee extends SmartContract<DelegateeState> {
-  @method({ autoCheckInputStateHash: false })
+  @method({ autoCheckInputState: false })
   public unlock(
     delegatorScript: ByteString,
     delegatorState: DelegatorState,

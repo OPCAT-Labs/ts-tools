@@ -8,7 +8,7 @@ import {
   PubKey,
   hash160,
   FixedArray,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class CodeSeparator extends SmartContract {
   @prop()

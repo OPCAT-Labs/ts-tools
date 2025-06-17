@@ -1,4 +1,4 @@
-import { method, prop, SmartContract, assert, ByteString } from '@scrypt-inc/scrypt-ts-btc';
+import { method, prop, SmartContract, assert, ByteString } from '@opcat-labs/scrypt-ts-opcat';
 
 export class CTX2 extends SmartContract {
   @prop()

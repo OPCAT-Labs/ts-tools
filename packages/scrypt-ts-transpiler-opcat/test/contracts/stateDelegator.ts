@@ -1,4 +1,4 @@
-import { SmartContract, method, assert, ByteString, prop } from '@scrypt-inc/scrypt-ts-btc';
+import { SmartContract, method, assert, ByteString, prop } from '@opcat-labs/scrypt-ts-opcat';
 import { DelegatorState } from './stateLibs';
 
 export class StateDelegator extends SmartContract<DelegatorState> {

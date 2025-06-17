@@ -1,6 +1,6 @@
 import { BaseDemo } from './basedemo';
 
-import { method, prop, assert } from '@scrypt-inc/scrypt-ts-btc';
+import { method, prop, assert } from '@opcat-labs/scrypt-ts-opcat';
 
 export class HeritageDemo extends BaseDemo {
   @prop()

@@ -1,4 +1,4 @@
-import { SmartContract, method, assert } from '@scrypt-inc/scrypt-ts-btc';
+import { SmartContract, method, assert } from '@opcat-labs/scrypt-ts-opcat';
 
 export class VoidReturn extends SmartContract {
   // Non-public methods can also return void type.

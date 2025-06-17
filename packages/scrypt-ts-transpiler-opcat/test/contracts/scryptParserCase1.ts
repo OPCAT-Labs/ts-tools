@@ -1,4 +1,4 @@
-import { SmartContract, StructObject, assert, method } from '@scrypt-inc/scrypt-ts-btc';
+import { SmartContract, StructObject, assert, method } from '@opcat-labs/scrypt-ts-opcat';
 
 export interface ScryptParserCase1T extends StructObject {
   b: boolean;

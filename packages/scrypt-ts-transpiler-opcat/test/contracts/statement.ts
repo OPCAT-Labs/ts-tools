@@ -5,7 +5,7 @@ import {
   assert,
   toByteString,
   ByteString,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class Statement extends SmartContract {
   @prop()
