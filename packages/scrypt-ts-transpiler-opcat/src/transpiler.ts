@@ -1203,8 +1203,8 @@ export class Transpiler {
     const dataPart = flattenProps(stateTypeSymbol, InjectedParam_CurState).map(({ name, type }) =>
     {
       const bytes = byteStringify(name, this.type2ResolvedName(type));
-      // return `num2bin(len(${bytes}), 1) + ${bytes}`;
-      return `StdUtils.writeVarint(${bytes})`;
+      return `num2bin(len(${bytes}), 2) + ${bytes}`;
+      // return `StdUtils.writeVarint(${bytes})`;
     }
     );
 
