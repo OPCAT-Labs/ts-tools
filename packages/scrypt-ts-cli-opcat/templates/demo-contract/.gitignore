@@ -1,0 +1,9 @@
+node_modules/
+dist/
+out/
+artifacts/
+**/.env
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/settings.json
