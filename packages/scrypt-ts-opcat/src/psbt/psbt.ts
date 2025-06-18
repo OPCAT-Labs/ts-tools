@@ -1445,11 +1445,12 @@ function pubkeyInOutput(
   outputIndex: number,
   cache: PsbtCache,
 ): boolean {
-  const script = cache.__TX.outputs[outputIndex].script;
-  const { meaningfulScript } = getMeaningfulScript(
-    script.toBuffer(),
-  );
-  return pubkeyInScript(pubkey, meaningfulScript);
+  // const script = cache.__TX.outputs[outputIndex].script;
+  // const { meaningfulScript } = getMeaningfulScript(
+  //   script.toBuffer(),
+  // );
+  // return pubkeyInScript(pubkey, meaningfulScript);
+  return true
 }
 
 function compressPubkey(pubkey: Uint8Array): Uint8Array {

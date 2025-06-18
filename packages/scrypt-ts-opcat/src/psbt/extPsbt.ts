@@ -421,7 +421,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     } else {
       return {
         scriptHash: sha256(toByteString('')),
-        satoshis: -1n,
+        satoshis: 0n,
         dataHash: sha256(toByteString('')),
       };
     }

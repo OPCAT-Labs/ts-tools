@@ -1,6 +1,4 @@
 import 'reflect-metadata';
-import { SmartContract } from './smartContract.js';
-import { SmartContractLib } from './smartContractLib.js';
 import { SigHashType } from './types/primitives.js';
 
 /**
@@ -33,7 +31,7 @@ export interface MethodDecoratorOptions {
  * @onchain
  */
 export function method(options: MethodDecoratorOptions = { autoCheckInputStateHash: true }) {
-  const sigHashType: SigHashType = SigHashType.DEFAULT;
+  const sigHashType: SigHashType = SigHashType.ALL;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return function (target: any, methodName: string, descriptor: PropertyDescriptor) {
     if (!descriptor) {
@@ -59,24 +57,21 @@ export function method(options: MethodDecoratorOptions = { autoCheckInputStateHa
           }
 
           // instance method on subclasses of `SmartContractLib`
-          const isSmartContractLib = this instanceof SmartContractLib;
-
-          if (isSmartContractLib) {
+          if (this.isSmartContractLib && this.isSmartContractLib()) {
             return originalMethod.apply(this, args);
           }
 
           // instance method on subclasses of `SmartContract`
-          const isSmartContractMethod = this instanceof SmartContract;
+          //const isSmartContractMethod = this instanceof SmartContract;
 
           // if public @method of smart contract is called
-          if (isSmartContractMethod) {
+          if (this.isSmartContract && this.isSmartContract()) {
             if (this.isPubFunction(methodName)) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const self = this as SmartContract<any>;
+              const self = this as any;
               const curPsbt = self.spentPsbt;
 
               self.setSighashType(sigHashType);
-              self.clearStateVars();
               self.extendMethodArgs(methodName, args, options.autoCheckInputStateHash);
 
               if (curPsbt !== undefined && !curPsbt.isFinalizing) {

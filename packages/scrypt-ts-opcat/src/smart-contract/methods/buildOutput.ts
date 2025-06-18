@@ -5,6 +5,7 @@ import { ByteString, Int32 } from '../types/index.js';
 import { TxUtils } from '../builtin-libs/txUtils.js'
 import { OpcatState } from '../types/primitives.js';
 import { AbstractContract } from '../abstractContract.js';
+import { sha256 } from '../fns/hashes.js';
 
 
 /**
@@ -39,10 +40,10 @@ export function buildStateOutputImpl<T extends OpcatState>(
   self: AbstractContract,
   state: T,
   satoshis: Int32,
-  script: ByteString
+  scriptHash: ByteString
 ): ByteString {
-  const lenScript = len(script);
-  assert(lenScript > 0n, 'invalid script');
+  const lenScriptHash = len(scriptHash);
+  assert(lenScriptHash === 32n, 'invalid ScriptHash');
   const Class = Object.getPrototypeOf(self).constructor as typeof AbstractContract;
-  return TxUtils.buildDataOutput(script, satoshis, Class.stateSerialize(state))
+  return TxUtils.buildDataOutput(scriptHash, satoshis, sha256(Class.stateSerialize(state)))
 }

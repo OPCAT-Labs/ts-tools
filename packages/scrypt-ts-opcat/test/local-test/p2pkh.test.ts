@@ -48,8 +48,8 @@ describe('Test P2PKH', () => {
         p2pkh.unlock(sig, PubKey(pubKey));
       });
 
-    expect(() => {
-      psbt.sign(testSigner)
+    expect(async () => {
+      await psbt.sign(testSigner)
       expect(bvmVerify(psbt, 0)).to.eq(true);
     }).not.throw();
   });

@@ -1,9 +1,8 @@
 import { method } from "../decorators.js";
 import { assert } from "../fns/assert.js";
-import { len } from "../fns/byteString.js";
-import { num2bin } from "../fns/byteString.js";
+import { len, num2bin } from "../fns/byteString.js";
 import { SmartContractLib } from "../smartContractLib.js";
-import { ByteString, UInt32, UInt64 } from "../types/primitives.js";
+import { ByteString, PrivKey, UInt32, UInt64 } from "../types/primitives.js";
 
 
 export const UINT64_MAX = 0xffffffffffffffffn;

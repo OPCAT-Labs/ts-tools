@@ -44,4 +44,8 @@ export class SmartContractLib {
       return arg;
     });
   }
+
+  isSmartContractLib() {
+    return true
+  }
 }

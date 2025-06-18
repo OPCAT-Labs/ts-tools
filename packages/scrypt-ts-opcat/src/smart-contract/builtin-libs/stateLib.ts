@@ -1,7 +1,7 @@
 import { SmartContractLib } from '../smartContractLib.js';
-import { OpcatState, Ripemd160 } from '../types/primitives.js';
+import { ByteString, OpcatState } from '../types/primitives.js';
 import { ABICoder } from '../abi.js';
-import { calculateStateHash } from '../../utils/stateHash.js';
+import { stateSerialize } from '../stateSerializer.js';
 import { getUnRenamedSymbol } from '../abiutils.js';
 
 /**
@@ -9,7 +9,7 @@ import { getUnRenamedSymbol } from '../abiutils.js';
  * @category Library
  * @onchain
  */
-export class StateLib<T extends OpcatState> extends SmartContractLib {
+export class StateLib<ST extends OpcatState> extends SmartContractLib {
   /**
    * Calculate the hash of the state object
    * @param state the state object
@@ -17,10 +17,10 @@ export class StateLib<T extends OpcatState> extends SmartContractLib {
    * @onchain
    * @category State
    */
-  static stateHash<ST extends OpcatState>(
+  static serialize<ST extends OpcatState>(
     this: { new (...args: unknown[]): StateLib<ST> },
     state: ST,
-  ): Ripemd160 {
+  ): ByteString {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const libraryClazz = this as any as typeof SmartContractLib;
     const artifact = libraryClazz.artifact;
@@ -39,11 +39,11 @@ export class StateLib<T extends OpcatState> extends SmartContractLib {
       throw new Error(`State type is not defined for the library: ${this.name}`);
     }
 
-    return calculateStateHash(artifact, libraryClazz.stateType, state);
+    return stateSerialize(artifact, libraryClazz.stateType, state);
   }
 
   // keep this method to enable the typecheck for stateHash method in ts
-  private _id(_state: T): T {
+  private _id(_state: ST): ST {
     return _state;
   }
 }

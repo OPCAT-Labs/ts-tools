@@ -1,21 +1,13 @@
 import { assert } from '../fns/assert.js';
 import {
-  TX_INPUT_COUNT_MAX,
-  TX_INPUT_PREVOUT_BYTE_LEN,
-  TX_OUTPUT_SATOSHI_BYTE_LEN,
-  TX_IO_INDEX_VAL_MIN,
-  TX_IO_INDEX_VAL_MAX,
-  TX_P2TR_OUTPUT_SCRIPT_BYTE_LEN,
   TX_INPUT_PREV_TX_HASH_BYTE_LEN,
-  TX_OUTPUT_SCRIPT_HASH_LEN,
-  TX_OUTPUT_DATA_HASH_LEN,
   TX_INPUT_SCRIPT_HASH_BYTE_LEN,
   TX_VERSION_BYTE_LEN,
   TX_INPUT_BYTE_LEN,
   TX_OUTPUT_BYTE_LEN,
 } from '../consts.js';
 import { prop, method } from '../decorators.js';
-import { toByteString, len, intToByteString, sha256, hash256 } from '../fns/index.js';
+import { toByteString, len, intToByteString, slice, sha256, num2bin, hash256 } from '../fns/index.js';
 import { OpCode } from '../types/opCode.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import {
@@ -27,7 +19,76 @@ import {
   UInt64,
   TxHashPreimage,
 } from '../types/index.js';
-import { StdUtils } from './index.js';
+import { StdUtils } from './stdUtils.js';
+
+
+
+/**
+ * A writer that serializes `ByteString`, `boolean`, `bigint`
+ * @category Standard Contracts
+ */
+export class VarWriter extends SmartContractLib {
+
+  /**
+   * serializes `ByteString` with `VarInt` encoding
+   * @param buf a `ByteString`
+   * @returns serialized `ByteString`
+   */
+  @method()
+  static writeInt(n: Int32): ByteString {
+
+    let buf: ByteString = toByteString('');
+
+    if (n <= 0xfc) {
+      buf = TxUtils.toLEUnsigned(n, 1n);
+    }
+    else if (n <= 0xffff) {
+      buf = toByteString('fd') + TxUtils.toLEUnsigned(n, 2n);
+    }
+    else if (n < 0xffffffff) {
+      buf = toByteString('fe') + TxUtils.toLEUnsigned(n, 4n);
+    }
+    else {
+      // shall not reach here
+      assert(false);
+    }
+
+    return buf;
+  }
+
+
+  /**
+   * serializes `ByteString` with `VarInt` encoding
+   * @param buf a `ByteString`
+   * @returns serialized `ByteString`
+   */
+  @method()
+  static writeBytes(buf: ByteString): ByteString {
+    const n = len(buf);
+
+    let header: ByteString = toByteString('');
+
+    if (n < 0x4c) {
+      header = TxUtils.toLEUnsigned(n, 1n);
+    }
+    else if (n < 0x100) {
+      header = toByteString('4c') + TxUtils.toLEUnsigned(n, 1n);
+    }
+    else if (n < 0x10000) {
+      header = toByteString('4d') + TxUtils.toLEUnsigned(n, 2n);
+    }
+    else if (n < 0x100000000) {
+      header = toByteString('4e') + TxUtils.toLEUnsigned(n, 4n);
+    }
+    else {
+      // shall not reach here
+      assert(false);
+    }
+
+    return header + buf;
+  }
+}
+
 
 /**
  * Library for parsing and constructing transactions
@@ -37,32 +98,7 @@ import { StdUtils } from './index.js';
 export class TxUtils extends SmartContractLib {
   /** if a output satoshi value is zero */
   @prop()
-  static readonly ZERO_SATS: ByteString = toByteString('0000000000000000');
-
-  /**
-   * Convert tx input index or output index from value to bytes
-   * @param indexVal value of the input index or output index
-   * @returns ByteString of the input index or output index
-   */
-  @method()
-  static indexValueToBytes(indexVal: Int32): ByteString {
-    assert(indexVal >= TX_IO_INDEX_VAL_MIN && indexVal <= TX_IO_INDEX_VAL_MAX);
-    let indexBytes = intToByteString(indexVal);
-    if (indexBytes == toByteString('')) {
-      indexBytes = toByteString('00');
-    }
-    return indexBytes + toByteString('000000');
-  }
-
-  /**
-   * Check if the index value and bytes are matched
-   * @param indexVal value of the input index or output index
-   * @param indexBytes ByteString of the input index or output index
-   */
-  @method()
-  static checkIndex(indexVal: Int32, indexBytes: ByteString): void {
-    assert(TxUtils.indexValueToBytes(indexVal) == indexBytes);
-  }
+  static readonly ZERO_SATS: UInt64 = 0n;
 
   /**
    * Build serialized tx output
@@ -71,11 +107,26 @@ export class TxUtils extends SmartContractLib {
    * @returns serialized tx output in format ByteString
    */
   @method()
-  static buildOutput(satoshis: ByteString, scriptHash: ByteString, dataHash: ByteString): ByteString {
-    assert(len(scriptHash) == TX_OUTPUT_SCRIPT_HASH_LEN);
-    assert(len(dataHash) == TX_OUTPUT_DATA_HASH_LEN);
-    assert(len(satoshis) == TX_OUTPUT_SATOSHI_BYTE_LEN);
-    return satoshis + scriptHash + dataHash;
+  static buildOutput(scriptHash: ByteString, satoshis: UInt64): ByteString {
+    return TxUtils.buildDataOutput(scriptHash, satoshis, sha256(toByteString('')));
+  }
+
+
+  /**
+ * Build serialized tx output
+ * @param script serialized locking script of the output
+ * @param satoshis serialized satoshis of the output
+ * @returns serialized tx output in format ByteString
+ */
+  @method()
+  static buildDataOutput(scriptHash: ByteString, satoshis: UInt64, dataHash: ByteString): ByteString {
+    const scriptHashLen = len(scriptHash);
+    const dataHashLen = len(dataHash);
+    //const dataLen = len(data);
+    assert(scriptHashLen == 32n, "script hash length must be greater than 0");
+    assert(dataHashLen == 32n, "data hash length must be greater than 0");
+    assert(satoshis >= 0n, "satoshis must be greater than 0");
+    return num2bin(satoshis, 8n) + scriptHash + dataHash;
   }
 
   /**
@@ -86,7 +137,7 @@ export class TxUtils extends SmartContractLib {
   @method()
   static buildChangeOutput(change: TxOut): ByteString {
     return change.satoshis > 0n
-      ? TxUtils.buildOutput(StdUtils.uint64ToByteString(change.satoshis), change.scriptHash, change.dataHash)
+      ? TxUtils.buildDataOutput(change.scriptHash, change.satoshis, change.dataHash)
       : toByteString('');
   }
 
@@ -146,12 +197,12 @@ export class TxUtils extends SmartContractLib {
   /**
    * constructs a P2PKH output from a given PubKeyHash and satoshi amount
    * @param {Addr} addr - the recipient's public key hash
-   * @param {ByteString} amount - the satoshi amount
+   * @param {Int32} amount - the satoshi amount
    * @returns {ByteString} a `ByteString` representing the P2PKH output
    */
   @method()
-  static buildP2PKHOutput(amount: ByteString, addr: Addr, dataHash: ByteString): ByteString {
-    return TxUtils.buildOutput(amount, sha256(TxUtils.buildP2PKHScript(addr)), dataHash);
+  static buildP2PKHOutput(amount: UInt64, addr: Addr, dataHash: ByteString): ByteString {
+    return TxUtils.buildDataOutput(sha256(TxUtils.buildP2PKHScript(addr)), amount, dataHash);
   }
 
   /**
@@ -162,5 +213,17 @@ export class TxUtils extends SmartContractLib {
   @method()
   static satoshisToBytes(n: UInt64): ByteString {
     return StdUtils.uint64ToByteString(n);
+  }
+
+  /**
+ * convert signed integer `n` to unsigned integer of `l` string, in little endian
+ * @param {Int32} n the number to be converted
+ * @param {Int32} l expected length
+ * @returns {ByteString} returns a `ByteString`
+ */
+  @method()
+  static toLEUnsigned(n: Int32, l: Int32): ByteString {
+    const m: ByteString = num2bin(n, l + 1n);
+    return slice(m, 0n, len(m) - 1n);
   }
 }

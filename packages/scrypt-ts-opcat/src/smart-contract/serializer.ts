@@ -151,15 +151,15 @@ export function outpointToBytes(outpoint: Outpoint): ByteString {
  * @param outputsByte
  * @returns
  */
-export function deserializeOutputs(outputsByte: ByteString): { value: bigint; script: string, data: string }[] {
+export function deserializeOutputs(outputsByte: ByteString): { value: bigint; scriptHash: string, dataHash: string }[] {
   const reader = new BufferReader(tools.fromHex(outputsByte));
   const outputs = [];
   try {
     while (reader.offset < reader.buffer.length) {
       const value = reader.readInt64();
-      const script = uint8ArrayToHex(reader.readVarSlice());
-      const data = uint8ArrayToHex(reader.readVarSlice());
-      outputs.push({ value, script, data });
+      const scriptHash = uint8ArrayToHex(reader.readSlice(32));
+      const dataHash = uint8ArrayToHex(reader.readSlice(32));
+      outputs.push({ value, scriptHash, dataHash });
     }
   } catch (_error) {
     throw new Error(`Invalid format of serialized outputs: ${outputsByte}`);

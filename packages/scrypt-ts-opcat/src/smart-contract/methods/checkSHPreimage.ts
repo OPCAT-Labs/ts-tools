@@ -1,6 +1,7 @@
 import { AbstractContract } from '../abstractContract.js';
-import { PubKey, SHPreimage } from '../types/index.js';
-import { assert } from '../fns/assert.js';
+import { SHPreimage, Sig } from '../types/index.js';
+import { ContextUtils } from '../builtin-libs/contextUtils.js';
+import { toByteString } from '../fns/byteString.js';
 
 /**
  * @ignore
@@ -9,7 +10,6 @@ import { assert } from '../fns/assert.js';
  * @returns
  */
 export function checkSHPreimageImpl(self: AbstractContract, shPreimage: SHPreimage): boolean {
-  // const sig = shPreimageToSig(shPreimage);
-  // assert(self.checkSig(sig, PubKey(GX)), 'sighash preimage check error');
-  return true;
+  const sig: Sig = ContextUtils.checkSHPreimage(shPreimage, toByteString('01'))
+  return self.checkSig(sig, ContextUtils.pubKey);
 }

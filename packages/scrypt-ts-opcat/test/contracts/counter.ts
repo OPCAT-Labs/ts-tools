@@ -14,8 +14,7 @@ export class Counter extends SmartContract<CounterState> {
   public increase() {
     this.state.count++;
 
-    let data = Counter.stateSerialize(this.state);
-    let outputs = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, data);
+    let outputs = this.buildStateOutput(this.ctx.value);
 
     outputs += this.buildChangeOutput();
 

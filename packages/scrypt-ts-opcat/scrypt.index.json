@@ -26,6 +26,18 @@
       "path": "smart-contract/builtin-libs/txUtils.scrypt.tpl"
     },
     {
+      "symbol": "BacktraceInfo",
+      "path": "smart-contract/types/structs.scrypt.tpl"
+    },
+    {
+      "symbol": "Backtrace",
+      "path": "smart-contract/builtin-libs/backtrace.scrypt.tpl"
+    },
+    {
+      "symbol": "ChainTxVerifyResponse",
+      "path": "smart-contract/builtin-libs/backtrace.scrypt.tpl"
+    },
+    {
       "symbol": "SHPreimage",
       "path": "smart-contract/types/structs.scrypt.tpl"
     },
@@ -44,18 +56,6 @@
     {
       "symbol": "StateLib",
       "path": "smart-contract/builtin-libs/stateLib.scrypt.tpl"
-    },
-    {
-      "symbol": "BacktraceInfo",
-      "path": "smart-contract/types/structs.scrypt.tpl"
-    },
-    {
-      "symbol": "Backtrace",
-      "path": "smart-contract/builtin-libs/backtrace.scrypt.tpl"
-    },
-    {
-      "symbol": "ChainTxVerifyResponse",
-      "path": "smart-contract/builtin-libs/backtrace.scrypt.tpl"
     },
     {
       "symbol": "__scrypt_ASM",

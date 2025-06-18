@@ -18,16 +18,16 @@
       "name": "TxOut",
       "params": [
         {
-          "name": "script",
+          "name": "scriptHash",
+          "type": "bytes"
+        },
+        {
+          "name": "dataHash",
           "type": "bytes"
         },
         {
           "name": "satoshis",
-          "type": "bytes"
-        },
-        {
-          "name": "data",
-          "type": "bytes"
+          "type": "int"
         }
       ],
       "genericTypes": []
@@ -40,11 +40,15 @@
           "type": "bytes"
         },
         {
-          "name": "inputIndex",
+          "name": "prevOutputIndex",
           "type": "int"
         },
         {
           "name": "sequence",
+          "type": "int"
+        },
+        {
+          "name": "scriptHash",
           "type": "int"
         }
       ],
@@ -55,7 +59,7 @@
       "params": [
         {
           "name": "nVersion",
-          "type": "int"
+          "type": "bytes"
         },
         {
           "name": "hashPrevouts",
@@ -70,23 +74,23 @@
           "type": "bytes"
         },
         {
-          "name": "spentAmount",
+          "name": "value",
           "type": "int"
         },
         {
-          "name": "sequence",
-          "type": "int"
+          "name": "nSequence",
+          "type": "bytes"
         },
         {
           "name": "hashSpentAmounts",
           "type": "bytes"
         },
         {
-          "name": "hashSpentScripts",
+          "name": "hashSpentScriptHashes",
           "type": "bytes"
         },
         {
-          "name": "hashSpentDatas",
+          "name": "hashSpentDataHashes",
           "type": "bytes"
         },
         {
@@ -106,7 +110,7 @@
           "type": "int"
         },
         {
-          "name": "sighashType",
+          "name": "sigHashType",
           "type": "int"
         }
       ],
@@ -161,15 +165,15 @@
         },
         {
           "name": "__scrypt_ts_prevouts",
-          "type": "bytes[6]"
+          "type": "bytes"
         },
         {
           "name": "__scrypt_ts_spentAmounts",
-          "type": "int[6]"
+          "type": "bytes"
         },
         {
-          "name": "__scrypt_ts_spentScripts",
-          "type": "bytes[6]"
+          "name": "__scrypt_ts_spentScriptHashes",
+          "type": "bytes"
         }
       ]
     },

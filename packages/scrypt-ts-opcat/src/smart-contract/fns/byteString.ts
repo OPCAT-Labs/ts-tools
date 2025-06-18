@@ -17,12 +17,12 @@ export function toByteString(literal: string, isUtf8: boolean = false): ByteStri
   if (isUtf8 === true) {
     const encoder = new TextEncoder();
     const uint8array = encoder.encode(literal);
-    return getValidatedHexString(uint8ArrayToHex(uint8array));
+    return uint8ArrayToHex(uint8array);
   }
   if (literal.length % 2 !== 0) {
     throw new Error('hex literal length must be even');
   }
-  return literal;
+  return getValidatedHexString(literal);
 }
 
 /**
@@ -34,12 +34,12 @@ export function toByteString(literal: string, isUtf8: boolean = false): ByteStri
  * @throws {Error} throws an error if the number is out of range
  */
 export function intToByteString(n: bigint): ByteString {
-  return toByteString(uint8ArrayToHex(bn2Buf(n).reverse()));
+  return toByteString(uint8ArrayToHex(bn2Buf(n)));
 }
 
 
 export function num2bin(n: bigint, size: bigint): ByteString {
-  return toByteString(uint8ArrayToHex(bn2Buf(n, typeof size === 'bigint' ? Number(size) : undefined).reverse()));
+  return toByteString(uint8ArrayToHex(bn2Buf(n, Number(size))));
 }
 
 export function unpack(b: ByteString): bigint {
@@ -80,7 +80,7 @@ export function len(a: ByteString): Int32 {
  * @param end The end byte index of the specified portion of ByteString, excluded.
  *  If this value is not specified, the sub-section continues to the end of ByteString.
  */
-export function slice(byteString: ByteString, start: BigInt, end?: BigInt): ByteString {
+export function slice(byteString: ByteString, start: Int32, end?: Int32): ByteString {
   const startIndex = Number(start) * 2
   const endIndex = typeof end === 'bigint' ? Number(end) * 2 : byteString.length;
   if (startIndex < 0 || endIndex < 0) {
@@ -101,3 +101,21 @@ export function slice(byteString: ByteString, start: BigInt, end?: BigInt): Byte
   return byteString.slice(startIndex, endIndex)
 }
 
+
+/**
+ * Returns reversed bytes of b, which is of size bytes. Note size must be a compiled-time constant.
+ * It is often useful when converting a number between little-endian and big-endian.
+ * @category Bytes Operations
+ * @param b - a ByteString to be reversed
+ * @param size - the size of the ByteString.
+ * @returns {ByteString} reversed ByteString.
+ */
+export function reverseByteString(b: ByteString, size: Int32): ByteString {
+    const l = len(b);
+
+    if (l != size) {
+        throw new Error(`reverseByteString error, expected c = ${l}`)
+    }
+
+    return b.match(/[a-fA-F0-9]{2}/g).reverse().join('');
+}

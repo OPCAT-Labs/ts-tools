@@ -65,7 +65,7 @@ export function encodeSHPreimage(shPreimage: SHPreimage): ByteString {
     + shPreimage.hashOutputs
     + num2bin(shPreimage.inputIndex, 4n)
     + num2bin(shPreimage.nLockTime, 4n)
-    + shPreimage.sigHashType;
+    + num2bin(shPreimage.sigHashType, 4n);
 
   return rawSHPreimage
 }

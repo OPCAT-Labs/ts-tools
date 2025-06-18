@@ -21,7 +21,7 @@ describe('Test Counter', () => {
   it('should increment', async () => {
     let counter = await deployCounter();
 
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < 10; i++) {
       const newContract = await testIncrease(counter);
       counter = newContract;
     }

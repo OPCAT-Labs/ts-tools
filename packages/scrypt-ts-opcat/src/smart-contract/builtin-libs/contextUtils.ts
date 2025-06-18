@@ -1,12 +1,11 @@
 import { prop, method } from '../decorators.js';
 import { assert } from '../fns/assert.js';
-import { slice, toByteString } from '../fns/byteString.js';
-import { hash256, sha256 } from '../fns/hashes.js';
+import { byteStringToInt32, intToByteString, len, num2bin, reverseByteString, slice, toByteString } from '../fns/byteString.js';
+import { hash256 } from '../fns/hashes.js';
 import { SmartContractLib } from '../smartContractLib.js';
-import { PubKey, ByteString, Sig, Int32, UInt32 } from '../types/primitives.js';
+import { PubKey, ByteString, Sig, Int32, UInt32, PrivKey } from '../types/primitives.js';
 import { SHPreimage, SpentScriptHashes, SpentAmounts, Prevouts, Outpoint } from '../types/structs.js';
 import { StdUtils } from './stdUtils.js';
-import { TxUtils } from './txUtils.js';
 
 /**
  * Library for verifying preimage.
@@ -14,80 +13,71 @@ import { TxUtils } from './txUtils.js';
  * @onchain
  */
 export class ContextUtils extends SmartContractLib {
-  /** X coordinate of secp256k1 generator point */
-  @prop()
-  static readonly Gx: PubKey = PubKey(
-    toByteString('79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798'),
-  );
 
-  /**
-   * A fixed preimage prefix.
-   * https://github.com/bitcoin/bips/blob/master/bip-0340/reference.py#L25
-   * taggedHash(tag, m) = sha256(sha256(tag) || sha256(tag) || m)
-   *
-   * https://github.com/bitcoin/bips/blob/master/bip-0341.mediawiki#common-signature-message
-   * BIP-341 defines Common Signature Message, SigMsg(hash_type, ext_flag)
-   *
-   * https://github.com/bitcoin/bips/blob/master/bip-0342.mediawiki#common-signature-message-extension
-   * BIP-342 defines tapscript message extension (ext) to BIP-341 Common Signature Message, indicated by ext_flag = 1:
-   *   - tapLeafHash
-   *   - keyVersion
-   *   - codeSepPos
-   *
-   * hash type uses 0x00 (SIGHASH_DEFAULT), so the message `m` to checksig is
-   *
-   *     taggedHash('TapSighash', 0x00 || SigMsg(0x00, 1) || ext)
-   *                               |              |    |
-   *                        sighashEpoch     hashType  extFlag
-   *
-   * tagHash = sha256('TapSighash') = f40a48df4b2a70c8b4924bf2654661ed3d95fd66a313eb87237597c628e4a031
-   *
-   *  => sha256(tagHash || tagHash || 0x00 || SigMsg(0x00, 1) || ext)
-   *
-   * we define:
-   *     preimage = SigMsg(0x00, 1) || ext
-   *     preimagePrefix = tagHash || tagHash || 0x00
-   */
+  // The following arguments can be generated using sample code at
+  // https://gist.github.com/scrypt-sv/f6882be580780a88984cee75dd1564c4.js
   @prop()
-  static readonly preimagePrefix: ByteString = toByteString(
-    'f40a48df4b2a70c8b4924bf2654661ed3d95fd66a313eb87237597c628e4a031f40a48df4b2a70c8b4924bf2654661ed3d95fd66a313eb87237597c628e4a03100',
-  );
+  static readonly privKey: PrivKey = PrivKey(0x26f00fe2340a84335ebdf30f57e9bb58487117b29355718f5e46bf5168d7df97n);
+  @prop()
+  static readonly pubKey: PubKey = PubKey('02ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec0382');
+  // invK is the modular inverse of k, the ephemeral key
+  @prop()
+  static readonly invK: bigint = 0xc8ffdbaa05d93aa4ede79ec58f06a72562048b775a3507c2bf44bde4f007c40an;
+  // r is x coordinate of R, which is kG
+  @prop()
+  static readonly r: bigint = 0x1008ce7480da41702918d1ec8e6849ba32b4d65b1e40dc669c31a1e6306b266cn;
+  // rBigEndian is the signed magnitude representation of r, in big endian
+  @prop()
+  static readonly rBigEndian: ByteString = toByteString('1008ce7480da41702918d1ec8e6849ba32b4d65b1e40dc669c31a1e6306b266c');
 
-  /**
-   * A fixed preimage prefix.
-   * https://github.com/bitcoin/bips/blob/master/bip-0340/reference.py#L114
-   * e = taggedHash('BIP0340/challenge', bytes(R) || bytes(P) || m)
-   *
-   * tagHash = sha256('BIP0340/challenge') = 7bb52d7a9fef58323eb1bf7a407db382d2f3f2d81bb1224f49fe518f6d48d37c
-   *
-   * e = sha256(tagHash || tagHash || bytes(R) || bytes(P) || m)
-   *
-   * we define:
-   *     ePreimagePrefix = tagHash || tagHash || bytes(R) || bytes(P)
-   *
-   * e = sha256(ePreimagePrefix || m)
-   *
-   * default signing process Sign(sk, m) defines in BIP-340
-   * https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki#default-signing
-   *
-   * we use the private key sk = 1 to sign the message, so
-   *   d' = 1
-   *   d' is good in range (0, n)
-   *   P = d'G = G
-   *   has_even_y(P) = has_even_y(G) = True
-   *   d = d' if has_even_y(P) = 1
-   * and we do not derive k' to generate the random point R but use G directly
-   *   k' = 1
-   *   R = k'G = G
-   *   has_even_y(R) = has_even_y(G) = True
-   *   k = k' if has_even_y(R) = 1
-   *
-   * ePreimagePrefix = tagHash || tagHash || Gx || Gx
-   */
-  @prop()
-  static readonly ePreimagePrefix: ByteString = toByteString(
-    '7bb52d7a9fef58323eb1bf7a407db382d2f3f2d81bb1224f49fe518f6d48d37c7bb52d7a9fef58323eb1bf7a407db382d2f3f2d81bb1224f49fe518f6d48d37c79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179879be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798',
-  );
+
+  @method()
+  static normalize(k: bigint, modulus: bigint): bigint {
+    const res: bigint = k % modulus;
+    // ensure it's positive
+    return (res < 0) ? res + modulus : res;
+  }
+  @method()
+  static sign(h: bigint, privKey: PrivKey, inverseK: bigint, r: bigint, rBigEndian: ByteString, sigHashType: ByteString): Sig {
+    // TODO: r * privKey can also be precomputed
+    let s: bigint = inverseK * (h + r * (privKey as bigint));
+    const N: bigint = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+    s = ContextUtils.normalize(s, N);
+    // lower S
+    if (s > N / 2n) {
+      s = N - s;
+    }
+    // require(s != 0);		// check offchain
+    /*
+    * DER: h + l + rh + rl + r + sh + sl + s + hashtype
+    * note: r & s are at most 33 bytes, thus no need to convert endian of rl & sl
+    */
+    const rlen: bigint = BigInt(len(rBigEndian));
+    const slen = len(intToByteString(s));
+    // we convert s to 32 bytes, otherwise reverseByteString(, 32) fails when s is strictly less than 31 bytes (note: 31 bytes works)
+    // slice it after reversing to remove extra leading zeros, otherwise strict DER rule fails it due to not minimally encoded
+    const sBigEndian: ByteString = slice(reverseByteString(num2bin(s, 32n), BigInt(32)), 32n - slen);
+
+    const l: bigint = 4n + rlen + BigInt(slen);
+    // rBigEndian must be mininally encoded, to conform to strict DER rule
+    const rb: ByteString = toByteString('30') 
+    + intToByteString(l) 
+    + toByteString('02')
+    + intToByteString(rlen) 
+    + rBigEndian 
+    + toByteString('02') 
+    + intToByteString(slen) 
+    + sBigEndian
+    + toByteString(sigHashType);
+    return Sig(rb);
+  }
+
+  @method()
+  static fromBEUnsigned(b: ByteString): Int32 {
+    // change endian first
+    // append positive sign byte. This does not hurt even when sign bit is already positive
+    return byteStringToInt32(reverseByteString(b, 32n) + toByteString('00'));
+  }
 
   /**
    * sign the transaction preimage
@@ -95,71 +85,52 @@ export class ContextUtils extends SmartContractLib {
    * @returns a signature
    */
   @method()
-  static checkSHPreimage(_shPreimage: SHPreimage): Sig {
-    // assert(len(shPreimage.nVersion) == 4n, 'invalid length of nVersion');
-    // assert(len(shPreimage.nLockTime) == 4n, 'invalid length of nLockTime');
-    // assert(len(shPreimage.shaPrevouts) == 32n, 'invalid length of shaPrevouts');
-    // assert(len(shPreimage.shaSpentAmounts) == 32n, 'invalid length of shaSpentAmounts');
-    // assert(len(shPreimage.shaSpentScripts) == 32n, 'invalid length of shaSpentScripts');
-    // assert(len(shPreimage.shaSequences) == 32n, 'invalid length of shaSequences');
-    // assert(len(shPreimage.shaOutputs) == 32n, 'invalid length of shaOutputs');
-    // // spend_type (1): equal to (ext_flag * 2) + annex_present,
-    // // where annex_present is 0 if no annex is present, or 1 otherwise.
-    // // If there are at least two witness elements, and the first byte of the last element is 0x50,
-    // // this last element is called annex.
-    // // Until the meaning of this field is defined by another softfork,
-    // // users SHOULD NOT include annex in transactions, or it may lead to PERMANENT FUND LOSS.
-    // // BIP-342 defines the tapscript message extension ext to BIP341 Common Signature Message, indicated by ext_flag = 1,
-    // // so spend_type here is always 0x02
-    // assert(shPreimage.spendType == toByteString('02'), 'invalid spendType');
-    // assert(len(shPreimage.inputIndex) == 4n, 'invalid length of inputIndex');
-    // assert(len(shPreimage.tapLeafHash) == 32n, 'invalid length of tapLeafHash');
-    // // key_verison is a constant value 0x00 defined in BIP-342
-    // assert(shPreimage.keyVersion == toByteString('00'), 'invalid keyVersion');
-    // // BIP-342
-    // assert(len(shPreimage.codeSepPos) == 4n, 'invalid length of codeSepPos');
+  static checkSHPreimage(shPreimage: SHPreimage, sigHashType: ByteString): Sig {
+    assert(len(shPreimage.nVersion) == 4n, 'invalid length of nVersion');
+    assert(len(shPreimage.hashPrevouts) == 32n, 'invalid length of hashPrevouts');
+    assert(len(shPreimage.spentScriptHash) == 32n, 'invalid length of spentScriptHash');
+    assert(len(shPreimage.spentDataHash) == 32n, 'invalid length of spentDataHash');
+    assert(shPreimage.value >= 0n, 'invalid value of value');
+    assert(len(shPreimage.nSequence) == 4n, 'invalid length of nSequence');
+    assert(len(shPreimage.hashSpentAmounts) == 32n, 'invalid length of hashSpentAmounts');
+    assert(len(shPreimage.hashSpentScriptHashes) == 32n, 'invalid length of hashSpentScriptHashes');
+    assert(len(shPreimage.hashSpentDataHashes) == 32n, 'invalid length of hashSpentDataHashes');
+    assert(len(shPreimage.hashSequences) == 32n, 'invalid length of hashSequences');
+    assert(len(shPreimage.hashOutputs) == 32n, 'invalid length of hashOutputs');
+    assert(shPreimage.inputIndex >= 0n, 'invalid value of inputIndex');
+    assert(shPreimage.nLockTime >= 0n, 'invalid value of nLockTime');
+    assert(shPreimage.sigHashType == 1n
+      || shPreimage.sigHashType == 2n
+      || shPreimage.sigHashType == 3n
+      || shPreimage.sigHashType == 0x81n
+      || shPreimage.sigHashType == 0x82n
+      || shPreimage.sigHashType == 0x83n
+      , 'invalid value of sigHashType');
 
-    // // according to the notation in BIP-342
-    // // sigHash is the message m to validate the signature sig with public key p: Verify(p, m, sig)
-    // const sigHash = sha256(
-    //   ContextUtils.preimagePrefix +
-    //     toByteString('00') + // hash type SIGHASH_DEFAULT
-    //     shPreimage.nVersion +
-    //     shPreimage.nLockTime +
-    //     shPreimage.shaPrevouts +
-    //     shPreimage.shaSpentAmounts +
-    //     shPreimage.shaSpentScripts +
-    //     shPreimage.shaSequences +
-    //     shPreimage.shaOutputs +
-    //     shPreimage.spendType +
-    //     shPreimage.inputIndex +
-    //     shPreimage.tapLeafHash +
-    //     shPreimage.keyVersion +
-    //     shPreimage.codeSepPos,
-    // );
-    // // e = sha256(ePreimagePrefix || m)
-    // const e = sha256(ContextUtils.ePreimagePrefix + sigHash);
+    const preimage = shPreimage.nVersion
+      + shPreimage.hashPrevouts
+      + shPreimage.spentScriptHash
+      + shPreimage.spentDataHash
+      + num2bin(shPreimage.value, 8n)
+      + shPreimage.nSequence
+      + shPreimage.hashSpentAmounts
+      + shPreimage.hashSpentScriptHashes
+      + shPreimage.hashSpentDataHashes
+      + shPreimage.hashSequences
+      + shPreimage.hashOutputs
+      + num2bin(shPreimage.inputIndex, 4n)
+      + num2bin(shPreimage.nLockTime, 4n)
+      + num2bin(shPreimage.sigHashType, 4n);
 
-    // assert(len(shPreimage._eWithoutLastByte) == 31n, 'invalid length of _eWithoutLastByte');
-    // assert(shPreimage._eLastByte < 127n, 'invalid _eLastByte');
-    // const eLastByte =
-    //   shPreimage._eLastByte == 0n ? toByteString('00') : int32ToByteString(shPreimage._eLastByte);
-    // assert(e == shPreimage._eWithoutLastByte + eLastByte, 'invalid e');
-
-    // d = 1
-    // k = 1
-    // R = G
-    // sig = bytes(R) || bytes((k + ed) mod n)
-    //     = Gx || bytes((1 + e) mod n)
-    //        |            |
-    //        r            s
-    // we do not ensure e + 1 < n here, which ensured by the off-chain code
-    // if the passed e + 1 >= n somehow, then it will fail when later checksig
-    // const s =
-    //   ContextUtils.Gx +
-    //   shPreimage._eWithoutLastByte +
-    //   int32ToByteString(shPreimage._eLastByte + 1n);
-    return Sig('');
+    const h: ByteString = hash256(preimage);
+    const sig: Sig = ContextUtils.sign(
+      ContextUtils.fromBEUnsigned(h), 
+      ContextUtils.privKey, 
+      ContextUtils.invK,
+       ContextUtils.r, 
+       ContextUtils.rBigEndian,
+        sigHashType);
+    return sig;
   }
 
   /**

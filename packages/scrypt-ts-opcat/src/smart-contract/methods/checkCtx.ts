@@ -2,7 +2,7 @@ import { AbstractContract } from '../abstractContract.js';
 import { SHPreimage, Prevouts, SpentScriptHashes } from '../types/index.js';
 import * as tools from 'uint8array-tools';
 import { Outpoint, SpentAmounts, SpentDataHashes } from '../types/structs.js';
-import { assert, hash256, num2bin } from '../fns/index.js';
+import { assert, hash256, num2bin, slice } from '../fns/index.js';
 import { InputIndex } from '../../globalTypes.js';
 
 /**
@@ -12,8 +12,8 @@ import { InputIndex } from '../../globalTypes.js';
  * @param inputIndex
  * @param prevouts
  * @param prevout
- * @param spentScriptsCtx
- * @param spentAmountsCtx
+ * @param spentScriptHashes
+ * @param spentAmounts
  * @param stateHashes
  * @returns
  */
@@ -23,12 +23,12 @@ export function checkCtxImpl(
   inputIndex: InputIndex,
   prevouts: Prevouts,
   prevout: Outpoint,
-  spentScriptsCtx: SpentScriptHashes,
-  spentAmountsCtx: SpentAmounts,
+  spentScriptHashes: SpentScriptHashes,
+  spentAmounts: SpentAmounts,
   stateHashes: SpentDataHashes,
 ): boolean {
   // check sHPreimage
-  // self.checkSHPreimage(shPreimage);
+  self.checkSHPreimage(shPreimage);
 
   // check inputIndex
   assert(BigInt(inputIndex) === shPreimage.inputIndex, 'inputIndex mismatch');
@@ -42,14 +42,14 @@ export function checkCtxImpl(
   );
 
   // check prevout
-  assert(prevout.txHash + num2bin(prevout.outputIndex, 4n)  == prevouts[inputIndex], `invalid prevout`);
+  assert(prevout.txHash + num2bin(prevout.outputIndex, 4n) === slice(prevouts, BigInt(inputIndex)*36n, BigInt(inputIndex + 1)*36n), `invalid prevout`);
 
   // check spentScripts
   assert(
     tools.compare(
       tools.fromHex(shPreimage.hashSpentScriptHashes),
       tools.fromHex(
-        hash256(spentScriptsCtx),
+        hash256(spentScriptHashes),
       ),
     ) === 0,
     'hashSpentScriptHashes mismatch',
@@ -59,7 +59,7 @@ export function checkCtxImpl(
   assert(
     tools.compare(
       tools.fromHex(shPreimage.hashSpentAmounts),
-      tools.fromHex(hash256(spentAmountsCtx)),
+      tools.fromHex(hash256(spentAmounts)),
     ) === 0,
     'hashSpentAmounts mismatch',
   );

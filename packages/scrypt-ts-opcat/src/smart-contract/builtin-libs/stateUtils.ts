@@ -4,7 +4,6 @@ import { slice } from '../fns/byteString.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import { ByteString, Int32, UInt32 } from '../types/primitives.js';
 import { SpentDataHashes } from '../types/structs.js';
-import { sha256 } from '../fns/hashes.js';
 
 /**
  * spentDatas library

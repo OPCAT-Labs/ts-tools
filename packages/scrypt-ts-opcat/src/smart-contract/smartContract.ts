@@ -17,7 +17,7 @@ import {
   SupportedParamType,
 } from './types/primitives.js';
 import { hash256, sha256 } from './fns/hashes.js';
-import { intToByteString, len, toByteString } from './fns/byteString.js';
+import { intToByteString, len, slice } from './fns/byteString.js';
 import { checkInputStateImpl } from './methods/checkInputState.js';
 import { deserializeOutputs } from './serializer.js';
 import { BacktraceInfo } from './types/structs.js';
@@ -244,7 +244,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
    */
   buildStateOutput(satoshis: Int32): ByteString {
     this._checkPsbtBinding();
-    return buildStateOutputImpl(this, this.state, satoshis, toByteString(this.lockingScript.toHex()));
+    return buildStateOutputImpl(this, this.state, satoshis, this.ctx.spentScriptHash);
   }
 
   /**
@@ -282,7 +282,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @returns success if stateData is valid
    */
   override checkInputState(inputIndex: Int32, stateData: ByteString): boolean {
-    const stateHash = this.inputContext.spentDataHashes[Number(inputIndex)];
+    const stateHash = slice(this.inputContext.spentDataHashes, inputIndex * 32n, (inputIndex +  1n) * 32n);
     checkInputStateImpl(
       stateHash,
       stateData
@@ -384,6 +384,10 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return this._abiCoder.isPubFunction(method);
   }
 
+  isSmartContract(): boolean {
+    return true;
+  }
+
   private _shouldInjectCtx(method: string): boolean {
     return this._abiCoder.artifact.abi.some((abiEntity) => {
       return (
@@ -430,15 +434,13 @@ export class SmartContract<StateT extends OpcatState = undefined>
         if (param.name === '__scrypt_ts_shPreimage') {
           const { shPreimage } = this.inputContext;
           args.push(shPreimage);
-        } else if (param.name === '__scrypt_ts_inputIndexVal') {
-          args.push(BigInt(this._curInputIndex!));
         } else if (param.name === '__scrypt_ts_changeInfo') {
           args.push(this.changeInfo);
         } else if (param.name === '__scrypt_ts_prevouts') {
           args.push(prevouts);
         } else if (param.name === '__scrypt_ts_prevout') {
           args.push(prevout);
-        } else if (param.name === '__scrypt_ts_spentScripts') {
+        } else if (param.name === '__scrypt_ts_spentScriptHashes') {
           const { spentScriptHashes } = this.inputContext;
           args.push(spentScriptHashes);
         } else if (param.name === '__scrypt_ts_spentAmounts') {
@@ -501,10 +503,16 @@ export class SmartContract<StateT extends OpcatState = undefined>
         }
 
         this._curPsbt?.txOutputs.forEach((output, index) => {
-          const script = sha256(uint8ArrayToHex(output.script));
-          if (outputs[index]?.script !== script) {
+          const scriptHash = sha256(uint8ArrayToHex(output.script));
+          const dataHash = sha256(uint8ArrayToHex(output.data));
+          if (outputs[index].dataHash !== dataHash) {
             console.warn(
-              `Output[${index}] script is different: ${outputs[index]?.script}(#contract) vs ${script}(#context)`,
+              `Output[${index}] dataHash is different: ${outputs[index]?.dataHash}(#contract) vs ${dataHash}(#context)`,
+            );
+          }
+          if (outputs[index].scriptHash !== scriptHash) {
+            console.warn(
+              `Output[${index}] scriptHash is different: ${outputs[index]?.scriptHash}(#contract) vs ${scriptHash}(#context)`,
             );
           }
           if (outputs[index]?.value !== output.value) {
