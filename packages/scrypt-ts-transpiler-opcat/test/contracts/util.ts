@@ -7,7 +7,7 @@ import {
   SmartContract,
   toByteString,
   TxUtils,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class Util extends SmartContract {
   @method()

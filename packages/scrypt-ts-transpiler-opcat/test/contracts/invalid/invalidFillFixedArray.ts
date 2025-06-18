@@ -1,4 +1,4 @@
-import { assert, fill, method, SmartContract } from '@scrypt-inc/scrypt-ts-btc';
+import { assert, fill, method, SmartContract } from '@opcat-labs/scrypt-ts-opcat';
 
 const M = 3;
 

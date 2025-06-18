@@ -6,7 +6,7 @@ import {
   ByteString,
   toByteString,
   equals,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class TestLib extends SmartContract {
   @method()

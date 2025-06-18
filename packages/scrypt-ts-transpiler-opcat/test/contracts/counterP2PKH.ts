@@ -10,7 +10,7 @@ import {
   Sig,
   Int32,
   StructObject,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export interface CounterP2PKHState extends StructObject {
   counter: Int32;

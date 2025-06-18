@@ -1,4 +1,4 @@
-import { assert, equals, method, SmartContract } from '@scrypt-inc/scrypt-ts-btc';
+import { assert, equals, method, SmartContract } from '@opcat-labs/scrypt-ts-opcat';
 import { Point, Signature } from './onlystruct';
 
 export class Issue170 extends SmartContract {

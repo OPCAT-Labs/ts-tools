@@ -6,7 +6,7 @@ import {
   TxUtils,
   sha256,
   StructObject,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 /** contract with DebugFunctions call should be compiled successfully */
 

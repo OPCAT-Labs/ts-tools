@@ -1,4 +1,4 @@
-import { assert, method, prop, SmartContract, toByteString } from '@scrypt-inc/scrypt-ts-btc';
+import { assert, method, prop, SmartContract, toByteString } from '@opcat-labs/scrypt-ts-opcat';
 
 export class BadTypes extends SmartContract {
   @prop()

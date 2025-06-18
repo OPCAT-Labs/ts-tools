@@ -1,4 +1,4 @@
-import { SmartContract, method, assert } from '@scrypt-inc/scrypt-ts-btc';
+import { SmartContract, method, assert } from '@opcat-labs/scrypt-ts-opcat';
 
 export class ExplicitReturn2 extends SmartContract {
   @method()

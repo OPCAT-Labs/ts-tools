@@ -10,7 +10,7 @@ import {
   Sha256,
   Sig,
   SmartContract,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class DomainSubtypes extends SmartContract {
   @method()

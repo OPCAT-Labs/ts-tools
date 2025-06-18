@@ -1,4 +1,4 @@
-import { method, prop, SmartContract, assert, hash256, SigHash } from '@scrypt-inc/scrypt-ts-btc';
+import { method, prop, SmartContract, assert, hash256, SigHash } from '@opcat-labs/scrypt-ts-opcat';
 
 export class SigHashChangeSINGLE extends SmartContract {
   @prop(true)

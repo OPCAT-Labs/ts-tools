@@ -16,7 +16,7 @@ import {
   TxUtils,
   assert,
   sha256,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export const enum CustomEnum {
   Value1,

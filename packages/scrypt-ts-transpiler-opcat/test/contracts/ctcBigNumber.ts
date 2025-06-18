@@ -1,4 +1,4 @@
-import { SmartContract, assert, method } from '@scrypt-inc/scrypt-ts-btc';
+import { SmartContract, assert, method } from '@opcat-labs/scrypt-ts-opcat';
 
 // https://en.wikipedia.org/wiki/Names_of_large_numbers
 const Thousand = 1000n;

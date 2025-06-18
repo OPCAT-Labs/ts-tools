@@ -1,4 +1,4 @@
-import { SmartContract, assert, method, prop } from '@scrypt-inc/scrypt-ts-btc';
+import { SmartContract, assert, method, prop } from '@opcat-labs/scrypt-ts-opcat';
 
 export class TimeLock extends SmartContract {
   @prop()

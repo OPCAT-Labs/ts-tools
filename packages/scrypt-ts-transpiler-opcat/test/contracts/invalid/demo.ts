@@ -1,4 +1,4 @@
-import { method, prop, SmartContract, assert } from '@scrypt-inc/scrypt-ts-btc';
+import { method, prop, SmartContract, assert } from '@opcat-labs/scrypt-ts-opcat';
 
 /**
  * This is a valid base class. It is inherited by other subclasses

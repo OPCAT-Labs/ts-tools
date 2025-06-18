@@ -15,7 +15,7 @@ import {
   prop,
   SmartContractLib,
   XOnlyPubKey,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 type ChangeInfo = {
   script: ByteString;

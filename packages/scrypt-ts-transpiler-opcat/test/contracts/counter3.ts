@@ -1,4 +1,4 @@
-import { Int32, SmartContract, method, TxUtils, sha256, assert } from '@scrypt-inc/scrypt-ts-btc';
+import { Int32, SmartContract, method, TxUtils, sha256, assert } from '@opcat-labs/scrypt-ts-opcat';
 
 // test `type`
 export type Counter3State = {

@@ -8,7 +8,7 @@ import {
   sha256,
   Int32,
   StructObject,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class BaseCounter2<T extends StructObject> extends SmartContract<T> {
   @prop()

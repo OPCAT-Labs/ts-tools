@@ -7,7 +7,7 @@ import {
   FixedArray,
   assert,
   SmartContract,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export type Node = {
   hash: Sha256;

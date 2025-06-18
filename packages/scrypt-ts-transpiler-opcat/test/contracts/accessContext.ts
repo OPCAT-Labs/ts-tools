@@ -1,4 +1,4 @@
-import { SmartContract, method, sha256, assert } from '@scrypt-inc/scrypt-ts-btc';
+import { SmartContract, method, sha256, assert } from '@opcat-labs/scrypt-ts-opcat';
 
 export class AccessContext extends SmartContract {
   @method()

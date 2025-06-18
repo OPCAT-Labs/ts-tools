@@ -8,7 +8,7 @@ import {
   equals,
   ByteString,
   toByteString,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 type FA1001 = FixedArray<bigint, 1001>;
 

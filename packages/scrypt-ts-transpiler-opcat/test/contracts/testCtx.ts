@@ -1,4 +1,4 @@
-import { method, SmartContract, assert, sha256 } from '@scrypt-inc/scrypt-ts-btc';
+import { method, SmartContract, assert, sha256 } from '@opcat-labs/scrypt-ts-opcat';
 
 export class TestCtx extends SmartContract {
   @method()

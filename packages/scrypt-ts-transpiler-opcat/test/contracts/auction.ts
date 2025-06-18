@@ -12,7 +12,7 @@ import {
   SmartContract,
   TxUtils,
   StdUtils,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export interface AuctionState {
   bidder: PubKeyHash;

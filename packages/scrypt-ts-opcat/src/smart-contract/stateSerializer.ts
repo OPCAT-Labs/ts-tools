@@ -1,6 +1,6 @@
 import { uint8ArrayToHex } from '../utils/common.js';
 import { ABICoder } from './abi.js';
-import { hash160, toByteString } from './fns/index.js';
+import { assert, hash160, intToByteString, len, num2bin, toByteString } from './fns/index.js';
 import { OpcatState, ByteString } from './types/primitives.js';
 import { Artifact } from './types/artifact.js';
 import { MAX_FLAT_FIELDS_IN_STATE } from './consts.js';
@@ -39,25 +39,26 @@ export function stateSerialize(
   let data = toByteString('');
 
   const fieldHashes = fields.map((field) => {
-    if (typeof field.value === 'number' || typeof field.value === 'bigint') {
-      const val = uint8ArrayToHex(scriptNumber.encode(Number(field.value)));
-      data += VarWriter.writeBytes(val)
-      return hash160(val);
+    let val: ByteString;
+    switch (typeof field.value) {
+      case 'number':
+      case 'bigint':
+        val = intToByteString(field.value);
+        break;
+      case 'boolean':
+        val = field.value ? '01' : '';
+        break;
+      case 'string':
+        val = field.value;
+        break;
+      default:
+        throw new Error(`Unflattened struct field: ${field.type}`);
     }
 
-    if (typeof field.value === 'boolean') {
-      const val = field.value ? '01' : ''
-      data += VarWriter.writeBytes(val)
-      return hash160(val);
-    }
-
-    if (typeof field.value === 'string') {
-      const val = field.value;
-      data += VarWriter.writeBytes(val)
-      return hash160(val);
-    }
-
-    throw new Error(`Unflattened struct field: ${field.type}`);
+    const MAX_FIELD_LENGTH = 0x7fff;  // INT16_MAX
+    assert(len(val) <= MAX_FIELD_LENGTH, `field ${field.name} value is too large`)
+    data += (num2bin(len(val), 2n) + val)
+    return hash160(val);
   });
 
   const dataHash = hash160(fieldHashes.join(''));

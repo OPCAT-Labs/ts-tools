@@ -1,4 +1,4 @@
-import { method, SmartContract, assert, Sig, PubKey, FixedArray } from '@scrypt-inc/scrypt-ts-btc';
+import { method, SmartContract, assert, Sig, PubKey, FixedArray } from '@opcat-labs/scrypt-ts-opcat';
 
 export class CheckMultiSig extends SmartContract {
   @method()

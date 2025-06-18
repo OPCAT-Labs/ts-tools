@@ -98,12 +98,12 @@ export abstract class AbstractContract {
   /**
    * Check the validity of an input state by verifying its committed state hash.
    * @param inputIndex the index of the input
-   * @param inputStateHash the input state hash, if the input does not have a state, the hash should be an empty string.
+   * @param rawState the raw/serialized state of the input
    * @returns true if the input state is correct. Otherwise false.
    * @onchain
    * @category State
    */
-  abstract checkInputState(inputIndex: Int32, inputState: ByteString): boolean;
+  abstract checkInputState(inputIndex: Int32, rawState: ByteString): boolean;
 
   /**
    * Check whether the contract can be traced back to the genesis outpoint.

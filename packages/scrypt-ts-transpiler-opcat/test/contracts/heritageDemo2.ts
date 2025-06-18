@@ -1,4 +1,4 @@
-import { method, prop, assert } from '@scrypt-inc/scrypt-ts-btc';
+import { method, prop, assert } from '@opcat-labs/scrypt-ts-opcat';
 
 import { BaseDemo } from './basedemo';
 

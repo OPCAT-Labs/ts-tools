@@ -11,7 +11,7 @@ import {
 import { DelegateeState, DelegatorState, DelegatorStateLib } from './stateLibs.js';
 
 export class StateDelegatee extends SmartContract<DelegateeState> {
-  @method({ autoCheckInputStateHash: false })
+  @method({ autoCheckInputState: false })
   public unlock(
     delegatorScript: ByteString,
     delegatorState: DelegatorState,

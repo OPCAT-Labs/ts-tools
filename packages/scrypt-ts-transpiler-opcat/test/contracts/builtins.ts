@@ -9,7 +9,7 @@ import {
   min,
   within,
   abs,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class Builtins extends SmartContract {
   @method()

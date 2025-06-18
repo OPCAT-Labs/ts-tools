@@ -6,7 +6,7 @@ import {
   sha256,
   assert,
   StructObject,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export interface Counter2State extends StructObject {
   count: Int32;

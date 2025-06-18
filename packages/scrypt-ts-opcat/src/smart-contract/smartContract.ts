@@ -274,7 +274,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
 
   /**
    * check StateHash of the input. By default, the system checks the StateHash of all inputs.
-   * If you use this function to specify checking only specific inputs' StateHash, you must set the `autoCheckInputStateHash`
+   * If you use this function to specify checking only specific inputs' StateHash, you must set the `autoCheckInputState`
    * option in the `@method()` decorator to false.
    * @onchain
    * @param inputIndex index of the input
@@ -361,10 +361,10 @@ export class SmartContract<StateT extends OpcatState = undefined>
    *
    * @ignore
    */
-  extendMethodArgs(method: string, args: SupportedParamType[], autoCheckInputStateHash: boolean) {
+  extendMethodArgs(method: string, args: SupportedParamType[], autoCheckInputState: boolean) {
     // extend the args with the context
     if (this._shouldInjectCtx(method)) {
-      this._autoInject(method, args, autoCheckInputStateHash);
+      this._autoInject(method, args, autoCheckInputState);
     }
 
     const rawArgs = this._abiCoder.encodePubFunctionCall(method, args);
@@ -400,7 +400,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
   private _autoInject(
     method: string,
     args: SupportedParamType[],
-    autoCheckInputStateHash: boolean,
+    autoCheckInputState: boolean,
   ) {
     const {
       shPreimage,
@@ -452,7 +452,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
           args.push(spentDataHashes);
         } else if (param.name === '__scrypt_ts_curState') {
           this._checkState();
-          if (autoCheckInputStateHash) {
+          if (autoCheckInputState) {
             checkInputStateImpl(
               shPreimage.spentDataHash,
               (this.constructor as typeof SmartContract<OpcatState>).stateSerialize(curState),

@@ -5,7 +5,7 @@ import {
   prop,
   SmartContract,
   BacktraceInfo,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class B2G2 extends SmartContract {
   @prop()

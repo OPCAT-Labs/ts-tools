@@ -1,4 +1,4 @@
-import { method, SmartContract, assert } from '@scrypt-inc/scrypt-ts-btc';
+import { method, SmartContract, assert } from '@opcat-labs/scrypt-ts-opcat';
 
 // calling another public method which has access to ctx is not allowed
 

@@ -1,4 +1,4 @@
-import { method, SmartContract, assert, toByteString, ByteString } from '@scrypt-inc/scrypt-ts-btc';
+import { method, SmartContract, assert, toByteString, ByteString } from '@opcat-labs/scrypt-ts-opcat';
 
 export class Operator extends SmartContract {
   @method()

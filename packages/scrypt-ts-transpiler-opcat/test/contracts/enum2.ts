@@ -1,4 +1,4 @@
-import { method, prop, SmartContract, assert, sha256 } from '@scrypt-inc/scrypt-ts-btc';
+import { method, prop, SmartContract, assert, sha256 } from '@opcat-labs/scrypt-ts-opcat';
 
 // Enum representing shipping status
 enum Status {

@@ -1,4 +1,4 @@
-import { prop, method } from '@scrypt-inc/scrypt-ts-btc';
+import { prop, method } from '@opcat-labs/scrypt-ts-opcat';
 import { DemoBase } from './demobase';
 
 export class HeritageDemoInvalid3 extends DemoBase {

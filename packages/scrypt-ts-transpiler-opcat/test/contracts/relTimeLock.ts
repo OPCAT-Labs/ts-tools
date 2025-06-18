@@ -1,4 +1,4 @@
-import { SmartContract, assert, method } from '@scrypt-inc/scrypt-ts-btc';
+import { SmartContract, assert, method } from '@opcat-labs/scrypt-ts-opcat';
 
 export class RelTimeLock extends SmartContract {
   @method()

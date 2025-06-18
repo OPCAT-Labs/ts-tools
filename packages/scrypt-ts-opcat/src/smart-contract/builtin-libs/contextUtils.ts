@@ -3,8 +3,8 @@ import { assert } from '../fns/assert.js';
 import { byteStringToInt32, intToByteString, len, num2bin, reverseByteString, slice, toByteString } from '../fns/byteString.js';
 import { hash256 } from '../fns/hashes.js';
 import { SmartContractLib } from '../smartContractLib.js';
-import { PubKey, ByteString, Sig, Int32, UInt32, PrivKey } from '../types/primitives.js';
-import { SHPreimage, SpentScriptHashes, SpentAmounts, Prevouts, Outpoint } from '../types/structs.js';
+import { PubKey, ByteString, Sig, Int32, UInt32, PrivKey, SigHashPreimage } from '../types/primitives.js';
+import { SHPreimage, SpentScriptHashes, SpentAmounts, Prevouts, Outpoint, SpentDataHashes } from '../types/structs.js';
 import { StdUtils } from './stdUtils.js';
 
 /**
@@ -133,6 +133,46 @@ export class ContextUtils extends SmartContractLib {
     return sig;
   }
 
+  @method()
+  static serializeSHPreimage(shPreimage: SHPreimage): SigHashPreimage {
+    assert(len(shPreimage.nVersion) == 4n, 'invalid length of nVersion');
+    assert(len(shPreimage.hashPrevouts) == 32n, 'invalid length of hashPrevouts');
+    assert(len(shPreimage.spentScriptHash) == 32n, 'invalid length of spentScriptHash');
+    assert(len(shPreimage.spentDataHash) == 32n, 'invalid length of spentDataHash');
+    assert(shPreimage.value >= 0n, 'invalid value of value');
+    assert(len(shPreimage.nSequence) == 4n, 'invalid length of nSequence');
+    assert(len(shPreimage.hashSpentAmounts) == 32n, 'invalid length of hashSpentAmounts');
+    assert(len(shPreimage.hashSpentScriptHashes) == 32n, 'invalid length of hashSpentScriptHashes');
+    assert(len(shPreimage.hashSpentDataHashes) == 32n, 'invalid length of hashSpentDataHashes');
+    assert(len(shPreimage.hashSequences) == 32n, 'invalid length of hashSequences');
+    assert(len(shPreimage.hashOutputs) == 32n, 'invalid length of hashOutputs');
+    assert(shPreimage.inputIndex >= 0n, 'invalid value of inputIndex');
+    assert(shPreimage.nLockTime >= 0n, 'invalid value of nLockTime');
+    assert(shPreimage.sigHashType == 1n
+      || shPreimage.sigHashType == 2n
+      || shPreimage.sigHashType == 3n
+      || shPreimage.sigHashType == 0x81n
+      || shPreimage.sigHashType == 0x82n
+      || shPreimage.sigHashType == 0x83n
+      , 'invalid value of sigHashType');
+
+    const preimage = shPreimage.nVersion
+      + shPreimage.hashPrevouts
+      + shPreimage.spentScriptHash
+      + shPreimage.spentDataHash
+      + num2bin(shPreimage.value, 8n)
+      + shPreimage.nSequence
+      + shPreimage.hashSpentAmounts
+      + shPreimage.hashSpentScriptHashes
+      + shPreimage.hashSpentDataHashes
+      + shPreimage.hashSequences
+      + shPreimage.hashOutputs
+      + num2bin(shPreimage.inputIndex, 4n)
+      + num2bin(shPreimage.nLockTime, 4n)
+      + num2bin(shPreimage.sigHashType, 4n);
+    return SigHashPreimage(preimage);
+  }
+
   /**
    * Verify that the prevouts context passed in by the user is authentic
    * @param prevouts prevouts context passed in by the user that need to be verified
@@ -144,37 +184,36 @@ export class ContextUtils extends SmartContractLib {
   @method()
   static checkPrevouts(
     prevouts: Prevouts,
-    prevout: Outpoint,
     t_hashPrevouts: ByteString,
     t_inputIndex: UInt32,
-  ): Int32 {
+    t_inputCount: Int32,
+  ): Outpoint {
     // check prevouts
     assert(hash256(prevouts) == t_hashPrevouts, 'hashPrevouts mismatch');
-    const inputCount = StdUtils.checkLenDivisibleBy(prevouts, 36n);
-    assert(t_inputIndex < inputCount, 'invalid prevouts');
+    assert(t_inputIndex < t_inputCount, 'invalid prevouts');
+    assert(t_inputCount == StdUtils.checkLenDivisibleBy(prevouts, 36n), 'invalid prevouts');
 
-    // check prevout
-    assert(
-      (prevout.txHash + StdUtils.uint32ToByteString(prevout.outputIndex)) == slice(prevouts, t_inputIndex * 36n, (t_inputIndex + 1n) * 36n),
-      'invalid prevout',
-    );
-    return inputCount;
+    const b = slice(prevouts, t_inputIndex * 36n, (t_inputIndex + 1n) * 36n);
+    return {
+      txHash: slice(b, 0n, 32n),
+      outputIndex: StdUtils.byteStringToUInt32(slice(b, 32n, 36n)),
+    }
   }
 
   /**
    * Check if the spent scripts array passed in matches the shaSpentScripts
-   * @param spentScripts array of spent scripts passed in that need to be verified
+   * @param spentScriptHashes array of spent scripts passed in that need to be verified
    * @param t_hashSpentScripts the hash of the merged spent scripts, which comes from preimage and is trustable
    * @param t_inputCount must be trustable, the number of inputs
    */
   @method()
   static checkSpentScripts(
-    spentScripts: SpentScriptHashes,
+    spentScriptHashes: SpentScriptHashes,
     t_hashSpentScripts: ByteString,
     t_inputCount: bigint,
   ): void {
-    assert(hash256(spentScripts) == t_hashSpentScripts, 'hashSpentScripts mismatch');
-    assert(t_inputCount == StdUtils.checkLenDivisibleBy(spentScripts, 32n), 'invalid spentScripts');
+    assert(hash256(spentScriptHashes) == t_hashSpentScripts, 'hashSpentScripts mismatch');
+    assert(t_inputCount == StdUtils.checkLenDivisibleBy(spentScriptHashes, 32n), 'invalid spentScriptHashes');
   }
 
   /**
@@ -187,9 +226,18 @@ export class ContextUtils extends SmartContractLib {
   static checkSpentAmounts(
     spentAmounts: SpentAmounts,
     t_hashSpentAmounts: ByteString,
+  ): Int32 {
+    assert(hash256(spentAmounts) == t_hashSpentAmounts, 'hashSpentAmounts mismatch');
+    return StdUtils.checkLenDivisibleBy(spentAmounts, 8n);
+  }
+
+  @method()
+  static checkSpentDataHashes(
+    spentDataHashes: SpentDataHashes,
+    t_hashSpentDataHashes: ByteString,
     t_inputCount: bigint,
   ): void {
-    assert(hash256(spentAmounts) == t_hashSpentAmounts, 'hashSpentAmounts mismatch');
-    assert(t_inputCount == StdUtils.checkLenDivisibleBy(spentAmounts, 8n), 'invalid spentAmounts');
+    assert(hash256(spentDataHashes) == t_hashSpentDataHashes, 'hashSpentDataHashes mismatch');
+    assert(t_inputCount == StdUtils.checkLenDivisibleBy(spentDataHashes, 32n), 'invalid spentDataHashes');
   }
 }

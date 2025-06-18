@@ -13,7 +13,7 @@ import {
   Int32,
   sha256,
   Bool,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export interface TicTacToeState extends StructObject {
   is_alice_turn: Bool;

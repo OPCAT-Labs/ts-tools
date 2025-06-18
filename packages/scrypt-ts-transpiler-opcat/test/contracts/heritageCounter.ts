@@ -1,6 +1,6 @@
 import { BaseCounter } from './basecounter';
 
-import { method, prop, assert, hash256, TxUtils } from '@scrypt-inc/scrypt-ts-btc';
+import { method, prop, assert, hash256, TxUtils } from '@opcat-labs/scrypt-ts-opcat';
 
 export class HeritageCounter extends BaseCounter {
   constructor(x: bigint, y: bigint) {

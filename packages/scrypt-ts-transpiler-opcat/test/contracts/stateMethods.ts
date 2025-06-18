@@ -10,7 +10,7 @@ import {
   hash160,
   hash256,
   Ripemd160,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 // calling state methods (this.appendStateOutput, this.buildStateOutputs) in a non stateful contract is allowed
 

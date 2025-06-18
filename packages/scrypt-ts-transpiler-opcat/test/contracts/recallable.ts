@@ -11,7 +11,7 @@ import {
   SmartContract,
   StructObject,
   TxUtils,
-} from '@scrypt-inc/scrypt-ts-btc';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 /**
  * re-callable satoshis demo

@@ -1,4 +1,4 @@
-import { method, prop, SmartContractLib } from '@scrypt-inc/scrypt-ts-btc';
+import { method, prop, SmartContractLib } from '@opcat-labs/scrypt-ts-opcat';
 
 export type SS = {
   a: bigint;

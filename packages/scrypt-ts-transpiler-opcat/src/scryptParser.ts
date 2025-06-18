@@ -25,6 +25,9 @@ export const buildinSymbols = [
   // struct
   'struct',
 
+  'Tx',
+  'SigHash',
+
   // type infer
   'auto',
 
