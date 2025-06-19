@@ -26,27 +26,27 @@ export function toByteString(literal: string, isUtf8: boolean = false): ByteStri
 }
 
 /**
- * Int32 can be converted to a byte string with int2ByteString.
+ * int can be converted to a byte string with int2ByteString.
  * @param n - a number being converts
+ * @param size - the size of the result byte string, if not specified, the size will be determined by the number of bytes required to represent the number.
  * @category Global Function
  * @onchain
  * @returns {ByteString} returns a ByteString
- * @throws {Error} throws an error if the number is out of range
+ * @throws {Error} throws an error if the number is out of range `size` bytes
  */
-export function intToByteString(n: bigint): ByteString {
-  return toByteString(uint8ArrayToHex(bn2Buf(n)));
-}
-
-
-export function num2bin(n: bigint, size: bigint): ByteString {
+export function intToByteString(n: bigint, size?: bigint): ByteString {
   return toByteString(uint8ArrayToHex(bn2Buf(n, Number(size))));
 }
 
-export function unpack(b: ByteString): bigint {
-  const n = buf2BN(hexToUint8Array(b), false);
-  return n;
-}
 
+// export function num2bin(n: bigint, size: bigint): ByteString {
+//   return toByteString(uint8ArrayToHex(bn2Buf(n, Number(size))));
+// }
+
+// export function unpack(b: ByteString): bigint {
+//   const n = buf2BN(hexToUint8Array(b), false);
+//   return n;
+// }
 
 /**
  * ByteString can be converted to bigint with byteString2Int.
@@ -54,9 +54,8 @@ export function unpack(b: ByteString): bigint {
  * @category Global Function
  * @onchain
  * @returns {Int32} returns a number
- * @throws {Error} throws an error if the number is out of range or
  */
-export function byteStringToInt32(a: ByteString): Int32 {
+export function byteStringToInt(a: ByteString): bigint {
   const n = buf2BN(hexToUint8Array(a), false);
   return n;
 }

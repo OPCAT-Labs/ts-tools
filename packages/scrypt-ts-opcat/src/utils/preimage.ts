@@ -1,6 +1,6 @@
 import * as tools from 'uint8array-tools';
 import { ByteString, SHPreimage } from '../smart-contract/types/index.js';
-import { byteStringToInt32, num2bin, toByteString } from '../smart-contract/fns/byteString.js';
+import { byteStringToInt, intToByteString, toByteString } from '../smart-contract/fns/byteString.js';
 
 
 
@@ -30,16 +30,16 @@ export function decodeSHPreimage(preimage: Uint8Array): SHPreimage {
     hashPrevouts: tools.toHex(preimage.subarray(4, 36)),
     spentScriptHash: tools.toHex(preimage.subarray(36, 68)),
     spentDataHash: tools.toHex(preimage.subarray(68, 100)),
-    value: byteStringToInt32(tools.toHex(preimage.subarray(100, 108))),
+    value: byteStringToInt(tools.toHex(preimage.subarray(100, 108))),
     nSequence: toByteString(tools.toHex(preimage.subarray(108, 112))),
     hashSpentAmounts: tools.toHex(preimage.subarray(112, 144)),
     hashSpentScriptHashes: tools.toHex(preimage.subarray(144, 176)),
     hashSpentDataHashes: tools.toHex(preimage.subarray(176, 208)),
     hashSequences: tools.toHex(preimage.subarray(208, 240)),
     hashOutputs: tools.toHex(preimage.subarray(240, 272)),
-    inputIndex: byteStringToInt32(tools.toHex(preimage.subarray(272, 276))),
-    nLockTime: byteStringToInt32(tools.toHex(preimage.subarray(276, 280))),
-    sigHashType: byteStringToInt32(tools.toHex(preimage.subarray(280, 284))),
+    inputIndex: byteStringToInt(tools.toHex(preimage.subarray(272, 276))),
+    nLockTime: byteStringToInt(tools.toHex(preimage.subarray(276, 280))),
+    sigHashType: byteStringToInt(tools.toHex(preimage.subarray(280, 284))),
   };
 }
 
@@ -56,16 +56,16 @@ export function encodeSHPreimage(shPreimage: SHPreimage): ByteString {
     + shPreimage.hashPrevouts
     + shPreimage.spentScriptHash
     + shPreimage.spentDataHash
-    + num2bin(shPreimage.value, 8n)
+    + intToByteString(shPreimage.value, 8n)
     + shPreimage.nSequence
     + shPreimage.hashSpentAmounts
     + shPreimage.hashSpentScriptHashes
     + shPreimage.hashSpentDataHashes
     + shPreimage.hashSequences
     + shPreimage.hashOutputs
-    + num2bin(shPreimage.inputIndex, 4n)
-    + num2bin(shPreimage.nLockTime, 4n)
-    + num2bin(shPreimage.sigHashType, 4n);
+    + intToByteString(shPreimage.inputIndex, 4n)
+    + intToByteString(shPreimage.nLockTime, 4n)
+    + intToByteString(shPreimage.sigHashType, 4n);
 
   return rawSHPreimage
 }

@@ -1,11 +1,12 @@
 import { prop, method } from '../decorators.js';
 import { assert } from '../fns/assert.js';
-import { byteStringToInt32, intToByteString, len, num2bin, reverseByteString, slice, toByteString } from '../fns/byteString.js';
+import { byteStringToInt, intToByteString, len, reverseByteString, slice, toByteString } from '../fns/byteString.js';
 import { hash256 } from '../fns/hashes.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import { PubKey, ByteString, Sig, Int32, UInt32, PrivKey, SigHashPreimage } from '../types/primitives.js';
 import { SHPreimage, SpentScriptHashes, SpentAmounts, Prevouts, Outpoint, SpentDataHashes } from '../types/structs.js';
 import { StdUtils } from './stdUtils.js';
+import { TxUtils } from './txUtils.js';
 
 /**
  * Library for verifying preimage.
@@ -19,7 +20,7 @@ export class ContextUtils extends SmartContractLib {
   @prop()
   static readonly privKey: PrivKey = PrivKey(0x26f00fe2340a84335ebdf30f57e9bb58487117b29355718f5e46bf5168d7df97n);
   @prop()
-  static readonly pubKey: PubKey = PubKey('02ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec0382');
+  static readonly pubKey: PubKey = PubKey(toByteString('02ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec0382'));
   // invK is the modular inverse of k, the ephemeral key
   @prop()
   static readonly invK: bigint = 0xc8ffdbaa05d93aa4ede79ec58f06a72562048b775a3507c2bf44bde4f007c40an;
@@ -56,7 +57,7 @@ export class ContextUtils extends SmartContractLib {
     const slen = len(intToByteString(s));
     // we convert s to 32 bytes, otherwise reverseByteString(, 32) fails when s is strictly less than 31 bytes (note: 31 bytes works)
     // slice it after reversing to remove extra leading zeros, otherwise strict DER rule fails it due to not minimally encoded
-    const sBigEndian: ByteString = slice(reverseByteString(num2bin(s, 32n), BigInt(32)), 32n - slen);
+    const sBigEndian: ByteString = slice(reverseByteString(intToByteString(s, 32n), BigInt(32)), 32n - slen);
 
     const l: bigint = 4n + rlen + BigInt(slen);
     // rBigEndian must be mininally encoded, to conform to strict DER rule
@@ -76,7 +77,7 @@ export class ContextUtils extends SmartContractLib {
   static fromBEUnsigned(b: ByteString): Int32 {
     // change endian first
     // append positive sign byte. This does not hurt even when sign bit is already positive
-    return byteStringToInt32(reverseByteString(b, 32n) + toByteString('00'));
+    return byteStringToInt(reverseByteString(b, 32n) + toByteString('00'));
   }
 
   /**
@@ -111,16 +112,16 @@ export class ContextUtils extends SmartContractLib {
       + shPreimage.hashPrevouts
       + shPreimage.spentScriptHash
       + shPreimage.spentDataHash
-      + num2bin(shPreimage.value, 8n)
+      + TxUtils.satoshisToByteString(shPreimage.value)
       + shPreimage.nSequence
       + shPreimage.hashSpentAmounts
       + shPreimage.hashSpentScriptHashes
       + shPreimage.hashSpentDataHashes
       + shPreimage.hashSequences
       + shPreimage.hashOutputs
-      + num2bin(shPreimage.inputIndex, 4n)
-      + num2bin(shPreimage.nLockTime, 4n)
-      + num2bin(shPreimage.sigHashType, 4n);
+      + StdUtils.toLEUnsigned(shPreimage.inputIndex, 4n)
+      + StdUtils.toLEUnsigned(shPreimage.nLockTime, 4n)
+      + intToByteString(shPreimage.sigHashType, 4n);
 
     const h: ByteString = hash256(preimage);
     const sig: Sig = ContextUtils.sign(
@@ -160,16 +161,16 @@ export class ContextUtils extends SmartContractLib {
       + shPreimage.hashPrevouts
       + shPreimage.spentScriptHash
       + shPreimage.spentDataHash
-      + num2bin(shPreimage.value, 8n)
+      + TxUtils.satoshisToByteString(shPreimage.value)
       + shPreimage.nSequence
       + shPreimage.hashSpentAmounts
       + shPreimage.hashSpentScriptHashes
       + shPreimage.hashSpentDataHashes
       + shPreimage.hashSequences
       + shPreimage.hashOutputs
-      + num2bin(shPreimage.inputIndex, 4n)
-      + num2bin(shPreimage.nLockTime, 4n)
-      + num2bin(shPreimage.sigHashType, 4n);
+      + StdUtils.toLEUnsigned(shPreimage.inputIndex, 4n)
+      + StdUtils.toLEUnsigned(shPreimage.nLockTime, 4n)
+      + intToByteString(shPreimage.sigHashType, 4n);
     return SigHashPreimage(preimage);
   }
 

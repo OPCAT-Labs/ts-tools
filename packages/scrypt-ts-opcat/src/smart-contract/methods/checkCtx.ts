@@ -2,7 +2,7 @@ import { AbstractContract } from '../abstractContract.js';
 import { SHPreimage, Prevouts, SpentScriptHashes } from '../types/index.js';
 import * as tools from 'uint8array-tools';
 import { Outpoint, SpentAmounts, SpentDataHashes } from '../types/structs.js';
-import { assert, hash256, num2bin, slice } from '../fns/index.js';
+import { assert, hash256, intToByteString, slice } from '../fns/index.js';
 import { InputIndex } from '../../globalTypes.js';
 
 /**
@@ -42,7 +42,7 @@ export function checkCtxImpl(
   );
 
   // check prevout
-  assert(prevout.txHash + num2bin(prevout.outputIndex, 4n) === slice(prevouts, BigInt(inputIndex)*36n, BigInt(inputIndex + 1)*36n), `invalid prevout`);
+  assert(prevout.txHash + intToByteString(prevout.outputIndex, 4n) === slice(prevouts, BigInt(inputIndex)*36n, BigInt(inputIndex + 1)*36n), `invalid prevout`);
 
   // check spentScripts
   assert(

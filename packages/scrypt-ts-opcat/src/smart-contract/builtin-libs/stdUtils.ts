@@ -1,7 +1,6 @@
 import { method } from "../decorators.js";
 import { assert } from "../fns/assert.js";
-import { len, slice, toByteString, unpack } from "../fns/byteString.js";
-import { num2bin } from "../fns/byteString.js";
+import { byteStringToInt, intToByteString, len, slice, toByteString } from "../fns/byteString.js";
 import { SmartContractLib } from "../smartContractLib.js";
 import { ByteString, PrivKey, UInt32, UInt64 } from "../types/primitives.js";
 
@@ -51,7 +50,7 @@ export class StdUtils extends SmartContractLib {
      */
   @method()
   static toLEUnsigned(n: bigint, l: bigint): ByteString {
-    const m = num2bin(n, l + 1n);
+    const m = intToByteString(n, l + 1n);
     // remove sign byte
     return slice(m, 0n, l);
   }
@@ -61,8 +60,9 @@ export class StdUtils extends SmartContractLib {
      * @param {ByteString} bytes the `ByteString` to be converted
      * @returns {bigint} returns a number
      */
-  static fromLEUnsigned(bytes: ByteString): bigint {
-    return unpack(bytes + toByteString('00'));
+  @method()
+  static fromLEUnsigned(b: ByteString): bigint {
+    return byteStringToInt(b + toByteString('00'));
   }
 
 

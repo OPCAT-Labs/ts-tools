@@ -1,3 +1,4 @@
+import { sha256 } from './fns/hashes.js';
 import { IContext } from './types/context.js';
 import { ByteString, SHPreimage } from './types/index.js';
 import { Int32, PubKey, Sig, OpcatState } from './types/primitives.js';
@@ -93,6 +94,10 @@ export abstract class AbstractContract {
    */
   static stateSerialize<ST extends OpcatState>(_state: ST): ByteString {
     throw new Error('Not implemented');
+  }
+
+  static stateHash<ST extends OpcatState>(_state: ST): ByteString {
+    return sha256(this.stateSerialize(_state));
   }
 
   /**

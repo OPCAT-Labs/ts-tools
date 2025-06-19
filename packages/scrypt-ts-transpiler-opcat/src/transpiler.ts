@@ -5150,18 +5150,27 @@ export class Transpiler {
     // if (name === 'SigHashType') {
     //   return this.transformCallSigHashType(node, toSection);
     // }
-
-    // if (name === 'reverseByteString') {
-    //   toSection.append('reverseBytes(', srcLoc);
-    //   node.arguments.forEach((arg, index) => {
-    //     toSection
-    //       .appendWith(this, (toSec) => this.transformExpression(arg, toSec))
-    //       .append(index < node.arguments.length - 1 ? ', ' : '');
-    //   });
-    //   return toSection.append(')');
-    // }
+    if (name === 'reverseByteString') {
+      toSection.append('reverseBytes(', srcLoc);
+      node.arguments.forEach((arg, index) => {
+        toSection
+          .appendWith(this, (toSec) => this.transformExpression(arg, toSec))
+          .append(index < node.arguments.length - 1 ? ', ' : '');
+      });
+      return toSection.append(')');
+    }
     if (name === 'intToByteString') {
-      toSection.append(`pack(`, srcLoc);
+      let func = node.arguments.length === 1 ? 'pack' : 'num2bin'
+      toSection.append(`${func}(`, srcLoc);
+      node.arguments.forEach((arg, index) => {
+        toSection
+          .appendWith(this, (toSec) => this.transformExpression(arg, toSec))
+          .append(index < node.arguments.length - 1 ? ', ' : '');
+      });
+      return toSection.append(')');
+    }
+    if (name === 'byteStringToInt') {
+      toSection.append(`unpack(`, srcLoc);
       node.arguments.forEach((arg, index) => {
         toSection
           .appendWith(this, (toSec) => this.transformExpression(arg, toSec))

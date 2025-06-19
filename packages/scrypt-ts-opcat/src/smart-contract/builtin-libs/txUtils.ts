@@ -7,7 +7,7 @@ import {
   TX_OUTPUT_BYTE_LEN,
 } from '../consts.js';
 import { prop, method } from '../decorators.js';
-import { toByteString, len, intToByteString, slice, sha256, num2bin, hash256 } from '../fns/index.js';
+import { toByteString, len, intToByteString, slice, sha256, hash256 } from '../fns/index.js';
 import { OpCode } from '../types/opCode.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import {
@@ -20,74 +20,6 @@ import {
   TxHashPreimage,
 } from '../types/index.js';
 import { StdUtils } from './stdUtils.js';
-
-
-
-/**
- * A writer that serializes `ByteString`, `boolean`, `bigint`
- * @category Standard Contracts
- */
-export class VarWriter extends SmartContractLib {
-
-  /**
-   * serializes `ByteString` with `VarInt` encoding
-   * @param buf a `ByteString`
-   * @returns serialized `ByteString`
-   */
-  @method()
-  static writeInt(n: Int32): ByteString {
-
-    let buf: ByteString = toByteString('');
-
-    if (n <= 0xfc) {
-      buf = TxUtils.toLEUnsigned(n, 1n);
-    }
-    else if (n <= 0xffff) {
-      buf = toByteString('fd') + TxUtils.toLEUnsigned(n, 2n);
-    }
-    else if (n < 0xffffffff) {
-      buf = toByteString('fe') + TxUtils.toLEUnsigned(n, 4n);
-    }
-    else {
-      // shall not reach here
-      assert(false);
-    }
-
-    return buf;
-  }
-
-
-  /**
-   * serializes `ByteString` with `VarInt` encoding
-   * @param buf a `ByteString`
-   * @returns serialized `ByteString`
-   */
-  @method()
-  static writeBytes(buf: ByteString): ByteString {
-    const n = len(buf);
-
-    let header: ByteString = toByteString('');
-
-    if (n < 0x4c) {
-      header = TxUtils.toLEUnsigned(n, 1n);
-    }
-    else if (n < 0x100) {
-      header = toByteString('4c') + TxUtils.toLEUnsigned(n, 1n);
-    }
-    else if (n < 0x10000) {
-      header = toByteString('4d') + TxUtils.toLEUnsigned(n, 2n);
-    }
-    else if (n < 0x100000000) {
-      header = toByteString('4e') + TxUtils.toLEUnsigned(n, 4n);
-    }
-    else {
-      // shall not reach here
-      assert(false);
-    }
-
-    return header + buf;
-  }
-}
 
 
 /**
@@ -126,7 +58,7 @@ export class TxUtils extends SmartContractLib {
     assert(scriptHashLen == 32n, "script hash length must be greater than 0");
     assert(dataHashLen == 32n, "data hash length must be greater than 0");
     assert(satoshis >= 0n, "satoshis must be greater than 0");
-    return num2bin(satoshis, 8n) + scriptHash + dataHash;
+    return intToByteString(satoshis, 8n) + scriptHash + dataHash;
   }
 
   /**
@@ -174,7 +106,7 @@ export class TxUtils extends SmartContractLib {
   @method()
   static buildOpReturnOutput(data: ByteString): ByteString {
     const script = toByteString('6a') + intToByteString(len(data)) + data;
-    return TxUtils.ZERO_SATS + sha256(script) + sha256(toByteString(''));
+    return TxUtils.satoshisToByteString(TxUtils.ZERO_SATS) + sha256(script) + sha256(toByteString(''));
   }
 
   /**
@@ -211,19 +143,7 @@ export class TxUtils extends SmartContractLib {
    * @returns {ByteString} a `ByteString`
    */
   @method()
-  static satoshisToBytes(n: UInt64): ByteString {
+  static satoshisToByteString(n: UInt64): ByteString {
     return StdUtils.uint64ToByteString(n);
-  }
-
-  /**
- * convert signed integer `n` to unsigned integer of `l` string, in little endian
- * @param {Int32} n the number to be converted
- * @param {Int32} l expected length
- * @returns {ByteString} returns a `ByteString`
- */
-  @method()
-  static toLEUnsigned(n: Int32, l: Int32): ByteString {
-    const m: ByteString = num2bin(n, l + 1n);
-    return slice(m, 0n, len(m) - 1n);
   }
 }

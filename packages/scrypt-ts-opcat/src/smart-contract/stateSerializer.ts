@@ -1,12 +1,11 @@
 import { uint8ArrayToHex } from '../utils/common.js';
 import { ABICoder } from './abi.js';
-import { assert, hash160, intToByteString, len, num2bin, toByteString } from './fns/index.js';
+import { assert, hash160, intToByteString, len, toByteString } from './fns/index.js';
 import { OpcatState, ByteString } from './types/primitives.js';
 import { Artifact } from './types/artifact.js';
 import { MAX_FLAT_FIELDS_IN_STATE } from './consts.js';
 import { getUnRenamedSymbol } from './abiutils.js';
 import * as scriptNumber from '../utils/script_number.js';
-import { VarWriter } from './builtin-libs/txUtils.js';
 
 /**
  * @ignore
@@ -57,7 +56,7 @@ export function stateSerialize(
 
     const MAX_FIELD_LENGTH = 0x7fff;  // INT16_MAX
     assert(len(val) <= MAX_FIELD_LENGTH, `field ${field.name} value is too large`)
-    data += (num2bin(len(val), 2n) + val)
+    data += (intToByteString(len(val), 2n) + val)
     return hash160(val);
   });
 
