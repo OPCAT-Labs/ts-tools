@@ -168,7 +168,13 @@ Transaction.prototype.serialize = function (unsafe) {
 };
 
 Transaction.prototype.clone = function () {
-  return Transaction.fromString(this.uncheckedSerialize())
+  const tx = Transaction.fromString(this.uncheckedSerialize());
+  this.inputs.forEach((input, index) => {
+    if(input.output) {
+      tx.inputs[index].output = input.output.clone();
+    }
+  });
+  return tx;
 };
 
 Transaction.prototype.uncheckedSerialize = Transaction.prototype.toString = Transaction.prototype.toHex = function () {

@@ -7,16 +7,16 @@ import { SupportedNetwork } from './globalTypes.js';
  * Converts a Network object to a SupportedNetwork string.
  * 
  * @param network - The network configuration to check
- * @returns The corresponding supported network name ('fractal-mainnet', 'fractal-testnet', or 'fractal-regtest')
+ * @returns The corresponding supported network name ('opcat-mainnet', 'opcat-testnet', or 'opcat-regtest')
  * @throws {Error} If the network configuration is not supported
  */
 export const toSupportedNetwork = (network: opcat.Networks.Network): SupportedNetwork => {
   if (network === opcat.Networks.livenet) {
-    return 'fractal-mainnet'
+    return 'opcat-mainnet'
   } else if (network === opcat.Networks.testnet) {
-    return 'fractal-testnet'
+    return 'opcat-testnet'
   } else if (network === opcat.Networks.regtest) {
-    return 'fractal-regtest'
+    return 'opcat-regtest'
   }
 
   throw new Error('Unsupported network configuration');
@@ -25,16 +25,16 @@ export const toSupportedNetwork = (network: opcat.Networks.Network): SupportedNe
 
 /**
  * Converts a supported network string into its corresponding Network object.
- * @param network - The supported network identifier ('fractal-mainnet', 'fractal-testnet', or 'fractal-regtest')
+ * @param network - The supported network identifier ('opcat-mainnet', 'opcat-testnet', or 'opcat-regtest')
  * @returns The corresponding Network object
  * @throws {Error} When an unsupported network configuration is provided
  */
 export const fromSupportedNetwork = (network: SupportedNetwork): opcat.Networks.Network => {
-  if (network === 'fractal-mainnet') {
+  if (network === 'opcat-mainnet') {
     return opcat.Networks.livenet;
-  } else if (network === 'fractal-testnet') {
+  } else if (network === 'opcat-testnet') {
     return opcat.Networks.testnet;
-  } else if (network === 'fractal-regtest') {
+  } else if (network === 'opcat-regtest') {
     return opcat.Networks.regtest;
   }
   throw new Error('Unsupported network configuration');

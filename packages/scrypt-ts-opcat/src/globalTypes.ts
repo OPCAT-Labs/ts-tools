@@ -20,7 +20,7 @@ export interface UTXO {
   data: string;
 }
 /** All Networks Supported by the SDK */
-export type SupportedNetwork = 'fractal-mainnet' | 'fractal-testnet' | 'fractal-regtest';
+export type SupportedNetwork = 'opcat-mainnet' | 'opcat-testnet' | 'opcat-regtest';
 
 /**
  * @ignore

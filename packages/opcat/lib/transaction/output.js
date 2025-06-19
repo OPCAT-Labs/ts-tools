@@ -224,4 +224,8 @@ Output.prototype.getSize = function () {
   return 8 + varintSize + scriptSize + dataSize
 };
 
+Output.prototype.clone = function () {
+  return Output.fromObject(this.toObject());
+}
+
 module.exports = Output;

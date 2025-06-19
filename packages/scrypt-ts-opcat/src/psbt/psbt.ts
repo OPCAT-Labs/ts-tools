@@ -148,7 +148,7 @@ export class Psbt {
       // because it is not BIP174 compliant.
       __UNSAFE_SIGN_NONSEGWIT: false,
     };
-    if (this.data.inputs.length === 0) this.setVersion(2);
+    //if (this.data.inputs.length === 0) this.setVersion(2);
 
     for (let i = 0; i < this.__CACHE.__TX.inputs.length; i++) {
       const input = this.__CACHE.__TX.inputs[i];
@@ -872,7 +872,7 @@ const transactionFromBuffer: TransactionFromBuffer = (
 class PsbtTransaction implements ITransaction {
   tx: Transaction;
   constructor(
-    buffer: Uint8Array = Uint8Array.from([2, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+    buffer: Uint8Array = Uint8Array.from([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
   ) {
     this.tx = Transaction.fromBuffer(Buffer.from(buffer));
     checkTxEmpty(this.tx);
@@ -1274,7 +1274,7 @@ function getUnlockingScript(
 
         if(ls.isPublicKeyHashOut()) {
           unlockingScript = Script.fromASM(
-            `${tools.toHex(partialSig[0].pubkey)} ${tools.toHex(partialSig[0].signature)}`,
+            `${tools.toHex(partialSig[0].signature)} ${tools.toHex(partialSig[0].pubkey)}`,
           );
         } else {
           throw new Error(
@@ -1389,8 +1389,7 @@ function inputFinalizeGetAmts(
     if (mustFinalize && input.finalScriptSig)
       tx.inputs[idx].setScript(Script.fromBuffer(Buffer.from(input.finalScriptSig)))
 
-      const vout = tx.inputs[idx].outputIndex;
-      const out = tx.outputs[vout] as Transaction.Output;
+      const out = tx.inputs[idx].output!;
       inputAmount += BigInt(out.satoshis);
   });
   const outputAmount = (tx.outputs as Transaction.Output[]).reduce(

@@ -12,9 +12,9 @@ import { fromSupportedNetwork } from '../../src/index.js';
 dotenv.config();
 
 export const network: SupportedNetwork = (process.env.NETWORK ||
-  'fractal-testnet') as SupportedNetwork;
+  'opcat-testnet') as SupportedNetwork;
 // validate network
-if (network !== 'fractal-testnet' && network !== 'fractal-regtest' && network !== 'fractal-mainnet') {
+if (network !== 'opcat-testnet' && network !== 'opcat-regtest' && network !== 'opcat-mainnet') {
   throw new Error(`Invalid network: ${network}`);
 }
 

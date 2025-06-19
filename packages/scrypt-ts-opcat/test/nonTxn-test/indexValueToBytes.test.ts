@@ -26,7 +26,7 @@ describe('Test indexValueToBytes does not throw by build a tx', () => {
   let signer: Signer;
   let address: string;
   let provider: ChainProvider & UtxoProvider;
-  const network = 'fractal-testnet';
+  const network = 'opcat-testnet';
 
   before(async () => {
     signer = new DefaultSigner(await getTestKeyPair(), network);

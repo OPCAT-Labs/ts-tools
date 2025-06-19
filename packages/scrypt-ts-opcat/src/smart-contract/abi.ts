@@ -202,7 +202,9 @@ export class ABICoder {
 
     const callArgs = flatteredArgs.map((a) => toScriptSig(a.value as PrimitiveTypes));
 
-    if (this.artifact.abi.length > 2 && methodABI.index !== undefined) {
+    const fns = this.artifact.abi.filter((entity) => entity.type === ABIEntityType.FUNCTION);
+
+    if (fns.length >= 2 && methodABI.index !== undefined) {
       // selector when there are multiple public functions
       const pubFuncIndex = methodABI.index;
       callArgs.push(int2ScriptSig(BigInt(pubFuncIndex)));

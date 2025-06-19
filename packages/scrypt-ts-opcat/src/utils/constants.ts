@@ -1,3 +1,3 @@
 import { SupportedNetwork } from '../globalTypes.js';
 
-export const DEFAULT_NETWORK: SupportedNetwork = 'fractal-testnet';
+export const DEFAULT_NETWORK: SupportedNetwork = 'opcat-testnet';

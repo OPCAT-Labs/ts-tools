@@ -4,7 +4,7 @@ import { SignOptions, Signer } from '../signer.js';
 import { SupportedNetwork } from '../globalTypes.js';
 import { DEFAULT_NETWORK } from '../utils/constants.js';
 import { PrivateKey, crypto} from '@opcat-labs/opcat';
-import { fromSupportedNetwork } from '../networks.js';
+import { fromSupportedNetwork, Network } from '../networks.js';
 import { Psbt, Signer as PSigner } from '../psbt/psbt.js';
 
 export class PsbtSigner implements PSigner {
@@ -36,17 +36,18 @@ export class PsbtSigner implements PSigner {
 export class DefaultSigner implements Signer {
 
   private readonly keyPair: PsbtSigner;
+  public readonly network: Network;
   constructor(
-    public readonly network: SupportedNetwork = DEFAULT_NETWORK,
-    private readonly privateKey: PrivateKey = PrivateKey.fromRandom(fromSupportedNetwork(network)),
+    private readonly privateKey: PrivateKey = PrivateKey.fromRandom(fromSupportedNetwork(DEFAULT_NETWORK)),
 
   ) {
     this.keyPair = new PsbtSigner(privateKey);
+    this.network = this.privateKey.network;
   }
 
   async getAddress(): Promise<string> {
     return Promise.resolve(
-      this.privateKey.toPublicKey().toAddress(fromSupportedNetwork(this.network)).toString(),
+      this.privateKey.toPublicKey().toAddress(this.network).toString(),
     );
   }
 

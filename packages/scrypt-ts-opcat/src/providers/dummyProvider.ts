@@ -17,7 +17,7 @@ export class DummyProvider implements ChainProvider, UtxoProvider {
 
   constructor() {}
   async getNetwork(): Promise<SupportedNetwork> {
-    return 'fractal-mainnet';
+    return 'opcat-mainnet';
   }
   async getUtxos(address: string, _options?: UtxoQueryOptions): Promise<UTXO[]> {
     const script = Script.fromAddress(address)

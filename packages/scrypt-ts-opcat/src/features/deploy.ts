@@ -17,7 +17,7 @@ export async function deploy(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
   contract: SmartContract<OpcatState>,
-  satoshis: number = 330,
+  satoshis: number = 1,
 ): Promise<ExtPsbt> {
   const address = await signer.getAddress();
 

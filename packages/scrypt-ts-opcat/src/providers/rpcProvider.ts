@@ -64,7 +64,8 @@ export class RPCProvider implements ChainProvider, UtxoProvider {
         return Math.ceil(feerate);
       })
       .catch((e: Error) => {
-        throw new Error(`getFeeRate failed, ${e.message}`);
+        console.log(`getFeeRate failed, ${e.message}`);
+        return 1;
       });
   }
 
@@ -267,7 +268,8 @@ export class RPCProvider implements ChainProvider, UtxoProvider {
             outputIndex: item.vout,
             script: item.scriptPubKey,
             satoshis: new Decimal(item.amount).mul(new Decimal(100000000)).toNumber(),
-          } as UTXO;
+            data: item.data
+          }
         });
 
         return utxos;

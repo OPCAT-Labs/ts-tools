@@ -32,9 +32,8 @@
   "scripts": {
     "test": "npm run test:local",
     "test:local": "cross-env mocha",
-    "test:fractal-testnet": "cross-env NETWORK=fractal-testnet mocha --timeout=0 --jobs=1",
-    "test:btc-signet": "cross-env NETWORK=btc-signet mocha --timeout=0 --jobs=1",
-    "test:fractal-mainnet": "cross-env NETWORK=fractal-mainnet mocha --timeout=0 --jobs=1",
+    "test:opcat-testnet": "cross-env NETWORK=opcat-testnet mocha --timeout=0 --jobs=1",
+    "test:opcat-mainnet": "cross-env NETWORK=opcat-mainnet mocha --timeout=0 --jobs=1",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "postbuild:cjs": "node fixup.cjs",
     "build:esm": "tsc -p tsconfig.esm.json",

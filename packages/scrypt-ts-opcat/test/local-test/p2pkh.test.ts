@@ -21,7 +21,7 @@ dotenv.config();
 use(chaiAsPromised);
 
 describe('Test P2PKH', () => {
-  const testSigner = new DefaultSigner('fractal-mainnet', PrivateKey.fromWIF('cQfb2vnBvKryZjG7MuWwDoeMpvHBNAqaNyJH3cNxdHxnHWd6Kv7f'));
+  const testSigner = new DefaultSigner(PrivateKey.fromWIF('cQfb2vnBvKryZjG7MuWwDoeMpvHBNAqaNyJH3cNxdHxnHWd6Kv7f'));
   before(() => {
     P2PKH.loadArtifact(readArtifact('p2pkh.json'));
   });

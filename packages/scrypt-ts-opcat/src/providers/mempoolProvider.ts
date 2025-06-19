@@ -110,9 +110,9 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
   }
 
   private getMempoolApiHost = () => {
-    if (this.network === 'fractal-testnet') {
+    if (this.network === 'opcat-testnet') {
       return 'https://mempool-testnet.fractalbitcoin.io';
-    } else if (this.network === 'fractal-mainnet') {
+    } else if (this.network === 'opcat-mainnet') {
       return 'https://mempool.fractalbitcoin.io';
     } else {
       throw new Error(`Unsupport network: ${this.network}`);
