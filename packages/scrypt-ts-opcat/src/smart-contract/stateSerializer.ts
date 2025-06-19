@@ -5,7 +5,6 @@ import { OpcatState, ByteString } from './types/primitives.js';
 import { Artifact } from './types/artifact.js';
 import { MAX_FLAT_FIELDS_IN_STATE } from './consts.js';
 import { getUnRenamedSymbol } from './abiutils.js';
-import * as scriptNumber from '../utils/script_number.js';
 
 /**
  * @ignore

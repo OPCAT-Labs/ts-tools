@@ -1,13 +1,15 @@
 import {
   SmartContract,
   method,
-  TxUtils,
   assert,
   StateLib,
+  OpcatState,
+  Int32,
 } from '../../src/index.js';
-import { CounterState } from './counterState.js';
 
-export class CounterStateLib extends StateLib<CounterState> {}
+export interface CounterState extends OpcatState {
+  count: Int32;
+}
 
 export class Counter extends SmartContract<CounterState> {
   @method()

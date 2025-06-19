@@ -65,28 +65,7 @@ export function PubKey(b: ByteString): PubKey {
   return getValidatedHexString(b, false) as PubKey;
 }
 
-/**
- * A domain specific subtype of `ByteString`, representing an x-only public key.
- * @category Types
- * @onchain
- */
-export type XOnlyPubKey = ByteString & { __type: 'XOnlyPubKey' };
-/**
- * Creates an `Addr` instance from a `ByteString`.
- * @category Global Function
- * @onchain
- * @param b - Input ByteString.
- * @returns - A domain specific address representation.
- */
-export function XOnlyPubKey(b: ByteString): XOnlyPubKey {
-  const hex = getValidatedHexString(b, false);
 
-  if (hex.length / 2 !== 32) {
-    throw new Error(`XOnlyPubKey should have 32 bytes length`);
-  }
-
-  return hex as XOnlyPubKey;
-}
 
 /**
  * A domain specific subtype of `ByteString`, representing a signature.
@@ -94,6 +73,8 @@ export function XOnlyPubKey(b: ByteString): XOnlyPubKey {
  * @onchain
  */
 export type Sig = ByteString & { __type: 'Sig' };
+
+
 /**
  * Creates a `Sig` instance from a `ByteString`.
  * @category Global Function
@@ -250,7 +231,6 @@ export type PrimitiveTypes =
   | ByteString
   | PrivKey
   | PubKey
-  | XOnlyPubKey
   | Sig
   | Sha256
   | Sha1

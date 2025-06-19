@@ -5,6 +5,7 @@ export {
   type Bool,
   type FixedArray,
   type StructObject,
+  type OpcatState,
   PrivKey,
   PubKey,
   Sig,
@@ -15,7 +16,6 @@ export {
   Sha256,
   SigHashType,
   OpCodeType,
-  XOnlyPubKey,
 } from './primitives.js';
 
 export {

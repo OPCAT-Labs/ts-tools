@@ -7,12 +7,11 @@ import {
   TX_OUTPUT_BYTE_LEN,
 } from '../consts.js';
 import { prop, method } from '../decorators.js';
-import { toByteString, len, intToByteString, slice, sha256, hash256 } from '../fns/index.js';
+import { toByteString, len, intToByteString, sha256, hash256 } from '../fns/index.js';
 import { OpCode } from '../types/opCode.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import {
   ByteString,
-  Int32,
   TxOut,
   TxIn,
   Addr,
@@ -146,74 +145,5 @@ export class TxUtils extends SmartContractLib {
   @method()
   static satoshisToByteString(n: UInt64): ByteString {
     return StdUtils.uint64ToByteString(n);
-  }
-}
-
-
-
-
-/**
- * A writer that serializes `ByteString`, `boolean`, `bigint`
- * @category Standard Contracts
- */
-export class VarWriter extends SmartContractLib {
-
-  /**
-   * serializes `ByteString` with `VarInt` encoding
-   * @param buf a `ByteString`
-   * @returns serialized `ByteString`
-   */
-  @method()
-  static writeInt(n: Int32): ByteString {
-
-    let buf: ByteString = toByteString('');
-
-    if (n <= 0xfc) {
-      buf = TxUtils.toLEUnsigned(n, 1n);
-    }
-    else if (n <= 0xffff) {
-      buf = toByteString('fd') + TxUtils.toLEUnsigned(n, 2n);
-    }
-    else if (n < 0xffffffff) {
-      buf = toByteString('fe') + TxUtils.toLEUnsigned(n, 4n);
-    }
-    else {
-      // shall not reach here
-      assert(false);
-    }
-
-    return buf;
-  }
-
-
-  /**
-   * serializes `ByteString` with `VarInt` encoding
-   * @param buf a `ByteString`
-   * @returns serialized `ByteString`
-   */
-  @method()
-  static writeBytes(buf: ByteString): ByteString {
-    const n = len(buf);
-
-    let header: ByteString = toByteString('');
-
-    if (n < 0x4c) {
-      header = TxUtils.toLEUnsigned(n, 1n);
-    }
-    else if (n < 0x100) {
-      header = toByteString('4c') + TxUtils.toLEUnsigned(n, 1n);
-    }
-    else if (n < 0x10000) {
-      header = toByteString('4d') + TxUtils.toLEUnsigned(n, 2n);
-    }
-    else if (n < 0x100000000) {
-      header = toByteString('4e') + TxUtils.toLEUnsigned(n, 4n);
-    }
-    else {
-      // shall not reach here
-      assert(false);
-    }
-
-    return header + buf;
   }
 }

@@ -8,7 +8,7 @@ import { ByteString, PubKey, SHPreimage, Sig } from './types/index.js';
 import { ABICoder, Arguments } from './abi.js';
 import { Script } from './types/script.js';
 import { ExtUtxo, InputIndex, Optional, RawArgs, UTXO } from '../globalTypes.js';
-import { textToHex, uint8ArrayToHex, calcArtifactHexMD5, cloneDeep, isFinal } from '../utils/index.js';
+import { uint8ArrayToHex, cloneDeep, isFinal } from '../utils/index.js';
 import { Contextual, InputContext, IContext } from './types/context.js';
 import {
   Int32,
@@ -17,13 +17,12 @@ import {
   SupportedParamType,
 } from './types/primitives.js';
 import { hash256, sha256 } from './fns/hashes.js';
-import { intToByteString, len, slice } from './fns/byteString.js';
+import { slice } from './fns/byteString.js';
 import { checkInputStateImpl } from './methods/checkInputState.js';
 import { deserializeOutputs } from './serializer.js';
 import { BacktraceInfo } from './types/structs.js';
 import { backtraceToOutpointImpl, backtraceToScriptImpl } from './methods/backtraceToGenensis.js';
 import { stateSerialize } from './stateSerializer.js';
-import { OpCode } from './types/opCode.js';
 import { getUnRenamedSymbol } from './abiutils.js';
 import { checkInputStateHashesImpl } from './methods/checkInputStateHashes.js';
 
@@ -36,42 +35,6 @@ interface MethodCallData {
   method: string;
   args: SupportedParamType[];
   rawArgs: RawArgs;
-}
-
-
-/**
- * Prepend the locking script with a tag and a md5 hash of the artifact hex.
- *
- * OP_FALSE
- * OP_IF
- *  OP_PUSH <tag>
- *  OP_PUSH 1
- *  OP_PUSH <md5>
- * OP_ENDIF
- *
- *
- * @param lockingScript The locking script to prepend.
- * @param artifact The artifact to prepend.
- * @returns The new locking script.
- */
-export function prependLockingScript(lockingScript: Script, artifact: Artifact): Script {
-  const tag = textToHex('scr');
-  const md5 = calcArtifactHexMD5(artifact.hex);
-  const version = OpCode.OP_1;
-
-  const prependScripts = [
-    OpCode.OP_FALSE,
-    OpCode.OP_IF,
-    intToByteString(len(tag)),
-    tag,
-    version,
-    intToByteString(len(md5)),
-    md5,
-    OpCode.OP_ENDIF,
-  ];
-  const newLockingScript = Script.fromHex(prependScripts.join('') + lockingScript.toHex());
-
-  return newLockingScript;
 }
 
 /**
