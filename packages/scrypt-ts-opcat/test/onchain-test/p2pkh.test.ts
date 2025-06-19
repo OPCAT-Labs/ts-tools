@@ -12,9 +12,10 @@ import {
   UtxoProvider,
   call,
   RPCProvider,
+  PubKey,
 } from '../../src/index.js';
 import { getTestKeyPair, network } from '../utils/privateKey.js';
-import { createLogger, delay } from '../utils/index.js';
+import { createLogger } from '../utils/index.js';
 import { P2PKH } from '../contracts/p2pkh.js';
 
 import artifact from '../fixtures/p2pkh.json' with { type: 'json' };
@@ -25,33 +26,32 @@ describe('Test P2PKH onchain', () => {
   let signer: Signer;
   let provider: ChainProvider & UtxoProvider;
   let pubKey: string;
+  let p2pkh: P2PKH;
   const logger = createLogger('Test P2PKH onchain');
 
   before(async () => {
     P2PKH.loadArtifact(artifact);
     signer = new DefaultSigner(getTestKeyPair());
     pubKey = await signer.getPublicKey();
-    provider = new RPCProvider(network, "http://157.245.154.198:18443", "wallet.dat", "scrypt", "Passw0rd!");
+    provider = new RPCProvider(network, process.env.RPC_URL, process.env.RPC_WALLET_NAME, process.env.RPC_USER, process.env.RPC_PASS);
   });
 
   it('should deploy successfully', async () => {
-    const p2pkh = new P2PKH(hash160(pubKey));
+    p2pkh = new P2PKH(hash160(pubKey));
     const psbt = await deploy(signer, provider, p2pkh);
     expect(psbt.isFinalized).to.be.true;
     logger.info('deployed successfully, txid: ', psbt.extractTransaction().id);
     psbt.getChangeUTXO() && provider.addNewUTXO(psbt.getChangeUTXO()); // add change utxo
   });
 
-  // it('should unlock successfully', async () => {
-  //   const address = await signer.getAddress();
-  //   const psbt = await call(signer, provider, covenant, {
-  //     invokeMethod: (p2pkh: P2PKH, psbt: ExtPsbt) => {
-  //       p2pkh.unlock(psbt.getSig(0, { address: address }), xOnlyPubKey);
-  //     },
-  //   });
-  //   expect(psbt.isFinalized).to.be.true;
+  it('should unlock successfully', async () => {
+    const address = await signer.getAddress();
+    const psbt = await call(signer, provider, p2pkh, (p2pkh: P2PKH, psbt: ExtPsbt) => {
+      p2pkh.unlock(psbt.getSig(0, { address: address }), PubKey(pubKey));
+    });
+    expect(psbt.isFinalized).to.be.true;
 
-  //   const txid = await provider.broadcast(psbt.extractTransaction().toHex());
-  //   logger.info('unlocked successfully, txid: ', txid);
-  // });
+    const txid = await provider.broadcast(psbt.extractTransaction().toHex());
+    logger.info('unlocked successfully, txid: ', txid);
+  });
 });

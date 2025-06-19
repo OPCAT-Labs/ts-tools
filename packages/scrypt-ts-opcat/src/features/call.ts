@@ -32,7 +32,7 @@ export async function call(
 
   const psbt = new ExtPsbt({ network: network })
     .addContractInput(contract)
-    .spendUTXO(utxos);
+    .spendUTXO(utxos.slice(0, 10));
 
   if (newContract) {
     psbt.addContractOutput(newContract.contract, newContract.satoshis);

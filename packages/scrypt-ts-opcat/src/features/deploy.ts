@@ -28,7 +28,7 @@ export async function deploy(
   const network = await provider.getNetwork();
   const psbt = new ExtPsbt({ network: network });
 
-  psbt.spendUTXO(utxos).addContractOutput(contract, satoshis).change(address, feeRate).seal();
+  psbt.spendUTXO(utxos.slice(0, 10)).addContractOutput(contract, satoshis).change(address, feeRate).seal();
 
   // sign the psbts
   const signedPsbtHex = await signer.signPsbt(psbt.toHex(), psbt.psbtOptions());

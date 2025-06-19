@@ -63,7 +63,7 @@ export function requireTrue(res: boolean, message: string) {
 
 /** @ignore */
 export function getTxId(input: Transaction.Input): string {
-  const hash = input.prevTxId.slice();
+  const hash = Uint8Array.prototype.slice.call(input.prevTxId);
   return uint8ArrayToHex(hash.reverse());
 }
 
@@ -95,7 +95,7 @@ export function cloneDeep<T>(obj: T, hash = new WeakMap()): T {
   }
 
   if (Buffer.isBuffer(obj)) {
-    return obj.subarray(0) as unknown as T;
+    return Buffer.from(Uint8Array.prototype.slice.call(obj)) as unknown as T;
   }
 
   if (ArrayBuffer.isView(obj) && !(obj instanceof DataView)) {

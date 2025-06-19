@@ -64,7 +64,6 @@ export class RPCProvider implements ChainProvider, UtxoProvider {
         return Math.ceil(feerate);
       })
       .catch((e: Error) => {
-        console.log(`getFeeRate failed, ${e.message}`);
         return 1;
       });
   }

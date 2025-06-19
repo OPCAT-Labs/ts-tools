@@ -176,7 +176,6 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   override addInput(inputData: PsbtInputExtended): this {
     super.addInput(inputData);
-    this._checkInputCnt();
     this._checkSealed("can't add more input");
     if (inputData.finalizer) {
       const index = this.data.inputs.length - 1;
@@ -241,7 +240,6 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   override addOutput(outputData: PsbtOutputExtended): this {
     super.addOutput(outputData);
-    this._checkOutputCnt();
     this._checkSealed("can't add more output");
     return this;
   }
@@ -278,7 +276,6 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
         value: BigInt(fromUtxo.satoshis),
       },
     });
-    this._checkInputCnt();
 
     const inputIndex = this.data.inputs.length - 1;
     this._inputContracts.set(inputIndex, contract);
@@ -496,20 +493,21 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   private _bindcontractsUtxo() {
+    const signedTx = this.extractTransaction();
     this._outputContracts.forEach((contract, outputIndex) => {
       const utxo = this.txOutputs[outputIndex];
       if (contract.state && Object.keys(contract.state).length > 0) {
         contract.bindToUtxo({
-          txId: this.unsignedTx.id,
+          txId: signedTx.id,
           outputIndex,
           data: uint8ArrayToHex(utxo.data),
           satoshis: Number(utxo.value),
           txoStateHashes: this.getTxoStateHashes(),
-          txHashPreimage: uint8ArrayToHex(this.unsignedTx.toTxHashPreimage()),
+          txHashPreimage: uint8ArrayToHex(signedTx.toTxHashPreimage()),
         });
       } else {
         contract.bindToUtxo({
-          txId: this.unsignedTx.id,
+          txId: signedTx.id,
           outputIndex,
           data: uint8ArrayToHex(utxo.data),
           satoshis: Number(utxo.value),
@@ -574,29 +572,6 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       }
     });
     return size;
-  }
-
-  private _checkInputCnt() {
-    const inputCnt = this.data.inputs.length;
-    if (inputCnt > TX_INPUT_COUNT_MAX) {
-      throw new Error(
-        `This ExtPsbt has ${inputCnt} inputs which exceeds the limit of ${TX_INPUT_COUNT_MAX}`,
-      );
-    }
-  }
-
-  /**
-   * Checks if the number of outputs in the PSBT exceeds the maximum allowed limit.
-   * @throws {Error} If the output count exceeds TX_OUTPUT_COUNT_MAX
-   * @private
-   */
-  private _checkOutputCnt() {
-    const outputCnt = this.data.outputs.length;
-    if (outputCnt > TX_OUTPUT_COUNT_MAX) {
-      throw new Error(
-        `This ExtPsbt has ${outputCnt} outputs which exceeds the limit of ${TX_OUTPUT_COUNT_MAX}`,
-      );
-    }
   }
 
   private _checkSealed(extraMsg: string) {
