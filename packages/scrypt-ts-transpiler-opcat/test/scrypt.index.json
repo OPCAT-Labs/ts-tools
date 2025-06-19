@@ -25,6 +25,24 @@
   {
    "symbol": "CTX",
    "path": "contracts/ctx.scrypt.tpl"
+  },
+  {
+   "symbol": "CounterState",
+   "path": "contracts/counterState.scrypt.tpl"
+  },
+  {
+   "symbol": "TxUtils",
+   "path": "../../../../scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/txUtils.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "CounterStateLib",
+   "stateType": "CounterState",
+   "path": "contracts/counter.scrypt.tpl"
+  },
+  {
+   "symbol": "Counter",
+   "stateType": "CounterState",
+   "path": "contracts/counter.scrypt.tpl"
   }
  ]
 }

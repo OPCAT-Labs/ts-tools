@@ -1216,6 +1216,12 @@ export class Transpiler {
       .append('\n')
       .append(`  return ${dataPart.join(' + ')} + hash160(${hashes.join(' + ')});`)
       .append('\n')
+      .append('}')
+      .append('\n')
+      .append(`static function stateHash(${stateTypeSymbol.name} ${InjectedParam_CurState}): bytes {`)
+      .append('\n')
+      .append(`  return sha256(${dataPart.join(' + ')} + hash160(${hashes.join(' + ')}));`)
+      .append('\n')
       .append('}');
   }
 
@@ -5646,6 +5652,6 @@ export class Transpiler {
     return toSection
       .append(`sha256(`)
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
-      .append(`) == ${InjectedParam_SHPreimage}.shaOutputs`);
+      .append(`) == ${InjectedParam_SHPreimage}.hashOutputs`);
   }
 }

@@ -22,7 +22,8 @@ import { checkInputStateImpl } from './methods/checkInputState.js';
 import { deserializeOutputs } from './serializer.js';
 import { BacktraceInfo } from './types/structs.js';
 import { backtraceToOutpointImpl, backtraceToScriptImpl } from './methods/backtraceToGenensis.js';
-import { stateSerialize } from './stateSerializer.js';
+import { serializeState } from './stateSerializer.js';
+import { OpCode } from './types/opCode.js';
 import { getUnRenamedSymbol } from './abiutils.js';
 import { checkInputStateHashesImpl } from './methods/checkInputStateHashes.js';
 
@@ -216,7 +217,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @param state state of the contract
    * @returns hash160 of the state
    */
-  static override stateSerialize<T extends OpcatState>(
+  static override serializeState<T extends OpcatState>(
     this: { new (...args: unknown[]): SmartContract<T> },
     state: T,
   ): ByteString {
@@ -232,7 +233,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
       throw new Error(`State struct \`${stateType}\` is not defined!`);
     }
 
-    return stateSerialize(artifact, stateType, state);
+    return serializeState(artifact, stateType, state);
   }
 
   /**
@@ -418,7 +419,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
           if (autoCheckInputState) {
             checkInputStateImpl(
               shPreimage.spentDataHash,
-              (this.constructor as typeof SmartContract<OpcatState>).stateSerialize(curState),
+              (this.constructor as typeof SmartContract<OpcatState>).serializeState(curState),
             );
           }
           args.push(curState);

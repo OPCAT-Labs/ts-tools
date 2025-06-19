@@ -15,15 +15,11 @@ export class Counter extends SmartContract<CounterState> {
   public increase() {
     this.state.count++;
 
-    this.appendStateOutput(
-      // new output of the contract
-      TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-      // new state hash of the contract
-      // Counter.stateHash(this.state),
-      CounterStateLib.stateHash(this.state),
-    );
-
-    const outputs = this.buildStateOutputs() + this.buildChangeOutput();
+    // const nextOutput = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, CounterStateLib.stateHash(this.state) )
+    // const nextOutput = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, sha256(CounterStateLib.serializeState(this.state)));
+    // const nextOutput = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, Counter.stateHash(this.state) )
+    const nextOutput = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, sha256(CounterStateLib.serializeState(this.state)) )
+    const outputs = nextOutput + this.buildChangeOutput();
 
     assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
   }

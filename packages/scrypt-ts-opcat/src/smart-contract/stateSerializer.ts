@@ -9,7 +9,7 @@ import { getUnRenamedSymbol } from './abiutils.js';
 /**
  * @ignore
  */
-export function stateSerialize(
+export function serializeState(
   artifact: Artifact,
   stateType: string,
   state: OpcatState,

@@ -22,7 +22,7 @@
       }
     ]
   },
-  "include": ["./contracts/state.ts", "./contracts/ctx.ts"],
+  "include": ["./contracts/state.ts", "./contracts/ctx.ts", "./contracts/counter.ts"],
   "exclude": [
     "out",
     "artifacts",

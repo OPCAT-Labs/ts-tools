@@ -92,12 +92,12 @@ export abstract class AbstractContract {
    * @onchain
    * @category State
    */
-  static stateSerialize<ST extends OpcatState>(_state: ST): ByteString {
+  static serializeState<ST extends OpcatState>(_state: ST): ByteString {
     throw new Error('Not implemented');
   }
 
   static stateHash<ST extends OpcatState>(_state: ST): ByteString {
-    return sha256(this.stateSerialize(_state));
+    return sha256(this.serializeState(_state));
   }
 
   /**

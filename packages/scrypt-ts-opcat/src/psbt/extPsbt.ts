@@ -344,7 +344,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     this.addOutput({
       script: contract.lockingScript.toBuffer(),
       value: BigInt(satoshis),
-      data: contract.getStateType() !== undefined ? tools.fromHex(Contract.stateSerialize(contract.state)) : new Uint8Array(0),
+      data: contract.getStateType() !== undefined ? tools.fromHex(Contract.serializeState(contract.state)) : new Uint8Array(0),
     });
 
     const outputIndex = this.txOutputs.length - 1;

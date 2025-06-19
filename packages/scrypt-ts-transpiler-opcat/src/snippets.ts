@@ -48,8 +48,8 @@ constructor(){
 export const CALL_CHECK_SHPREIMAGE = `require(Tx.checkPreimageSigHashType(ContextUtils.serializeSHPreimage(${InjectedParam_SHPreimage}), SigHash.ALL))`;
 
 export const CALL_BUILD_CHANGE_OUTPUT = {
-  accessArgument: `(len(${InjectedParam_ChangeInfo}.script) > 0 ? TxUtils.buildOutput(${InjectedParam_ChangeInfo}.script, ${InjectedParam_ChangeInfo}.satoshis) : b'')`,
-  accessThis: `(len(this.${InjectedProp_ChangeInfo}.script) > 0 ? TxUtils.buildOutput(this.${InjectedProp_ChangeInfo}.script, this.${InjectedProp_ChangeInfo}.satoshis) : b'')`,
+  accessArgument: `(${InjectedParam_ChangeInfo}.satoshis > 0 ? TxUtils.buildOutput(${InjectedParam_ChangeInfo}.scriptHash, ${InjectedParam_ChangeInfo}.satoshis) : b'')`,
+  accessThis: `(this.${InjectedProp_ChangeInfo}.satoshis > 0 ? TxUtils.buildOutput(this.${InjectedProp_ChangeInfo}.scriptHash, this.${InjectedProp_ChangeInfo}.satoshis) : b'')`,
 };
 
 export const ACCESS_INPUT_COUNT = {

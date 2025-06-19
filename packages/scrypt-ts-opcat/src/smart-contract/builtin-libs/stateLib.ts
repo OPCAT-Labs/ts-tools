@@ -1,8 +1,9 @@
 import { SmartContractLib } from '../smartContractLib.js';
 import { ByteString, OpcatState } from '../types/primitives.js';
 import { ABICoder } from '../abi.js';
-import { stateSerialize } from '../stateSerializer.js';
+import { serializeState } from '../stateSerializer.js';
 import { getUnRenamedSymbol } from '../abiutils.js';
+import { sha256 } from '../fns/index.js';
 
 /**
  * Library for computing the hash of a state.
@@ -17,7 +18,7 @@ export class StateLib<ST extends OpcatState> extends SmartContractLib {
    * @onchain
    * @category State
    */
-  static serialize<ST extends OpcatState>(
+  static serializeState<ST extends OpcatState>(
     this: { new (...args: unknown[]): StateLib<ST> },
     state: ST,
   ): ByteString {
@@ -39,7 +40,14 @@ export class StateLib<ST extends OpcatState> extends SmartContractLib {
       throw new Error(`State type is not defined for the library: ${this.name}`);
     }
 
-    return stateSerialize(artifact, libraryClazz.stateType, state);
+    return serializeState(artifact, libraryClazz.stateType, state);
+  }
+
+  static stateHash<ST extends OpcatState>(
+    this: { new (...args: unknown[]): StateLib<ST> },
+    state: ST,
+  ): ByteString {
+    return sha256((this as any).serializeState(state));
   }
 
   // keep this method to enable the typecheck for stateHash method in ts

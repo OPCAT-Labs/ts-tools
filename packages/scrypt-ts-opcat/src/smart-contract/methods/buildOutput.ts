@@ -45,5 +45,5 @@ export function buildStateOutputImpl<T extends OpcatState>(
   const lenScriptHash = len(scriptHash);
   assert(lenScriptHash === 32n, 'invalid ScriptHash');
   const Class = Object.getPrototypeOf(self).constructor as typeof AbstractContract;
-  return TxUtils.buildDataOutput(scriptHash, satoshis, sha256(Class.stateSerialize(state)))
+  return TxUtils.buildDataOutput(scriptHash, satoshis, sha256(Class.serializeState(state)))
 }

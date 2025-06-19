@@ -18,10 +18,6 @@
       "path": "smart-contract/types/structs.scrypt.tpl"
     },
     {
-      "symbol": "VarWriter",
-      "path": "smart-contract/builtin-libs/txUtils.scrypt.tpl"
-    },
-    {
       "symbol": "TxUtils",
       "path": "smart-contract/builtin-libs/txUtils.scrypt.tpl"
     },
