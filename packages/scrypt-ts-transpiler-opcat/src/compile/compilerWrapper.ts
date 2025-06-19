@@ -47,7 +47,6 @@ export enum CompileErrorType {
   SyntaxError = 'SyntaxError',
   SemanticError = 'SemanticError',
   InternalError = 'InternalError',
-  DisableOpcodeError = 'DisableOpcodeError',
   Warning = 'Warning',
 }
 
@@ -102,10 +101,6 @@ export interface InternalError extends CompileErrorBase {
   type: CompileErrorType.InternalError;
 }
 
-export interface DisableOpcodeError extends CompileErrorBase {
-  type: CompileErrorType.DisableOpcodeError;
-}
-
 export interface Warning extends CompileErrorBase {
   type: CompileErrorType.Warning;
 }
@@ -114,7 +109,6 @@ export type CompileError =
   | SyntaxError
   | SemanticError
   | InternalError
-  | DisableOpcodeError
   | Warning;
 
 export class CompileResult {

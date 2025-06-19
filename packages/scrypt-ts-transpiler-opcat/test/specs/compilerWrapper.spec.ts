@@ -250,13 +250,6 @@ describe('compile()', () => {
       expect(result.toArtifact().hex).to.be.equal('00<pubKeyHash>7778a978886f75ac777777');
     });
 
-    it('compileContractAsync tokenSwap with DisableOpcodeError', async () => {
-      const result = await compileContractAsync(getContractFilePath('tokenSwap.scrypt'));
-
-      expect(result.errors.length === 1).to.be.true;
-      expect(result.errors[0].type).to.be.eq(CompileErrorType.DisableOpcodeError);
-      expect(result.errors[0].message).to.be.eq('Catch disabled OpCode: OP_OR');
-    });
 
     it('test_ctc_as_parameter_sub', () => {
       const result = compileContract(getContractFilePath('ctc.scrypt'));
