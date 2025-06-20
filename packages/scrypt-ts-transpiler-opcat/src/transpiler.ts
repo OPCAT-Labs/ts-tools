@@ -5657,7 +5657,7 @@ export class Transpiler {
     toSection: EmittedSection,
   ): EmittedSection {
     return toSection
-      .append(`sha256(`)
+      .append(`hash256(`)
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
       .append(`) == ${InjectedParam_SHPreimage}.hashOutputs`);
   }

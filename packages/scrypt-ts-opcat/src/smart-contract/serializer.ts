@@ -22,18 +22,6 @@ export function int2hex(n: Int32): string {
   return Script.fromASM(intToByteString(n)).toHex();
 }
 
-/**
- * @ignore
- * @param n
- * @returns
- */
-export function int2ScriptSig(n: Int32): Uint8Array {
-  if (n === BigInt(0)) {
-    return tools.fromHex('');
-  }
-
-  return tools.fromHex(intToByteString(n));
-}
 
 /**
  * @ignore
@@ -47,17 +35,6 @@ export function bool2hex(b: Bool): string {
   return '00';
 }
 
-/**
- * @ignore
- * @param b
- * @returns
- */
-export function bool2ScriptSig(b: Bool): Uint8Array {
-  if (b) {
-    return tools.fromHex('01');
-  }
-  return tools.fromHex('');
-}
 
 /**
  * @ignore
@@ -81,14 +58,6 @@ export function bytes2hex(b: ByteString): string {
   return '00';
 }
 
-/**
- * @ignore
- * @param b
- * @returns
- */
-export function bytes2ScriptSig(b: ByteString): Uint8Array {
-  return tools.fromHex(b);
-}
 
 /**
  * @ignore
@@ -107,21 +76,6 @@ export function toScriptHex(x: PrimitiveTypes): string {
   throw new Error(`unsupport PrimitiveTypes: ${x}`);
 }
 
-/**
- * @ignore
- * @param x
- * @returns
- */
-export function toScriptSig(x: PrimitiveTypes): Uint8Array {
-  if (typeof x === 'number' || typeof x === 'bigint') {
-    return int2ScriptSig(x as bigint);
-  } else if (typeof x === 'boolean') {
-    return bool2ScriptSig(x as boolean);
-  } else if (typeof x === 'string') {
-    return bytes2ScriptSig(x);
-  }
-  throw new Error(`unsupport PrimitiveTypes: ${x}`);
-}
 
 /**
  * @ignore

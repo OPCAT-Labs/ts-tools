@@ -2,7 +2,7 @@
 import { PsbtInput, Psbt as PsbtBase, OpcatUtxo } from '@opcat-labs/bip174';
 import { ByteString, Sig, SigHashType, TxOut } from '../smart-contract/types/index.js';
 import {
-  InputIndex, OutputIndex, SupportedNetwork, RawArgs,
+  InputIndex, OutputIndex, SupportedNetwork, 
   ExtUtxo,
   StatefulContractUtxo,
   StateProvableUtxo,
@@ -27,7 +27,6 @@ import { fromSupportedNetwork } from '../networks.js';
 import { Transaction, PublicKey, Networks } from '@opcat-labs/opcat';
 import { SmartContract } from '../smart-contract/smartContract.js';
 import { OpcatState } from '../smart-contract/types/primitives.js';
-import { callArgsToStackToScript } from './bufferutils.js';
 import { SpentDataHashes } from '../smart-contract/types/structs.js';
 
 const P2PKH_SIG_LEN = 0x49; // 73 bytes signature
@@ -37,7 +36,7 @@ type Finalizer = (
   self: ExtPsbt,
   inputIndex: number, // Which input is it?
   input: PsbtInput, // The PSBT input contents
-) => RawArgs;
+) => Script;
 
 
 export interface PsbtInputExtended extends PsbtInput, TransactionInput {
@@ -169,6 +168,8 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   private _inStateProvableUtxos: Map<InputIndex, StatefulContractUtxo> = new Map();
   private _outputContracts: Map<OutputIndex, SmartContract<OpcatState>> = new Map();
 
+  private _inputUnlockScripts: Map<InputIndex, Script> = new Map();
+
   private _changeOutputIndex: number | null = null;
   private _changeToAddr: string;
 
@@ -180,8 +181,8 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     if (inputData.finalizer) {
       const index = this.data.inputs.length - 1;
       const input = this.data.inputs[index];
-      const callArgs = inputData.finalizer(this, index, input);
-      this._cacheInputCallArgs(index, callArgs);
+      const us = inputData.finalizer(this, index, input);
+      this._cacheInputUnlockScript(index, us);
       const finalizer = inputData.finalizer;
       this._setInputFinalizer(index, (self, idx, inp) => {
         return finalizer(self, idx, inp);
@@ -319,9 +320,8 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     contract.spentFromInput(this, inputIndex);
 
     contractCall(contract, this);
-    const callArgs = contract.getRawArgsOfCallData();
-
-    this._cacheInputCallArgs(inputIndex, callArgs);
+    const us = contract.getUnlockingScript();
+    this._cacheInputUnlockScript(inputIndex, us);
 
     const finalizer: Finalizer = (
       _self: ExtPsbt,
@@ -329,7 +329,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       _input: PsbtInput, // The PSBT input contents
     ) => {
       contractCall(contract, this);
-      return contract.getRawArgsOfCallData();
+      return contract.getUnlockingScript();
     };
     this._setInputFinalizer(inputIndex, finalizer);
 
@@ -470,14 +470,14 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       const finalizer = this._finalizers.get(idx);
       if (finalizer) {
         try {
-          const callArgs = finalizer(this, idx, input);
+          const unlockingScript = finalizer(this, idx, input);
           finalFunc = (
             _inputIdx: number,
             _input: PsbtInput,
             _script: Uint8Array, // The "meaningful" locking script Buffer
           ) => {
             return {
-              finalScriptSig: callArgsToStackToScript(callArgs),
+              finalScriptSig: unlockingScript.toBuffer(),
             };
           };
         } catch (error) {
@@ -522,14 +522,16 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }, true);
   }
 
-  private _cacheInputCallArgs(inputIndex: InputIndex, callArgs: RawArgs) {
-    // put call args into unknownKeyVals to support autoFinalize in signer
-    callArgs.forEach((wit, widx) => {
-      this.data.addUnknownKeyValToInput(inputIndex, {
-        key: tools.fromUtf8(widx.toString()),
-        value: wit,
-      });
-    });
+  private _cacheInputUnlockScript(inputIndex: InputIndex, unlockScript: Script) {
+    this._inputUnlockScripts.set(inputIndex, unlockScript);
+  }
+
+  private _hasInputUnlockScript(inputIndex: InputIndex) {
+    return this._inputUnlockScripts.has(inputIndex);
+  }
+
+  private _getInputUnlockScript(inputIndex: InputIndex) {
+    return this._inputUnlockScripts.get(inputIndex);
   }
 
   /**
@@ -548,12 +550,10 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
         // p2pkh
         size += P2PKH_SIG_LEN + P2PKH_PUBKEY_LEN;
       } else {
-        // p2tr
         if (!isFinalized(input)) {
-          if ((input.unknownKeyVals || []).length > 0) {
-            // use unknownKeyVals as a place to store call args before sign
-            const unfinalizedWitness = (input.unknownKeyVals || []).map((v) => v.value);
-            size += callArgsToStackToScript(unfinalizedWitness).length;
+          if (this._hasInputUnlockScript(_inputIndex)) {
+            const us = this._getInputUnlockScript(_inputIndex)!;
+            size += us.toBuffer().length;
           } else {
             // if no unknownKeyVals, we assume the input is not finalized yet
             // and we should not count the size of finalScriptSig

@@ -15,16 +15,8 @@ import { toByteString } from '../fns/byteString.js';
  * @throws Throws an error if the hash of the data does not match the stateHash
  */
 export function checkInputStateHashesImpl(
-  inputCount: number,
   hashSpentDatas: ByteString,
   spentDataHashes: SpentDataHashes,
 ) {
-
-  let spentDataHashesJoin: ByteString = toByteString('');
-  for (let index = 0; index < TX_INPUT_COUNT_MAX; index++) {
-    if(index < inputCount) {
-      spentDataHashesJoin += spentDataHashes[index];
-    }
-  }
-  assert(hash256(spentDataHashesJoin) == hashSpentDatas, 'stateHash mismatch');
+  assert(hash256(spentDataHashes) == hashSpentDatas, 'spentDataHashes mismatch');
 }

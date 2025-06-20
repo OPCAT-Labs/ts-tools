@@ -55,4 +55,4 @@ export * from './features/index.js';
 
 export { type Network, toSupportedNetwork, fromSupportedNetwork } from './networks.js';
 
-export { type SupportedNetwork, type UTXO, type  ExtUtxo, type RawArgs, type StatefulContractUtxo } from './globalTypes.js';
+export { type SupportedNetwork, type UTXO, type  ExtUtxo, type StatefulContractUtxo } from './globalTypes.js';

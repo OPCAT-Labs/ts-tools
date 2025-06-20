@@ -22,13 +22,6 @@ export interface UTXO {
 /** All Networks Supported by the SDK */
 export type SupportedNetwork = 'opcat-mainnet' | 'opcat-testnet' | 'opcat-regtest';
 
-/**
- * @ignore
- * Witness data in a blockchain transaction contains the cryptographic proofs (like signatures) that validate the spender's authority to use the funds."
- */
-export type RawArgs = Uint8Array[];
-
-
 export type InputIndex = number;
 
 export type OutputIndex = number;

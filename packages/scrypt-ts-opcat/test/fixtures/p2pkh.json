@@ -31,6 +31,7 @@
       ]
     }
   ],
+  "library": [],
   "stateProps": [],
   "buildType": "release",
   "file": "../p2pkh.scrypt",

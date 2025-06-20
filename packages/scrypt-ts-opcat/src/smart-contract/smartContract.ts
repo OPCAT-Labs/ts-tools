@@ -7,7 +7,7 @@ import { checkSigImpl } from './methods/checkSig.js';
 import { ByteString, PubKey, SHPreimage, Sig } from './types/index.js';
 import { ABICoder, Arguments } from './abi.js';
 import { Script } from './types/script.js';
-import { ExtUtxo, InputIndex, Optional, RawArgs, UTXO } from '../globalTypes.js';
+import { ExtUtxo, InputIndex, Optional, UTXO } from '../globalTypes.js';
 import { uint8ArrayToHex, cloneDeep, isFinal } from '../utils/index.js';
 import { Contextual, InputContext, IContext } from './types/context.js';
 import {
@@ -36,7 +36,7 @@ import { checkInputStateHashesImpl } from './methods/checkInputStateHashes.js';
 interface MethodCallData {
   method: string;
   args: SupportedParamType[];
-  rawArgs: RawArgs;
+  unlockingScript: Script;
 }
 
 /**
@@ -339,12 +339,12 @@ export class SmartContract<StateT extends OpcatState = undefined>
       this._autoInject(method, args, autoCheckInputState);
     }
 
-    const rawArgs = this._abiCoder.encodePubFunctionCall(method, args);
+    const unlockingScript = this._abiCoder.encodePubFunctionCall(method, args);
 
     this._methodCall = {
       method,
       args,
-      rawArgs,
+      unlockingScript,
     };
   }
 
@@ -419,8 +419,8 @@ export class SmartContract<StateT extends OpcatState = undefined>
           args.push(spentAmounts);
         } else if (param.name === '__scrypt_ts_spentScript') {
           args.push(this.lockingScript.toHex());
-        } else if (param.name === '__scrypt_ts_stateHashes') {
-          checkInputStateHashesImpl(Number(inputCount), shPreimage.hashSpentDataHashes, spentDataHashes)
+        } else if (param.name === '__scrypt_ts_spentDataHashes') {
+          checkInputStateHashesImpl(shPreimage.hashSpentDataHashes, spentDataHashes)
           args.push(spentDataHashes);
         } else if (param.name === '__scrypt_ts_curState') {
           this._checkState();
@@ -516,8 +516,8 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * Returns the raw arguments from the call data of the smart contract.
    * @returns The raw arguments extracted from the call data.
    */
-  getRawArgsOfCallData(): RawArgs {
-    return this.getCallData().rawArgs;
+  getUnlockingScript(): Script {
+    return this.getCallData().unlockingScript;
   }
 
 
@@ -534,12 +534,12 @@ export class SmartContract<StateT extends OpcatState = undefined>
   }
 
   /**
-   * Transform raw arguments from the testimony into arguments previously used to invoke the contract.
+   * Transform unlocking script from the testimony into arguments previously used to invoke the contract.
    * @ignore
    * @param _args
    * @param _method
    */
-  rawArgsToCallData(_args: RawArgs, _method: string): Arguments {
+  unlockingScriptToCallData(_args: Script, _method: string): Arguments {
     throw new Error('Method not implemented.');
   }
 

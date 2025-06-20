@@ -2,11 +2,10 @@ import { Counter, CounterStateLib } from '../contracts/counter.js';
 import counterArtifact from '../fixtures/counter.json' with { type: 'json' };
 import { getTestKeyPair, network } from '../utils/privateKey.js';
 import {
-  MempoolProvider,
+  RPCProvider,
   DefaultSigner,
   Signer,
   deploy,
-  StatefulCovenant,
   call,
   ChainProvider,
   UtxoProvider,
@@ -14,45 +13,40 @@ import {
 import { createLogger, delay } from '../utils/index.js';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { CounterState } from '../contracts/counterState.js';
 use(chaiAsPromised);
 
 describe('Test Counter onchain', () => {
   let signer: Signer;
   let provider: ChainProvider & UtxoProvider;
-  let counterCovenant: StatefulCovenant<CounterState>;
+  let counter: Counter
   const logger = createLogger('Test Counter onchain');
 
   before(async () => {
     Counter.loadArtifact(counterArtifact);
     CounterStateLib.loadArtifact(counterArtifact);
-    signer = new DefaultSigner(await getTestKeyPair(), network);
-    provider = new MempoolProvider(network);
+    signer = new DefaultSigner(getTestKeyPair());
+    provider = new RPCProvider(network, process.env.RPC_URL, process.env.RPC_WALLET_NAME, process.env.RPC_USER, process.env.RPC_PASS);
   });
 
   it('should deploy successfully', async () => {
-    await delay(3000); // delay for avoid txn-mempool-conflict
-    const counter = new Counter();
-    counter.state = { count: -3n };
-    counterCovenant = StatefulCovenant.createCovenant(counter, { network: network });
-    const psbt = await deploy(signer, provider, counterCovenant);
+    counter = new Counter();
+    counter.state = { count: 0n };
+    const psbt = await deploy(signer, provider, counter);
     expect(psbt.isFinalized).to.be.true;
-    logger.info('deployed successfully, txid: ', psbt.extractTransaction().getId());
+    logger.info('deployed successfully, txid: ', psbt.extractTransaction().id);
     psbt.getChangeUTXO() && provider.addNewUTXO(psbt.getChangeUTXO()); // add change utxo
   });
 
   it('should increase', async () => {
-    const newCovenant = counterCovenant.next({ count: counterCovenant.state.count + 1n });
+    const newContract = counter.next({ count: counter.state.count + 1n });
     const psbt = await call(
       signer,
       provider,
-      counterCovenant,
-      {
-        invokeMethod: (contract: Counter) => {
-          contract.increase();
-        },
+      counter,
+      (contract: Counter) => {
+        contract.increase();
       },
-      { covenant: newCovenant, satoshis: counterCovenant.utxo.satoshis },
+      { contract: newContract, satoshis: 1 },
     );
 
     expect(psbt.isFinalized).to.be.true;

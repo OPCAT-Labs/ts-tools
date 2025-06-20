@@ -185,34 +185,3 @@ export class BufferReader {
     return vector;
   }
 }
-
-
-
-export function callArgsToStackToScript(callArgs: Uint8Array[]): Uint8Array {
-  let buf: Uint8Array = new Uint8Array(0);
-
-  function writeSlice(slice: Uint8Array): void {
-    buf = tools.concat([buf, slice]);
-  }
-
-  function writeVarInt(i: number): void {
-    const currentLen = buf.length;
-    const varintLen = varuint.encodingLength(i);
-
-    buf = tools.concat([buf, new Uint8Array(varintLen)]);
-    varuint.encode(i, buf, currentLen);
-  }
-
-  function writeVarSlice(slice: Uint8Array): void {
-    writeVarInt(slice.length);
-    writeSlice(slice);
-  }
-
-  function writeVector(vector: Uint8Array[]): void {
-    vector.forEach(writeVarSlice);
-  }
-
-  writeVector(callArgs);
-
-  return buf;
-}

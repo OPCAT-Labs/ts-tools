@@ -158,7 +158,7 @@ Interpreter.getTrue = () => Buffer.from([1]);
 Interpreter.getFalse = () => Buffer.from([]);
 
 Interpreter.MAX_SCRIPT_ELEMENT_SIZE = 520;
-Interpreter.MAXIMUM_ELEMENT_SIZE = 4;
+Interpreter.MAXIMUM_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
 
 Interpreter.LOCKTIME_THRESHOLD = 500000000;
 Interpreter.LOCKTIME_THRESHOLD_BN = new BN(Interpreter.LOCKTIME_THRESHOLD);
