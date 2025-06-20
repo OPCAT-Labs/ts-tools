@@ -15,6 +15,7 @@ import {
   SigHashType,
   OpcatState,
   SupportedParamType,
+  StructObject,
 } from './types/primitives.js';
 import { hash256, sha256 } from './fns/hashes.js';
 import { slice } from './fns/byteString.js';
@@ -218,10 +219,10 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @returns hash160 of the state
    */
   static override serializeState<T extends OpcatState>(
-    this: { new (...args: unknown[]): SmartContract<T> },
+    this: { new (...args: any[]): SmartContract<T> },
     state: T,
   ): ByteString {
-    const selfClazz = this as typeof SmartContract;
+    const selfClazz = (this as any) as typeof SmartContract;
 
     const artifact = selfClazz.artifact;
     if (!artifact) {
@@ -234,6 +235,13 @@ export class SmartContract<StateT extends OpcatState = undefined>
     }
 
     return serializeState(artifact, stateType, state);
+  }
+
+  static override stateHash<T extends OpcatState>(
+    this: { new (...args: any[]): SmartContract<T> },
+    state: T,
+  ): ByteString {
+    return sha256((this as any).serializeState(state));
   }
 
   /**
@@ -419,7 +427,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
           if (autoCheckInputState) {
             checkInputStateImpl(
               shPreimage.spentDataHash,
-              (this.constructor as typeof SmartContract<OpcatState>).serializeState(curState),
+              (this.constructor as typeof SmartContract<StateT>).serializeState(curState),
             );
           }
           args.push(curState);

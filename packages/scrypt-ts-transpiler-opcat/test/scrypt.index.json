@@ -2,31 +2,6 @@
  "scryptBase": "artifacts/.templates",
  "bindings": [
   {
-   "symbol": "StateTest",
-   "stateType": "A",
-   "path": "contracts/state.scrypt.tpl"
-  },
-  {
-   "symbol": "A",
-   "path": "contracts/state.scrypt.tpl"
-  },
-  {
-   "symbol": "B",
-   "path": "contracts/state.scrypt.tpl"
-  },
-  {
-   "symbol": "C",
-   "path": "contracts/state.scrypt.tpl"
-  },
-  {
-   "symbol": "Outpoint",
-   "path": "../../../../scrypt-ts-opcat/assets/.templates/smart-contract/types/structs.scrypt.scrypt.tpl"
-  },
-  {
-   "symbol": "CTX",
-   "path": "contracts/ctx.scrypt.tpl"
-  },
-  {
    "symbol": "CounterState",
    "path": "contracts/counterState.scrypt.tpl"
   },

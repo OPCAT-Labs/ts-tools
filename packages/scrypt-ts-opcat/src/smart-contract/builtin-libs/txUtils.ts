@@ -90,14 +90,6 @@ export class TxUtils extends SmartContractLib {
     );
   }
 
-  @method()
-  static getTxHashFromTxHashPreimage(txHashPreimage: TxHashPreimage): ByteString {
-    assert(len(txHashPreimage.version) == TX_VERSION_BYTE_LEN);
-    StdUtils.checkLenDivisibleBy(txHashPreimage.inputList, TX_INPUT_BYTE_LEN);
-    StdUtils.checkLenDivisibleBy(txHashPreimage.outputList, TX_OUTPUT_BYTE_LEN);
-    return hash256(txHashPreimage.version + txHashPreimage.inputList + txHashPreimage.outputList + txHashPreimage.nLockTime);
-  }
-
   /**
    * build `OP_RETURN` script from data payload
    * @param {ByteString} data the data payload

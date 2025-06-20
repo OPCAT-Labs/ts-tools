@@ -65,8 +65,6 @@ export const STATE_OUTPUT_COUNT_MAX = 5;
 export const TX_HASH_PREIMAGE2_SUFFIX_ARRAY_SIZE = 4;
 /** @ignore */
 export const TX_HASH_PREIMAGE3_INPUT_ARRAY_SIZE = 4;
-/** @ignore how many different tokens can there be in a guard */
-export const GUARD_TOKEN_TYPE_MAX = 4;
 /** @ignore how many different collections can there be in a nftGuard */
 export const NFT_GUARD_COLLECTION_TYPE_MAX = 4;
 /** @ignore byte length of each part in tx */

@@ -1,5 +1,5 @@
 import { SmartContractLib } from '../smartContractLib.js';
-import { ByteString, OpcatState } from '../types/primitives.js';
+import { ByteString, OpcatState, StructObject } from '../types/primitives.js';
 import { ABICoder } from '../abi.js';
 import { serializeState } from '../stateSerializer.js';
 import { getUnRenamedSymbol } from '../abiutils.js';
@@ -18,10 +18,10 @@ export class StateLib<ST extends OpcatState> extends SmartContractLib {
    * @onchain
    * @category State
    */
-  static serializeState<ST extends OpcatState>(
-    this: { new (...args: unknown[]): StateLib<ST> },
-    state: ST,
-  ): ByteString {
+  static serializeState<T extends OpcatState>(
+    this: { new (...args: any[]): StateLib<T> },
+    state: T,
+  ): ByteString  {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const libraryClazz = this as any as typeof SmartContractLib;
     const artifact = libraryClazz.artifact;
@@ -43,9 +43,9 @@ export class StateLib<ST extends OpcatState> extends SmartContractLib {
     return serializeState(artifact, libraryClazz.stateType, state);
   }
 
-  static stateHash<ST extends OpcatState>(
-    this: { new (...args: unknown[]): StateLib<ST> },
-    state: ST,
+  static stateHash<T extends OpcatState>(
+    this: { new (...args: any[]): StateLib<T> },
+    state: T,
   ): ByteString {
     return sha256((this as any).serializeState(state));
   }

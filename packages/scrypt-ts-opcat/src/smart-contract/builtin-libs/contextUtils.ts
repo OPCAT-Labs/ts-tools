@@ -4,7 +4,7 @@ import { byteStringToInt, intToByteString, len, reverseByteString, slice, toByte
 import { hash256 } from '../fns/hashes.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import { PubKey, ByteString, Sig, Int32, UInt32, PrivKey, SigHashPreimage } from '../types/primitives.js';
-import { SHPreimage, SpentScriptHashes, SpentAmounts, Prevouts, Outpoint, SpentDataHashes } from '../types/structs.js';
+import { SHPreimage, SpentScriptHashes, SpentAmounts, Prevouts, Outpoint, SpentDataHashes, TxHashPreimage } from '../types/structs.js';
 import { StdUtils } from './stdUtils.js';
 import { TxUtils } from './txUtils.js';
 
@@ -241,4 +241,30 @@ export class ContextUtils extends SmartContractLib {
     assert(hash256(spentDataHashes) == t_hashSpentDataHashes, 'hashSpentDataHashes mismatch');
     assert(t_inputCount == StdUtils.checkLenDivisibleBy(spentDataHashes, 32n), 'invalid spentDataHashes');
   }
+
+
+  @method()
+  static getSpentScriptHash(
+    spentScriptHashes: SpentScriptHashes,
+    inputIndex: Int32,
+  ): ByteString {
+    return slice(spentScriptHashes, inputIndex * 32n, (inputIndex + 1n) * 32n);
+  }
+
+  @method()
+  static getSpentAmount(
+    spentAmounts: SpentAmounts,
+    inputIndex: Int32,
+  ): Int32 {
+    return StdUtils.fromLEUnsigned(slice(spentAmounts, inputIndex * 8n, (inputIndex + 1n) * 8n));
+  }
+
+  @method()
+  static getSpentDataHash(
+    spentDataHashes: SpentDataHashes,
+    inputIndex: Int32,
+  ): ByteString {
+    return slice(spentDataHashes, inputIndex * 32n, (inputIndex + 1n) * 32n);
+  }
+  
 }

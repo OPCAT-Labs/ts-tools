@@ -41,12 +41,12 @@ import {
   thisAssignment,
   InjectedProp_SpentDataHashes,
   InjectedParam_SpentDataHashes,
-  InjectedParam_CurTxHashPreimage,
-  InjectedProp_CurTxHashPreimage,
   InjectedProp_NextState,
   InjectedVar_NextState,
   ACCESS_INPUT_COUNT,
   InjectedProp_Prevout,
+  InjectedProp_PrevTxHashPreimage,
+  InjectedParam_PrevTxHashPreimage,
 } from './snippets';
 import { MethodDecoratorOptions, TX_INPUT_COUNT_MAX } from '@opcat-labs/scrypt-ts-opcat';
 import { Relinker } from './relinker';
@@ -1012,6 +1012,9 @@ export class Transpiler {
     if (this.shouldInjectSpentDataHashesProp()) {
       section.append(`\nbytes ${InjectedProp_SpentDataHashes};`);
     }
+    if (this.shouldInjectPrevTxHashPreimageProp()) {
+      section.append(`\nTxHashPreimage ${InjectedProp_PrevTxHashPreimage};`);
+    }
     if (this.shouldInjectCurStateProp()) {
       const stateTypeSymbol = this._stateTypeSymbols.get(this.currentContractName);
       if (!stateTypeSymbol) {
@@ -1721,6 +1724,7 @@ export class Transpiler {
     const shouldAutoAppendSpentAmounts = this.shouldAutoAppendSpentAmounts(node);
     const shouldAutoAppendSpentDataHashes = this.shouldAutoAppendSpentDataHashes(node);
     const shouldAutoAppendStateArgs = this.shouldAutoAppendStateArgs(node);
+    const shouldAutoAppendPrevTxHashPreimage = this.shouldAutoAppendPrevTxHashPreimageArgs(node)
 
     const buildChangeOutputExpression = findBuildChangeOutputExpression(node);
     if (
@@ -1830,6 +1834,14 @@ export class Transpiler {
             psSec.append(', ');
           }
           psSec.append(`bytes ${InjectedParam_SpentScriptHashes}`);
+          paramLen += 1;
+        }
+
+        if (shouldAutoAppendPrevTxHashPreimage.shouldAppendArguments) {
+          if (paramLen > 0) {
+            psSec.append(', ');
+          }
+          psSec.append(`TxHashPreimage ${InjectedParam_PrevTxHashPreimage}`);
           paramLen += 1;
         }
 
@@ -1956,6 +1968,18 @@ export class Transpiler {
                 `StateUtils.checkInputState(${rawState}, ${InjectedParam_SpentDataHashes}, ${InjectedParam_SHPreimage}.inputIndex);`,
               )
               .append('\n');
+          }
+
+          if (shouldAutoAppendPrevTxHashPreimage.shouldAppendArguments) {
+            sec
+              .append('\n')
+              .append(
+                `Backtrace.checkPrevTxHashPreimage(${InjectedParam_PrevTxHashPreimage}, ${InjectedParam_Prevouts}, ${InjectedParam_SHPreimage}.inputIndex);`,
+              )
+              .append('\n');
+          }
+          if (shouldAutoAppendPrevTxHashPreimage.shouldAppendThisAssignment) {
+            sec.append(thisAssignment(InjectedProp_PrevTxHashPreimage)).append('\n');
           }
 
           node.body!.statements.forEach((stmt) => {
@@ -2215,7 +2239,8 @@ export class Transpiler {
                 accessSHPreimage: true,
                 accessPrevouts: true,
                 accessSpentScripts: true,
-                accessInputStateProof: true,
+                accessSpentAmounts: true,
+                accessBacktrace: true,
               });
             }
           } else {
@@ -2565,6 +2590,12 @@ export class Transpiler {
     );
   }
 
+  private shouldInjectPrevTxHashPreimageProp() {
+    return this.checkShouldInject(
+      (method) => this.shouldAutoAppendPrevTxHashPreimageArgs(method).shouldAccessThis,
+    );
+  }
+
   private shouldInjectCurStateProp() {
     return this.checkShouldInject(
       (method) => this.shouldAutoAppendStateArgs(method).shouldAccessThis,
@@ -2712,7 +2743,7 @@ export class Transpiler {
     });
   }
 
-  private shouldAutoAppendCurTxHashPreimageArgs(node: ts.MethodDeclaration) {
+  private shouldAutoAppendPrevTxHashPreimageArgs(node: ts.MethodDeclaration) {
     return this._shouldAutoAppend(node, (methodInfo) => {
       const { accessBacktrace, accessBacktraceInSubCall } = methodInfo.accessInfo;
       const { isPublic } = methodInfo;
@@ -5508,7 +5539,7 @@ export class Transpiler {
       .append(', ')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
       .append(', ')
-      .appendWith(this, (toSec) => this.transformAccessCurTxHashPreimage(node, toSec))
+      .appendWith(this, (toSec) => this.transformAccessPrevTxHashPreimage(node, toSec))
       .append(');')
       .append('\n');
   }
@@ -5520,6 +5551,11 @@ export class Transpiler {
     const methodNode = this.getMethodContainsTheNode(node);
     const { shouldAccessThis } = this.shouldAutoAppendSighashPreimage(methodNode);
     this._accessBuiltinsSymbols.add('Backtrace');
+
+
+    const spentScriptHashes = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScriptHashes}`;
+    const inputIndex = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex`;
+
     return toSection
       .append('Backtrace.verifyFromOutpoint(')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
@@ -5527,11 +5563,11 @@ export class Transpiler {
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
       .append(', ')
       .append(
-        `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScriptHashes}[${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex]`,
+        `${spentScriptHashes}[${inputIndex} * 32 : (${inputIndex} + 1) * 32]`,
       )
       .append(', ')
       .appendWith(this, (toSec) => {
-        return this.transformAccessCurTxHashPreimage(node, toSec).append(
+        return this.transformAccessPrevTxHashPreimage(node, toSec).append(
           `.inputList`,
         );
       })
@@ -5545,6 +5581,8 @@ export class Transpiler {
     const methodNode = this.getMethodContainsTheNode(node);
     const { shouldAccessThis } = this.shouldAutoAppendSighashPreimage(methodNode);
     this._accessBuiltinsSymbols.add('Backtrace');
+    const spentScriptHashes = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScriptHashes}`;
+    const inputIndex = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex`;
     return toSection
       .append('Backtrace.verifyFromScript(')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
@@ -5552,11 +5590,11 @@ export class Transpiler {
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
       .append(', ')
       .append(
-        `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScriptHashes}[${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex]`,
+        `${spentScriptHashes}[${inputIndex} * 32 : (${inputIndex} + 1) * 32]`,
       )
       .append(', ')
       .appendWith(this, (toSec) => {
-        return this.transformAccessCurTxHashPreimage(node, toSec).append(
+        return this.transformAccessPrevTxHashPreimage(node, toSec).append(
           `.inputList`,
         );
       })
@@ -5582,7 +5620,7 @@ export class Transpiler {
   //   return toSection.append(expr);
   // }
 
-  private transformAccessCurTxHashPreimage(
+  private transformAccessPrevTxHashPreimage(
     node: ts.Node,
     toSection: EmittedSection,
   ): EmittedSection {
@@ -5591,42 +5629,11 @@ export class Transpiler {
     if (!methodInfo) {
       throw new Error(`Method info not found for ${methodNode.name.getText()}`);
     }
-    const { shouldAccessThis } = this.shouldAutoAppendCurTxHashPreimageArgs(methodNode);
-    const expr = shouldAccessThis ? `this.${InjectedProp_CurTxHashPreimage}` : InjectedParam_CurTxHashPreimage;
+    const { shouldAccessThis } = this.shouldAutoAppendPrevTxHashPreimageArgs(methodNode);
+    const expr = shouldAccessThis ? `this.${InjectedProp_PrevTxHashPreimage}` : InjectedProp_PrevTxHashPreimage;
     return toSection.append(expr);
   }
-
-  // private transformAccessInputStateProofsElement(
-  //   indexNode: ts.Expression,
-  //   toSection: EmittedSection,
-  // ): EmittedSection {
-  //   const dynamicIndex = this.isDynamicIndex(indexNode);
-  //   if (dynamicIndex) {
-  //     // similar like INPUT_STATE_PROOF_EXPR
-  //     toSection
-  //       .append(`(`)
-  //       .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
-  //       .append(` == 0 ? ${InjectedParam_InputStateProofs}[0] : (`)
-  //       .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
-  //       .append(` == 1 ? ${InjectedParam_InputStateProofs}[1] : (`)
-  //       .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
-  //       .append(` == 2 ? ${InjectedParam_InputStateProofs}[2] : (`)
-  //       .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
-  //       .append(` == 3 ? ${InjectedParam_InputStateProofs}[3] : (`)
-  //       .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
-  //       .append(
-  //         ` == 4 ? ${InjectedParam_InputStateProofs}[4] : ${InjectedParam_InputStateProofs}[5])))))`,
-  //       )
-  //       .append('\n');
-  //   } else {
-  //     toSection
-  //       .append(`${InjectedParam_InputStateProofs}[`)
-  //       .appendWith(this, (toSec) => this.transformExpression(indexNode, toSec))
-  //       .append(']');
-  //   }
-  //   return toSection;
-  // }
-
+  
   private isDynamicIndex(node: ts.Expression): boolean {
     const indexExpr = this.unwrapNumberConversion(node);
     return (

@@ -468,26 +468,6 @@ export function handleCompilerOutput(
         renameSync(outputFilePath, hexFile);
         outputFiles['hex'] = hexFile;
         result.hex = readFileSync(hexFile, 'utf8');
-        const opcode = findDisableOpCode(getHex(result.hex));
-
-        if (opcode) {
-          result.errors.push({
-            type: CompileErrorType.DisableOpcodeError,
-            filePath: getFullFilePath('stdin', srcDir, sourceFileName),
-            message: `Catch disabled OpCode: ${reverse_opcodes[opcode] || ''}`,
-            position: [
-              {
-                line: -1,
-                column: -1,
-              },
-              {
-                line: -1,
-                column: -1,
-              },
-            ],
-            relatedInformation: [],
-          });
-        }
         result.md5 = calcHexMd5(result.hex);
       }
 

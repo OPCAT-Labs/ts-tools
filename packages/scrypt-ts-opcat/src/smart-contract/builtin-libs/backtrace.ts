@@ -2,11 +2,12 @@ import { method } from '../decorators.js';
 import { assert } from '../fns/assert.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import { ByteString } from '../types/index.js';
-import { BacktraceInfo } from '../types/structs.js';
+import { BacktraceInfo, Prevouts, TxHashPreimage } from '../types/structs.js';
 import { TxUtils } from './txUtils.js';
 import { TX_INPUT_BYTE_LEN, TX_OUTPUT_BYTE_LEN } from '../consts.js';
 import { slice } from '../fns/byteString.js';
 import { StdUtils } from './stdUtils.js';
+import { TxHashPreimageUtils } from './txHashPreimageUtils.js';
 
 export type ChainTxVerifyResponse = {
   prevPrevScript: ByteString;
@@ -19,6 +20,16 @@ export type ChainTxVerifyResponse = {
  * @onchain
  */
 export class Backtrace extends SmartContractLib {
+  
+  @method()
+  static checkPrevTxHashPreimage(
+    txHashPreimage: TxHashPreimage,
+    t_prevouts: Prevouts,
+    t_inputIndex: bigint,
+  ): void {
+    const txHash = TxHashPreimageUtils.getTxHashFromTxHashPreimage(txHashPreimage);
+    assert(txHash == slice(t_prevouts, t_inputIndex * 36n, t_inputIndex * 36n + 32n), 'prevTxHash mismatch');
+  }
   /**
    * Back-to-genesis backtrace verification for a contract which can be backtraced to the genesis outpoint.
    * It will be a valid backtraceInfo if the prevPrevOutpoint is the genesis outpoint or the prevPrevScript is the selfScript.
@@ -89,7 +100,7 @@ export class Backtrace extends SmartContractLib {
     const prevPrevTxHash = backtraceInfo.prevTxInput.prevTxHash;
     assert(
       prevPrevTxHash ==
-        TxUtils.getTxHashFromTxHashPreimage(backtraceInfo.prevPrevTxPreimage),
+        TxHashPreimageUtils.getTxHashFromTxHashPreimage(backtraceInfo.prevPrevTxPreimage),
     );
     // all fields in backtraceInfo have been verified
     const prevPrevScript =

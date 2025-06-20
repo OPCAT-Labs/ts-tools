@@ -97,7 +97,7 @@ export abstract class AbstractContract {
   }
 
   static stateHash<ST extends OpcatState>(_state: ST): ByteString {
-    return sha256(this.serializeState(_state));
+    throw new Error('Not implemented');
   }
 
   /**

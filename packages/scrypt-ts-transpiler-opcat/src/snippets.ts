@@ -8,7 +8,7 @@ export const InjectedParam_SpentDataHashes = '__scrypt_ts_spentDataHashes';
 export const InjectedParam_ChangeInfo = '__scrypt_ts_changeInfo';
 export const InjectedParam_NextStateHashes = '__scrypt_ts_nextStateHashes';
 export const InjectedParam_CurState = '__scrypt_ts_curState';
-export const InjectedParam_CurTxHashPreimage = '__scrypt_ts_curTxHashPreimage';
+export const InjectedParam_PrevTxHashPreimage = '__scrypt_ts_prevTxHashPreimage';
 
 export const InjectedProp_SHPreimage = '__scrypt_ts_shPreimage';
 export const InjectedProp_ChangeInfo = '__scrypt_ts_changeInfo';
@@ -19,7 +19,8 @@ export const InjectedProp_NextState = '__scrypt_ts_nextState';
 export const InjectedProp_SpentScriptHashes = '__scrypt_ts_spentScriptHashes';
 export const InjectedProp_SpentAmounts = '__scrypt_ts_spentAmounts';
 export const InjectedProp_SpentDataHashes = '__scrypt_ts_spentDataHashes';
-export const InjectedProp_CurTxHashPreimage = '__scrypt_ts_curTxHashPreimage';
+export const InjectedProp_PrevTxHashPreimage = '__scrypt_ts_prevTxHashPreimage';
+
 
 export const InjectedVar_InputCount = '__scrypt_ts_inputCount';
 export const InjectedVar_StateCount = '__scrypt_ts_stateCount';
