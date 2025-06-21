@@ -1448,8 +1448,8 @@ declare module '@opcat-labs/opcat' {
             hash: Buffer | Uint8Array,
             network?: Networks.Type
         ): Address;
-        static fromScriptHash(
-            hash: Buffer | Uint8Array,
+        static fromScript(
+            script: Script,
             network?: Networks.Type
         ): Address;
         isValid(

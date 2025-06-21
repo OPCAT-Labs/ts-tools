@@ -260,7 +260,10 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return super.setInputSequence(inputIndex, sequence);
   }
 
-  addContractInput(contract: SmartContract<OpcatState>): this {
+  addContractInput<Contract extends SmartContract<OpcatState>>(
+    contract: Contract,
+    contractCall?: (contract: Contract, psbt: IExtPsbt) => void,
+  ): this {
     const fromUtxo = contract.utxo;
     if (!fromUtxo) {
       throw new Error(
@@ -283,6 +286,11 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     if ("txHashPreimage" in fromUtxo && 'txoStateHashes' in fromUtxo) {
       this._inStateProvableUtxos.set(inputIndex, contract.utxo as StatefulContractUtxo);
     }
+
+    if (contractCall) {
+      this.updateContractInput(inputIndex, contractCall);
+    }
+
     return this;
   }
 

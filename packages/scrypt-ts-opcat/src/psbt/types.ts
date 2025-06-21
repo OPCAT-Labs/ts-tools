@@ -19,7 +19,7 @@ export interface IExtPsbt extends Psbt, Contextual {
    * @param contract
    * @param subContractAlias
    */
-  addContractInput(contract: SmartContract<OpcatState>): this;
+  addContractInput<Contract extends SmartContract<OpcatState>>(contract: Contract, contractCall?: (contract: Contract, psbt: IExtPsbt) => void): this;
 
   /**
    * Add an output to create new contract.

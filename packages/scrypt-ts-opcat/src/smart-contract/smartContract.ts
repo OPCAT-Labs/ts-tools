@@ -23,7 +23,7 @@ import { checkInputStateImpl } from './methods/checkInputState.js';
 import { deserializeOutputs } from './serializer.js';
 import { BacktraceInfo } from './types/structs.js';
 import { backtraceToOutpointImpl, backtraceToScriptImpl } from './methods/backtraceToGenensis.js';
-import { serializeState } from './stateSerializer.js';
+import { deserializeState, serializeState } from './stateSerializer.js';
 import { OpCode } from './types/opCode.js';
 import { getUnRenamedSymbol } from './abiutils.js';
 import { checkInputStateHashesImpl } from './methods/checkInputStateHashes.js';
@@ -235,6 +235,24 @@ export class SmartContract<StateT extends OpcatState = undefined>
     }
 
     return serializeState(artifact, stateType, state);
+  }
+
+  static deserializeState<T extends OpcatState>(
+    this: { new (...args: any[]): SmartContract<T> },
+    serializedState: ByteString,
+  ): T {
+    const selfClazz = (this as any) as typeof SmartContract;
+
+    const artifact = selfClazz.artifact;
+    if (!artifact) {
+      throw new Error(`Artifact is not loaded for the contract: ${this.name}`);
+    }
+
+    const stateType = selfClazz.stateType;
+    if (!stateType) {
+      throw new Error(`State struct \`${stateType}\` is not defined!`);
+    }
+    return deserializeState<T>(artifact, stateType, serializedState);
   }
 
   static override stateHash<T extends OpcatState>(

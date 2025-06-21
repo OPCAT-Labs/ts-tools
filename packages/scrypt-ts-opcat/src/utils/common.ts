@@ -215,3 +215,13 @@ const MAXINT = 0xffffffff; // Math.pow(2, 32) - 1;
 export function isFinal(sequenceNumber: number) {
   return sequenceNumber !== MAXINT;
 }
+
+export function toHex(val: Buffer | string | Uint8Array): string {
+  if (Buffer.isBuffer(val)) {
+    return val.toString('hex');
+  }
+  if (typeof val === 'string') {
+    return val;
+  }
+  return tools.toHex(val);
+}

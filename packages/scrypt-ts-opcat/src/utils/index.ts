@@ -5,6 +5,7 @@ export {
   fillFixedArray,
   cloneDeep,
   isFinal,
+  toHex,
 } from './common.js';
 
 export { getValidatedHexString } from '../smart-contract/types/utils.js';

@@ -212,7 +212,7 @@ export class ABICoder {
     return Script.fromHex(unlockingScriptHex);
   }
 
-  flattenStruct(arg: StructObject, type: string): Arguments {
+  flattenStruct(arg: StructObject, type: string, ignoreValue: boolean = false): Arguments {
     const resolver = buildTypeResolverFromArtifact(this.artifact);
     return flatternStruct(
       arg,
@@ -221,7 +221,7 @@ export class ABICoder {
         type,
       },
       resolver,
-      { state: false, ignoreValue: false },
+      { state: false, ignoreValue },
     );
   }
 
@@ -425,11 +425,11 @@ function flatternStruct(
 ): Arguments {
   const typeInfo = resolver(param.type);
 
-  if (arg === undefined) {
-    throw new Error(`the arg value of ${param.name} for flatternStruct is undefined`);
-  }
-
   if (!options.ignoreValue) {
+    if (arg === undefined) {
+      throw new Error(`the arg value of ${param.name} for flatternStruct is undefined`);
+    }
+
     if (typeof arg !== 'object') {
       throw new Error(`flatternStruct only works with object but not ${typeof arg}`);
     }
