@@ -7,12 +7,13 @@ import { SmartContract } from '../smart-contract/smartContract.js';
 import { OpcatState } from '../smart-contract/types/primitives.js';
 
 /**
- * call a covenant
+ * call a contract
  * @category Feature
  * @param signer a signer, such as {@link DefaultSigner}  or {@link UnisatSigner}
- * @param provider a  {@link UtxoProvider}
- * @param chainProvider a  {@link ChainProvider}
- * @param contract the covenant
+ * @param provider a {@link UtxoProvider} & {@link ChainProvider}
+ * @param contract the contract
+ * @param contractCall the contract call function, such as `(contract: Counter) => { contract.increase() }`
+ * @param newContract the new contract, such as `{ contract: newContract, satoshis: 1 }`
  * @returns the called psbt
  */
 export async function call(

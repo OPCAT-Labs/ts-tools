@@ -435,8 +435,8 @@ export class SmartContract<StateT extends OpcatState = undefined>
           args.push(spentScriptHashes);
         } else if (param.name === '__scrypt_ts_spentAmounts') {
           args.push(spentAmounts);
-        } else if (param.name === '__scrypt_ts_spentScript') {
-          args.push(this.lockingScript.toHex());
+        } else if (param.name === '__scrypt_ts_inputCount') {
+          args.push(inputCount);
         } else if (param.name === '__scrypt_ts_spentDataHashes') {
           checkInputStateHashesImpl(shPreimage.hashSpentDataHashes, spentDataHashes)
           args.push(spentDataHashes);

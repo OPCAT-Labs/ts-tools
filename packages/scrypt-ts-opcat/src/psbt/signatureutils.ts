@@ -21,7 +21,7 @@ const UInt8Schema = v.pipe(
  * @param size - The exact length required for the Uint8Array
  * @returns A validation schema that ensures the input is a Uint8Array of the specified size
  */
-const SignatureSchema = v.pipe(v.instance(Uint8Array), v.maxLength(72), v.minLength(70));
+const SignatureSchema = v.pipe(v.instance(Uint8Array), v.maxLength(72), v.minLength(69));
 
 const ZERO = new Uint8Array(1);
 
