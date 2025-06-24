@@ -21,9 +21,9 @@ export class StateUtils extends SmartContractLib {
    */
   @method()
   static checkInputState(
+    t_inputIndex: UInt32,
     rawState: ByteString,
     t_spentDataHashes: SpentDataHashes,
-    t_inputIndex: UInt32,
   ): void {
     assert(
       slice(

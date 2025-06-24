@@ -1963,7 +1963,7 @@ export class Transpiler {
             sec
               .append('\n')
               .append(
-                `StateUtils.checkInputState(${rawState}, ${InjectedParam_SpentDataHashes}, ${InjectedParam_SHPreimage}.inputIndex);`,
+                `StateUtils.checkInputState(${InjectedParam_SHPreimage}.inputIndex, ${rawState}, ${InjectedParam_SpentDataHashes});`,
               )
               .append('\n');
           }
@@ -5530,7 +5530,16 @@ export class Transpiler {
       .append(', ')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
       .append(', ')
-      .appendWith(this, (toSec) => this.transformAccessPrevTxHashPreimage(node, toSec))
+      .appendWith(this, (toSec) => {
+        const shouldAccessThis = this.shouldAutoAppendStateArgs(
+          this.getMethodContainsTheNode(node),
+        ).shouldAccessThis;
+        toSec.append(shouldAccessThis
+          ? `this.${InjectedParam_SpentDataHashes}`
+          : `${InjectedParam_SpentDataHashes}`);
+
+          return toSec;
+      })
       .append(');')
       .append('\n');
   }
