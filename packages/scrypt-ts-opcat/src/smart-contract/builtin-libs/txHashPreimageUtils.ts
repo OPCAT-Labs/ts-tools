@@ -13,20 +13,11 @@ export class TxHashPreimageUtils extends SmartContractLib {
     assert(len(txHashPreimage.version) == TX_VERSION_BYTE_LEN);
     const inputCount = StdUtils.checkLenDivisibleBy(txHashPreimage.inputList, TX_INPUT_BYTE_LEN);
     const outputCount = StdUtils.checkLenDivisibleBy(txHashPreimage.outputList, TX_OUTPUT_BYTE_LEN);
-
-
-    const inputCountWriter = new ByteStringWriter();
-    inputCountWriter.writeVarInt(inputCount);
-    const outputCountWriter = new ByteStringWriter();
-    outputCountWriter.writeVarInt(outputCount);
-
     return hash256(
       txHashPreimage.version + 
-      // StdUtils.writeVarintNum(inputCount) + 
-      inputCountWriter.buf + 
+      StdUtils.writeVarInt(inputCount) + 
       txHashPreimage.inputList + 
-      // StdUtils.writeVarintNum(outputCount) + 
-      outputCountWriter.buf + 
+      StdUtils.writeVarInt(outputCount) + 
       txHashPreimage.outputList + 
       txHashPreimage.nLockTime);   
   }

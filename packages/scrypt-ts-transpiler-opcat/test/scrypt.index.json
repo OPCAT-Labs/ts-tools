@@ -18,6 +18,14 @@
    "symbol": "Counter",
    "stateType": "CounterState",
    "path": "contracts/counter.scrypt.tpl"
+  },
+  {
+   "symbol": "BacktraceInfo",
+   "path": "../../../../scrypt-ts-opcat/assets/.templates/smart-contract/types/structs.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "B2G",
+   "path": "contracts/b2G.scrypt.tpl"
   }
  ]
 }

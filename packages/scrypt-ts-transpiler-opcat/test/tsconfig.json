@@ -26,7 +26,7 @@
     // "./contracts/state.ts",
     // "./contracts/ctx.ts",
     "./contracts/counter.ts",
-    // "./contracts/b2G.ts",
+    "./contracts/b2G.ts",
     // "./contracts/b2G2.ts",
   ],
   "exclude": [
