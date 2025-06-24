@@ -1163,7 +1163,6 @@ export class Transpiler {
         case 'Sha256':
         case 'Sha1':
         case 'Sig':
-        case 'XOnlyPubKey':
         case 'PubKey':
         case 'Ripemd160':
         case 'OpCodeType':
@@ -1188,7 +1187,6 @@ export class Transpiler {
         case 'Sha256':
         case 'Sha1':
         case 'Sig':
-        case 'XOnlyPubKey':
         case 'PubKey':
         case 'Ripemd160':
         case 'OpCodeType':
@@ -5094,61 +5092,61 @@ export class Transpiler {
       });
       return toSection.append(')');
     }
-    // if (name === 'and') {
-    //   return this.transformBinaryOperation(
-    //     '&',
-    //     node.arguments[0],
-    //     node.arguments[1],
-    //     srcLoc,
-    //     toSection,
-    //     true,
-    //   );
-    // }
-    // if (name === 'or') {
-    //   return this.transformBinaryOperation(
-    //     '|',
-    //     node.arguments[0],
-    //     node.arguments[1],
-    //     srcLoc,
-    //     toSection,
-    //     true,
-    //   );
-    // }
-    // if (name === 'xor') {
-    //   return this.transformBinaryOperation(
-    //     '^',
-    //     node.arguments[0],
-    //     node.arguments[1],
-    //     srcLoc,
-    //     toSection,
-    //     true,
-    //   );
-    // }
-    // if (name === 'invert') {
-    //   return toSection
-    //     .append('~', srcLoc)
-    //     .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec));
-    // }
-    // if (name === 'lshift') {
-    //   return this.transformBinaryOperation(
-    //     '<<',
-    //     node.arguments[0],
-    //     node.arguments[1],
-    //     srcLoc,
-    //     toSection,
-    //     true,
-    //   );
-    // }
-    // if (name === 'rshift') {
-    //   return this.transformBinaryOperation(
-    //     '>>',
-    //     node.arguments[0],
-    //     node.arguments[1],
-    //     srcLoc,
-    //     toSection,
-    //     true,
-    //   );
-    // }
+    if (name === 'and') {
+      return this.transformBinaryOperation(
+        '&',
+        node.arguments[0],
+        node.arguments[1],
+        srcLoc,
+        toSection,
+        true,
+      );
+    }
+    if (name === 'or') {
+      return this.transformBinaryOperation(
+        '|',
+        node.arguments[0],
+        node.arguments[1],
+        srcLoc,
+        toSection,
+        true,
+      );
+    }
+    if (name === 'xor') {
+      return this.transformBinaryOperation(
+        '^',
+        node.arguments[0],
+        node.arguments[1],
+        srcLoc,
+        toSection,
+        true,
+      );
+    }
+    if (name === 'invert') {
+      return toSection
+        .append('~', srcLoc)
+        .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec));
+    }
+    if (name === 'lshift') {
+      return this.transformBinaryOperation(
+        '<<',
+        node.arguments[0],
+        node.arguments[1],
+        srcLoc,
+        toSection,
+        true,
+      );
+    }
+    if (name === 'rshift') {
+      return this.transformBinaryOperation(
+        '>>',
+        node.arguments[0],
+        node.arguments[1],
+        srcLoc,
+        toSection,
+        true,
+      );
+    }
     if (name === 'equals') {
       return this.transformBinaryOperation(
         '==',
@@ -5176,13 +5174,6 @@ export class Transpiler {
         .append(')');
     }
 
-    if (name === 'XOnlyPubKey') {
-      return toSection
-        .append('PubKey', srcLoc)
-        .append('(')
-        .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
-        .append(')');
-    }
 
     // if (name === 'SigHashType') {
     //   return this.transformCallSigHashType(node, toSection);

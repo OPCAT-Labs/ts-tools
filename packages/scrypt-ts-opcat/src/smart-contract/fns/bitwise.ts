@@ -1,5 +1,5 @@
 import { Int32 } from '../types/primitives.js';
-import { assert } from "./assert";
+import { assert } from "./assert.js";
 import { byteStringToInt, intToByteString } from './byteString.js';
 import * as tools from 'uint8array-tools';
 
