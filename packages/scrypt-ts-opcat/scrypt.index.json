@@ -6,6 +6,10 @@
       "path": "smart-contract/builtin-libs/stdUtils.scrypt.tpl"
     },
     {
+      "symbol": "ReadVarintResult",
+      "path": "smart-contract/builtin-libs/stdUtils.scrypt.tpl"
+    },
+    {
       "symbol": "TxOut",
       "path": "smart-contract/types/structs.scrypt.tpl"
     },
@@ -16,6 +20,10 @@
     {
       "symbol": "TxUtils",
       "path": "smart-contract/builtin-libs/txUtils.scrypt.tpl"
+    },
+    {
+      "symbol": "ByteStringWriter",
+      "path": "smart-contract/builtin-libs/byteStringWriter.scrypt.tpl"
     },
     {
       "symbol": "TxHashPreimage",
@@ -42,10 +50,6 @@
       "path": "smart-contract/builtin-libs/byteStringReader.scrypt.tpl"
     },
     {
-      "symbol": "ByteStringWriter",
-      "path": "smart-contract/builtin-libs/byteStringWriter.scrypt.tpl"
-    },
-    {
       "symbol": "SHPreimage",
       "path": "smart-contract/types/structs.scrypt.tpl"
     },
@@ -68,6 +72,10 @@
     {
       "symbol": "P2PK",
       "path": "smart-contract/builtin-libs/p2pk.scrypt.tpl"
+    },
+    {
+      "symbol": "P2PKH",
+      "path": "smart-contract/builtin-libs/p2pkh.scrypt.tpl"
     },
     {
       "symbol": "__scrypt_ASM",

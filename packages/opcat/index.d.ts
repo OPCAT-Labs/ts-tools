@@ -1399,6 +1399,17 @@ declare module '@opcat-labs/opcat' {
         ) => boolean;
     }
 
+    export namespace util {
+        export class js {
+            static isValidJSON(arg: string): boolean;
+            static isHexa(value: string): boolean;
+            static isHexaString(value: string): boolean;
+            static defineImmutable(target: object, values: object): object;
+            static isNaturalNumber(value: number): boolean;
+            static integerAsBuffer(integer: number): Buffer;
+        }
+    }
+
     export interface Util {
         readonly buffer: {
             reverse(a: any): any;

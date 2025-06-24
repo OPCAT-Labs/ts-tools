@@ -1,12 +1,20 @@
+import { Transaction } from '@opcat-labs/opcat';
 import {
   TX_INPUT_COUNT_MAX,
   STATE_OUTPUT_COUNT_MAX,
+  TX_INPUT_BYTE_LEN,
 } from '../smart-contract/consts.js';
-import { toByteString, fill, hash160, intToByteString } from '../smart-contract/fns/index.js';
+import { toByteString, fill, hash160, intToByteString, slice } from '../smart-contract/fns/index.js';
 import {
+  BacktraceInfo,
   FixedArray,
   TxHashPreimage,
+  TxIn,
 } from '../smart-contract/types/index.js';
+import { StdUtils } from '../smart-contract/builtin-libs/stdUtils.js';
+import { uint8ArrayToHex } from './common.js';
+import { BufferReader } from '../psbt/bufferutils.js';
+import { toHex } from 'uint8array-tools';
 
 export const emptyString = toByteString('');
 
@@ -58,57 +66,28 @@ export const tokenAmountToByteString = function (
  * @param txBuf
  * @returns
  */
-export const toTxHashPreimage = function (txBuf: Uint8Array): TxHashPreimage {
-  return {} as any;
-  // const headerReader = new BufferReader(txBuf);
-  // const version = uint8ArrayToHex(headerReader.readSlice(4));
-  // const inputNumber = headerReader.readVarInt();
-  // const inputTxhashList = emptyFixedArray();
-  // const inputOutputIndexList = emptyFixedArray();
-  // const inputScriptList = emptyFixedArray();
-  // const inputSequenceList = emptyFixedArray();
-  // for (let index = 0; index < inputNumber; index++) {
-  //   const txhash = uint8ArrayToHex(headerReader.readSlice(32));
-  //   const outputIndex = uint8ArrayToHex(headerReader.readSlice(4));
-  //   const unlockScript = uint8ArrayToHex(headerReader.readVarSlice());
-  //   if (unlockScript.length > 0) {
-  //     throw Error(`input ${index} unlocking script need eq 0`);
-  //   }
-  //   const sequence = uint8ArrayToHex(headerReader.readSlice(4));
-  //   inputTxhashList[index] = txhash;
-  //   inputOutputIndexList[index] = outputIndex;
-  //   inputScriptList[index] = toByteString('00');
-  //   inputSequenceList[index] = sequence;
-  // }
-  // const outputNumber = headerReader.readVarInt();
-  // const outputSatoshisList = emptyFixedArray();
-  // const outputScriptLenList = emptyFixedArray();
-  // const outputScriptList = emptyFixedArray();
-  // for (let index = 0; index < outputNumber; index++) {
-  //   const satoshiBytes = uint8ArrayToHex(headerReader.readSlice(8));
-  //   const scriptLen = headerReader.readVarInt();
-  //   const script = uint8ArrayToHex(headerReader.readSlice(scriptLen));
-  //   outputSatoshisList[index] = satoshiBytes;
-  //   outputScriptLenList[index] = uint8ArrayToHex(varuint.encode(scriptLen).buffer);
-  //   outputScriptList[index] = script;
-  // }
+export const toTxHashPreimage = function (txHashPreimageBuf: Uint8Array): TxHashPreimage {
+  const br = new BufferReader(txHashPreimageBuf);
 
-  // const inputCount = uint8ArrayToHex(varuint.encode(inputNumber).buffer);
-  // const outputCount = uint8ArrayToHex(varuint.encode(outputNumber).buffer);
-  // const nLocktime = uint8ArrayToHex(headerReader.readSlice(4));
-  // return {
-  //   version: version,
-  //   inputCount,
-  //   inputPrevTxHashList: inputTxhashList,
-  //   inputPrevOutputIndexList: inputOutputIndexList,
-  //   inputScriptList: inputScriptList,
-  //   inputSequenceList: inputSequenceList,
-  //   outputCount,
-  //   outputSatoshisList: outputSatoshisList,
-  //   outputScriptLenList: outputScriptLenList,
-  //   outputScriptList: outputScriptList,
-  //   locktime: nLocktime,
-  // };
+  const version = toHex(br.readSlice(4n))
+  const inputCountVal = br.readVarInt();
+  let inputList = toByteString('')
+  for (let i = 0; i < inputCountVal; i++) {
+    inputList += toHex(br.readSlice(36n + 32n + 4n));
+  }
+  const outputCountVal = br.readVarInt()
+  let outputList = toByteString('')
+  for (let i = 0; i < outputCountVal; i++) {
+    outputList += toHex(br.readSlice(8n + 32n + 32n));
+  }
+  const nLockTime = toHex(br.readSlice(4n));
+
+  return {
+    version,
+    inputList,
+    outputList,
+    nLockTime,
+  }
 };
 
 /**
@@ -123,31 +102,48 @@ export const toTxHashPreimage = function (txBuf: Uint8Array): TxHashPreimage {
  * @param prevTxInputIndex: prevTx.input1.inputIndex, here is 0
  * @returns
  */
-export const getBackTraceInfo = function (
+export function getBackTraceInfo (
   prevTxHex: string,
   prevPrevTxHex: string,
   prevTxInputIndex: number,
-) {
-    return {} as any
-  // const prevTxHashPreimage = toTxHashPreimage(
-  //   Transaction.fromString(prevTxHex).toBuffer(),
-  // );
-  // const prevPrevTxHashPreimg = toTxHashPreimage(
-  //   Transaction.fromString(prevPrevTxHex).toBuffer(),
-  // );
-  // const hashRootTxHashPreimage = toHashRootTxHashPreimage(prevTxHashPreimage);
-  // const prevPrevCompactTxHashPreimage = toCompactTxHashPreimage(prevPrevTxHashPreimg);
-  // const prevTxInput: TxIn = {
-  //   prevTxHash: prevTxHashPreimage.inputPrevTxHashList[prevTxInputIndex],
-  //   inputIndex: byteStringToBigInt(
-  //     prevTxHashPreimage.inputPrevOutputIndexList[prevTxInputIndex],
-  //   ),
-  //   sequence: byteStringToBigInt(prevTxHashPreimage.inputSequenceList[prevTxInputIndex]),
-  // };
-  // return {
-  //   prevTxPreimage: hashRootTxHashPreimage,
-  //   prevTxInput: prevTxInput,
-  //   prevTxInputIndexVal: BigInt(prevTxInputIndex),
-  //   prevPrevTxPreimage: prevPrevCompactTxHashPreimage,
-  // };
+): BacktraceInfo {
+
+  const prevTx = new Transaction(prevTxHex);
+  const prevPrevTx = new Transaction(prevPrevTxHex);
+
+  const prevTxPreimage = toTxHashPreimage(prevTx.toTxHashPreimage());
+  const prevPrevTxPreimage = toTxHashPreimage(prevPrevTx.toTxHashPreimage());
+
+  let index = 0n;
+
+  const txInputBytes = slice(prevTxPreimage.inputList, BigInt(prevTxInputIndex) * TX_INPUT_BYTE_LEN, (BigInt(prevTxInputIndex) + 1n) * TX_INPUT_BYTE_LEN)
+  const prevTxInput: TxIn = {
+    prevTxHash: slice(
+      txInputBytes,
+      index,
+      (index += 32n)
+    ),
+    prevOutputIndex: StdUtils.fromLEUnsigned(slice(
+      txInputBytes,
+      index,
+      (index += 4n)
+    )),
+    scriptHash: slice(
+      txInputBytes,
+      index,
+      (index += 32n)
+    ),
+    sequence: StdUtils.fromLEUnsigned(slice(
+      txInputBytes,
+      index,
+      (index += 4n)
+    )),
+  }
+
+  return {
+    prevTxInput,
+    prevTxInputIndex: BigInt(prevTxInputIndex),
+    prevPrevTxPreimage,
+  }
+
 };

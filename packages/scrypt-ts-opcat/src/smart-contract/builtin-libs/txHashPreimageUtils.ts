@@ -4,15 +4,31 @@ import {method} from '../decorators.js'
 import { assert, len, hash256, slice } from "../fns/index.js";
 import { TX_VERSION_BYTE_LEN, TX_OUTPUT_BYTE_LEN, TX_INPUT_BYTE_LEN } from "../consts.js";
 import { StdUtils } from "./stdUtils.js";
+import { ByteStringWriter } from "./byteStringWriter.js";
 
 
 export class TxHashPreimageUtils extends SmartContractLib {
   @method()
   static getTxHashFromTxHashPreimage(txHashPreimage: TxHashPreimage): ByteString {
     assert(len(txHashPreimage.version) == TX_VERSION_BYTE_LEN);
-    StdUtils.checkLenDivisibleBy(txHashPreimage.inputList, TX_INPUT_BYTE_LEN);
-    StdUtils.checkLenDivisibleBy(txHashPreimage.outputList, TX_OUTPUT_BYTE_LEN);
-    return hash256(txHashPreimage.version + txHashPreimage.inputList + txHashPreimage.outputList + txHashPreimage.nLockTime);   
+    const inputCount = StdUtils.checkLenDivisibleBy(txHashPreimage.inputList, TX_INPUT_BYTE_LEN);
+    const outputCount = StdUtils.checkLenDivisibleBy(txHashPreimage.outputList, TX_OUTPUT_BYTE_LEN);
+
+
+    const inputCountWriter = new ByteStringWriter();
+    inputCountWriter.writeVarInt(inputCount);
+    const outputCountWriter = new ByteStringWriter();
+    outputCountWriter.writeVarInt(outputCount);
+
+    return hash256(
+      txHashPreimage.version + 
+      // StdUtils.writeVarintNum(inputCount) + 
+      inputCountWriter.buf + 
+      txHashPreimage.inputList + 
+      // StdUtils.writeVarintNum(outputCount) + 
+      outputCountWriter.buf + 
+      txHashPreimage.outputList + 
+      txHashPreimage.nLockTime);   
   }
 
   @method()

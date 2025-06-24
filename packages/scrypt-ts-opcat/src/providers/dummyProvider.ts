@@ -15,9 +15,10 @@ export class DummyProvider implements ChainProvider, UtxoProvider {
 
   private newUTXOs = new Map<string, UTXO>();
 
-  constructor() {}
+  constructor(private readonly network: SupportedNetwork = 'opcat-mainnet') {
+  }
   async getNetwork(): Promise<SupportedNetwork> {
-    return 'opcat-mainnet';
+    return this.network;
   }
   async getUtxos(address: string, _options?: UtxoQueryOptions): Promise<UTXO[]> {
     const script = Script.fromAddress(address)

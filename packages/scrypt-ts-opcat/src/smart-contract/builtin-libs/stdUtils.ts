@@ -65,7 +65,24 @@ export class StdUtils extends SmartContractLib {
     return byteStringToInt(b + toByteString('00'));
   }
 
-  
+  @method()
+  static writeVarintNum(n: bigint): ByteString {
+    let b: ByteString = toByteString('');
+    if (n < 0xfdn) {
+      b = StdUtils.toLEUnsigned(n, 1n)
+    }
+    else if (n < 0x10000n) {
+      b = toByteString('fd') + StdUtils.toLEUnsigned(n, 2n);
+    }
+    else if (n < 0x100000000n) {
+      b = toByteString('fe') + StdUtils.toLEUnsigned(n, 4n);
+    }
+    else {
+      b = toByteString('ff') + StdUtils.toLEUnsigned(n, 8n);
+    }
+    return b;
+  }
+
 
   /**
      * serializes `ByteString` with `VarInt` encoding
@@ -97,5 +114,39 @@ export class StdUtils extends SmartContractLib {
 
     return header + buf;
   }
-  
+
+  /**
+     * read [VarInt (variable integer)]{@link https://learnmeabitcoin.com/technical/general/compact-size/}-encoded data from the beginning of 'buf'
+     * @param {ByteString} buf a buffer `ByteString` of format: [prefix FD/FE/FF +] length + data
+     * @returns return data
+     */
+  @method()
+  static readVarint(buf: ByteString, index: bigint): ReadVarintResult {
+    let l: bigint = 0n;
+    let ret: ByteString = toByteString('');
+    let nextIndex: bigint = index;
+    const header: ByteString = slice(buf, index, index + 1n);
+
+    if (header == toByteString('fd')) {
+      l = StdUtils.fromLEUnsigned(slice(buf, index + 1n, index + 3n));
+      ret = slice(buf, 3n, 3n + l);
+      nextIndex = index + 3n + l;
+    }
+    else if (header == toByteString('fe')) {
+      l = StdUtils.fromLEUnsigned(slice(buf, index + 1n, index + 5n));
+      ret = slice(buf, index + 5n, index + 5n + l);
+      nextIndex = index + 5n + l;
+    }
+    else if (header == toByteString('ff')) {
+      l = StdUtils.fromLEUnsigned(slice(buf, index + 1n, index + 9n));
+      ret = slice(buf, index + 9n, index + 9n + l);
+      nextIndex = index + 9n + l;
+    } else {
+      l = StdUtils.fromLEUnsigned(slice(buf, index, index + 1n));
+      ret = slice(buf, index + 1n, index + 1n + l);
+      nextIndex = index + 1n + l;
+    }
+
+    return { data: ret, index: nextIndex };
+  }
 }

@@ -7,8 +7,8 @@ import { checkSigImpl } from './methods/checkSig.js';
 import { ByteString, PubKey, SHPreimage, Sig } from './types/index.js';
 import { ABICoder, Arguments } from './abi.js';
 import { Script } from './types/script.js';
-import { ExtUtxo, InputIndex, Optional, UTXO } from '../globalTypes.js';
-import { uint8ArrayToHex, cloneDeep, isFinal } from '../utils/index.js';
+import { ExtUtxo, InputIndex, Optional, StatefulContractUtxo, UTXO } from '../globalTypes.js';
+import { uint8ArrayToHex, cloneDeep, isFinal, hexToUint8Array } from '../utils/index.js';
 import { Contextual, InputContext, IContext } from './types/context.js';
 import {
   Int32,
@@ -24,9 +24,10 @@ import { deserializeOutputs } from './serializer.js';
 import { BacktraceInfo } from './types/structs.js';
 import { backtraceToOutpointImpl, backtraceToScriptImpl } from './methods/backtraceToGenensis.js';
 import { deserializeState, serializeState } from './stateSerializer.js';
-import { OpCode } from './types/opCode.js';
 import { getUnRenamedSymbol } from './abiutils.js';
 import { checkInputStateHashesImpl } from './methods/checkInputStateHashes.js';
+import { toTxHashPreimage } from '../utils/proof.js';
+import { IExtPsbt } from '../psbt/types.js';
 
 
 
@@ -74,7 +75,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return clazz.stateType;
   }
 
-  utxo?: UTXO;
+  utxo?: ExtUtxo;
 
   /**
    * The state of the contract UTXO, usually committed to the first OP_RETURN output, is revealed when spending.
@@ -449,6 +450,11 @@ export class SmartContract<StateT extends OpcatState = undefined>
             );
           }
           args.push(curState);
+        } else if (param.name === '__scrypt_ts_prevTxHashPreimage') {
+          if (!this.utxo.txHashPreimage) {
+            throw new Error('utxo.txHashPreimage is required for backtrace');
+          }
+          args.push(toTxHashPreimage(hexToUint8Array(this.utxo!.txHashPreimage!)));
         }
       });
     }
@@ -740,6 +746,9 @@ export class SmartContract<StateT extends OpcatState = undefined>
     }
 
     this.utxo = { ...utxo, script: this.lockingScript.toHex() };
+    if ((this.constructor as typeof SmartContract<StateT>).isStateful()) {
+      this.state = (this.constructor as typeof SmartContract<StateT>).deserializeState(utxo.data);
+    }
     return this;
   }
 
@@ -747,7 +756,16 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * Checks if the contract has state by verifying if the state object exists and is not empty.
    * @returns {boolean} True if the contract has state, false otherwise.
    */
-  isStateful(): boolean {
-    return this.state && Object.keys(this.state).length > 0
+  static isStateful(): boolean {
+    
+    const selfClazz = (this as any) as typeof SmartContract;
+
+    const artifact = selfClazz.artifact;
+    if (!artifact) {
+      throw new Error(`Artifact is not loaded for the contract: ${this.name}`);
+    }
+
+    const stateType = selfClazz.stateType;
+    return !!stateType
   }
 }

@@ -14,6 +14,9 @@ export function bvmVerify(extPsbt: ExtPsbt, inputIndex: number = 0): true | stri
 
   const prevOuts = extPsbt.unsignedTx.inputs.map((input) => input.output);
 
+  
+  Interpreter.MAX_SCRIPT_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
+  Interpreter.MAXIMUM_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
   const interp = new Interpreter();
   const prevScript = prevOuts[inputIndex].script;
   const prevSatoshi = Number(prevOuts[inputIndex].satoshis);

@@ -88,24 +88,24 @@ export class ByteStringReader extends SmartContractLib {
      */
     @method()
     readVarint(): bigint {
-        let ret: bigint = -1n;
-        let header: bigint = StdUtils.fromLEUnsigned(slice(this.buf, this.pos, this.pos + 1n));
+        let ret = toByteString('')
+        let header = slice(this.buf, this.pos, this.pos + 1n)
         this.pos++;
-        if (header == 0xfdn) {
-            ret = StdUtils.fromLEUnsigned(slice(this.buf, this.pos, this.pos + 2n));
+        if (header == toByteString('fd')) {
+            ret = slice(this.buf, this.pos, this.pos + 2n);
             this.pos += 2n;
         }
-        else if (header == 0xfen) {
-            ret = StdUtils.fromLEUnsigned(slice(this.buf, this.pos, this.pos + 4n));
+        else if (header == toByteString('fe')) {
+            ret = slice(this.buf, this.pos, this.pos + 4n);
             this.pos += 4n;
         }
-        else if (header == 0xffn) {
-            ret = StdUtils.fromLEUnsigned(slice(this.buf, this.pos, this.pos + 8n));
+        else if (header == toByteString('ff')) {
+            ret = slice(this.buf, this.pos, this.pos + 8n);
             this.pos += 8n;
         }
         else {
             ret = header;
         }
-        return ret;
+        return StdUtils.fromLEUnsigned(ret);
     }
 }

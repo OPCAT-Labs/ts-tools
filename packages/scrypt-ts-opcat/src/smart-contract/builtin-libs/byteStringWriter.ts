@@ -65,20 +65,22 @@ export class ByteStringWriter extends SmartContractLib {
     @method()
     writeVarInt(x: bigint): void {
         assert(x >= 0n);
+        let size = 0n;
         if (x < 0xfdn) {
-            this.buf += intToByteString(x, 1n);
+            size = 1n;
         }
         else if (x < 0x10000n) {
-            this.buf += StdUtils.toLEUnsigned(0xfdn, 1n);
-            this.buf += intToByteString(x, 2n);
+            this.buf += toByteString('fd');
+            size = 2n;
         }
         else if (x < 0x100000000n) {
-            this.buf += StdUtils.toLEUnsigned(0xfen, 1n);
-            this.buf += intToByteString(x, 4n);
+            size = 4n;
+            this.buf += toByteString('fe');
         }
         else {
-            this.buf += StdUtils.toLEUnsigned(0xffn, 1n);
-            this.buf += intToByteString(x, 8n);
+            size = 8n;
+            this.buf += toByteString('ff');
         }
+        this.buf += StdUtils.toLEUnsigned(x, size);
     }
 }

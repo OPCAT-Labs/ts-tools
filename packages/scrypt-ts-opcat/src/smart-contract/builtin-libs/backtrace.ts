@@ -4,7 +4,7 @@ import { SmartContractLib } from '../smartContractLib.js';
 import { ByteString } from '../types/index.js';
 import { BacktraceInfo, Prevouts, TxHashPreimage } from '../types/structs.js';
 import { TxUtils } from './txUtils.js';
-import { TX_INPUT_BYTE_LEN, TX_OUTPUT_BYTE_LEN } from '../consts.js';
+import { TX_INPUT_BYTE_LEN, TX_OUTPUT_BYTE_LEN, TX_OUTPUT_SATOSHI_BYTE_LEN, TX_OUTPUT_SCRIPT_HASH_LEN } from '../consts.js';
 import { slice } from '../fns/byteString.js';
 import { StdUtils } from './stdUtils.js';
 import { TxHashPreimageUtils } from './txHashPreimageUtils.js';
@@ -106,8 +106,8 @@ export class Backtrace extends SmartContractLib {
     const prevPrevScript =
       slice(
         backtraceInfo.prevPrevTxPreimage.outputList,
-        backtraceInfo.prevTxInput.prevOutputIndex * TX_OUTPUT_BYTE_LEN,
-        (backtraceInfo.prevTxInput.prevOutputIndex + 1n) * TX_OUTPUT_BYTE_LEN
+        backtraceInfo.prevTxInput.prevOutputIndex * TX_OUTPUT_BYTE_LEN + TX_OUTPUT_SATOSHI_BYTE_LEN,
+        (backtraceInfo.prevTxInput.prevOutputIndex) * TX_OUTPUT_BYTE_LEN + TX_OUTPUT_SATOSHI_BYTE_LEN + TX_OUTPUT_SCRIPT_HASH_LEN
       );
     const prevPrevOutpoint =
       prevPrevTxHash + StdUtils.uint32ToByteString(backtraceInfo.prevTxInput.prevOutputIndex);

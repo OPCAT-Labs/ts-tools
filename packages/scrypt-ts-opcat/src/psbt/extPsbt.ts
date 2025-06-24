@@ -370,8 +370,11 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this.txOutputs.reduce((total, output) => total + Number(output.value), 0);
   }
 
-  change(toAddr: string, feeRate: number, data?: Uint8Array): this {
+  change(toAddr: string, feeRate: number, data?: Uint8Array | string): this {
     const changeScript = Script.fromAddress(toAddr);
+    if (typeof data === 'string') {
+      data = hexToUint8Array(data);
+    }
     data = data || new Uint8Array(0)
     if (this._changeOutputIndex === null) {
       super.addOutput({
@@ -659,7 +662,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     const address = Script.fromBuffer(Buffer.from(this.txOutputs[outputIndex].script)).toAddress(this.network);
 
     return {
-      txId: this.unsignedTx.id,
+      txId: this.extractTransaction().id,
       outputIndex: outputIndex,
       script: uint8ArrayToHex(this.txOutputs[outputIndex].script),
       data: uint8ArrayToHex(this.txOutputs[outputIndex].data),
@@ -689,7 +692,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   txHashPreimage(): string {
-    return uint8ArrayToHex(this.unsignedTx.toTxHashPreimage());
+    return uint8ArrayToHex(this.extractTransaction().toTxHashPreimage());
   }
 
   getOutputSatoshisList(): string[] {
