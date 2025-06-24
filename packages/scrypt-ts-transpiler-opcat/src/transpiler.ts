@@ -5511,7 +5511,8 @@ export class Transpiler {
   ): EmittedSection {
     const dynamicInputIndex = this.isDynamicIndex(node.arguments[0]);
 
-    const inputIndexVar = `__scrypt_ts_input_index_${Date.now()}`;
+    const randomId = Math.random().toString(36).substring(2, 15);
+    const inputIndexVar = `__scrypt_ts_input_index_${randomId}`;
 
     if (dynamicInputIndex) {
       // declare a new input index variable
