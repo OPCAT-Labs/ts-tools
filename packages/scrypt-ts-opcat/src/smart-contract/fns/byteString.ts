@@ -38,16 +38,6 @@ export function intToByteString(n: bigint, size?: bigint): ByteString {
   return toByteString(uint8ArrayToHex(bn2Buf(n, Number(size))));
 }
 
-
-// export function num2bin(n: bigint, size: bigint): ByteString {
-//   return toByteString(uint8ArrayToHex(bn2Buf(n, Number(size))));
-// }
-
-// export function unpack(b: ByteString): bigint {
-//   const n = buf2BN(hexToUint8Array(b), false);
-//   return n;
-// }
-
 /**
  * ByteString can be converted to bigint with byteString2Int.
  * @param a - a ByteString being converts

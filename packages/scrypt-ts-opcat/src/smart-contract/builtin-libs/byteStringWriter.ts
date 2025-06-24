@@ -1,0 +1,84 @@
+import { method, prop } from '../decorators.js';
+import { assert, byteStringToInt, intToByteString, len, slice, toByteString } from '../fns/index.js';
+import { SmartContractLib } from '../smartContractLib.js';
+import { ByteString } from '../types/primitives.js';
+import { StdUtils } from './stdUtils.js';
+
+/**
+ * A writer that serializes `ByteString`, `boolean`, `bigint`
+ * @category Standard Contracts
+ */
+export class ByteStringWriter extends SmartContractLib {
+    @prop()
+    buf: ByteString;
+
+    constructor() {
+        super();
+        this.buf = toByteString('');
+    }
+    /**
+     * serializes `ByteString` with `VarInt` encoding
+     * @param buf a `ByteString`
+     * @returns serialized `ByteString`
+     */
+    @method()
+    writeBytes(buf: ByteString): void {
+        let n = len(buf);
+
+        let header: ByteString = toByteString('');
+
+        if (n < 0x4c) {
+            header = StdUtils.toLEUnsigned(n, 1n);
+        }
+        else if (n < 0x100) {
+            header = toByteString('4c') + StdUtils.toLEUnsigned(n, 1n);
+        }
+        else if (n < 0x10000) {
+            header = toByteString('4d') + StdUtils.toLEUnsigned(n, 2n);
+        }
+        else if (n < 0x100000000) {
+            header = toByteString('4e') + StdUtils.toLEUnsigned(n, 4n);
+        }
+        else {
+            // shall not reach here
+            assert(false);
+        }
+
+        this.buf += header + buf;
+    }
+
+    /**
+     * serializes `boolean` with fixed 1 byte
+     * @param x a boolean
+     * @returns serialized `ByteString`
+     */
+    @method()
+    writeBool(x: boolean): void {
+        this.buf += x ? toByteString('01') : toByteString('00');
+    }
+
+    /**
+     * serializes `bigint` with `VarInt` encoding
+     * @param x a boolean
+     * @returns serialized `ByteString`
+     */
+    @method()
+    writeVarInt(x: bigint): void {
+        assert(x >= 0n);
+        if (x < 0xfdn) {
+            this.buf += intToByteString(x, 1n);
+        }
+        else if (x < 0x10000n) {
+            this.buf += StdUtils.toLEUnsigned(0xfdn, 1n);
+            this.buf += intToByteString(x, 2n);
+        }
+        else if (x < 0x100000000n) {
+            this.buf += StdUtils.toLEUnsigned(0xfen, 1n);
+            this.buf += intToByteString(x, 4n);
+        }
+        else {
+            this.buf += StdUtils.toLEUnsigned(0xffn, 1n);
+            this.buf += intToByteString(x, 8n);
+        }
+    }
+}

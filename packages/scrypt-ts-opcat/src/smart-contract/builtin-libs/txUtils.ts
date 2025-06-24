@@ -130,6 +130,16 @@ export class TxUtils extends SmartContractLib {
   }
 
   /**
+   * build `OP_FALSE OP_RETURN` script from data payload
+   * @param {ByteString} data the data payload
+   * @returns {ByteString} a ByteString contains the data payload
+   */
+  @method()
+  static buildOpreturnScript(data: ByteString): ByteString {
+    return toByteString(OpCode.OP_FALSE) + toByteString(OpCode.OP_RETURN) + StdUtils.pushData(data);
+  }
+
+  /**
    * convert a `Int32` number to 8 bytes in little-end order.
    * @param {Int32} n - the satoshi amount
    * @returns {ByteString} a `ByteString`
@@ -138,4 +148,5 @@ export class TxUtils extends SmartContractLib {
   static satoshisToByteString(n: UInt64): ByteString {
     return StdUtils.uint64ToByteString(n);
   }
+
 }

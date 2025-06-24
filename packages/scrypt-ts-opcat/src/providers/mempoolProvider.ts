@@ -6,7 +6,7 @@ import { uint8ArrayToHex, duplicateFilter } from '../utils/common.js';
 import { Script } from '@opcat-labs/opcat';
 
 /**
- * The MempoolProvider is backed by [Mempool]{@link https://mempool.fractalbitcoin.io}
+ * The MempoolProvider is backed by [Mempool]{@link https://opcatlabs.io}
  * @category Provider
  */
 export class MempoolProvider implements ChainProvider, UtxoProvider {
@@ -111,9 +111,9 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
 
   private getMempoolApiHost = () => {
     if (this.network === 'opcat-testnet') {
-      return 'https://mempool-testnet.fractalbitcoin.io';
+      return 'https://testnet.opcatlabs.io';
     } else if (this.network === 'opcat-mainnet') {
-      return 'https://mempool.fractalbitcoin.io';
+      return 'https://mempool.opcatlabs.io';
     } else {
       throw new Error(`Unsupport network: ${this.network}`);
     }

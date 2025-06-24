@@ -14,12 +14,16 @@
       "path": "smart-contract/types/structs.scrypt.tpl"
     },
     {
+      "symbol": "TxUtils",
+      "path": "smart-contract/builtin-libs/txUtils.scrypt.tpl"
+    },
+    {
       "symbol": "TxHashPreimage",
       "path": "smart-contract/types/structs.scrypt.tpl"
     },
     {
-      "symbol": "TxUtils",
-      "path": "smart-contract/builtin-libs/txUtils.scrypt.tpl"
+      "symbol": "TxHashPreimageUtils",
+      "path": "smart-contract/builtin-libs/txHashPreimageUtils.scrypt.tpl"
     },
     {
       "symbol": "BacktraceInfo",
@@ -32,6 +36,14 @@
     {
       "symbol": "ChainTxVerifyResponse",
       "path": "smart-contract/builtin-libs/backtrace.scrypt.tpl"
+    },
+    {
+      "symbol": "ByteStringReader",
+      "path": "smart-contract/builtin-libs/byteStringReader.scrypt.tpl"
+    },
+    {
+      "symbol": "ByteStringWriter",
+      "path": "smart-contract/builtin-libs/byteStringWriter.scrypt.tpl"
     },
     {
       "symbol": "SHPreimage",
@@ -52,6 +64,10 @@
     {
       "symbol": "StateLib",
       "path": "smart-contract/builtin-libs/stateLib.scrypt.tpl"
+    },
+    {
+      "symbol": "P2PK",
+      "path": "smart-contract/builtin-libs/p2pk.scrypt.tpl"
     },
     {
       "symbol": "__scrypt_ASM",
