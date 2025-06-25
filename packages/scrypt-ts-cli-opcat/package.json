@@ -1,6 +1,6 @@
 {
   "name": "@opcat-labs/cli-opcat",
-  "version": "1.0.4",
+  "version": "1.0.0",
   "description": "CLI tool for creating and managing sCrypt projects.",
   "type": "commonjs",
   "author": "sCrypt.Inc",

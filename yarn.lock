@@ -887,8 +887,10 @@
     consola "^2.15.0"
     node-fetch "^2.6.1"
 
-"@opcat-labs/bip174@file:../bip174":
-  version "1.0.0"
+"@opcat-labs/bip174@1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@opcat-labs/bip174/-/bip174-1.0.1.tgz#cca068c7f5403233f18238e64b3404f09f6428fc"
+  integrity sha512-JLJ4yBLH4MIwUorlfyH6S9KkwrrUWd3wOdQRqKkGe0G7INYd1bm40FHuJbiRG1Q2qRiQNt2rCn3CXnugJ2CsOg==
   dependencies:
     uint8array-tools "^0.0.9"
     varuint-bitcoin "^2.0.0"
