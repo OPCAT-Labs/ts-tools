@@ -1,3 +1,4 @@
+import { Transaction } from '@opcat-labs/opcat';
 import { ByteString, byteString2Int, toByteString } from 'scrypt-ts';
 
 export class ContractLib {
@@ -14,7 +15,7 @@ export class ContractLib {
     '6f706361740102': true,
   };
 
-  static decodeContractTag(data: Buffer) {
+  static decodeContractTag(data: Buffer): string {
     const tagLen = Number(byteString2Int(data.subarray(0, 2).toString('hex')));
     const tag = data.subarray(2, 2 + tagLen).toString('hex');
     if (ContractLib.KNOW_TAGS[tag]) {
@@ -22,5 +23,14 @@ export class ContractLib {
     } else {
       return '';
     }
+  }
+
+  static decodeOutputsTag(tx: Transaction): string[] {
+    const tags = [];
+    for (let index = 0; index < tx.outputs.length; index++) {
+      const output = tx.outputs[index];
+      tags.push(ContractLib.decodeContractTag(output.data));
+    }
+    return tags;
   }
 }
