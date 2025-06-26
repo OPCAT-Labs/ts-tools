@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "moduleResolution": "node",
+    "rootDir": "./src",
+    "noImplicitAny": false,
+    "strict": true /* Enable all strict type-checking options. */
+  },
+  "include": ["./src/**/*", "test/**/*"]
+}

@@ -1,0 +1,54 @@
+{
+  "name": "@opcat-labs/examples",
+  "version": "0.1.0",
+  "type": "commonjs",
+  "description": "A demo sCrypt smart contract.",
+  "author": "",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "artifacts",
+    "dist"
+  ],
+  "scripts": {
+    "prebuild": "npm run clean && npm run compile",
+    "build": "tsc",
+    "clean": "rimraf scrypt.index.json && rimraf dist && rimraf artifacts",
+    "compile": "node ../scrypt-ts-cli-opcat/bin/main.js compile",
+    "pretest": "npm run build",
+    "test": "npm run test:mocha",
+    "test:mocha": "cross-env DUMMY_PROVIDER=1 mocha --no-timeouts",
+    "pretest:testnet": "npm run build",
+    "test:testnet": "cross-env mocha --no-timeouts",
+    "genprivkey": "npx tsx tests/utils/privateKey.ts",
+    "lint": "eslint . --ext .js,.ts --fix && prettier --write --ignore-unknown \"**/*\"",
+    "lint-check": "eslint . --ext .js,.ts && prettier --check --ignore-unknown \"**/*\"",
+    "prepare": "husky install",
+    "prepublishOnly": "npm run build"
+  },
+  "lint-staged": {
+    "**/*": [
+      "prettier --write --ignore-unknown"
+    ],
+    "**/*.{ts,js}": [
+      "eslint --cache --fix"
+    ]
+  },
+  "dependencies": {
+    "@opcat-labs/scrypt-ts-opcat": "1.0.0"
+  },
+  "devDependencies": {
+    "@opcat-labs/examples": "0.1.0",
+    "dotenv": "^16.0.3",
+    "cross-env": "^7.0.3",
+    "rimraf": "^6.0.1",
+    "tsx": "^4.19.3"
+  },
+  "license": "MIT"
+}

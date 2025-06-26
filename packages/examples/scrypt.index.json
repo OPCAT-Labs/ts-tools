@@ -1,0 +1,10 @@
+{
+ "scryptBase": "artifacts/.templates",
+ "bindings": [
+  {
+   "symbol": "Examples",
+   "path": "contracts/examples.scrypt.tpl",
+   "md5": "30792d4b4450718993a04bd7275accf2"
+  }
+ ]
+}
