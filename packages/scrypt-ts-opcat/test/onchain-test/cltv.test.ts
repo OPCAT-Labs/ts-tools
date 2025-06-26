@@ -16,38 +16,39 @@ import {
 } from '../../src/index.js';
 import { getTestKeyPair, network } from '../utils/privateKey.js';
 import { createLogger } from '../utils/index.js';
-import { Demo } from '../contracts/demo.js';
+import { CLTV } from '../contracts/cltv.js';
 
-import artifact from '../fixtures/demo.json' with { type: 'json' };
+import artifact from '../fixtures/cltv.json' with { type: 'json' };
 
 use(chaiAsPromised);
 
-describe('Test Demo onchain', () => {
+describe('Test CLTV onchain', () => {
   let signer: Signer;
-  let provider: ChainProvider & UtxoProvider;
+  let provider: MempoolProvider;
   let pubKey: string;
-  let demo: Demo;
-  const logger = createLogger('Test Demo onchain');
+  let cltv: CLTV;
+  const logger = createLogger('Test CLTV onchain');
 
   before(async () => {
-    Demo.loadArtifact(artifact);
+    CLTV.loadArtifact(artifact);
     signer = new DefaultSigner(getTestKeyPair());
     pubKey = await signer.getPublicKey();
     provider = new MempoolProvider(network);
   });
 
   it('should deploy successfully', async () => {
-    demo = new Demo(1n, 2n);
-    const psbt = await deploy(signer, provider, demo);
+    cltv = new CLTV(4150n);
+    const psbt = await deploy(signer, provider, cltv);
     expect(psbt.isFinalized).to.be.true;
     logger.info('deployed successfully, txid: ', psbt.extractTransaction().id);
     psbt.getChangeUTXO() && provider.addNewUTXO(psbt.getChangeUTXO()); // add change utxo
   });
 
   it('should unlock successfully', async () => {
-    const psbt = await call(signer, provider, demo, (demo: Demo, psbt: ExtPsbt) => {
-      demo.add(3n);
+    const psbt = await call(signer, provider, cltv, (cltv: CLTV, psbt: ExtPsbt) => {
+      cltv.unlock();
     });
+
     expect(psbt.isFinalized).to.be.true;
 
     const txid = await provider.broadcast(psbt.extractTransaction().toHex());

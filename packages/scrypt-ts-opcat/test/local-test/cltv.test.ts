@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 
-import { bvmVerify, Covenant, ExtPsbt } from '../../src/index.js';
+import { bvmVerify, DefaultSigner, ExtPsbt } from '../../src/index.js';
 
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -11,32 +11,38 @@ use(chaiAsPromised);
 dotenv.config();
 
 describe('Test CLTV', () => {
+  let testSigner: DefaultSigner;
+
+
+
   before(() => {
     CLTV.loadArtifact(readArtifact('cltv.json'));
+    testSigner = new DefaultSigner();
   });
 
-  function testUnlock(lockTime: number) {
-    const covenant = Covenant.createCovenant(new CLTV()).bindToUtxo({
+  async function testUnlock(lockedBlock: bigint) {
+    const cltv = new CLTV(400000n)
+    cltv.bindToUtxo({
       txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
       outputIndex: 0,
       satoshis: 10000,
+      data: ''
     });
+    const address = await testSigner.getAddress();
 
     const psbt = new ExtPsbt()
-      .addCovenantInput(covenant)
-      .change('bc1pltqlwt7ru0aj6vycyjwea24nlkkltvkk7lwkj5mne5nnzakvn6gq52nf5h', 1);
+      .addContractInput(cltv)
+      .change(address, 1);
 
     psbt
       // inputSequence should not be default value 0xffffffff
       // https://github.com/bitcoin/bips/blob/master/bip-0065.mediawiki#summary
       .setInputSequence(0, 0xfffffffe)
-      .setLocktime(lockTime)
+      .setLocktime(Number(lockedBlock))
       .seal()
-      .updateCovenantInput(0, covenant, {
-        invokeMethod: (contract: CLTV) => {
-          contract.unlock();
-        },
-      })
+      .updateContractInput(0, (contract: CLTV) => {
+        contract.unlock();
+      },)
       .finalizeAllInputs();
 
     expect(psbt.isFinalized).to.be.true;
@@ -44,12 +50,12 @@ describe('Test CLTV', () => {
   }
 
   it('should call `unlock` method successfully.', async () => {
-    testUnlock(400001);
+    await testUnlock(400001n);
   });
 
   it('should call `unlock` method throw.', async () => {
-    expect(() => {
-      testUnlock(100000);
-    }).to.throw();
+    await expect(testUnlock(100000n)).to.be.rejectedWith(
+      'timelock check failed'
+    );
   });
 });

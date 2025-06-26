@@ -232,8 +232,7 @@ const SmartContractBuiltinMethods = [
   'buildChangeOutput',
   'appendStateOutput',
   'buildStateOutputs',
-  'relTimeLock',
-  'absTimeLock',
+  'timeLock',
   'checkSig',
   'checkMultiSig',
   'checkPreimageAdvanced',
@@ -265,7 +264,6 @@ type AccessInfo = {
   accessSpentDataHashesInSubCall: boolean;
   accessBacktrace: boolean; // this.backtraceToOutpoint, this.backtraceToScript
   accessBacktraceInSubCall: boolean; // this.backtraceToOutpoint, this.backtraceToScript in private function call
-  accessCSV: boolean;
   accessCLTV: boolean;
 };
 
@@ -2146,7 +2144,6 @@ export class Transpiler {
       accessSpentDataHashesInSubCall: false,
       accessBacktrace: false,
       accessBacktraceInSubCall: false,
-      accessCSV: false,
       accessCLTV: false,
     };
 
@@ -2224,12 +2221,9 @@ export class Transpiler {
                 accessState: true,
                 accessSpentDataHashes: true,
               });
-            } else if (['relTimeLock'].includes(methodName)) {
+            } else if (['timeLock'].includes(methodName)) {
               Object.assign(accessInfo, {
-                accessCSV: true,
-              });
-            } else if (['absTimeLock'].includes(methodName)) {
-              Object.assign(accessInfo, {
+                accessSHPreimage: true,
                 accessCLTV: true,
               });
             } else if (['backtraceToOutpoint', 'backtraceToScript'].includes(methodName)) {
@@ -2292,6 +2286,7 @@ export class Transpiler {
       if (accessInfo.accessSHPreimage) {
         throw new TranspileError(getErrorMsg(), calleeRange);
       }
+
       if (accessInfo.accessChange) {
         throw new TranspileError(getErrorMsg(), calleeRange);
       }
@@ -5038,11 +5033,7 @@ export class Transpiler {
         return this.transformCallBuildChangeOutput(node, toSection);
       }
 
-      if (name === 'relTimeLock') {
-        return this.transformCallCSV(node, toSection);
-      }
-
-      if (name === 'absTimeLock') {
+      if (name === 'timeLock') {
         return this.transformCallCLTV(node, toSection);
       }
 
@@ -5327,22 +5318,12 @@ export class Transpiler {
     return toSection.append(']');
   }
 
-  private transformCallCSV(node: ts.CallExpression, toSection: EmittedSection): EmittedSection {
-    const arg = node.arguments[0];
-    this._accessBuiltinsSymbols.add('__scrypt_ASM');
-    return toSection
-      .append(`__scrypt_ASM.csv(`, this.getCoordinates(node.getStart()))
-      .appendWith(this, (toSec) => this.transformExpression(arg, toSec))
-      .append(`)`);
-  }
-
   private transformCallCLTV(node: ts.CallExpression, toSection: EmittedSection): EmittedSection {
-    const arg = node.arguments[0];
-    this._accessBuiltinsSymbols.add('__scrypt_ASM');
-    return toSection
-      .append(`__scrypt_ASM.cltv(`, this.getCoordinates(node.getStart()))
-      .appendWith(this, (toSec) => this.transformExpression(arg, toSec))
-      .append(`)`);
+    const arg = node.arguments[0]
+    const shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
+    return toSection.append(
+      `ContextUtils.checknLockTime(${shouldAccessThis ? 'this.' : ''}${InjectedProp_SHPreimage}, ${arg.getText()})`,
+    )
   }
 
   private transformCallCheckSig(

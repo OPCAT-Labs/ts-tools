@@ -1,9 +1,8 @@
 import {
-  Int32,
   SmartContract,
   method,
   TxUtils,
-  sha256,
+  hash256,
   assert,
   ByteString,
   Ripemd160,
@@ -13,9 +12,9 @@ import {
 
 export class StateMethods extends SmartContract {
   @method()
-  public unlock(script: ByteString, amount: ByteString, stateHash: Ripemd160) {
-    this.appendStateOutput(TxUtils.buildOutput(script, amount), stateHash);
-    const outputs = this.buildStateOutputs() + this.buildChangeOutput();
-    assert(this.ctx.shaOutputs === sha256(outputs), `output hash mismatch`);
+  public unlock(scriptHash: ByteString, amount: bigint, dataHash: Ripemd160) {
+    let stateOutput = TxUtils.buildDataOutput(scriptHash, amount, dataHash);
+    const outputs = stateOutput + this.buildChangeOutput();
+    assert(this.ctx.hashOutputs === hash256(outputs), `output hash mismatch`);
   }
 }

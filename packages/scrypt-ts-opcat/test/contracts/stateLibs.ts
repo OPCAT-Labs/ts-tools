@@ -1,10 +1,10 @@
-import { StructObject, StateLib, Int32, assert, method } from '@opcat-labs/scrypt-ts-opcat';
+import { OpcatState, StateLib, Int32, assert, method } from '@opcat-labs/scrypt-ts-opcat';
 
-export interface DelegateeState extends StructObject {
+export interface DelegateeState extends OpcatState {
   total: Int32;
 }
 
-export interface DelegatorState extends StructObject {
+export interface DelegatorState extends OpcatState {
   delegated: boolean;
 }
 

@@ -1,187 +1,153 @@
 {
   "version": 10,
-  "compilerVersion": "1.20.0+commit.693498a",
-  "contract": "_scrypt_inc_scrypt_ts_transpiler_btc_1_0_0__rs__StateMethods",
-  "md5": "418ec4019d94f21dd9138a5d13de828e",
+  "compilerVersion": "1.21.0+commit.2ada378",
+  "contract": "counter_0_1_0__rs__StateMethods",
+  "md5": "7f3a15f8f49d8de1f6144458b5d49d18",
   "structs": [
     {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__TxOut",
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxOut",
       "params": [
         {
-          "name": "script",
+          "name": "scriptHash",
+          "type": "bytes"
+        },
+        {
+          "name": "dataHash",
           "type": "bytes"
         },
         {
           "name": "satoshis",
-          "type": "bytes"
+          "type": "int"
         }
       ],
       "genericTypes": []
     },
     {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__TxIn",
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxIn",
       "params": [
         {
           "name": "prevTxHash",
           "type": "bytes"
         },
         {
-          "name": "prevOutputIndexVal",
+          "name": "prevOutputIndex",
           "type": "int"
         },
         {
           "name": "sequence",
+          "type": "int"
+        },
+        {
+          "name": "scriptHash",
           "type": "bytes"
         }
       ],
       "genericTypes": []
     },
     {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__CompactTxHashPreimage",
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxHashPreimage",
       "params": [
         {
           "name": "version",
           "type": "bytes"
         },
         {
-          "name": "inputCountVal",
-          "type": "int"
-        },
-        {
           "name": "inputList",
-          "type": "bytes[6]"
+          "type": "bytes"
         },
         {
-          "name": "outputCountVal",
-          "type": "int"
+          "name": "outputList",
+          "type": "bytes"
         },
         {
-          "name": "outputSatoshisList",
-          "type": "bytes[6]"
-        },
-        {
-          "name": "outputScriptList",
-          "type": "bytes[6]"
-        },
-        {
-          "name": "locktime",
+          "name": "nLockTime",
           "type": "bytes"
         }
       ],
       "genericTypes": []
     },
     {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__HashRootTxHashPreimage",
-      "params": [
-        {
-          "name": "version",
-          "type": "bytes"
-        },
-        {
-          "name": "inputCountVal",
-          "type": "int"
-        },
-        {
-          "name": "inputList",
-          "type": "bytes[6]"
-        },
-        {
-          "name": "outputCountVal",
-          "type": "int"
-        },
-        {
-          "name": "hashRoot",
-          "type": "bytes"
-        },
-        {
-          "name": "suffixList",
-          "type": "bytes[4]"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__BacktraceInfo",
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__BacktraceInfo",
       "params": [
         {
           "name": "prevTxInput",
-          "type": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__TxIn"
+          "type": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxIn"
         },
         {
-          "name": "prevTxInputIndexVal",
+          "name": "prevTxInputIndex",
           "type": "int"
         },
         {
           "name": "prevPrevTxPreimage",
-          "type": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__CompactTxHashPreimage"
+          "type": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxHashPreimage"
         }
       ],
       "genericTypes": []
     },
     {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__SHPreimage",
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__SHPreimage",
       "params": [
         {
           "name": "nVersion",
           "type": "bytes"
         },
         {
-          "name": "nLockTime",
+          "name": "hashPrevouts",
           "type": "bytes"
         },
         {
-          "name": "shaPrevouts",
+          "name": "spentScriptHash",
           "type": "bytes"
         },
         {
-          "name": "shaSpentAmounts",
+          "name": "spentDataHash",
           "type": "bytes"
         },
         {
-          "name": "shaSpentScripts",
+          "name": "value",
+          "type": "int"
+        },
+        {
+          "name": "nSequence",
           "type": "bytes"
         },
         {
-          "name": "shaSequences",
+          "name": "hashSpentAmounts",
           "type": "bytes"
         },
         {
-          "name": "shaOutputs",
+          "name": "hashSpentScriptHashes",
           "type": "bytes"
         },
         {
-          "name": "spendType",
+          "name": "hashSpentDataHashes",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSequences",
+          "type": "bytes"
+        },
+        {
+          "name": "hashOutputs",
           "type": "bytes"
         },
         {
           "name": "inputIndex",
-          "type": "bytes"
+          "type": "int"
         },
         {
-          "name": "tapLeafHash",
-          "type": "bytes"
+          "name": "nLockTime",
+          "type": "int"
         },
         {
-          "name": "keyVersion",
-          "type": "bytes"
-        },
-        {
-          "name": "codeSepPos",
-          "type": "bytes"
-        },
-        {
-          "name": "_eWithoutLastByte",
-          "type": "bytes"
-        },
-        {
-          "name": "_eLastByte",
+          "name": "sigHashType",
           "type": "int"
         }
       ],
       "genericTypes": []
     },
     {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__Outpoint",
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__Outpoint",
       "params": [
         {
           "name": "txHash",
@@ -189,52 +155,6 @@
         },
         {
           "name": "outputIndex",
-          "type": "bytes"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__InputStateProof",
-      "params": [
-        {
-          "name": "txHashPreimage",
-          "type": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__HashRootTxHashPreimage"
-        },
-        {
-          "name": "outputIndexVal",
-          "type": "int"
-        },
-        {
-          "name": "stateHashes",
-          "type": "bytes[5]"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__ChainTxVerifyResponse",
-      "params": [
-        {
-          "name": "prevPrevScript",
-          "type": "bytes"
-        },
-        {
-          "name": "prevPrevOutpoint",
-          "type": "bytes"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__MergePrevoutsResponse",
-      "params": [
-        {
-          "name": "prevouts",
-          "type": "bytes"
-        },
-        {
-          "name": "inputCount",
           "type": "int"
         }
       ],
@@ -243,43 +163,19 @@
   ],
   "library": [
     {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__StateLib",
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
     },
     {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__Backtrace",
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__ContextUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
     },
     {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__StdUtils",
-      "params": [],
-      "properties": [],
-      "genericTypes": []
-    },
-    {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__TxUtils",
-      "params": [],
-      "properties": [],
-      "genericTypes": []
-    },
-    {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__ContextUtils",
-      "params": [],
-      "properties": [],
-      "genericTypes": []
-    },
-    {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__TxProof",
-      "params": [],
-      "properties": [],
-      "genericTypes": []
-    },
-    {
-      "name": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__StateUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__StdUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
@@ -293,48 +189,24 @@
       "index": 0,
       "params": [
         {
-          "name": "script",
+          "name": "scriptHash",
           "type": "bytes"
         },
         {
           "name": "amount",
-          "type": "bytes"
+          "type": "int"
         },
         {
-          "name": "stateHash",
+          "name": "dataHash",
           "type": "Ripemd160"
         },
         {
           "name": "__scrypt_ts_shPreimage",
-          "type": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__SHPreimage"
-        },
-        {
-          "name": "__scrypt_ts_inputIndexVal",
-          "type": "int"
+          "type": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__SHPreimage"
         },
         {
           "name": "__scrypt_ts_changeInfo",
-          "type": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__TxOut"
-        },
-        {
-          "name": "__scrypt_ts_prevout",
-          "type": "_scrypt_inc_scrypt_ts_btc_1_0_0__rs__Outpoint"
-        },
-        {
-          "name": "__scrypt_ts_nextStateHashes",
-          "type": "bytes[5]"
-        },
-        {
-          "name": "__scrypt_ts_prevouts",
-          "type": "bytes[6]"
-        },
-        {
-          "name": "__scrypt_ts_spentAmounts",
-          "type": "bytes[6]"
-        },
-        {
-          "name": "__scrypt_ts_spentScripts",
-          "type": "bytes[6]"
+          "type": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxOut"
         }
       ]
     },
@@ -346,5 +218,5 @@
   "stateProps": [],
   "buildType": "release",
   "file": "..\\stateMethods.scrypt",
-  "hex": "080000000000000000066a18636174012079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179841f40a48df4b2a70c8b4924bf2654661ed3d95fd66a313eb87237597c628e4a031f40a48df4b2a70c8b4924bf2654661ed3d95fd66a313eb87237597c628e4a031004c807bb52d7a9fef58323eb1bf7a407db382d2f3f2d81bb1224f49fe518f6d48d37c7bb52d7a9fef58323eb1bf7a407db382d2f3f2d81bb1224f49fe518f6d48d37c79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f8179879be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798012e79012e79012e79012e79012e79012e79012e79012e79012e79012e79012e79012e79012e79012e795d798277549d5c798277549d5b79827701209d5a79827701209d5979827701209d5879827701209d5779827701209d5679528855798277549d5479827701209d537901008852798277549d5f7901007e5e797e5d797e5c797e5b797e5a797e59797e58797e57797e56797e55797e54797e53797ea85f79787ea853798277011f9d5279017f9f695279009c6301006752796878557952797e8801137955797e54798b7e6b6d6d6d6d6d6d6d6d6c775379ad0120797600a2637655a16700686976760087630100776876030000007e77770127798801167901167901167901167901167901167901237901237901347901297959795979597959795979597955766b796c7555766b796c757e54766b796c757e53766b796c757e52766b796c757e51766b796c757e0078827d7701249c6377517c677601489c63527b757c6776016c9c63537b757c67760290009c63547b757c677602b4009c63557b757c677602d8009c63567b757c67006968686868686858766b796c7582770053799f637601249d6776009d687557766b796c7582775153799f637601249d6776009d687556766b796c7582775253799f637601249d6776009d687555766b796c7582775353799f637601249d6776009d687554766b796c7582775453799f637601249d6776009d687553766b796c7582775553799f637601249d6776009d68756f75726d726d726d726d7b7578a8547988557955797e5c54797600a26976569f6994766b796c75886b6d6d6d6d6d6c775b795b795b795b795b795b790131795779577957795779577957795779567956766b796c7582770052799f637600a0696776009d687555766b796c7582775152799f637600a0696776009d687554766b796c7582775252799f637600a0696776009d687553766b796c7582775352799f637600a0696776009d687552766b796c7582775452799f637600a0696776009d687551766b796c7582775552799f637600a0696776009d68750057766b796c756e827752797e7e777756766b796c756e827752797e7e777755766b796c756e827752797e7e777754766b796c756e827752797e7e777753766b796c756e827752797e7e777752766b796c756e827752797e7e7b756b6d6d6d6d6ca85279886d6d6d6d0111790111790111790111790111790111790132795779577957795779577957795779567956766b796c7582770052799f6376589d6776009d687555766b796c7582775152799f6376589d6776009d687554766b796c7582775252799f6376589d6776009d687553766b796c7582775352799f6376589d6776009d687552766b796c7582775452799f6376589d6776009d687551766b796c7582775552799f6376589d6776009d687556766b796c7556766b796c757e55766b796c757e54766b796c757e53766b796c757e52766b796c757e6b6d6d6d6c77a85279886d6d6d6d00000052798b537a757b7b5279757801367901367978827d7700a063760122a167006869788277589d6e7e53797e7777777e7b757c76013479a97e77011f79011f79011f79011f79011f79557958796e5578947600a269000052799f637600a97e77685152799f637600a97e77685252799f637600a97e77685352799f637600a97e77685452799f637600a97e776877777ea95779577957795779577955790056766b796c7877827d77009c647601149c675168696f75a97e537a757b7b52796d7555766b796c7877827d77009c647601149c675168696f75a97e537a757b7b52796d7554766b796c7877827d77009c647601149c675168696f75a97e537a757b7b52796d7553766b796c7877827d77009c647601149c675168696f75a97e537a757b7b52796d7552766b796c7877827d77009c647601149c675168696f75a97e537a757b7b52796d7877a95279886d6d6d755178777676827701149d011179787e7701127978827d7700a063760122a167006869788277589d6e7e53797e6b6d6d6d6d6d6d6c52797e012479827700a06301247901247978827d7700a063760122a167006869788277589d6e7e53797e7777776700687e012d7978a8876b6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6c77"
+  "hex": "512097dfd76851bf465e8f715593b217714858bbe9570ff3bd5e33840a34e20ff0262102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec0382201008ce7480da41702918d1ec8e6849ba32b4d65b1e40dc669c31a1e6306b266c0114790114790114790114790114790114790114790114790114790114790114790114790114790114795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6c54797855795579210ac407f0e4bd44bfc207355a778b046225a7068fc59ee7eda43ad905aadbffc800206c266b30e6a1319c66dc401e5bd6b432ba49688eecd118297041da8074ce0810577956795679aa7676517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01007e817757795679567956795679537956795479577995939521414136d08c5ed2bf3ba048afe6dcaebafeffffffffffffffffffffffffffffff006e6e9776009f636e936776687777777b757c6e5296a0636e7c947b757c6853798277527982775379012080517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01205279947f77545379935279930130787e527e54797e58797e527e53797e52797e57797e6b6d6d6d6d6d6d6c765779ac6b6d6d6d6d6d6c7769011779011779011779527982777882777801209d7601209d537900a2695379588055797e53797e6b6d6d6c7776567900a063587957796e00a8527982777882777801209d7601209d537900a2695379588055797e53797e6b6d6d6d6c776700687e5c7978aa876b6d6d6d6d6d6d6d6d6d6d6d6d6d6c"
 }

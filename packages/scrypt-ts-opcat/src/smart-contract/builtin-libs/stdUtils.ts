@@ -96,27 +96,31 @@ export class StdUtils extends SmartContractLib {
   @method()
   static pushData(buf: ByteString): ByteString {
     let n = len(buf);
-
+    let size = 0n;
     let header: ByteString = toByteString('');
 
     if (n < 0x4c) {
-      header = StdUtils.toLEUnsigned(n, 1n);
+      size = 1n;
+      header = toByteString(''); 
     }
     else if (n < 0x100) {
-      header = toByteString('4c') + StdUtils.toLEUnsigned(n, 1n);
+      size = 1n;
+      header = toByteString('4c')
     }
     else if (n < 0x10000) {
-      header = toByteString('4d') + StdUtils.toLEUnsigned(n, 2n);
+      size = 2n;
+      header = toByteString('4d');
     }
     else if (n < 0x100000000) {
-      header = toByteString('4e') + StdUtils.toLEUnsigned(n, 4n);
+      size = 4n;
+      header = toByteString('4e');
     }
     else {
       // shall not reach here
       assert(false);
     }
 
-    return header + buf;
+    return header +  StdUtils.toLEUnsigned(n, size);
   }
 
   /**

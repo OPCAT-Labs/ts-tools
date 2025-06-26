@@ -5,13 +5,11 @@ import { AccumulatorMultiSig } from '../contracts/accumulatorMultiSig.js';
 import { readArtifact } from '../utils/index.js';
 import { hash160 } from '../../src/smart-contract/fns/index.js';
 import {
-  Covenant,
   DefaultSigner,
   ExtPsbt,
   IExtPsbt,
   PubKey,
   Sig,
-  toXOnly,
   bvmVerify,
 } from '../../src/index.js';
 
@@ -26,43 +24,38 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
     const testSigner1 = new DefaultSigner();
     const address1 = await testSigner1.getAddress();
     const publicKey1 = await testSigner1.getPublicKey();
-    const xpublicKey1 = toXOnly(publicKey1, true);
-    const pkh1 = hash160(xpublicKey1);
+    const pkh1 = hash160(publicKey1);
 
     const testSigner2 = new DefaultSigner();
     const address2 = await testSigner2.getAddress();
     const publicKey2 = await testSigner2.getPublicKey();
-    const xpublicKey2 = toXOnly(publicKey2, true);
-    const pkh2 = hash160(xpublicKey2);
+    const pkh2 = hash160(publicKey2);
 
     const testSigner3 = new DefaultSigner();
     const address3 = await testSigner3.getAddress();
     const publicKey3 = await testSigner3.getPublicKey();
-    const xpublicKey3 = toXOnly(publicKey3, true);
-    const pkh3 = hash160(xpublicKey3);
+    const pkh3 = hash160(publicKey3);
 
     const threshold = BigInt(AccumulatorMultiSig.N);
-    const c = Covenant.createCovenant(
-      new AccumulatorMultiSig(threshold, [pkh1, pkh2, pkh3]),
-    ).bindToUtxo({
+    const c = new AccumulatorMultiSig(threshold, [pkh1, pkh2, pkh3]);
+    c.bindToUtxo({
       txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
       outputIndex: 0,
       satoshis: 10000,
+      data: ''
     });
 
-    const psbt = new ExtPsbt().addCovenantInput(c).change(address1, 1).seal();
+    const psbt = new ExtPsbt().addContractInput(c).change(address1, 1).seal();
 
-    psbt.updateCovenantInput(0, c, {
-      invokeMethod: (accumulatorMultiSig: AccumulatorMultiSig, psbt: IExtPsbt) => {
-        const sig1 = psbt.getSig(0, { address: address1 });
-        const sig2 = psbt.getSig(0, { address: address2 });
-        const sig3 = psbt.getSig(0, { address: address3 });
-        accumulatorMultiSig.main(
-          [PubKey(xpublicKey1), PubKey(xpublicKey2), PubKey(xpublicKey3)],
-          [sig1, sig2, sig3],
-          [true, true, true],
-        );
-      },
+    psbt.updateContractInput(0, (accumulatorMultiSig: AccumulatorMultiSig, psbt: IExtPsbt) => {
+      const sig1 = psbt.getSig(0, { address: address1 });
+      const sig2 = psbt.getSig(0, { address: address2 });
+      const sig3 = psbt.getSig(0, { address: address3 });
+      accumulatorMultiSig.main(
+        [PubKey(publicKey1), PubKey(publicKey2), PubKey(publicKey3)],
+        [sig1, sig2, sig3],
+        [true, true, true],
+      );
     });
 
     const signedPsbtHex1 = await testSigner1.signPsbt(psbt.toHex(), {
@@ -111,42 +104,37 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
     const testSigner1 = new DefaultSigner();
     const address1 = await testSigner1.getAddress();
     const publicKey1 = await testSigner1.getPublicKey();
-    const xpublicKey1 = toXOnly(publicKey1, true);
-    const pkh1 = hash160(xpublicKey1);
+    const pkh1 = hash160(publicKey1);
 
     const testSigner2 = new DefaultSigner();
     const address2 = await testSigner2.getAddress();
     const publicKey2 = await testSigner2.getPublicKey();
-    const xpublicKey2 = toXOnly(publicKey2, true);
-    const pkh2 = hash160(xpublicKey2);
+    const pkh2 = hash160(publicKey2);
 
     const testSigner3 = new DefaultSigner();
     const publicKey3 = await testSigner3.getPublicKey();
-    const xpublicKey3 = toXOnly(publicKey3, true);
-    const pkh3 = hash160(xpublicKey3);
+    const pkh3 = hash160(publicKey3);
 
     const threshold = 2n;
-    const c = Covenant.createCovenant(
-      new AccumulatorMultiSig(threshold, [pkh1, pkh2, pkh3]),
-    ).bindToUtxo({
+    const c =new AccumulatorMultiSig(threshold, [pkh1, pkh2, pkh3]);
+    c.bindToUtxo({
       txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
       outputIndex: 0,
       satoshis: 10000,
+      data: ''
     });
 
-    const psbt = new ExtPsbt().addCovenantInput(c).change(address1, 1).seal();
+    const psbt = new ExtPsbt().addContractInput(c).change(address1, 1).seal();
 
-    psbt.updateCovenantInput(0, c, {
-      invokeMethod: (accumulatorMultiSig: AccumulatorMultiSig, psbt: IExtPsbt) => {
-        const sig1 = psbt.getSig(0, { address: address1 });
-        const sig2 = psbt.getSig(0, { address: address2 });
-        const sig3 = Sig('00'.repeat(32));
-        accumulatorMultiSig.main(
-          [PubKey(xpublicKey1), PubKey(xpublicKey2), PubKey(xpublicKey3)],
-          [sig1, sig2, sig3],
-          [true, true, false],
-        );
-      },
+    psbt.updateContractInput(0, (accumulatorMultiSig: AccumulatorMultiSig, psbt: IExtPsbt) => {
+      const sig1 = psbt.getSig(0, { address: address1 });
+      const sig2 = psbt.getSig(0, { address: address2 });
+      const sig3 = Sig('00'.repeat(32));
+      accumulatorMultiSig.main(
+        [PubKey(publicKey1), PubKey(publicKey2), PubKey(publicKey3)],
+        [sig1, sig2, sig3],
+        [true, true, false],
+      );
     });
 
     const signedPsbtHex1 = await testSigner1.signPsbt(psbt.toHex(), {
@@ -184,42 +172,37 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
     const testSigner1 = new DefaultSigner();
     const address1 = await testSigner1.getAddress();
     const publicKey1 = await testSigner1.getPublicKey();
-    const xpublicKey1 = toXOnly(publicKey1, true);
-    const pkh1 = hash160(xpublicKey1);
+    const pkh1 = hash160(publicKey1);
 
     const testSigner2 = new DefaultSigner();
     const _address2 = await testSigner2.getAddress();
     const publicKey2 = await testSigner2.getPublicKey();
-    const xpublicKey2 = toXOnly(publicKey2, true);
-    const pkh2 = hash160(xpublicKey2);
+    const pkh2 = hash160(publicKey2);
 
     const testSigner3 = new DefaultSigner();
     const publicKey3 = await testSigner3.getPublicKey();
-    const xpublicKey3 = toXOnly(publicKey3, true);
-    const pkh3 = hash160(xpublicKey3);
+    const pkh3 = hash160(publicKey3);
 
     const threshold = 2n;
-    const c = Covenant.createCovenant(
-      new AccumulatorMultiSig(threshold, [pkh1, pkh2, pkh3]),
-    ).bindToUtxo({
+    const c = new AccumulatorMultiSig(threshold, [pkh1, pkh2, pkh3]);
+    c.bindToUtxo({
       txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
       outputIndex: 0,
       satoshis: 10000,
+      data: ''
     });
 
-    const psbt = new ExtPsbt().addCovenantInput(c).change(address1, 1).seal();
+    const psbt = new ExtPsbt().addContractInput(c).change(address1, 1).seal();
 
-    psbt.updateCovenantInput(0, c, {
-      invokeMethod: (accumulatorMultiSig: AccumulatorMultiSig, psbt: IExtPsbt) => {
-        const sig1 = psbt.getSig(0, { address: address1 });
-        const sig2 = Sig('00'.repeat(32));
-        const sig3 = Sig('00'.repeat(32));
-        accumulatorMultiSig.main(
-          [PubKey(xpublicKey1), PubKey(xpublicKey2), PubKey(xpublicKey3)],
-          [sig1, sig2, sig3],
-          [true, true, false],
-        );
-      },
+    psbt.updateContractInput(0, (accumulatorMultiSig: AccumulatorMultiSig, psbt: IExtPsbt) => {
+      const sig1 = psbt.getSig(0, { address: address1 });
+      const sig2 = Sig('00'.repeat(32));
+      const sig3 = Sig('00'.repeat(32));
+      accumulatorMultiSig.main(
+        [PubKey(publicKey1), PubKey(publicKey2), PubKey(publicKey3)],
+        [sig1, sig2, sig3],
+        [true, true, false],
+      );
     });
 
     const signedPsbtHex1 = await testSigner1.signPsbt(psbt.toHex(), {

@@ -47,19 +47,7 @@ export abstract class AbstractContract {
    * @category Time Lock
    * @see https://docs.scrypt.io/tutorials/timeLock
    */
-  abstract absTimeLock(locktime: bigint): boolean;
-
-  /**
-   * Implements a relative time-based lock on a transaction until a specified `nSequence` has been reached.
-   * The lock can be based on either block height or a UNIX timestamp.
-   *
-   * @param {bigint} nSequence - The block height or timestamp until which the transaction should be locked.
-   * @returns If `true` is returned, nlockTime and sequence in `this.ctx` are valid, otherwise they are invalid.
-   * @onchain
-   * @category Time Lock
-   * @see https://docs.scrypt.io/tutorials/timeLock
-   */
-  abstract relTimeLock(nSequence: bigint): boolean;
+  abstract timeLock(locktime: bigint): boolean;
 
   /**
    * Build the state related outputs.
@@ -68,7 +56,7 @@ export abstract class AbstractContract {
    * @category State
    *
    */
-  abstract buildStateOutput(satoshis: Int32): ByteString;
+  // abstract buildStateOutput(satoshis: Int32): ByteString;
 
   /**
    * Check the outputs with the context of current transaction.

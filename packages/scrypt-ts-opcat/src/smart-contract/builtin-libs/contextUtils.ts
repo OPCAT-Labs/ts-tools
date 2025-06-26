@@ -266,5 +266,13 @@ export class ContextUtils extends SmartContractLib {
   ): ByteString {
     return slice(spentDataHashes, inputIndex * 32n, (inputIndex + 1n) * 32n);
   }
-  
+
+  @method()
+  static checknLockTime(
+    shPreimage: SHPreimage,
+    nlockTime: UInt32,
+  ) : boolean {
+    const nSequence = StdUtils.fromLEUnsigned(shPreimage.nSequence);
+    return (nSequence < 4294967295n && (nlockTime < 500000000n ? shPreimage.nLockTime < 500000000n : true) && shPreimage.nLockTime >= nlockTime)
+  }
 }

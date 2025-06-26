@@ -38,20 +38,25 @@ describe('Test Counter onchain', () => {
   });
 
   it('should increase', async () => {
-    const newContract = counter.next({ count: counter.state.count + 1n });
-    const psbt = await call(
-      signer,
-      provider,
-      counter,
-      (contract: Counter) => {
-        contract.increase();
-      },
-      { contract: newContract, satoshis: 1 },
-    );
 
-    expect(psbt.isFinalized).to.be.true;
+    for (let i = 0; i < 10; i++) {
+      const newContract = counter.next({ count: counter.state.count + 1n });
+      const psbt = await call(
+        signer,
+        provider,
+        counter,
+        (contract: Counter) => {
+          contract.increase();
+        },
+        { contract: newContract, satoshis: 1 },
+      );
+  
+      expect(psbt.isFinalized).to.be.true;
+  
+      const txid = psbt.extractTransaction().id;
+      logger.info('increased successfully, txid: ', txid);
 
-    const txid = await provider.broadcast(psbt.extractTransaction().toHex());
-    logger.info('increased successfully, txid: ', txid);
+      counter = newContract
+    }
   });
 });

@@ -55,8 +55,8 @@ export class TxUtils extends SmartContractLib {
     const scriptHashLen = len(scriptHash);
     const dataHashLen = len(dataHash);
     //const dataLen = len(data);
-    assert(scriptHashLen == 32n, "script hash length must be greater than 0");
-    assert(dataHashLen == 32n, "data hash length must be greater than 0");
+    assert(scriptHashLen == 32n, "script hash length must be equal to 32");
+    assert(dataHashLen == 32n, "data hash length must be equal to 32");
     assert(satoshis >= 0n, "satoshis must be greater than 0");
     return intToByteString(satoshis, 8n) + scriptHash + dataHash;
   }

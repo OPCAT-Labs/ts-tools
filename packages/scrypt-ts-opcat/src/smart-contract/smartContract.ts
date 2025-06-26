@@ -208,10 +208,10 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @onchain
    * @returns an output containing the new state
    */
-  buildStateOutput(satoshis: Int32): ByteString {
-    this._checkPsbtBinding();
-    return buildStateOutputImpl(this, this.state, satoshis, this.ctx.spentScriptHash);
-  }
+  // buildStateOutput(satoshis: Int32): ByteString {
+  //   this._checkPsbtBinding();
+  //   return buildStateOutputImpl(this, this.state, satoshis, this.ctx.spentScriptHash);
+  // }
 
   /**
    * Calculate the hash of all states of the current contract
@@ -582,116 +582,27 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @return {boolean} true if the transaction's locktime is less than or equal to
    *                   the transaction's locktime
    */
-  absTimeLock(nLockTime: Int32): boolean {
+  timeLock(nLockTime: Int32): boolean {
     // We want to compare apples to apples, so fail the script
     // unless the type of nLockTime being tested is the same as
     // the nLockTime in the transaction.
-
-    const locktime = this._curPsbt!.getlockTime();
-    const LOCKTIME_THRESHOLD = 500000000;
-    const LOCKTIME_THRESHOLD_BN = BigInt(LOCKTIME_THRESHOLD);
-    if (
-      !(
-        (locktime < LOCKTIME_THRESHOLD && nLockTime < LOCKTIME_THRESHOLD_BN) ||
-        (locktime >= LOCKTIME_THRESHOLD && nLockTime >= LOCKTIME_THRESHOLD_BN)
-      )
-    ) {
-      return false;
-    }
-
-    // Now that we know we're comparing apples-to-apples, the
-    // comparison is a simple numeric one.
-    if (nLockTime > BigInt(locktime)) {
-      return false;
-    }
-
-    // Finally the nLockTime feature can be disabled and thus
-    // CHECKLOCKTIMEVERIFY bypassed if every txin has been
-    // finalized by setting nSequence to maxint. The
-    // transaction would be allowed into the blockchain, making
-    // the opcode ineffective.
-    //
-    // Testing if this vin is not final is sufficient to
-    // prevent this condition. Alternatively we could test all
-    // inputs, but testing just this input minimizes the data
-    // required to prove correct CHECKLOCKTIMEVERIFY execution.
 
     const sequence = this._curPsbt!.getSequence(this._curInputIndex!);
     if (!isFinal(sequence)) {
       return false;
     }
+    let res = true;
 
-    return true;
-  }
-
-  /**
-   * Checks a sequence parameter with the transaction's sequence.
-   * @onchain
-   * @param {BN} nSequence the sequence read from the script
-   * @return {boolean} true if the transaction's sequence is less than or equal to
-   *                   the transaction's sequence
-   */
-  relTimeLock(nSequence: Int32): boolean {
-    // Relative lock times are supported by comparing the passed in operand to
-    // the sequence number of the input.
-    const txToSequence = this._curPsbt!.getSequence(this._curInputIndex!);
-
-    // Fail if the transaction's version number is not set high enough to
-    // trigger BIP 68 rules.
-    // if (this.tx.version < 2) {
-    //   return false;
-    // }
-
-    // Sequence numbers with their most significant bit set are not consensus
-    // constrained. Testing that the transaction's sequence number do not have
-    // this bit set prevents using this property to get around a
-    // CHECKSEQUENCEVERIFY check.
-    // if (txToSequence & Interpreter.SEQUENCE_LOCKTIME_DISABLE_FLAG) {
-    //   return false;
-    // }
-
-    /**
-     * If CTxIn::nSequence encodes a relative lock-time and this flag is set,
-     * the relative lock-time has units of 512 seconds, otherwise it specifies
-     * blocks with a granularity of 1.
-     */
-    const SEQUENCE_LOCKTIME_TYPE_FLAG = 1 << 22;
-
-    /**
-     * If CTxIn::nSequence encodes a relative lock-time, this mask is applied to
-     * extract that lock-time from the sequence field.
-     */
-    const SEQUENCE_LOCKTIME_MASK = 0x0000ffff;
-
-    // Mask off any bits that do not have consensus-enforced meaning before
-    // doing the integer comparisons
-    const nLockTimeMask = SEQUENCE_LOCKTIME_TYPE_FLAG | SEQUENCE_LOCKTIME_MASK;
-    const txToSequenceMasked = BigInt(txToSequence & nLockTimeMask);
-    const nSequenceMasked = nSequence & BigInt(nLockTimeMask);
-
-    // There are two kinds of nSequence: lock-by-blockheight and
-    // lock-by-blocktime, distinguished by whether nSequenceMasked <
-    // CTxIn::SEQUENCE_LOCKTIME_TYPE_FLAG.
-    //
-    // We want to compare apples to apples, so fail the script unless the type
-    // of nSequenceMasked being tested is the same as the nSequenceMasked in the
-    // transaction.
-    const SEQUENCE_LOCKTIME_TYPE_FLAG_BN = BigInt(SEQUENCE_LOCKTIME_TYPE_FLAG);
-
+    // Check if using block height.
     if (
-      !(
-        (txToSequenceMasked < SEQUENCE_LOCKTIME_TYPE_FLAG_BN &&
-          nSequenceMasked < SEQUENCE_LOCKTIME_TYPE_FLAG_BN) ||
-        (txToSequenceMasked >= SEQUENCE_LOCKTIME_TYPE_FLAG_BN &&
-          nSequenceMasked >= SEQUENCE_LOCKTIME_TYPE_FLAG_BN)
-      )
+      nLockTime < 500000000
     ) {
-      return false;
+      // Enforce nLocktime field to also use block height.
+      res = res && this.ctx.nLockTime < 500000000;
     }
+    //return true;
 
-    // Now that we know we're comparing apples-to-apples, the comparison is a
-    // simple numeric one.
-    return nSequenceMasked <= txToSequenceMasked;
+    return res && this.ctx.nLockTime >= nLockTime;
   }
 
   /**

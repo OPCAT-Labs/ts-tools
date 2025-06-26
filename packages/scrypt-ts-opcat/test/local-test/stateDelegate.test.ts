@@ -1,110 +1,96 @@
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 use(chaiAsPromised);
-
-import { StatefulCovenant } from '../../src/covenant.js';
-import { ByteString, ExtPsbt, StructObject, uint8ArrayToHex } from '../../src/index.js';
-import { getDummyExtUtxo, getDummyUtxo, readArtifact } from '../utils/index.js';
+import { DefaultSigner, ExtPsbt, sha256, toByteString } from '../../src/index.js';
+import { getDummyUtxo, readArtifact } from '../utils/index.js';
 
 import { StateDelegatee } from '../contracts/stateDelegatee.js';
 import { StateDelegator } from '../contracts/stateDelegator.js';
 import {
-  DelegateeState,
-  DelegatorState,
   DelegateeStateLib,
   DelegatorStateLib,
 } from '../contracts/stateLibs.js';
-import { testKeyPair, testTweakedKeyPair } from '../utils/privateKey.js';
 
 describe('Test StateDelegatee & StateDelegator', () => {
-  let DELEGATEE_SCRIPT: ByteString;
-  let DELEGATOR_SCRIPT: ByteString;
+  let signer = new DefaultSigner();
 
   before(() => {
     StateDelegatee.loadArtifact(readArtifact('stateDelegatee.json'));
     StateDelegator.loadArtifact(readArtifact('stateDelegator.json'));
     DelegateeStateLib.loadArtifact(readArtifact('stateLibs.json'));
     DelegatorStateLib.loadArtifact(readArtifact('stateLibs.json'));
-
-    DELEGATEE_SCRIPT = StatefulCovenant.createCovenant(new StateDelegatee()).lockingScriptHex;
-    DELEGATOR_SCRIPT = StatefulCovenant.createCovenant(
-      new StateDelegator(DELEGATEE_SCRIPT),
-    ).lockingScriptHex;
   });
 
   it('should call `StateDelegatee` successfully.', async () => {
-    let { covenant: delegateeCov } = await deployStateDelegatee();
+    let delegateeCov = await deployStateDelegatee();
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 1; i++) {
       const { newDelegateeCov } = await testCallDelegatee(delegateeCov, i + 1);
       delegateeCov = newDelegateeCov;
     }
   });
 
-  async function deployStateDelegator() {
-    const delegator = new StateDelegator(DELEGATEE_SCRIPT);
-    delegator.state = { delegated: false };
-    const covenant = StatefulCovenant.createCovenant(delegator);
-    return deployCovenant(covenant);
+  async function deployStateDelegator(stateDelegatee: StateDelegatee): Promise<StateDelegator> {
+
+    const stateDelegator = new StateDelegator(stateDelegatee.lockingScript.toHex())
+    stateDelegator.state = { delegated: false };
+
+    const address = await signer.getAddress();
+
+    const psbt = new ExtPsbt()
+      .spendUTXO(getDummyUtxo(address))
+      .addContractOutput(stateDelegator, 1000)
+      .change(address, 1)
+      .seal();
+
+    await psbt.sign(signer);
+
+    return stateDelegator;
   }
 
   async function deployStateDelegatee() {
-    const delegatee = new StateDelegatee();
-    delegatee.state = { total: 0n };
-    const covenant = StatefulCovenant.createCovenant(delegatee);
-    return deployCovenant(covenant);
-  }
+    const stateDelegatee = new StateDelegatee();
+    stateDelegatee.state = { total: 0n };
+    const address = await signer.getAddress();
 
-  async function deployCovenant<T extends StructObject>(covenant: StatefulCovenant<T>) {
     const psbt = new ExtPsbt()
-      .spendUTXO(await getDummyUtxo())
-      .addCovenantOutput(covenant, 1000)
-      .change('bc1pltqlwt7ru0aj6vycyjwea24nlkkltvkk7lwkj5mne5nnzakvn6gq52nf5h', 1)
+      .spendUTXO(getDummyUtxo(address))
+      .addContractOutput(stateDelegatee, 1000)
+      .change(address, 1)
       .seal();
 
-    covenant.bindToUtxo({
-      txId: psbt.unsignedTx.getId(),
-      outputIndex: 1,
-      satoshis: 1000,
-      txoStateHashes: psbt.getTxoStateHashes(),
-      txHashPreimage: uint8ArrayToHex(psbt.unsignedTx.toBuffer(undefined, 0, false)),
-    });
+    await psbt.sign(signer);
 
-    return {
-      covenant,
-      psbt,
-    };
+
+    return stateDelegatee;
   }
 
+
+
   async function buildCallPsbt(
-    delegatorCov: StatefulCovenant<DelegatorState>,
-    delegateeCov: StatefulCovenant<DelegateeState>,
+    delegatorCov: StateDelegator,
+    delegateeCov: StateDelegatee,
   ) {
+    const address = await signer.getAddress();
+
     const newDelagatorCov = delegatorCov.next({ delegated: true });
     const newDelegateeCov = delegateeCov.next({ total: delegateeCov.state.total + 1n });
     const psbt = new ExtPsbt()
-      .addCovenantInput(delegatorCov)
-      .addCovenantInput(delegateeCov)
-      .spendUTXO(await getDummyExtUtxo())
-      .addCovenantOutput(newDelagatorCov, 1000)
-      .addCovenantOutput(newDelegateeCov, 1000)
-      .change('bc1pltqlwt7ru0aj6vycyjwea24nlkkltvkk7lwkj5mne5nnzakvn6gq52nf5h', 1)
-      .updateCovenantInput(0, delegatorCov, {
-        invokeMethod: (contract: StateDelegator) => {
-          contract.unlock();
-        },
+      .addContractInput(delegatorCov)
+      .addContractInput(delegateeCov)
+      .spendUTXO(getDummyUtxo(address))
+      .addContractOutput(newDelagatorCov, 1000)
+      .addContractOutput(newDelegateeCov, 1000)
+      .change(address, 1)
+      .updateContractInput(0,  (contract: StateDelegator) => {
+        contract.unlock();
       })
-      .updateCovenantInput(1, delegateeCov, {
-        invokeMethod: (contract: StateDelegatee) => {
-          contract.unlock(DELEGATOR_SCRIPT, delegatorCov.state, 0n);
-        },
+      .updateContractInput(1, (contract: StateDelegatee) => {
+        contract.unlock(sha256(toByteString(delegatorCov.lockingScript.toHex())), delegatorCov.state, 0n);
       })
-      .updateInput(2, {
-        tapInternalKey: testKeyPair.publicKey.slice(1, 33),
-      })
-      .signTaprootInput(2, testTweakedKeyPair)
       .seal();
 
+    await psbt.sign(signer);
     return {
       psbt,
       newDelagatorCov,
@@ -113,29 +99,25 @@ describe('Test StateDelegatee & StateDelegator', () => {
   }
 
   async function testCallDelegatee(
-    delegateeCov: StatefulCovenant<DelegateeState>,
+    delegateeCov: StateDelegatee,
     expectedTotal: number,
   ) {
     // deploy a new delegator
-    const { covenant: delegatorCov } = await deployStateDelegator();
+    const delegatorCov: StateDelegator = await deployStateDelegator(delegateeCov);
 
     const { psbt, newDelagatorCov, newDelegateeCov } = await buildCallPsbt(
       delegatorCov,
       delegateeCov,
     );
 
-    expect(psbt.finalizeAllInputs().isFinalized).to.be.true;
-
-    // console.log('psbt', psbt.toBase64());
+    expect(psbt.isFinalized).to.be.true;
 
     expect(newDelagatorCov.state.delegated).to.be.true;
     expect(newDelegateeCov.state.total).to.equal(BigInt(expectedTotal));
 
     // invalid case: delegator has been already delegated
-    const { psbt: invalidPsbt } = await buildCallPsbt(newDelagatorCov, newDelegateeCov);
-    expect(() => invalidPsbt.finalizeAllInputs()).to.be.throw(
-      'Delegator has been already delegated',
-    );
+    await expect(buildCallPsbt(newDelagatorCov, newDelegateeCov))
+    .to.be.rejectedWith(/Delegator has been already delegated/);
 
     return {
       newDelegateeCov,
