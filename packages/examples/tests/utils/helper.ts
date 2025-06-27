@@ -3,8 +3,10 @@ import {
     MempoolProvider,
     DummyProvider,
     DefaultSigner,
+    fromSupportedNetwork,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { getTestKeyPair } from './privateKey'
+import { PrivateKey } from '@opcat-labs/opcat'
 
 export const sleep = async (seconds: number) => {
     return new Promise((resolve) => {
@@ -32,4 +34,14 @@ export function getDefaultSigner() {
     const keyPair = getTestKeyPair();
     return new DefaultSigner(keyPair);
 }
+
+export function getRandomSigner(network?: SupportedNetwork) {
+    network = network ||
+    network ||
+    (process.env.NETWORK as SupportedNetwork) ||
+    'opcat-testnet'
+    const key = PrivateKey.fromRandom(fromSupportedNetwork(network))
+    return new DefaultSigner(key);
+}
+
 

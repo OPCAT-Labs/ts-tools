@@ -2,6 +2,53 @@
  "scryptBase": "artifacts/.templates",
  "bindings": [
   {
+   "symbol": "Ackermann",
+   "path": "contracts/ackermann.scrypt.tpl",
+   "md5": "595b698e3a6f1ce811cb5b76af41e9a1"
+  },
+  {
+   "symbol": "Arrays",
+   "path": "contracts/array.scrypt.tpl"
+  },
+  {
+   "symbol": "ArraysTest",
+   "path": "contracts/array.scrypt.tpl",
+   "md5": "0949dbc5516dc7c350c30d2287f1ed7e"
+  },
+  {
+   "symbol": "AtomicSwap",
+   "path": "contracts/atomicSwap.scrypt.tpl",
+   "md5": "fd2454c4c054df320158a296b5bf3bc1"
+  },
+  {
+   "symbol": "TxUtils",
+   "path": "../../../../node_modules/@opcat-labs/scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/txUtils.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "Auction",
+   "path": "contracts/auction.scrypt.tpl",
+   "md5": "2e4a20568789825689cbbb4677f5f36b",
+   "stateType": "AuctionState"
+  },
+  {
+   "symbol": "AuctionState",
+   "path": "contracts/auction.scrypt.tpl"
+  },
+  {
+   "symbol": "BacktraceInfo",
+   "path": "../../../../node_modules/@opcat-labs/scrypt-ts-opcat/assets/.templates/smart-contract/types/structs.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "B2GCounter",
+   "path": "contracts/b2GCounter.scrypt.tpl",
+   "md5": "48fdcbbb3112bbdbff9fbea011cfb885",
+   "stateType": "CounterState"
+  },
+  {
+   "symbol": "CounterState",
+   "path": "contracts/b2GCounter.scrypt.tpl"
+  },
+  {
    "symbol": "Examples",
    "path": "contracts/examples.scrypt.tpl",
    "md5": "30792d4b4450718993a04bd7275accf2"
