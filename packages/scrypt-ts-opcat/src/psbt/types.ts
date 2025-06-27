@@ -5,12 +5,14 @@ import { Signer, ToSignInput } from '../signer.js';
 import { OpcatState, Sig } from '../smart-contract/types/primitives.js';
 import { Psbt } from './psbt.js';
 import { Transaction } from '@opcat-labs/opcat';
+import { BacktraceInfo } from '../smart-contract/types/structs.js';
 /**
  * A options used to determine how to unlock the covenant.
  */
 export type ContractCall = (
   contract: SmartContract<OpcatState>,
   psbt: IExtPsbt,
+  backtraceInfo?: BacktraceInfo,
 ) => void;
 
 export interface IExtPsbt extends Psbt, Contextual {
@@ -19,7 +21,7 @@ export interface IExtPsbt extends Psbt, Contextual {
    * @param contract
    * @param subContractAlias
    */
-  addContractInput<Contract extends SmartContract<OpcatState>>(contract: Contract, contractCall?: (contract: Contract, psbt: IExtPsbt) => void): this;
+  addContractInput<Contract extends SmartContract<OpcatState>>(contract: Contract, contractCall?: ContractCall): this;
 
   /**
    * Add an output to create new contract.

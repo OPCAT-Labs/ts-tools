@@ -31,11 +31,7 @@ export type TxId = string;
 
 
 
-export type StateProvable = {
-  /**
-   * The state hashes of all the outputs of the transaction to which the UTXO belongs.
-   */
-  txoStateHashes: string;
+export type B2GProvable = {
 
   /**
    * The preimage of the tx to which the UTXO belongs.
@@ -44,8 +40,6 @@ export type StateProvable = {
   txHashPreimage: string;
 };
 
-export type StateProvableUtxo = UTXO & StateProvable;
+export type B2GUTXO = UTXO & B2GProvable;
 
-export type ExtUtxo = UTXO & Partial<StateProvable>;
-
-export type StatefulContractUtxo = StateProvableUtxo;
+export type ExtUtxo = UTXO & Partial<B2GUTXO>;

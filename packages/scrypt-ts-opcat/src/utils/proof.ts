@@ -1,65 +1,25 @@
 import { Transaction } from '@opcat-labs/opcat';
 import {
-  TX_INPUT_COUNT_MAX,
-  STATE_OUTPUT_COUNT_MAX,
   TX_INPUT_BYTE_LEN,
 } from '../smart-contract/consts.js';
-import { toByteString, fill, hash160, intToByteString, slice } from '../smart-contract/fns/index.js';
+import { toByteString,  slice, intToByteString } from '../smart-contract/fns/index.js';
 import {
   BacktraceInfo,
-  FixedArray,
+  ByteString,
   TxHashPreimage,
   TxIn,
 } from '../smart-contract/types/index.js';
 import { StdUtils } from '../smart-contract/builtin-libs/stdUtils.js';
-import { uint8ArrayToHex } from './common.js';
+
 import { BufferReader } from '../psbt/bufferutils.js';
 import { toHex } from 'uint8array-tools';
+import { UTXO } from '../globalTypes.js';
 
-export const emptyString = toByteString('');
 
-export const emptyFixedArray = function () {
-  return fill(emptyString, TX_INPUT_COUNT_MAX);
-};
 
-export const emptyTokenArray = function () {
-  return fill(emptyString, STATE_OUTPUT_COUNT_MAX);
-};
-
-export const emptyOutputByteStrings = function () {
-  return fill(emptyString, STATE_OUTPUT_COUNT_MAX);
-};
-
-export const emptyBigIntArray = function () {
-  return fill(0n, TX_INPUT_COUNT_MAX);
-};
-
-export const emptyTokenAmountArray = function () {
-  return fill(0n, STATE_OUTPUT_COUNT_MAX);
-};
-
-export const intArrayToByteString = function (
-  array: FixedArray<bigint, typeof TX_INPUT_COUNT_MAX>,
-) {
-  const rList = emptyFixedArray();
-  for (let index = 0; index < array.length; index++) {
-    const element = array[index];
-    rList[index] = hash160(intToByteString(element));
-  }
-  return rList;
-};
-
-/**@ignore */
-export const tokenAmountToByteString = function (
-  array: FixedArray<bigint, typeof STATE_OUTPUT_COUNT_MAX>,
-) {
-  const rList = emptyTokenArray();
-  for (let index = 0; index < array.length; index++) {
-    const element = array[index];
-    rList[index] = intToByteString(element);
-  }
-  return rList;
-};
+export const toGenesisOutpoint = function (utxo: UTXO): ByteString {
+  return Buffer.from(utxo.txId, 'hex').reverse().toString('hex') + intToByteString(BigInt(utxo.outputIndex), 4n);
+}
 
 /**
  * convert raw transaction buffer to TxHashPreimage

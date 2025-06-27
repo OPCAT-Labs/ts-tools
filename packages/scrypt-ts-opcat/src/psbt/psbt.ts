@@ -323,7 +323,7 @@ export class Psbt {
     checkInputsForPartialSig(this.data.inputs, 'addOutput');
     const { address } = outputData as any;
     if (typeof address === 'string') {
-      const script = Script.fromAddress(address);
+      const script = tools.fromHex(Script.fromAddress(address).toHex());
       outputData = Object.assign({}, outputData, { script });
     }
     const c = this.__CACHE;
@@ -927,7 +927,7 @@ class PsbtTransaction implements ITransaction {
     }
 
     this.tx.addOutput(new Transaction.Output({
-      script: output.script,
+      script: Script.fromBuffer(Buffer.from(output.script)),
       satoshis: Number(output.value),
       data: Buffer.from(output.data),
     }))

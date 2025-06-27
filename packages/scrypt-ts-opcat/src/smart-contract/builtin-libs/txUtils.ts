@@ -125,8 +125,8 @@ export class TxUtils extends SmartContractLib {
    * @returns {ByteString} a `ByteString` representing the P2PKH output
    */
   @method()
-  static buildP2PKHOutput(amount: UInt64, addr: Addr, dataHash: ByteString): ByteString {
-    return TxUtils.buildDataOutput(sha256(TxUtils.buildP2PKHScript(addr)), amount, dataHash);
+  static buildP2PKHOutput(amount: UInt64, addr: Addr): ByteString {
+    return TxUtils.buildDataOutput(sha256(TxUtils.buildP2PKHScript(addr)), amount, sha256(toByteString('')));
   }
 
   /**

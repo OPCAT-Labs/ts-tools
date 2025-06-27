@@ -23,12 +23,32 @@ export class DummyProvider implements ChainProvider, UtxoProvider {
   async getUtxos(address: string, _options?: UtxoQueryOptions): Promise<UTXO[]> {
     const script = Script.fromAddress(address)
 
+    const dummyTx = new Transaction();
+    dummyTx.addInput(new Transaction.Input({
+      prevTxId: Buffer.from(utils.randomBytes(32)),
+      outputIndex: 0,
+      script: Script.empty(),
+      sequenceNumber: 0xffffffff,
+      output: new Transaction.Output({
+        script: script,
+        satoshis: 2147483647, // 2**31 - 1
+        data: '',
+      })
+    }))
+    dummyTx.addOutput(new Transaction.Output({
+      script: script,
+      satoshis: 210000000, 
+      data: '',
+    }))
+
+    this.broadcastedTxs.set(dummyTx.id, dummyTx.toHex());
+
     return Promise.resolve([
       {
-        txId: uint8ArrayToHex(utils.randomBytes(32)),
+        txId: dummyTx.id,
         outputIndex: 0,
-        script: script.toHex(),
-        satoshis: 2147483647, // 2**31 - 1
+        script: dummyTx.outputs[0].script.toHex(),
+        satoshis: dummyTx.outputs[0].satoshis,
         data: '',
       },
     ]);

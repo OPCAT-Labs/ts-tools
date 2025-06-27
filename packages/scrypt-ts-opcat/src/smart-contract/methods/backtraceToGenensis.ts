@@ -3,7 +3,6 @@ import { toTxHashPreimage } from '../../utils/proof.js';
 import { AbstractContract } from '../abstractContract.js';
 import { ByteString } from '../types/index.js';
 import { Backtrace } from '../builtin-libs/backtrace.js';
-import { hash256 } from '../fns/index.js';
 
 import {
   BacktraceInfo,

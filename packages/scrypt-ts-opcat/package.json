@@ -31,9 +31,9 @@
   },
   "scripts": {
     "test": "npm run test:local",
-    "test:local": "cross-env mocha",
-    "test:opcat-testnet": "cross-env NETWORK=opcat-testnet mocha --timeout=0 --jobs=1",
-    "test:opcat-mainnet": "cross-env NETWORK=opcat-mainnet mocha --timeout=0 --jobs=1",
+    "test:local": "cross-env DUMMY_PROVIDER=1 mocha",
+    "test:testnet": "cross-env NETWORK=opcat-testnet mocha --timeout=0 --jobs=1",
+    "test:mainnet": "cross-env NETWORK=opcat-mainnet mocha --timeout=0 --jobs=1",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "postbuild:cjs": "node fixup.cjs",
     "build:esm": "tsc -p tsconfig.esm.json",

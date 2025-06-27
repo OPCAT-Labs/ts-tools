@@ -5,7 +5,6 @@ import {
   FixedArray,
 } from '../smart-contract/types/index.js';
 import * as tools from 'uint8array-tools';
-import { TX_INPUT_COUNT_MAX } from '../smart-contract/consts.js';
 
 /**
  * Converts a Uint8Array to a hexadecimal string.
@@ -63,18 +62,9 @@ export function requireTrue(res: boolean, message: string) {
 
 /** @ignore */
 export function getTxId(input: Transaction.Input): string {
-  const hash = Uint8Array.prototype.slice.call(input.prevTxId);
-  return uint8ArrayToHex(hash.reverse());
+  return uint8ArrayToHex(input.prevTxId);
 }
 
-/**
- * create StateHashes with empty value
- * @returns
- */
-export function emptyStateHashes(): any {
-  throw new Error('not implemented');
-  return fillFixedArray(emptyByteString(), TX_INPUT_COUNT_MAX);
-}
 
 /** @ignore */
 export function cloneDeep<T>(obj: T, hash = new WeakMap()): T {

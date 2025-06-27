@@ -2,13 +2,13 @@
 import { PsbtInput, Psbt as PsbtBase, OpcatUtxo } from '@opcat-labs/bip174';
 import { ByteString, Sig, SigHashType, TxOut } from '../smart-contract/types/index.js';
 import {
-  InputIndex, OutputIndex, SupportedNetwork, 
+  InputIndex, OutputIndex, SupportedNetwork,
   ExtUtxo,
-  StatefulContractUtxo,
-  StateProvableUtxo,
+  B2GUTXO,
+  UTXO,
 } from '../globalTypes.js';
 import { ToSignInput, SignOptions, Signer } from '../signer.js';
-import { DUST_LIMIT, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from '../smart-contract/consts.js';
+import { DUST_LIMIT } from '../smart-contract/consts.js';
 import { Script } from '../smart-contract/types/script.js';
 import { ContextProvider } from './contextProvider.js';
 import {
@@ -27,7 +27,10 @@ import { fromSupportedNetwork } from '../networks.js';
 import { Transaction, PublicKey, Networks } from '@opcat-labs/opcat';
 import { SmartContract } from '../smart-contract/smartContract.js';
 import { OpcatState } from '../smart-contract/types/primitives.js';
-import { SpentDataHashes } from '../smart-contract/types/structs.js';
+import { BacktraceInfo, SpentDataHashes } from '../smart-contract/types/structs.js';
+import { UtxoProvider } from '../providers/utxoProvider.js';
+import { ChainProvider } from '../providers/chainProvider.js';
+import { toTxHashPreimage } from '../utils/proof.js';
 
 const P2PKH_SIG_LEN = 0x49; // 73 bytes signature
 const P2PKH_PUBKEY_LEN = 0x21; // 33 bytes pubkey
@@ -137,7 +140,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this._ctxProvider.getInputCtx(inputIndex);
   }
 
-  getTxoStateHashes(): SpentDataHashes {
+  getSpentDataHashes(): SpentDataHashes {
 
     let spentDataHashes: SpentDataHashes = toByteString('');
     for (let i = 0; i < this.data.inputs.length; i++) {
@@ -149,11 +152,11 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   get hashSpentDatas(): ByteString {
 
-    const spentDataHashes = this.getTxoStateHashes();
+    const spentDataHashes = this.getSpentDataHashes();
 
     let spentDataHashesJoin = '';
     for (let i = 0; i < spentDataHashes.length; i++) {
-      if(spentDataHashes[i]) {
+      if (spentDataHashes[i]) {
         spentDataHashesJoin += spentDataHashes[i]
       }
     }
@@ -165,7 +168,10 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   private _finalizers: Map<InputIndex, Finalizer> = new Map();
 
   private _inputContracts: Map<InputIndex, SmartContract<OpcatState>> = new Map();
-  private _inStateProvableUtxos: Map<InputIndex, StatefulContractUtxo> = new Map();
+  private _B2GUtxos: Map<InputIndex, B2GUTXO> = new Map();
+
+  private _B2GInfos: Map<InputIndex, BacktraceInfo> = new Map();
+
   private _outputContracts: Map<OutputIndex, SmartContract<OpcatState>> = new Map();
 
   private _inputUnlockScripts: Map<InputIndex, Script> = new Map();
@@ -231,9 +237,9 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
         ],
       });
 
-      if (utxo.txoStateHashes && utxo.txHashPreimage) {
+      if (utxo.txHashPreimage) {
         const inputIndex = this.data.inputs.length - 1;
-        this._inStateProvableUtxos.set(inputIndex, utxo as StatefulContractUtxo);
+        this._B2GUtxos.set(inputIndex, utxo as B2GUTXO);
       }
     }
     return this;
@@ -262,7 +268,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   addContractInput<Contract extends SmartContract<OpcatState>>(
     contract: Contract,
-    contractCall?: (contract: Contract, psbt: IExtPsbt) => void,
+    contractCall?: ContractCall,
   ): this {
     const fromUtxo = contract.utxo;
     if (!fromUtxo) {
@@ -283,8 +289,8 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
     const inputIndex = this.data.inputs.length - 1;
     this._inputContracts.set(inputIndex, contract);
-    if ("txHashPreimage" in fromUtxo && 'txoStateHashes' in fromUtxo) {
-      this._inStateProvableUtxos.set(inputIndex, contract.utxo as StatefulContractUtxo);
+    if ("txHashPreimage" in fromUtxo) {
+      this._B2GUtxos.set(inputIndex, contract.utxo as B2GUTXO);
     }
 
     if (contractCall) {
@@ -298,7 +304,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     this.unsignedTx.inputs.splice(inputIndex, 1);
     this.data.inputs.splice(inputIndex, 1);
     this._inputContracts.delete(inputIndex);
-    this._inStateProvableUtxos.delete(inputIndex);
+    this._B2GUtxos.delete(inputIndex);
     this._finalizers.delete(inputIndex);
     this._sigRequests.delete(inputIndex);
     return this;
@@ -327,7 +333,9 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     // update the contract binding to the current psbt input
     contract.spentFromInput(this, inputIndex);
 
-    contractCall(contract, this);
+    const backtraceInfo = this._B2GInfos.get(inputIndex);
+
+    contractCall(contract, this, backtraceInfo);
     const us = contract.getUnlockingScript();
     this._cacheInputUnlockScript(inputIndex, us);
 
@@ -336,7 +344,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       _inputIndex: number, // Which input is it?
       _input: PsbtInput, // The PSBT input contents
     ) => {
-      contractCall(contract, this);
+      contractCall(contract, this, backtraceInfo);
       return contract.getUnlockingScript();
     };
     this._setInputFinalizer(inputIndex, finalizer);
@@ -507,23 +515,13 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     const signedTx = this.extractTransaction();
     this._outputContracts.forEach((contract, outputIndex) => {
       const utxo = this.txOutputs[outputIndex];
-      if (contract.state && Object.keys(contract.state).length > 0) {
-        contract.bindToUtxo({
-          txId: signedTx.id,
-          outputIndex,
-          data: uint8ArrayToHex(utxo.data),
-          satoshis: Number(utxo.value),
-          txoStateHashes: this.getTxoStateHashes(),
-          txHashPreimage: uint8ArrayToHex(signedTx.toTxHashPreimage()),
-        });
-      } else {
-        contract.bindToUtxo({
-          txId: signedTx.id,
-          outputIndex,
-          data: uint8ArrayToHex(utxo.data),
-          satoshis: Number(utxo.value),
-        });
-      }
+      contract.bindToUtxo({
+        txId: signedTx.id,
+        outputIndex,
+        data: uint8ArrayToHex(utxo.data),
+        satoshis: Number(utxo.value),
+        txHashPreimage: uint8ArrayToHex(signedTx.toTxHashPreimage()),
+      });
     });
   }
 
@@ -638,11 +636,11 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this._inputContracts.get(inputIndex);
   }
 
-  getStatefulInputUtxo(inputIndex: number): StatefulContractUtxo | undefined {
-    return this._inStateProvableUtxos.get(inputIndex);
+  getB2GInputUtxo(inputIndex: number): B2GUTXO | undefined {
+    return this._B2GUtxos.get(inputIndex);
   }
 
-  getChangeUTXO(): StateProvableUtxo | null {
+  getChangeUTXO(): UTXO | null {
     if (this._changeOutputIndex !== undefined) {
       const changeOutput = this.txOutputs[this._changeOutputIndex];
       if (!changeOutput) {
@@ -654,7 +652,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }
   }
 
-  getUtxo(outputIndex: number): StateProvableUtxo {
+  getUtxo(outputIndex: number): ExtUtxo {
     if (!this.txOutputs[outputIndex]) {
       throw new Error(`Output at index ${outputIndex} is not found`);
     }
@@ -668,30 +666,60 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       data: uint8ArrayToHex(this.txOutputs[outputIndex].data),
       address: address.toString(),
       satoshis: Number(this.txOutputs[outputIndex].value),
-      txoStateHashes: this.getTxoStateHashes(),
       txHashPreimage: this.txHashPreimage(),
     };
   }
 
-  getStatefulCovenantUtxo(outputIndex: number): StatefulContractUtxo {
-    const utxo = this.getUtxo(outputIndex);
+  async getBacktraceInfo(provider: UtxoProvider & ChainProvider, inputIndex: InputIndex, prevPrevTxFinder: (prevTx: Transaction, provider: UtxoProvider & ChainProvider, inputIndex: InputIndex) => Promise<string>): Promise<BacktraceInfo> {
+    const input = this.txInputs[inputIndex];
+    const prevTxId = uint8ArrayToHex(Uint8Array.prototype.slice.call(input.hash).reverse());
+    const prevTxHex = await provider.getRawTransaction(prevTxId);
+
+    const prevTx = Transaction.fromString(prevTxHex);
+    const prevPrevTxHex = await prevPrevTxFinder(prevTx, provider, inputIndex);
+    const prevPrevTx = Transaction.fromString(prevPrevTxHex);
+    const prevPrevTxId = uint8ArrayToHex(Uint8Array.prototype.slice.call(prevTx.inputs[input.index].prevTxId).reverse());
     return {
-      ...utxo,
-      txoStateHashes: this.getTxoStateHashes(),
-      txHashPreimage: this.txHashPreimage(),
-    };
+      prevTxInput: {
+        prevTxHash: prevPrevTxId,
+        prevOutputIndex: BigInt(prevTx.inputs[input.index].outputIndex),
+        sequence: BigInt(input.sequence),
+        scriptHash: sha256(prevTx.inputs[input.index].script.toHex()),
+      },
+      prevTxInputIndex: BigInt(inputIndex),
+      prevPrevTxPreimage: toTxHashPreimage(prevPrevTx.toTxHashPreimage()),
+    }
   }
 
-  isStatefulCovenantUtxo(utxo: object): boolean {
+  async calculateBacktraceInfo(provider: UtxoProvider & ChainProvider, prevPrevTxFinder?: (prevTx: Transaction, provider: UtxoProvider & ChainProvider, inputIndex: InputIndex) => Promise<string>): Promise<void> {
+    for (let i = 0; i < this.txInputs.length; i++) {
+      if (this.isContractInput(i)) {
+        const info = await this.getBacktraceInfo(provider, i, prevPrevTxFinder || (async (prevTx: Transaction, provider: UtxoProvider & ChainProvider, inputIndex: InputIndex) => {
+          const prevTxId = uint8ArrayToHex(prevTx.inputs[0].prevTxId);
+          const prevTxHex = await provider.getRawTransaction(prevTxId);
+          return prevTxHex;
+        }));
+        this._B2GInfos.set(i, info);
+      }
+    }
+  }
+
+
+
+  isB2GUtxo(utxo: object): boolean {
     return (
       typeof utxo === 'object' &&
       utxo !== null &&
-      'txoStateHashes' in utxo &&
       'txHashPreimage' in utxo
     );
   }
 
   txHashPreimage(): string {
+    if (!this._isSealed) {
+      // if call .change() but not call .seal(), it will cause the change satoshis is 0
+      // here we throw an error to avoid this, toHex() and toBase64() will also check this
+      throw new Error('should call seal() before txHashPreimage()');
+    }
     return uint8ArrayToHex(this.extractTransaction().toTxHashPreimage());
   }
 

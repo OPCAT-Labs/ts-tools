@@ -41,16 +41,6 @@ export const TX_OUTPUT_BYTE_LEN = 72n;
 /** @ignore */
 export const TX_INPUT_SCRIPT_HASH_BYTE_LEN = 32n;
 
-/**
- * @ignore
- * when computing the tx hash using the preimage passed in by the user in witness,
- * the maximum byte length of the concatenated preimage must be considered.
- * tx can have at most 6 inputs and 6 outputs,
- * since the elements on the BVM stack must be less than 520 bytes.
- */
-export const TX_INPUT_COUNT_MAX = 6;
-/** @ignore */
-export const TX_OUTPUT_COUNT_MAX = 6;
 /** @ignore */
 export const TX_IO_INDEX_VAL_MIN = 0n;
 /** @ignore */

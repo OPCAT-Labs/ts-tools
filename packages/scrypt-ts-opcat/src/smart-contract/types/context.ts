@@ -1,5 +1,5 @@
 import { PsbtTxInput, PsbtTxOutput } from '../../psbt/psbt.js';
-import { InputIndex, StatefulContractUtxo } from '../../globalTypes.js';
+import { B2GUTXO, InputIndex } from '../../globalTypes.js';
 import { SigHashType, UInt32 } from './primitives.js';
 import {
   SHPreimage,
@@ -142,12 +142,12 @@ export interface Contextual {
    * Get the output state hashes of the current transaction
    * @returns the output state hashes of the current transaction
    */
-  getTxoStateHashes(): SpentDataHashes;
+  getSpentDataHashes(): SpentDataHashes;
 
   /**
-   * Get the stateful covenant utxo of the current input
+   * Get the b2g contract utxo of the current input
    * @param inputIndex the index of the input in the PSBT
-   * @returns the stateful covenant utxo of the current input
+   * @returns the stateful contract utxo of the current input
    */
-  getStatefulInputUtxo(inputIndex: InputIndex): StatefulContractUtxo | undefined;
+  getB2GInputUtxo(inputIndex: InputIndex): B2GUTXO | undefined;
 }

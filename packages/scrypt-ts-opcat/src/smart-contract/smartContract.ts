@@ -1,13 +1,13 @@
 import { AbstractContract } from './abstractContract.js';
 import { Artifact } from './types/artifact.js';
-import { buildChangeOutputImpl, buildStateOutputImpl } from './methods/buildOutput.js';
+import { buildChangeOutputImpl } from './methods/buildOutput.js';
 import { checkCtxImpl } from './methods/checkCtx.js';
 import { checkSHPreimageImpl as checkSHPreimageImpl } from './methods/checkSHPreimage.js';
 import { checkSigImpl } from './methods/checkSig.js';
 import { ByteString, PubKey, SHPreimage, Sig } from './types/index.js';
 import { ABICoder, Arguments } from './abi.js';
 import { Script } from './types/script.js';
-import { ExtUtxo, InputIndex, Optional, StatefulContractUtxo, UTXO } from '../globalTypes.js';
+import { ExtUtxo, InputIndex, Optional, UTXO } from '../globalTypes.js';
 import { uint8ArrayToHex, cloneDeep, isFinal, hexToUint8Array } from '../utils/index.js';
 import { Contextual, InputContext, IContext } from './types/context.js';
 import {
@@ -15,7 +15,6 @@ import {
   SigHashType,
   OpcatState,
   SupportedParamType,
-  StructObject,
 } from './types/primitives.js';
 import { hash256, sha256 } from './fns/hashes.js';
 import { slice } from './fns/byteString.js';
@@ -27,8 +26,6 @@ import { deserializeState, serializeState } from './stateSerializer.js';
 import { getUnRenamedSymbol } from './abiutils.js';
 import { checkInputStateHashesImpl } from './methods/checkInputStateHashes.js';
 import { toTxHashPreimage } from '../utils/proof.js';
-import { IExtPsbt } from '../psbt/types.js';
-
 
 
 /**

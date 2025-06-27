@@ -1,32 +1,48 @@
+import { Transaction } from '@opcat-labs/opcat';
 import { ChainProvider, UtxoProvider } from '../providers/index.js';
 import { markSpent } from '../providers/utxoProvider.js';
 import { ExtPsbt } from '../psbt/extPsbt.js';
 import { Signer } from '../signer.js';
 import { SmartContract } from '../smart-contract/smartContract.js';
-import { OpcatState } from '../smart-contract/types/primitives.js';
+import { ByteString, OpcatState } from '../smart-contract/types/primitives.js';
+import { toGenesisOutpoint } from '../utils/proof.js';
 /**
- * Deploy a covenant
+ * Deploy a genesis contract
  * @category Feature
  * @param signer a signer, such as {@link DefaultSigner}  or {@link UnisatSigner}
- * @param provider a  {@link UtxoProvider}
- * @param chainProvider a  {@link ChainProvider}
- * @param contract the covenant
+ * @param provider a  {@link UtxoProvider} and {@link ChainProvider}
+ * @param createContract a function to create the contract with genesisOutpoint
+ * @param satoshis the satoshis to deploy the contract
  * @returns the deployed psbt
  */
-export async function deploy(
+export async function deployGenesis(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
-  contract: SmartContract<OpcatState>,
+  createContract: (genesisOutpoint: ByteString) => SmartContract<OpcatState>, // Function to create the contract with genesisOutpoint
   satoshis: number = 1,
-): Promise<ExtPsbt> {
+): Promise<{
+  psbt: ExtPsbt;
+  contract: SmartContract<OpcatState>;
+}> {
   const address = await signer.getAddress();
-
-
   const utxos = await provider.getUtxos(address);
 
   const feeRate = await provider.getFeeRate();
   const network = await provider.getNetwork();
   const psbt = new ExtPsbt({ network: network });
+  const genesisOutpoint = toGenesisOutpoint(utxos[0])
+  const contract = createContract(genesisOutpoint); // Create contract with the txid of the psbt
+
+
+  if (!('txHashPreimage' in utxos[0])) {
+    const rawTx = await provider.getRawTransaction(utxos[0].txId);
+
+    const txHashPreimage = Transaction.fromString(rawTx).toTxHashPreimage().toString('hex');
+
+    Object.assign(utxos[0], {
+      txHashPreimage: txHashPreimage
+    })
+  }
 
   psbt.spendUTXO(utxos.slice(0, 10))
     .addContractOutput(contract, satoshis)
@@ -43,11 +59,12 @@ export async function deploy(
   const deployTx = psbt.extractTransaction();
   await provider.broadcast(deployTx.toHex());
   markSpent(provider, deployTx);
+
   const changeUTXO = psbt.getChangeUTXO();
 
   if (changeUTXO) {
     provider.addNewUTXO(changeUTXO);
   }
 
-  return psbt;
+  return { psbt, contract };
 }

@@ -1,3 +1,4 @@
+import { Transaction } from '@opcat-labs/opcat';
 import { ChainProvider, UtxoProvider } from '../providers/index.js';
 import { markSpent } from '../providers/utxoProvider.js';
 import { ExtPsbt } from '../psbt/extPsbt.js';
@@ -5,7 +6,18 @@ import { ContractCall } from '../psbt/types.js';
 import { Signer } from '../signer.js';
 import { SmartContract } from '../smart-contract/smartContract.js';
 import { OpcatState } from '../smart-contract/types/primitives.js';
+import { InputIndex } from '../globalTypes.js';
 
+export type CallOptions = {
+  contract?: SmartContract<OpcatState>; 
+  satoshis?: number, 
+  lockTime?: number,
+  sequence?: number, 
+  changeAddress?: string, 
+  feeRate?: number,
+  withBackTraceInfo?: boolean,
+  prevPrevTxFinder?: (prevTx: Transaction, provider: UtxoProvider & ChainProvider, inputIndex: InputIndex) => Promise<string>
+}
 /**
  * call a contract
  * @category Feature
@@ -13,7 +25,7 @@ import { OpcatState } from '../smart-contract/types/primitives.js';
  * @param provider a {@link UtxoProvider} & {@link ChainProvider}
  * @param contract the contract
  * @param contractCall the contract call function, such as `(contract: Counter) => { contract.increase() }`
- * @param newContract the new contract, such as `{ contract: newContract, satoshis: 1 }`
+ * @param options the new contract, such as `{ contract: newContract, satoshis: 1 }`
  * @returns the called psbt
  */
 export async function call(
@@ -21,11 +33,11 @@ export async function call(
   provider: UtxoProvider & ChainProvider,
   contract: SmartContract<OpcatState>,
   contractCall: ContractCall,
-  newContract?: { contract: SmartContract<OpcatState>; satoshis: number},
+  options?: CallOptions,
 ): Promise<ExtPsbt> {
   const address = await signer.getAddress();
 
-  const feeRate = await provider.getFeeRate();
+  const feeRate = options?.feeRate || await provider.getFeeRate();
 
   const utxos = await provider.getUtxos(address);
 
@@ -35,11 +47,23 @@ export async function call(
     .addContractInput(contract)
     .spendUTXO(utxos.slice(0, 10));
 
-  if (newContract) {
-    psbt.addContractOutput(newContract.contract, newContract.satoshis);
+  if (options && options.contract) {
+    const satoshis = options?.satoshis || 1;
+    psbt.addContractOutput(options.contract, satoshis);
   }
-  psbt.change(address, feeRate);
 
+  const changeAddress = options?.changeAddress || address;
+  psbt.change(changeAddress, feeRate);
+
+  const lockTime = options?.lockTime || 0;
+  const sequence = options?.sequence || 0xffffffff;
+  psbt.setLocktime(lockTime)
+  psbt.setInputSequence(0, sequence);
+
+
+  if (options?.withBackTraceInfo) {
+    await psbt.calculateBacktraceInfo(provider, options.prevPrevTxFinder);
+  }
   psbt.updateContractInput(0, contractCall);
   psbt.seal();
 

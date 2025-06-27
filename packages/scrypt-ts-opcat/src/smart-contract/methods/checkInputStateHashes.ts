@@ -4,9 +4,6 @@ import {
 import { assert } from '../fns/assert.js';
 import { hash256 } from '../fns/hashes.js';
 import { SpentDataHashes } from '../types/structs.js';
-import { TX_INPUT_COUNT_MAX } from '../consts.js';
-import { toByteString } from '../fns/byteString.js';
-
 
 /**
  * Verifies that the hash of the input data matches the expected state hash.
