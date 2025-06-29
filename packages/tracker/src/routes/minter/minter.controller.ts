@@ -7,11 +7,11 @@ import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 export class MinterController {
   constructor(private readonly minterService: MinterService) {}
 
-  @Get(':tokenIdOrTokenAddr/utxos')
+  @Get(':tokenIdOrTokenScriptHash/utxos')
   @ApiTags('minter')
   @ApiOperation({ summary: 'Get minter utxos by token id or token address' })
   @ApiParam({
-    name: 'tokenIdOrTokenAddr',
+    name: 'tokenIdOrTokenScriptHash',
     required: true,
     type: String,
     description: 'token id or token address',
@@ -29,32 +29,32 @@ export class MinterController {
     description: 'paging limit',
   })
   async getMinterUtxos(
-    @Param('tokenIdOrTokenAddr') tokenIdOrTokenAddr: string,
+    @Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string,
     @Query('offset') offset?: number,
     @Query('limit') limit?: number,
   ) {
     try {
-      const utxos = await this.minterService.getMinterUtxos(tokenIdOrTokenAddr, offset, limit);
+      const utxos = await this.minterService.getMinterUtxos(tokenIdOrTokenScriptHash, offset, limit);
       return okResponse(utxos);
     } catch (e) {
       return errorResponse(e);
     }
   }
 
-  @Get(':tokenIdOrTokenAddr/utxoCount')
+  @Get(':tokenIdOrTokenScriptHash/utxoCount')
   @ApiTags('minter')
   @ApiOperation({
     summary: 'Get minter utxo count by token id or token address',
   })
   @ApiParam({
-    name: 'tokenIdOrTokenAddr',
+    name: 'tokenIdOrTokenScriptHash',
     required: true,
     type: String,
     description: 'token id or token address',
   })
-  async getMinterUtxoCount(@Param('tokenIdOrTokenAddr') tokenIdOrTokenAddr: string) {
+  async getMinterUtxoCount(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
-      const utxos = await this.minterService.getMinterUtxoCount(tokenIdOrTokenAddr);
+      const utxos = await this.minterService.getMinterUtxoCount(tokenIdOrTokenScriptHash);
       return okResponse(utxos);
     } catch (e) {
       return errorResponse(e);

@@ -8,19 +8,19 @@ import { TokenTypeScope } from '../../common/types';
 export class TokenController {
   constructor(private readonly tokenService: TokenService) {}
 
-  @Get(':tokenIdOrTokenAddr')
+  @Get(':tokenIdOrTokenScriptHash')
   @ApiTags('token')
-  @ApiOperation({ summary: 'Get token info by token id or token address' })
+  @ApiOperation({ summary: 'Get token info by token id or token script hash' })
   @ApiParam({
-    name: 'tokenIdOrTokenAddr',
+    name: 'tokenIdOrTokenScriptHash',
     required: true,
     type: String,
-    description: 'token id or token address',
+    description: 'token id or token script hash',
   })
-  async getTokenInfo(@Param('tokenIdOrTokenAddr') tokenIdOrTokenAddr: string) {
+  async getTokenInfo(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
-      const tokenInfo = await this.tokenService.getTokenInfoByTokenIdOrTokenAddress(
-        tokenIdOrTokenAddr,
+      const tokenInfo = await this.tokenService.getTokenInfoByTokenIdOrTokenScriptHash(
+        tokenIdOrTokenScriptHash,
         TokenTypeScope.Fungible,
       );
       return okResponse(tokenInfo);
@@ -29,14 +29,14 @@ export class TokenController {
     }
   }
 
-  @Get(':tokenIdOrTokenAddr/addresses/:ownerAddrOrPkh/utxos')
+  @Get(':tokenIdOrTokenScriptHash/addresses/:ownerAddrOrPkh/utxos')
   @ApiTags('token')
   @ApiOperation({ summary: 'Get token utxos by owner address' })
   @ApiParam({
-    name: 'tokenIdOrTokenAddr',
+    name: 'tokenIdOrTokenScriptHash',
     required: true,
     type: String,
-    description: 'token id or token address',
+    description: 'token id or token script hash',
   })
   @ApiParam({
     name: 'ownerAddrOrPkh',
@@ -57,14 +57,14 @@ export class TokenController {
     description: 'paging limit',
   })
   async getTokenUtxosByOwnerAddress(
-    @Param('tokenIdOrTokenAddr') tokenIdOrTokenAddr: string,
+    @Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string,
     @Param('ownerAddrOrPkh') ownerAddrOrPkh: string,
     @Query('offset') offset?: number,
     @Query('limit') limit?: number,
   ) {
     try {
       const utxos = await this.tokenService.getTokenUtxosByOwnerAddress(
-        tokenIdOrTokenAddr,
+        tokenIdOrTokenScriptHash,
         TokenTypeScope.Fungible,
         ownerAddrOrPkh,
         offset,
@@ -76,11 +76,11 @@ export class TokenController {
     }
   }
 
-  @Get(':tokenIdOrTokenAddr/addresses/:ownerAddrOrPkh/balance')
+  @Get(':tokenIdOrTokenScriptHash/addresses/:ownerAddrOrPkh/balance')
   @ApiTags('token')
   @ApiOperation({ summary: 'Get token balance by owner address' })
   @ApiParam({
-    name: 'tokenIdOrTokenAddr',
+    name: 'tokenIdOrTokenScriptHash',
     required: true,
     type: String,
     description: 'token id or token address',
@@ -92,12 +92,12 @@ export class TokenController {
     description: 'token owner address or public key hash',
   })
   async getTokenBalanceByOwnerAddress(
-    @Param('tokenIdOrTokenAddr') tokenIdOrTokenAddr: string,
+    @Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string,
     @Param('ownerAddrOrPkh') ownerAddrOrPkh: string,
   ) {
     try {
       const balance = await this.tokenService.getTokenBalanceByOwnerAddress(
-        tokenIdOrTokenAddr,
+        tokenIdOrTokenScriptHash,
         TokenTypeScope.Fungible,
         ownerAddrOrPkh,
       );
@@ -107,53 +107,56 @@ export class TokenController {
     }
   }
 
-  @Get(':tokenIdOrTokenAddr/mintAmount')
+  @Get(':tokenIdOrTokenScriptHash/mintAmount')
   @ApiTags('token')
   @ApiOperation({
     summary: 'Get token total mint amount by token id or token address',
   })
   @ApiParam({
-    name: 'tokenIdOrTokenAddr',
+    name: 'tokenIdOrTokenScriptHash',
     required: true,
     type: String,
     description: 'token id or token address',
   })
-  async getTokenMintAmount(@Param('tokenIdOrTokenAddr') tokenIdOrTokenAddr: string) {
+  async getTokenMintAmount(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
-      const mintCount = await this.tokenService.getTokenMintAmount(tokenIdOrTokenAddr, TokenTypeScope.Fungible);
+      const mintCount = await this.tokenService.getTokenMintAmount(tokenIdOrTokenScriptHash, TokenTypeScope.Fungible);
       return okResponse(mintCount);
     } catch (e) {
       return errorResponse(e);
     }
   }
 
-  @Get(':tokenIdOrTokenAddr/circulation')
+  @Get(':tokenIdOrTokenScriptHash/circulation')
   @ApiTags('token')
   @ApiOperation({
     summary: 'Get token current circulation by token id or token address',
   })
   @ApiParam({
-    name: 'tokenIdOrTokenAddr',
+    name: 'tokenIdOrTokenScriptHash',
     required: true,
     type: String,
     description: 'token id or token address',
   })
-  async getTokenCirculation(@Param('tokenIdOrTokenAddr') tokenIdOrTokenAddr: string) {
+  async getTokenCirculation(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
-      const circulation = await this.tokenService.getTokenCirculation(tokenIdOrTokenAddr, TokenTypeScope.Fungible);
+      const circulation = await this.tokenService.getTokenCirculation(
+        tokenIdOrTokenScriptHash,
+        TokenTypeScope.Fungible,
+      );
       return okResponse(circulation);
     } catch (e) {
       return errorResponse(e);
     }
   }
 
-  @Get(':tokenIdOrTokenAddr/holders')
+  @Get(':tokenIdOrTokenScriptHash/holders')
   @ApiTags('token')
   @ApiOperation({
     summary: 'Get token holders by token id or token address',
   })
   @ApiParam({
-    name: 'tokenIdOrTokenAddr',
+    name: 'tokenIdOrTokenScriptHash',
     required: true,
     type: String,
     description: 'token id or token address',
@@ -171,12 +174,17 @@ export class TokenController {
     description: 'paging limit',
   })
   async getTokenHolders(
-    @Param('tokenIdOrTokenAddr') tokenIdOrTokenAddr: string,
+    @Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string,
     @Query('offset') offset?: number,
     @Query('limit') limit?: number,
   ) {
     try {
-      const r = await this.tokenService.getTokenHolders(tokenIdOrTokenAddr, TokenTypeScope.Fungible, offset, limit);
+      const r = await this.tokenService.getTokenHolders(
+        tokenIdOrTokenScriptHash,
+        TokenTypeScope.Fungible,
+        offset,
+        limit,
+      );
       const holders = r.holders.map((holder) => {
         return {
           ownerPubKeyHash: holder.ownerPubKeyHash,

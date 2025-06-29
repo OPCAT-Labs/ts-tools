@@ -10,7 +10,7 @@ export class TxOutEntity {
   @PrimaryColumn({ name: 'output_index' })
   outputIndex: number;
 
-  @Column({ name: 'block_height' })
+  @Column({ name: 'block_height', default: 2147483647 })
   @Index()
   blockHeight: number;
 
@@ -20,6 +20,9 @@ export class TxOutEntity {
   @Column({ name: 'locking_script_hash' })
   lockingScriptHash: string;
 
+  @Column({ name: 'is_from_mint' })
+  isFromMint: boolean;
+
   @Column({ name: 'owner_pkh', nullable: true })
   @Index()
   ownerPubKeyHash: string;
@@ -27,11 +30,8 @@ export class TxOutEntity {
   @Column({ name: 'token_amount', type: 'bigint', nullable: true })
   tokenAmount: bigint;
 
-  /**
-   * @deprecated
-   */
-  @Column({ name: 'state_hash', nullable: true })
-  stateHash: string;
+  @Column({ name: 'data' })
+  data: string;
 
   @Column({ name: 'spend_txid', nullable: true })
   spendTxid: string;

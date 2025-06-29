@@ -8,9 +8,11 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TxOutEntity } from '../../entities/txOut.entity';
 import { NftInfoEntity } from '../../entities/nftInfo.entity';
 import { TokenMintEntity } from '../../entities/tokenMint.entity';
+import { RpcModule } from '../rpc/rpc.module';
 
 @Module({
   imports: [
+    RpcModule,
     TypeOrmModule.forFeature([TxEntity, TokenInfoEntity, TxOutEntity, NftInfoEntity, TokenMintEntity]),
     CommonModule,
     ScheduleModule.forRoot(),

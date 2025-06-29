@@ -34,21 +34,21 @@ export class MinterService {
   }
 
   async queryMinterUtxos(
-    tokenIdOrTokenAddr: string,
+    tokenIdOrTokenScriptHash: string,
     isCountQuery: boolean = false,
     offset: number | null = null,
     limit: number | null = null,
   ) {
     const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
-    const tokenInfo = await this.tokenService.getTokenInfoByTokenIdOrTokenAddress(
-      tokenIdOrTokenAddr,
+    const tokenInfo = await this.tokenService.getTokenInfoByTokenIdOrTokenScriptHash(
+      tokenIdOrTokenScriptHash,
       TokenTypeScope.All,
     );
     let count = 0;
     let utxos = [];
-    if (lastProcessedHeight !== null && tokenInfo?.minterPubKey) {
+    if (lastProcessedHeight !== null && tokenInfo?.minterScriptHash) {
       const where = {
-        xOnlyPubKey: tokenInfo.minterPubKey,
+        lockingScriptHash: tokenInfo.minterScriptHash,
         spendTxid: IsNull(),
         blockHeight: LessThanOrEqual(lastProcessedHeight),
       };

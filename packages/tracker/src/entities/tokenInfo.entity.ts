@@ -18,25 +18,16 @@ export class TokenInfoEntity {
   @Column()
   decimals: number;
 
-  @Column({ name: 'raw_info', type: 'jsonb' })
-  rawInfo: object;
+  @Column({ name: 'raw_info' })
+  rawInfo: string;
 
-  @Column({ name: 'content_type', nullable: true })
-  contentType: string;
-
-  @Column({ name: 'content_encoding', nullable: true })
-  contentEncoding: string;
-
-  @Column({ name: 'content_raw', type: 'bytea', nullable: true })
-  contentRaw: Buffer;
-
-  @Column({ name: 'minter_pubkey', length: 64 })
+  @Column({ name: 'minter_script_hash', length: 64, nullable: true })
   @Index()
-  minterPubKey: string;
+  minterScriptHash: string;
 
-  @Column({ name: 'token_pubkey', length: 64, nullable: true })
+  @Column({ name: 'token_script_hash', length: 64, nullable: true })
   @Index()
-  tokenPubKey: string;
+  tokenScriptHash: string;
 
   @Column({ name: 'first_mint_height', nullable: true })
   @Index()

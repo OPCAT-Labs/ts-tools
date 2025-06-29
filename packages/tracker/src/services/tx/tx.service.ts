@@ -1,23 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { TxEntity } from '../../entities/tx.entity';
 import { DataSource, EntityManager, MoreThanOrEqual, Repository } from 'typeorm';
-import { payments, TxInput, crypto } from '@scrypt-inc/bitcoinjs-lib';
-import { Transaction, encoding } from '@opcat-labs/opcat';
+import { Transaction } from '@opcat-labs/opcat';
 import { TxOutEntity } from '../../entities/txOut.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Constants } from '../../common/constants';
 import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
 import { NftInfoEntity } from '../../entities/nftInfo.entity';
 import { CatTxError, TransferTxError } from '../../common/exceptions';
-import { bin2num, parseTokenInfoEnvelope } from '../../common/utils';
-import { BlockHeader, EnvelopeMarker, TaprootPayment, TokenInfoEnvelope } from '../../common/types';
+import { BlockHeader } from '../../common/types';
 import { TokenMintEntity } from '../../entities/tokenMint.entity';
 import { LRUCache } from 'lru-cache';
 import { CommonService } from '../common/common.service';
 import { TxOutArchiveEntity } from 'src/entities/txOutArchive.entity';
 import { Cron } from '@nestjs/schedule';
-import { sha256 } from 'scrypt-ts';
-import { deserializeMetadata } from './deserializeMeta';
+import { byteString2Int, sha256, toHex } from 'scrypt-ts';
+import { ContractLib } from '../../common/contract';
+import { RpcService } from '../rpc/rpc.service';
 
 @Injectable()
 export class TxService {
@@ -34,6 +33,7 @@ export class TxService {
   private dataSource: DataSource;
 
   constructor(
+    private readonly rpcService: RpcService,
     private commonService: CommonService,
     @InjectRepository(TokenInfoEntity)
     private tokenInfoEntityRepository: Repository<TokenInfoEntity>,
@@ -43,10 +43,18 @@ export class TxService {
     private txOutEntityRepository: Repository<TxOutEntity>,
     @InjectRepository(NftInfoEntity)
     private nftInfoEntityRepository: Repository<NftInfoEntity>,
-    @InjectRepository(TokenMintEntity)
-    private tokenMintEntityRepository: Repository<TokenMintEntity>,
   ) {
     this.dataSource = this.txEntityRepository.manager.connection;
+  }
+
+  async txAddPrevouts(tx: Transaction) {
+    for (const input of tx.inputs) {
+      const prevTxid = input.prevTxId.toString('hex');
+      const outputIndex = input.outputIndex;
+      const resp = await this.rpcService.getRawTx(prevTxid);
+      const preTx = new Transaction(resp?.data?.result);
+      input.output = preTx.outputs[outputIndex];
+    }
   }
 
   /**
@@ -57,6 +65,16 @@ export class TxService {
    * @returns processing time in milliseconds if successfully processing a CAT-related tx, otherwise undefined
    */
   async processTx(tx: Transaction, txIndex: number, blockHeader: BlockHeader) {
+    // if (
+    //   [
+    //     '300085facc1a53e8818f1dee6c901afd649d1d83c85756e60526516a025c8c45',
+    //     '75cf7267e2262fa7898149f3c353462494a462435779365c75de2f8273dbee07',
+    //     '3f2255cb58fd670a9bd11fd8eb50a24c5712519120896d7d51f4e1577b4ebd77',
+    //     '08b659921003be0ffd935f59b95bf51b4e005888dfb380c9c569a9d10f6fa8c2',
+    //   ].indexOf(tx.hash) == -1
+    // ) {
+    //   return;
+    // }
     if (tx.isCoinbase()) {
       return;
     }
@@ -65,13 +83,32 @@ export class TxService {
     try {
       this.updateSpent(tx);
 
-      // found Guard in inputs, this is a token transfer tx
-      await this.processTransferTx(tx, txIndex, blockHeader);
-      this.logger.log(`[OK] transfer tx ${tx.id}`);
-
-      // // search minter in inputs
-      await this.processMintTx(tx, txIndex, blockHeader);
-      this.logger.log(`[OK] mint tx ${tx.id}`);
+      await this.txAddPrevouts(tx);
+      // get tags
+      const inputTags = ContractLib.decodeInputsTag(tx);
+      const outputTags = ContractLib.decodeOutputsTag(tx);
+      const outputFields = ContractLib.decodeAllOutputFields(tx);
+      const tags = inputTags.concat(outputTags);
+      let isSaveTx = false;
+      if (inputTags[0] === ContractLib.OPCAT_METADATA_TAG) {
+        // process genesis
+        isSaveTx = isSaveTx || (await this.processMetaTx(tx, outputTags, blockHeader));
+        this.logger.log(`[OK] genesis tx ${tx.id}`);
+      }
+      //
+      if (inputTags[0] === ContractLib.OPCAT_MINTER_TAG) {
+        // search minter in inputs
+        isSaveTx = isSaveTx || (await this.processMintTx(tx, outputTags, blockHeader, outputFields));
+        this.logger.log(`[OK] mint tx ${tx.id}`);
+      }
+      //
+      if (tags.includes(ContractLib.OPCAT_CAT20_TAG)) {
+        isSaveTx = isSaveTx || (await this.processTransferTx(tx, outputTags, blockHeader, outputFields));
+        this.logger.log(`[OK] transfer tx ${tx.id}`);
+      }
+      if (isSaveTx) {
+        await this.saveTx(tx, txIndex, blockHeader);
+      }
 
       return Math.ceil(Date.now() - startTs);
     } catch (e) {
@@ -115,99 +152,132 @@ export class TxService {
     });
   }
 
-  private async getTokenInfo(minterPubKey: string) {
-    let tokenInfo = TxService.tokenInfoCache.get(minterPubKey);
-    if (!tokenInfo) {
-      tokenInfo = await this.tokenInfoEntityRepository.findOne({
-        select: ['tokenId', 'genesisTxid', 'name', 'symbol', 'decimals', 'minterPubKey', 'tokenPubKey'],
-        where: { minterPubKey },
-      });
-      if (tokenInfo && tokenInfo.tokenPubKey) {
-        const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
-        if (lastProcessedHeight !== null) {
-          TxService.tokenInfoCache.set(minterPubKey, tokenInfo);
+  private async processMetaTx(tx: Transaction, outputTags: string[], blockHeader: BlockHeader) {
+    const promises: Promise<any>[] = [];
+    const input = tx.inputs[0];
+    const inputGenesis = input.output;
+    const fields = ContractLib.decodeFields(inputGenesis.data);
+    const tokenId = `${input.prevTxId.toString('hex')}_${input.outputIndex}`;
+    const [, _name, _symbol, _decimals] = fields;
+    const name = Buffer.from(_name, 'hex').toString('utf-8');
+    const symbol = Buffer.from(_symbol, 'hex').toString('utf-8');
+    const decimals = Number(byteString2Int(_decimals));
+    const tokenInfoEntity = this.tokenInfoEntityRepository.create({
+      tokenId,
+      genesisTxid: tx.hash,
+      name: name,
+      symbol: symbol,
+      decimals: decimals,
+      rawInfo: toHex(inputGenesis.data),
+    });
+    // promises.push(p);
+    for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
+      const output = tx.outputs[outputIndex];
+      const outputTag = outputTags[outputIndex];
+      const lockingScriptHash = sha256(tx.outputs[outputIndex].script.toHex());
+      if (outputTag === ContractLib.OPCAT_MINTER_TAG) {
+        const txOut = this.txOutEntityRepository.create();
+        tokenInfoEntity.minterScriptHash = lockingScriptHash;
+        txOut.txid = tx.hash;
+        txOut.outputIndex = outputIndex;
+        txOut.blockHeight = blockHeader.height;
+        txOut.satoshis = BigInt(output.satoshis);
+        txOut.lockingScriptHash = lockingScriptHash;
+        txOut.isFromMint = true;
+        txOut.tokenAmount = 0n;
+        txOut.data = toHex(output.data);
+        promises.push(this.txOutEntityRepository.save(txOut));
+      }
+    }
+    promises.push(this.tokenInfoEntityRepository.save(tokenInfoEntity));
+    await Promise.all(promises);
+    return promises.length > 0;
+  }
+
+  private async processMintTx(
+    tx: Transaction,
+    outputTags: string[],
+    blockHeader: BlockHeader,
+    outputFields: string[][],
+  ) {
+    const promises: Promise<any>[] = [];
+    const inputMinter = await this.tokenInfoEntityRepository.findOne({
+      where: {
+        minterScriptHash: sha256(tx.inputs[0].output.script.toHex()),
+      },
+    });
+    for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
+      const outputTag = outputTags[outputIndex];
+      const output = tx.outputs[outputIndex];
+      const lockingScriptHash = sha256(tx.outputs[outputIndex].script.toHex());
+      if (outputTag === ContractLib.OPCAT_MINTER_TAG) {
+        const txOut = this.txOutEntityRepository.create();
+        txOut.txid = tx.hash;
+        txOut.outputIndex = outputIndex;
+        txOut.blockHeight = blockHeader.height;
+        txOut.satoshis = BigInt(output.satoshis);
+        txOut.lockingScriptHash = lockingScriptHash;
+        txOut.isFromMint = true;
+        txOut.tokenAmount = 0n;
+        txOut.data = toHex(output.data);
+        promises.push(this.txOutEntityRepository.save(txOut));
+      } else if (outputTag === ContractLib.OPCAT_CAT20_TAG) {
+        if (!inputMinter.tokenScriptHash) {
+          inputMinter.tokenScriptHash = lockingScriptHash;
+          promises.push(this.tokenInfoEntityRepository.save(inputMinter));
         }
+        const outputField = outputFields[outputIndex];
+        const [, owner, _amount] = outputField;
+        const amount = byteString2Int(_amount);
+        const txOut = this.txOutEntityRepository.create();
+        txOut.txid = tx.hash;
+        txOut.outputIndex = outputIndex;
+        txOut.blockHeight = blockHeader.height;
+        txOut.satoshis = BigInt(output.satoshis);
+        txOut.lockingScriptHash = lockingScriptHash;
+        txOut.isFromMint = true;
+        txOut.ownerPubKeyHash = sha256(owner);
+        txOut.tokenAmount = amount;
+        txOut.data = toHex(output.data);
+        promises.push(this.txOutEntityRepository.save(txOut));
       }
     }
-    return tokenInfo;
+    // save token mint
+    await Promise.all(promises);
+    return promises.length > 0;
   }
 
-  private async processMintTx(tx: Transaction, txIndex: number, blockHeader: BlockHeader) {
+  private async processTransferTx(
+    tx: Transaction,
+    outputTags: string[],
+    blockHeader: BlockHeader,
+    outputFields: string[][],
+  ) {
     const promises: Promise<any>[] = [];
     for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
+      const outputTag = outputTags[outputIndex];
       const output = tx.outputs[outputIndex];
-      const meta = deserializeMetadata(output.data);
-      if (meta) {
-        const tokenPubKey = sha256(output.script.toHex());
-        promises.push(
-          this.tokenMintEntityRepository.save({
-            txid: tx.id,
-            tokenPubKey: tokenPubKey,
-            blockHeight: blockHeader.height,
-          }),
-        );
-        promises.push(this.txOutEntityRepository.save({ ...this.buildBaseTxOutEntity(tx, outputIndex, blockHeader) }));
-        // this.tokenInfoEntityRepository.save({
-        //   tokenId,
-        //   revealTxid: tx.getId(),
-        //   revealHeight: blockHeader.height,
-        //   genesisTxid,
-        //   name: metadata['name'],
-        //   symbol: metadata['symbol'],
-        //   decimals: marker === EnvelopeMarker.Token ? metadata['decimals'] : -1,
-        //   rawInfo: metadata,
-        //   contentType: content?.type,
-        //   contentEncoding: content?.encoding,
-        //   contentRaw: content?.raw,
-        //   minterPubKey,
-        // }),
-        // const exists = await this.tokenInfoEntityRepository.exists({ where: { tokenPubKey } });
-        // if (!exists) {
-        //   promises.push(this.tokenInfoEntityRepository.save({}));
-        // }
+      const lockingScriptHash = sha256(tx.outputs[outputIndex].script.toHex());
+      if (outputTag === ContractLib.OPCAT_CAT20_TAG) {
+        // Todo
+        const outputField = outputFields[outputIndex];
+        const [, owner, _amount] = outputField;
+        const amount = byteString2Int(_amount);
+        const txOut = this.txOutEntityRepository.create();
+        txOut.txid = tx.hash;
+        txOut.outputIndex = outputIndex;
+        txOut.blockHeight = blockHeader.height;
+        txOut.satoshis = BigInt(output.satoshis);
+        txOut.lockingScriptHash = lockingScriptHash;
+        txOut.isFromMint = false;
+        txOut.ownerPubKeyHash = sha256(owner);
+        txOut.tokenAmount = amount;
+        txOut.data = toHex(output.data);
+        promises.push(this.txOutEntityRepository.save(txOut));
       }
     }
-
-    // // update token info when first mint
-    // if (tokenInfo.tokenPubKey === null) {
-    //   // tokenPubKey must not be shown before
-    //   const exists = await this.tokenInfoEntityRepository.exists({ where: { tokenPubKey } });
-    //   if (exists) {
-    //     throw new CatTxError('invalid mint tx, first time mint but token pubkey already exists');
-    //   }
-    //   promises.push(
-    //     this.tokenInfoEntityRepository.update(
-    //       {
-    //         tokenId: tokenInfo.tokenId,
-    //       },
-    //       {
-    //         tokenPubKey,
-    //         firstMintHeight: blockHeader.height,
-    //       },
-    //     ),
-    //   );
-    // }
-    // // save token mint
-    await Promise.all([...promises, this.saveTx(tx, txIndex, blockHeader)]);
-  }
-
-  private async processTransferTx(tx: Transaction, txIndex: number, blockHeader: BlockHeader) {
-    const promises: Promise<any>[] = [];
-    for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
-      const output = tx.outputs[outputIndex];
-      if (output.data.length === 29) {
-        const br = new encoding.BufferReader(output.data);
-        const amount = BigInt(br.readInt32LE());
-        const ownerAddr = br.readAll().toString('hex');
-        const p = this.txOutEntityRepository.save({
-          ...this.buildBaseTxOutEntity(tx, outputIndex, blockHeader),
-          ownerPubKeyHash: ownerAddr,
-          tokenAmount: amount,
-        });
-        promises.push(p);
-      }
-    }
-    await Promise.all([...promises, this.saveTx(tx, txIndex, blockHeader)]);
+    await Promise.all(promises);
+    return promises.length > 0;
   }
 
   /**
@@ -226,7 +296,7 @@ export class TxService {
       manager.update(
         TokenInfoEntity,
         { firstMintHeight: MoreThanOrEqual(height) },
-        { firstMintHeight: null, tokenPubKey: null },
+        { firstMintHeight: null, tokenScriptHash: null },
       ),
       manager.delete(TokenMintEntity, {
         blockHeight: MoreThanOrEqual(height),

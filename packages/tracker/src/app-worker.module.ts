@@ -18,6 +18,8 @@ require('dotenv').config();
     ConfigModule.forRoot({
       load: [appConfig],
     }),
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     TypeOrmModule.forRoot(ormConfig),
 
     RpcModule,

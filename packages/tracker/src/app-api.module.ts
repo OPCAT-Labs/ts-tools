@@ -9,7 +9,6 @@ import { HealthCheckModule } from './routes/healthCheck/healthCheck.module';
 import { TokenModule } from './routes/token/token.module';
 import { MinterModule } from './routes/minter/minter.module';
 import { AddressModule } from './routes/address/address.module';
-import { CollectionModule } from './routes/collection/collection.module';
 // serivces
 import { CommonModule } from './services/common/common.module';
 import { TxModule } from './routes/tx/tx.module';
@@ -22,13 +21,14 @@ require('dotenv').config();
     ConfigModule.forRoot({
       load: [appConfig],
     }),
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
     TypeOrmModule.forRoot(ormConfig),
 
     HealthCheckModule,
     TokenModule,
     MinterModule,
     AddressModule,
-    CollectionModule,
     TxModule,
 
     CommonModule,

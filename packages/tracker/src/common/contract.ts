@@ -33,4 +33,50 @@ export class ContractLib {
     }
     return tags;
   }
+
+  static decodeInputsTag(tx: Transaction): string[] {
+    const tags = [];
+    for (let index = 0; index < tx.inputs.length; index++) {
+      const input = tx.inputs[index];
+      if (input.output) {
+        tags.push(ContractLib.decodeContractTag(input.output.data));
+      } else {
+        tags.push('');
+      }
+    }
+    return tags;
+  }
+
+  static decodeTxTag(tx: Transaction) {
+    return ContractLib.decodeInputsTag(tx).concat(ContractLib.decodeOutputsTag(tx));
+  }
+
+  static decodeFields(data: Buffer) {
+    const fields = [];
+    let start = 0;
+    while (true) {
+      const dataLen = Number(byteString2Int(data.subarray(start, start + 2).toString('hex')));
+      if (dataLen < 0) {
+        break;
+      }
+      if (start + dataLen < data.length - 20) {
+        start += 2;
+        const field = data.subarray(start, start + dataLen).toString('hex');
+        start += dataLen;
+        fields.push(field);
+      } else {
+        break;
+      }
+    }
+    fields.push(data.subarray(data.length - 20).toString('hex'));
+    return fields;
+  }
+
+  static decodeAllOutputFields(tx: Transaction) {
+    const outputFields: string[][] = [];
+    for (const output of tx.outputs) {
+      outputFields.push(ContractLib.decodeFields(output.data));
+    }
+    return outputFields;
+  }
 }

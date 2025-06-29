@@ -2,6 +2,7 @@ import { address, payments, script } from 'bitcoinjs-lib';
 import { Constants, network } from './constants';
 import { decode as cborDecode } from 'cbor';
 import { EnvelopeMarker, EnvelopeData, TokenInfoEnvelope } from './types';
+import { sha256 } from 'scrypt-ts';
 
 export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -42,9 +43,9 @@ export function addressToXOnlyPubKey(addr: string) {
 
 export function ownerAddressToPubKeyHash(ownerAddr: string) {
   try {
-    return ownerAddr?.length === Constants.CONTRACT_OWNER_ADDR_BYTES * 2
+    return ownerAddr?.length === 32 * 2
       ? ownerAddr
-      : Buffer.from(address.toOutputScript(ownerAddr, network)).toString('hex');
+      : sha256(Buffer.from(address.toOutputScript(ownerAddr, network)).toString('hex'));
   } catch {
     return null;
   }
