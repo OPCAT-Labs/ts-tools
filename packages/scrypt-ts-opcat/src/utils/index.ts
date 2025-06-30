@@ -6,6 +6,7 @@ export {
   cloneDeep,
   isFinal,
   toHex,
+  addrToPkh,
 } from './common.js';
 
 export { getValidatedHexString } from '../smart-contract/types/utils.js';

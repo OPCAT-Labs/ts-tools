@@ -5,4 +5,5 @@ export { toByteString, intToByteString, byteStringToInt, len, slice, reverseByte
 export { pubKey2Addr } from './pubKey2Addr.js';
 export { max, min, within, abs } from './math.js';
 export { equals } from './equals.js';
+export { exit } from './exit.js';
 export { lshift, rshift, and, or, xor, invert } from './bitwise.js';

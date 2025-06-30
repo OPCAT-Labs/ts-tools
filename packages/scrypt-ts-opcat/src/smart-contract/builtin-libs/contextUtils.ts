@@ -87,41 +87,8 @@ export class ContextUtils extends SmartContractLib {
    */
   @method()
   static checkSHPreimage(shPreimage: SHPreimage, sigHashType: ByteString): Sig {
-    assert(len(shPreimage.nVersion) == 4n, 'invalid length of nVersion');
-    assert(len(shPreimage.hashPrevouts) == 32n, 'invalid length of hashPrevouts');
-    assert(len(shPreimage.spentScriptHash) == 32n, 'invalid length of spentScriptHash');
-    assert(len(shPreimage.spentDataHash) == 32n, 'invalid length of spentDataHash');
-    assert(shPreimage.value >= 0n, 'invalid value of value');
-    assert(len(shPreimage.nSequence) == 4n, 'invalid length of nSequence');
-    assert(len(shPreimage.hashSpentAmounts) == 32n, 'invalid length of hashSpentAmounts');
-    assert(len(shPreimage.hashSpentScriptHashes) == 32n, 'invalid length of hashSpentScriptHashes');
-    assert(len(shPreimage.hashSpentDataHashes) == 32n, 'invalid length of hashSpentDataHashes');
-    assert(len(shPreimage.hashSequences) == 32n, 'invalid length of hashSequences');
-    assert(len(shPreimage.hashOutputs) == 32n, 'invalid length of hashOutputs');
-    assert(shPreimage.inputIndex >= 0n, 'invalid value of inputIndex');
-    assert(shPreimage.nLockTime >= 0n, 'invalid value of nLockTime');
-    assert(shPreimage.sigHashType == 1n
-      || shPreimage.sigHashType == 2n
-      || shPreimage.sigHashType == 3n
-      || shPreimage.sigHashType == 0x81n
-      || shPreimage.sigHashType == 0x82n
-      || shPreimage.sigHashType == 0x83n
-      , 'invalid value of sigHashType');
-
-    const preimage = shPreimage.nVersion
-      + shPreimage.hashPrevouts
-      + shPreimage.spentScriptHash
-      + shPreimage.spentDataHash
-      + TxUtils.satoshisToByteString(shPreimage.value)
-      + shPreimage.nSequence
-      + shPreimage.hashSpentAmounts
-      + shPreimage.hashSpentScriptHashes
-      + shPreimage.hashSpentDataHashes
-      + shPreimage.hashSequences
-      + shPreimage.hashOutputs
-      + StdUtils.toLEUnsigned(shPreimage.inputIndex, 4n)
-      + StdUtils.toLEUnsigned(shPreimage.nLockTime, 4n)
-      + intToByteString(shPreimage.sigHashType, 4n);
+    
+    const preimage = ContextUtils.serializeSHPreimage(shPreimage);
 
     const h: ByteString = hash256(preimage);
     const sig: Sig = ContextUtils.sign(

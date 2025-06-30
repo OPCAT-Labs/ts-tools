@@ -46,7 +46,7 @@ function checkSignatureEncoding(signature: Sig): boolean {
  * @returns true publickey valid.
  */
 function checkPubkeyEncoding(publickey: PubKey) {
-  if ((Interpreter.DEFAULT_FLAGS & Interpreter.SCRIPT_VERIFY_STRICTENC) !== 0 && ! PublicKey.isValid(toByteString(publickey))) {
+  if ((Interpreter.DEFAULT_FLAGS & Interpreter.SCRIPT_VERIFY_STRICTENC) !== 0 && !PublicKey.isValid(toByteString(publickey))) {
     return false
   }
   return true
@@ -61,7 +61,7 @@ function checkPubkeyEncoding(publickey: PubKey) {
  */
 export function checkSigImpl(self: AbstractContract, signature: Sig, publickey: PubKey): boolean {
 
-  if (!checkSignatureEncoding(signature) || ! checkPubkeyEncoding(publickey)) {
+  if (!checkSignatureEncoding(signature) || !checkPubkeyEncoding(publickey)) {
     return false
   }
 
@@ -89,4 +89,72 @@ export function checkSigImpl(self: AbstractContract, signature: Sig, publickey: 
 
 
   return fSuccess
+}
+
+
+/**
+ * @ignore
+ * @param self 
+ * @param signatures 
+ * @param publickeys 
+ * @returns 
+ */
+export function checkMultiSigImpl(self: AbstractContract, signatures: Sig[], publickeys: PubKey[]): boolean {
+
+
+  for (let i = 0; i < signatures.length; i++) {
+    if (!checkSignatureEncoding(signatures[i])) {
+      return false
+    }
+  }
+
+  for (let i = 0; i < publickeys.length; i++) {
+    if (!checkPubkeyEncoding(publickeys[i])) {
+      return false
+    }
+  }
+
+  const shPreimage = self.ctx;
+
+  const pubKeysVisited = new Set()
+  let fSuccess = false;
+  for (let i = 0; i < signatures.length; i++) {
+    const sig = crypto.Signature.fromTxFormat(Buffer.from(toByteString(signatures[i]), 'hex'));
+
+    let noPubKeyMatch = true
+    for (let j = 0; j < publickeys.length; j++) {
+      if (pubKeysVisited.has(j)) {
+        continue
+      }
+
+      pubKeysVisited.add(j)
+      const pubkey = PublicKey.fromBuffer(Buffer.from(toByteString(publickeys[j]), 'hex'), false);
+
+
+      try {
+
+        const byteString = encodeSHPreimage(shPreimage);
+
+        const hashbuf = Buffer.from(hash256(byteString), 'hex').reverse();
+
+        fSuccess = crypto.ECDSA.verify(hashbuf, sig, pubkey, 'little')
+
+
+        if (fSuccess) {
+          noPubKeyMatch = false
+          break
+        }
+      } catch (_err) {
+        continue
+      }
+    }
+
+    if (noPubKeyMatch) {
+      return false
+    }
+
+  }
+
+  return true;
+
 }

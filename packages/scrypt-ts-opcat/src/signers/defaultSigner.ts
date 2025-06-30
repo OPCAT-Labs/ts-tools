@@ -60,11 +60,17 @@ export class DefaultSigner implements Signer {
 
 
     const address = await this.getAddress();
+    const publicKey = await this.getPublicKey();
     if (options) {
       options.toSignInputs.forEach((inputOpt) => {
         if (inputOpt.address && inputOpt.address !== address) {
           return;
         }
+
+        if (inputOpt.publicKey && inputOpt.publicKey !== publicKey) {
+          return;
+        }
+
         const sighashTypes = inputOpt.sighashTypes || [crypto.Signature.SIGHASH_ALL];
         psbt.signInput(inputOpt.index, this.keyPair, sighashTypes);
       });

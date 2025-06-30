@@ -16,6 +16,7 @@ export type CallOptions = {
   changeAddress?: string, 
   feeRate?: number,
   withBackTraceInfo?: boolean,
+  unfinalize?: boolean,
   prevPrevTxFinder?: (prevTx: Transaction, provider: UtxoProvider & ChainProvider, inputIndex: InputIndex) => Promise<string>
 }
 /**
@@ -68,7 +69,13 @@ export async function call(
   psbt.seal();
 
   const signedPsbtHex = await signer.signPsbt(psbt.toHex(), psbt.psbtOptions());
-  const signedPsbt = psbt.combine(ExtPsbt.fromHex(signedPsbtHex)).finalizeAllInputs();
+
+  const signedPsbt = psbt.combine(ExtPsbt.fromHex(signedPsbtHex));
+  if(options?.unfinalize) {
+    return signedPsbt;
+  }
+  
+  signedPsbt.finalizeAllInputs();
   const callTx = signedPsbt.extractTransaction();
   await provider.broadcast(callTx.toHex());
   markSpent(provider, callTx);

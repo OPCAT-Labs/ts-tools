@@ -6,6 +6,8 @@ export { SmartContract } from './smart-contract/smartContract.js';
 export { SmartContractLib } from './smart-contract/smartContractLib.js';
 export { method, prop, type MethodDecoratorOptions } from './smart-contract/decorators.js';
 
+import * as opcat from '@opcat-labs/opcat';
+
 // smart contract artifact
 export {
   type Artifact,
@@ -56,3 +58,5 @@ export * from './features/index.js';
 export { type Network, toSupportedNetwork, fromSupportedNetwork } from './networks.js';
 
 export { type SupportedNetwork, type UTXO, type  ExtUtxo, type B2GUTXO } from './globalTypes.js';
+
+export { opcat };

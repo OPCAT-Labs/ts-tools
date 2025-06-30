@@ -49,9 +49,117 @@
    "path": "contracts/b2GCounter.scrypt.tpl"
   },
   {
+   "symbol": "CoinToss",
+   "path": "contracts/cointoss.scrypt.tpl",
+   "md5": "b4e9af2cd8d5d5d7234150f721b94db9"
+  },
+  {
+   "symbol": "Crowdfund",
+   "path": "contracts/crowdfund.scrypt.tpl",
+   "md5": "6f9d1b859d3732188933353c60666f29"
+  },
+  {
    "symbol": "Examples",
    "path": "contracts/examples.scrypt.tpl",
    "md5": "30792d4b4450718993a04bd7275accf2"
+  },
+  {
+   "symbol": "ContextUtils",
+   "path": "../../../../node_modules/@opcat-labs/scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/contextUtils.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "LamportP2PK",
+   "path": "contracts/lamportSig.scrypt.tpl",
+   "md5": "01061ca293f13e39990033f7489647fa"
+  },
+  {
+   "symbol": "Matrix",
+   "path": "contracts/matrix.scrypt.tpl",
+   "md5": "c2e835b333dd80e192337afc17acdbf9"
+  },
+  {
+   "symbol": "ModExp",
+   "path": "contracts/modEXP.scrypt.tpl",
+   "md5": "e3a3a7595630925a13ddbc81a37c8b59"
+  },
+  {
+   "symbol": "MultiPartyHashPuzzle",
+   "path": "contracts/multiPartyHashPuzzle.scrypt.tpl",
+   "md5": "89594f4402df57324e23a1ae6b7c4d2d"
+  },
+  {
+   "symbol": "MultiSigPayment",
+   "path": "contracts/multiSig.scrypt.tpl",
+   "md5": "6a74038af2d27235d318cc129b231655"
+  },
+  {
+   "symbol": "Rule110",
+   "path": "contracts/rule110.scrypt.tpl",
+   "md5": "4f3f901206f5f26171b6035dede06009",
+   "stateType": "Rule110State"
+  },
+  {
+   "symbol": "Rule110State",
+   "path": "contracts/rule110.scrypt.tpl"
+  },
+  {
+   "symbol": "Shift",
+   "path": "contracts/shift.scrypt.tpl"
+  },
+  {
+   "symbol": "ShiftTest",
+   "path": "contracts/shift.scrypt.tpl",
+   "md5": "168ce435771b2e5b00d9ca8c80ad35aa"
+  },
+  {
+   "symbol": "TimedCommit",
+   "path": "contracts/timedCommit.scrypt.tpl",
+   "md5": "c44fc9f85ffda68e02aff766013bdc32"
+  },
+  {
+   "symbol": "ArrayUtils",
+   "path": "contracts/turingMachine.scrypt.tpl"
+  },
+  {
+   "symbol": "TuringMachine",
+   "path": "contracts/turingMachine.scrypt.tpl",
+   "md5": "aa52aee5b2049ee432d1fa4774b14f1d",
+   "stateType": "TuringMachineState"
+  },
+  {
+   "symbol": "TuringMachineState",
+   "path": "contracts/turingMachine.scrypt.tpl"
+  },
+  {
+   "symbol": "TransitionFuncEntry",
+   "path": "contracts/turingMachine.scrypt.tpl"
+  },
+  {
+   "symbol": "Output",
+   "path": "contracts/turingMachine.scrypt.tpl"
+  },
+  {
+   "symbol": "Input",
+   "path": "contracts/turingMachine.scrypt.tpl"
+  },
+  {
+   "symbol": "Voting",
+   "path": "contracts/voting.scrypt.tpl",
+   "md5": "2b4995858697ea6dde0c222c0ede38b2",
+   "stateType": "VotingState"
+  },
+  {
+   "symbol": "VotingState",
+   "path": "contracts/voting.scrypt.tpl"
+  },
+  {
+   "symbol": "Candidate",
+   "path": "contracts/voting.scrypt.tpl"
+  },
+  {
+   "symbol": "XORPuzzle",
+   "path": "contracts/xorpuzzle.scrypt.tpl",
+   "md5": "29fda55efd2e9e47eced4dc99cfca7b5"
   }
  ]
 }

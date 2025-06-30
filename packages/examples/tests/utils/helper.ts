@@ -45,3 +45,19 @@ export function getRandomSigner(network?: SupportedNetwork) {
 }
 
 
+
+export function padLeadingZero(hex: string, byteslen: number = 0) {
+  if(byteslen > 0) {
+    if(hex.length < byteslen * 2) {
+      return "0".repeat(byteslen * 2 - hex.length) + hex
+    }
+  }
+  if(hex.length % 2 === 0) return hex;
+  return "0" + hex;
+}
+
+export function getRandomInt(min: number, max: number) {
+    min = Math.ceil(min)
+    max = Math.floor(max)
+    return Math.floor(Math.random() * (max - min) + min) // The maximum is exclusive and the minimum is inclusive
+}

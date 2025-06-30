@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { AbstractContract } from './abstractContract.js';
 import { Artifact } from './types/artifact.js';
 import { buildChangeOutputImpl } from './methods/buildOutput.js';
 import { checkCtxImpl } from './methods/checkCtx.js';
 import { checkSHPreimageImpl as checkSHPreimageImpl } from './methods/checkSHPreimage.js';
-import { checkSigImpl } from './methods/checkSig.js';
+import { checkMultiSigImpl, checkSigImpl } from './methods/checkSig.js';
 import { ByteString, PubKey, SHPreimage, Sig } from './types/index.js';
 import { ABICoder, Arguments } from './abi.js';
 import { Script } from './types/script.js';
@@ -179,6 +180,24 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return fSuccess;
   }
 
+  
+  /**
+   * Compares the first signature against each public key until it finds an ECDSA match. 
+   * Starting with the subsequent public key, it compares the second signature against 
+   * each remaining public key until it finds an ECDSA match. The process is repeated 
+   * until all signatures have been checked or not enough public keys remain 
+   * to produce a successful result. All signatures need to match a public key. 
+   * Because public keys are not checked again if they fail any signature comparison, 
+   * signatures must be placed in the scriptSig using the same order as their corresponding
+   * public keys were placed in the scriptPubKey or redeemScript. If all signatures are 
+   * valid, 1 is returned, 0 otherwise. Due to a bug, one extra unused value is removed from the stack.
+   * @onchain
+   * @category Signature Verification
+   */
+  checkMultiSig(signatures: Sig[], publickeys: PubKey[]): boolean {
+    return checkMultiSigImpl(this, signatures, publickeys);
+  }
+
   /**
    * A built-in function to create an [change output]{@link https://en.bitcoin.it/wiki/Change}.
    * @onchain
@@ -187,17 +206,6 @@ export class SmartContract<StateT extends OpcatState = undefined>
   buildChangeOutput(): ByteString {
     this._checkPsbtBinding();
     return buildChangeOutputImpl(this._curPsbt);
-  }
-
-  /**
-   * @ignore
-   */
-  get accessedInputStateProofs(): boolean {
-    return (
-      this._abiCoder.artifact.abi.filter(
-        (func) => func.params.filter((p) => p.name === '__scrypt_ts_inputStateProofs').length > 0,
-      ).length > 0
-    );
   }
 
   /**

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { crypto, Transaction } from '@opcat-labs/opcat';
+import { Address, crypto, Transaction } from '@opcat-labs/opcat';
 import {
   ByteString,
   FixedArray,
@@ -214,4 +214,13 @@ export function toHex(val: Buffer | string | Uint8Array): string {
     return val;
   }
   return tools.toHex(val);
+}
+
+/**
+ * Converts a Bitcoin address to its public key hash (PKH) in hex format.
+ * @param address - The Bitcoin address to convert.
+ * @returns The public key hash as a hex string.
+ */
+export function addrToPkh(address: string) {
+  return tools.toHex(Address.fromString(address).hashBuffer);
 }

@@ -48,7 +48,7 @@ import {
   InjectedProp_PrevTxHashPreimage,
   InjectedParam_PrevTxHashPreimage,
 } from './snippets';
-import { MethodDecoratorOptions, TX_INPUT_COUNT_MAX } from '@opcat-labs/scrypt-ts-opcat';
+import { MethodDecoratorOptions } from '@opcat-labs/scrypt-ts-opcat';
 import { Relinker } from './relinker';
 
 const BUILDIN_PACKAGE_NAME = '@opcat-labs/scrypt-ts-opcat';
@@ -2198,6 +2198,10 @@ export class Transpiler {
               accessState: true,
               accessSpentAmounts: true, // spentDataHashes depends on spentAmounts
               accessSpentDataHashes: true, // state depends on spentDataHashes
+            });
+          } else if (node.name.getText() ==='ctx') {
+            Object.assign(accessInfo, {
+              accessSHPreimage: true, // accessSpentDataHashes depends on shPreimage
             });
           }
         }
@@ -4752,10 +4756,9 @@ export class Transpiler {
           : ACCESS_INPUT_COUNT.accessArgument);
         break;
       case 'this.ctx':
-        throw new TranspileError(
-          `Direct access to \`this.ctx\` is prohibited, only access to \`this.ctx.*\` is allowed, such as: \`this.ctx.shaSpentAmounts\` or \`this.ctx.inputIndex\``,
-          this.getRange(node),
-        );
+        shouldAccessThis = this.shouldAutoAppendPrevouts(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}`);
+        break;
       case 'this.state':
         shouldAccessThis = this.shouldAutoAppendStateArgs(
           this.getMethodContainsTheNode(node),
@@ -5227,9 +5230,6 @@ export class Transpiler {
 
     const text = node.getText().replaceAll('?', '');
     switch (text) {
-      case 'this.ctx.serialize()':
-        toSection.append(`this.${InjectedParam_SHPreimage}`, this.getCoordinates(node.getStart()));
-        break;
       case 'this.insertCodeSeparator()':
         {
           const ifStmt = Transpiler.getIfStatement(node);
