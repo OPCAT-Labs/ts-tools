@@ -9,6 +9,7 @@ import { RpcModule } from './services/rpc/rpc.module';
 import { BlockModule } from './services/block/block.module';
 import { TxModule } from './services/tx/tx.module';
 import { CommonModule } from './services/common/common.module';
+import { ZmqModule } from './services/zmq/zmq.module';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 require('dotenv').config();
@@ -26,6 +27,7 @@ require('dotenv').config();
     BlockModule,
     TxModule,
     CommonModule,
+    ZmqModule,
   ],
   controllers: [],
   providers: [],

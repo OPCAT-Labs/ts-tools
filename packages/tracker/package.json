@@ -47,7 +47,8 @@
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",
     "scrypt-ts": "^1.4.5",
-    "typeorm": "^0.3.20"
+    "typeorm": "^0.3.20",
+    "zeromq": "^6.4.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

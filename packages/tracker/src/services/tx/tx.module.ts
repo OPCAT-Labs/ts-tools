@@ -9,6 +9,7 @@ import { TxOutEntity } from '../../entities/txOut.entity';
 import { NftInfoEntity } from '../../entities/nftInfo.entity';
 import { TokenMintEntity } from '../../entities/tokenMint.entity';
 import { RpcModule } from '../rpc/rpc.module';
+import { ZmqModule } from '../zmq/zmq.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { RpcModule } from '../rpc/rpc.module';
     TypeOrmModule.forFeature([TxEntity, TokenInfoEntity, TxOutEntity, NftInfoEntity, TokenMintEntity]),
     CommonModule,
     ScheduleModule.forRoot(),
+    ZmqModule,
   ],
   providers: [TxService],
   exports: [TxService],

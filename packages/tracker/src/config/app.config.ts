@@ -6,6 +6,8 @@ export const appConfig = () => ({
   rpcPort: process.env.RPC_PORT,
   rpcUser: process.env.RPC_USER,
   rpcPassword: process.env.RPC_PASSWORD,
-
+  zmqServer: process.env.ZMQ_SERVER,
+  zmqSubEventList: ['rawtx', 'hashblock'],
+  zmqDebug: true,
   genesisBlockHeight: Math.max(parseInt(process.env.GENESIS_BLOCK_HEIGHT || '2'), 2),
 });

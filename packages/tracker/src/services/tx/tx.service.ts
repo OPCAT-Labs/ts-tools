@@ -17,6 +17,7 @@ import { Cron } from '@nestjs/schedule';
 import { byteString2Int, sha256, toHex } from 'scrypt-ts';
 import { ContractLib } from '../../common/contract';
 import { RpcService } from '../rpc/rpc.service';
+import { ZmqService } from '../zmq/zmq.service';
 
 @Injectable()
 export class TxService {
@@ -43,8 +44,16 @@ export class TxService {
     private txOutEntityRepository: Repository<TxOutEntity>,
     @InjectRepository(NftInfoEntity)
     private nftInfoEntityRepository: Repository<NftInfoEntity>,
+    private zmqService: ZmqService,
   ) {
     this.dataSource = this.txEntityRepository.manager.connection;
+    this.zmqService.onRawTx(async (buff: Buffer) => {
+      const tx = Transaction.fromBuffer(buff);
+      await this.processTx(tx, -1, null);
+    });
+    this.zmqService.onHashBlock((blockHash: Buffer) => {
+      this.logger.debug(`onHashBlock ${blockHash}`);
+    });
   }
 
   async txAddPrevouts(tx: Transaction) {
@@ -64,17 +73,7 @@ export class TxService {
    * @param blockHeader header of the block that contains this transaction
    * @returns processing time in milliseconds if successfully processing a CAT-related tx, otherwise undefined
    */
-  async processTx(tx: Transaction, txIndex: number, blockHeader: BlockHeader) {
-    // if (
-    //   [
-    //     '300085facc1a53e8818f1dee6c901afd649d1d83c85756e60526516a025c8c45',
-    //     '75cf7267e2262fa7898149f3c353462494a462435779365c75de2f8273dbee07',
-    //     '3f2255cb58fd670a9bd11fd8eb50a24c5712519120896d7d51f4e1577b4ebd77',
-    //     '08b659921003be0ffd935f59b95bf51b4e005888dfb380c9c569a9d10f6fa8c2',
-    //   ].indexOf(tx.hash) == -1
-    // ) {
-    //   return;
-    // }
+  async processTx(tx: Transaction, txIndex: number, blockHeader: BlockHeader | null) {
     if (tx.isCoinbase()) {
       return;
     }
@@ -144,15 +143,15 @@ export class TxService {
     );
   }
 
-  private async saveTx(tx: Transaction, txIndex: number, blockHeader: BlockHeader) {
+  private async saveTx(tx: Transaction, txIndex: number, blockHeader: BlockHeader | null) {
     return this.txEntityRepository.save({
       txid: tx.id,
-      blockHeight: blockHeader.height,
+      blockHeight: blockHeader ? blockHeader.height : 2147483647,
       txIndex,
     });
   }
 
-  private async processMetaTx(tx: Transaction, outputTags: string[], blockHeader: BlockHeader) {
+  private async processMetaTx(tx: Transaction, outputTags: string[], blockHeader: BlockHeader | null) {
     const promises: Promise<any>[] = [];
     const input = tx.inputs[0];
     const inputGenesis = input.output;
@@ -180,7 +179,7 @@ export class TxService {
         tokenInfoEntity.minterScriptHash = lockingScriptHash;
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
-        txOut.blockHeight = blockHeader.height;
+        txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;
         txOut.satoshis = BigInt(output.satoshis);
         txOut.lockingScriptHash = lockingScriptHash;
         txOut.isFromMint = true;
@@ -197,7 +196,7 @@ export class TxService {
   private async processMintTx(
     tx: Transaction,
     outputTags: string[],
-    blockHeader: BlockHeader,
+    blockHeader: BlockHeader | null,
     outputFields: string[][],
   ) {
     const promises: Promise<any>[] = [];
@@ -214,7 +213,7 @@ export class TxService {
         const txOut = this.txOutEntityRepository.create();
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
-        txOut.blockHeight = blockHeader.height;
+        txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;
         txOut.satoshis = BigInt(output.satoshis);
         txOut.lockingScriptHash = lockingScriptHash;
         txOut.isFromMint = true;
@@ -232,7 +231,7 @@ export class TxService {
         const txOut = this.txOutEntityRepository.create();
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
-        txOut.blockHeight = blockHeader.height;
+        txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;
         txOut.satoshis = BigInt(output.satoshis);
         txOut.lockingScriptHash = lockingScriptHash;
         txOut.isFromMint = true;
@@ -250,7 +249,7 @@ export class TxService {
   private async processTransferTx(
     tx: Transaction,
     outputTags: string[],
-    blockHeader: BlockHeader,
+    blockHeader: BlockHeader | null,
     outputFields: string[][],
   ) {
     const promises: Promise<any>[] = [];
@@ -266,7 +265,7 @@ export class TxService {
         const txOut = this.txOutEntityRepository.create();
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
-        txOut.blockHeight = blockHeader.height;
+        txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;
         txOut.satoshis = BigInt(output.satoshis);
         txOut.lockingScriptHash = lockingScriptHash;
         txOut.isFromMint = false;
