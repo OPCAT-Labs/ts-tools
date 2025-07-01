@@ -1952,8 +1952,8 @@ export class Transpiler {
           ) {
             // append checkInputState for current input
 
-            const rawState = this._stateTypeSymbols.has(this.currentContractName)
-              ? `${this._currentContract.name.getText()}.serializeState(${InjectedParam_CurState})`
+            const stateHash = this._stateTypeSymbols.has(this.currentContractName)
+              ? `${this._currentContract.name.getText()}.stateHash(${InjectedParam_CurState})`
               : "b''";
 
             // here no need to access this, because it's in public function, the variable we access is in the arguments
@@ -1961,7 +1961,7 @@ export class Transpiler {
             sec
               .append('\n')
               .append(
-                `StateUtils.checkInputState(${InjectedParam_SHPreimage}.inputIndex, ${rawState}, ${InjectedParam_SpentDataHashes});`,
+                `StateUtils.checkInputState(${InjectedParam_SHPreimage}.inputIndex, ${stateHash}, ${InjectedParam_SpentDataHashes});`,
               )
               .append('\n');
           }

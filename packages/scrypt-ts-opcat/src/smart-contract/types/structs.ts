@@ -73,19 +73,19 @@ export type SHPreimage = {
 
   /**
    * 32 bytes.
-   * hash256(Prevouts)
+   * hash256(prevout0 + prevout1 + ... + prevoutN)
    */
   hashPrevouts: ByteString;
 
   /**
    * 32 bytes.
-   * current input's prevout script hash
+   * current input's prevout script hash, SHA256
    */
   spentScriptHash: ByteString
 
   /**
    * 32 bytes.
-   * current input's prevout data hash
+   * current input's prevout data hash, SHA256
    */
   spentDataHash: ByteString;
 
@@ -101,31 +101,31 @@ export type SHPreimage = {
 
   /**
    * 32 bytes.
-   * hash256(SpentAmounts)
+   * hash256(spentAmount0(8 bytes, little endian) + spentAmount1 + ... + spentAmountN)
    */
   hashSpentAmounts: ByteString;
 
   /**
    * 32 bytes.
-   * hash256(SpentScriptHashes)
+   * hash256(spentScriptHash0(32 bytes) + spentScriptHash1 + ... + spentScriptHashN)
    */
   hashSpentScriptHashes: ByteString;
 
   /**
    * 32 bytes.
-   * hash256(SpentDataHashes)
+   * hash256(spentDataHash0(32 bytes) + spentDataHash1 + ... + spentDataHashN)
    */
   hashSpentDataHashes: ByteString;
 
   /**
    * 32 bytes.
-   * hash256(SpentSequences)
+   * hash256(sequence0(4 bytes, little endian) + sequence1 + ... + sequenceN)
    */
   hashSequences: ByteString;
 
   /**
    * 32 bytes.
-   * hash256(Outputs)
+   * hash256(output0(value(8 bytes, little endian) + scriptHash(32 bytes) + dataHash(32 bytes)) + output1 + ... + outputN)
    */
   hashOutputs: ByteString;
 

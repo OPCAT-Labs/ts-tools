@@ -27,6 +27,7 @@ import { deserializeState, serializeState } from './stateSerializer.js';
 import { getUnRenamedSymbol } from './abiutils.js';
 import { checkInputStateHashesImpl } from './methods/checkInputStateHashes.js';
 import { toTxHashPreimage } from '../utils/proof.js';
+import { assert } from './fns/assert.js';
 
 
 /**
@@ -274,15 +275,12 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * option in the `@method()` decorator to false.
    * @onchain
    * @param inputIndex index of the input
-   * @param stateData the state data of the input
-   * @returns success if stateData is valid
+   * @param stateHash the state hash of the input
+   * @returns success if stateHash is valid
    */
-  override checkInputState(inputIndex: Int32, stateData: ByteString): boolean {
-    const stateHash = slice(this.inputContext.spentDataHashes, inputIndex * 32n, (inputIndex +  1n) * 32n);
-    checkInputStateImpl(
-      stateHash,
-      stateData
-    );
+  override checkInputState(inputIndex: Int32, stateHash: ByteString): boolean {
+    const _stateHash = slice(this.inputContext.spentDataHashes, inputIndex * 32n, (inputIndex +  1n) * 32n);
+    assert(stateHash == _stateHash, 'stateHash mismatch');
     return true;
   }
 
