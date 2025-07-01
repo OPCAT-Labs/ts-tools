@@ -1,7 +1,6 @@
 import * as dotenv from 'dotenv'
 import { getDefaultProvider, getDefaultSigner } from './tests/utils/txHelper'
 import {
-    Covenant,
     deploy,
     sha256,
     toByteString,
@@ -19,28 +18,29 @@ if (!process.env.PRIVATE_KEY) {
 }
 
 async function main() {
-    const covenant = Covenant.createCovenant(
-        new PROJECT_NAME(sha256(toByteString('hello world', true)))
-    )
+    let contract = new PROJECT_NAME(sha256(toByteString('hello world', true)))
 
     const provider = getDefaultProvider()
     const signer = getDefaultSigner()
 
-    const deployPsbt = await deploy(signer, provider, covenant)
+    const deployPsbt = await deploy(signer, provider, contract, 1)
 
     const deployTx = deployPsbt.extractTransaction()
 
-    console.log(`PROJECT_NAME contract deployed: ${deployTx.getId()}`)
+    console.log(`PROJECT_NAME contract deployed: ${deployTx.id}`)
 
-    const callPsbt = await call(signer, provider, covenant, {
-        invokeMethod: (contract: PROJECT_NAME) => {
+    const callPsbt = await call(
+        signer, 
+        provider, 
+        contract, 
+        (contract: PROJECT_NAME) => {
             contract.unlock(toByteString('hello world', true))
         },
-    })
+    )
 
     const callTx = callPsbt.extractTransaction()
 
-    console.log(`PROJECT_NAME contract called: ${callTx.getId()}`)
+    console.log(`PROJECT_NAME contract called: ${callTx.id}`)
 }
 
 main()

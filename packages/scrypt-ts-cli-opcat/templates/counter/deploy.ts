@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv'
 import { getDefaultProvider, getDefaultSigner } from './tests/utils/txHelper'
-import { StatefulCovenant, deploy, call } from '@opcat-labs/scrypt-ts-opcat'
+import { deploy, call } from '@opcat-labs/scrypt-ts-opcat'
 import { PROJECT_NAME } from 'package-name'
 
 // Load the .env file
@@ -13,44 +13,41 @@ if (!process.env.PRIVATE_KEY) {
 }
 
 async function main() {
-    const contract = new PROJECT_NAME()
+    let contract = new PROJECT_NAME()
     contract.state = {
         count: 0n,
     }
 
-    let covenant = StatefulCovenant.createCovenant(contract)
-
     const provider = getDefaultProvider()
     const signer = getDefaultSigner()
 
-    const deployPsbt = await deploy(signer, provider, covenant)
+    const deployPsbt = await deploy(signer, provider, contract, 1)
 
     const deployTx = deployPsbt.extractTransaction()
 
-    console.log(`PROJECT_NAME contract deployed: ${deployTx.getId()}`)
+    console.log(`PROJECT_NAME contract deployed: ${deployTx.id}`)
 
     for (let i = 0; i < 10; i++) {
-        const newCovenant = covenant.next({ count: covenant.state.count + 1n })
+        const newContract = contract.next({ count: contract.state.count + 1n })
 
         const callPsbt = await call(
             signer,
             provider,
-            covenant,
-            {
-                invokeMethod: (contract: PROJECT_NAME) => {
-                    contract.increase()
-                },
+            contract,
+            (contract: PROJECT_NAME) => {
+                contract.increase()
             },
+            
             {
-                covenant: newCovenant,
-                satoshis: 330,
+                contract: newContract,
+                satoshis: 1,
             }
         )
 
         const callTx = callPsbt.extractTransaction()
 
-        console.log(`PROJECT_NAME contract called: ${callTx.getId()}`)
-        covenant = newCovenant
+        console.log(`PROJECT_NAME contract called: ${callTx.id}`)
+        contract = newContract
     }
 }
 

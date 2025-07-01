@@ -1,5 +1,11 @@
 # @opcat-labs/cli-opcat
 
+## 1.0.2
+
+### Patch Changes
+
+- fix cli templates deploy.ts
+
 ## 1.0.1
 
 ### Patch Changes
