@@ -2,7 +2,7 @@ import { expect, use } from 'chai'
 import { PROJECT_NAME, TestPROJECT_NAME } from 'package-name'
 import { getDefaultProvider, getDefaultSigner } from './utils/txHelper'
 import chaiAsPromised from 'chai-as-promised'
-import { Covenant, deploy, call } from '@opcat-labs/scrypt-ts-opcat'
+import { deploy, call } from '@opcat-labs/scrypt-ts-opcat'
 use(chaiAsPromised)
 
 // Test library directly:
@@ -19,43 +19,39 @@ describe('Test SmartContractLib `PROJECT_NAME`', () => {
 
 // Test library from a smart contract.
 describe('Test SmartContractLib `Lib`', () => {
-    let covenant: Covenant
+    let contract: TestPROJECT_NAME
 
     before(async () => {
-        covenant = Covenant.createCovenant(new TestPROJECT_NAME())
+        contract = new TestPROJECT_NAME()
     })
 
     it('should pass integration test successfully.', async () => {
         const provider = getDefaultProvider()
         const signer = getDefaultSigner()
 
-        const deployPsbt = await deploy(signer, provider, covenant)
+        const deployPsbt = await deploy(signer, provider, contract)
 
-        expect(deployPsbt.extractTransaction().getId()).to.have.length(64)
+        expect(deployPsbt.extractTransaction().id).to.have.length(64)
 
-        const callPsbt = await call(signer, provider, covenant, {
-            invokeMethod: (contract: TestPROJECT_NAME) => {
-                contract.unlock1(3n)
-            },
+        const callPsbt = await call(signer, provider, contract, (contract: TestPROJECT_NAME) => {
+            contract.unlock1(3n)
         })
 
-        expect(callPsbt.extractTransaction().getId()).to.have.length(64)
+        expect(callPsbt.extractTransaction().id).to.have.length(64)
     })
 
     it('should pass integration test successfully.', async () => {
         const provider = getDefaultProvider()
         const signer = getDefaultSigner()
 
-        const deployPsbt = await deploy(signer, provider, covenant)
+        const deployPsbt = await deploy(signer, provider, contract)
 
-        expect(deployPsbt.extractTransaction().getId()).to.have.length(64)
+        expect(deployPsbt.extractTransaction().id).to.have.length(64)
 
-        const callPsbt = await call(signer, provider, covenant, {
-            invokeMethod: (contract: TestPROJECT_NAME) => {
-                contract.unlock2(3n)
-            },
+        const callPsbt = await call(signer, provider, contract, (contract: TestPROJECT_NAME) => {
+            contract.unlock2(3n)
         })
 
-        expect(callPsbt.extractTransaction().getId()).to.have.length(64)
+        expect(callPsbt.extractTransaction().id).to.have.length(64)
     })
 })

@@ -16,15 +16,9 @@ export class PROJECT_NAME extends SmartContract<PROJECT_NAMEState> {
     @method()
     public increase() {
         this.state.count++
-
-        this.appendStateOutput(
-            // new output of the contract
-            TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-            // new state hash of the contract
-            PROJECT_NAME.stateHash(this.state)
-        )
-
-        const outputs = this.buildStateOutputs() + this.buildChangeOutput()
+        
+        const nextOutput = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, PROJECT_NAME.stateHash(this.state))
+        const outputs = nextOutput + this.buildChangeOutput()
 
         assert(
             this.checkOutputs(outputs),

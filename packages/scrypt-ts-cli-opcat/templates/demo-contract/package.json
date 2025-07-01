@@ -1,7 +1,6 @@
 {
   "name": "package-name",
   "version": "0.1.0",
-  "type": "module",
   "description": "A demo sCrypt smart contract.",
   "author": "",
   "main": "./dist/cjs/index.cjs",
@@ -47,7 +46,8 @@
     ]
   },
   "dependencies": {
-    "@opcat-labs/scrypt-ts-opcat": "latest"
+    "@opcat-labs/scrypt-ts-opcat": "latest",
+    "@opcat-labs/opcat": "latest"
   },
   "devDependencies": {
     "dotenv": "^16.0.3",

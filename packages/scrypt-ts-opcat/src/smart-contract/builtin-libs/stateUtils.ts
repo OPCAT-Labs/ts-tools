@@ -22,7 +22,7 @@ export class StateUtils extends SmartContractLib {
   @method()
   static checkInputState(
     t_inputIndex: UInt32,
-    rawState: ByteString,
+    stateHash: ByteString,
     t_spentDataHashes: SpentDataHashes,
   ): void {
     assert(
@@ -30,7 +30,7 @@ export class StateUtils extends SmartContractLib {
         t_spentDataHashes, 
         t_inputIndex * TX_OUTPUT_DATA_HASH_LEN, 
         (t_inputIndex + 1n) * TX_OUTPUT_DATA_HASH_LEN
-      ) == sha256(rawState), 
+      ) == stateHash, 
       'dataHash of state mismatch'
     );
   }

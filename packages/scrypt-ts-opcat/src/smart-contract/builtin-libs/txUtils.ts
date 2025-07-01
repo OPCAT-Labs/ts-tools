@@ -58,7 +58,7 @@ export class TxUtils extends SmartContractLib {
     assert(scriptHashLen == 32n, "script hash length must be equal to 32");
     assert(dataHashLen == 32n, "data hash length must be equal to 32");
     assert(satoshis >= 0n, "satoshis must be greater than 0");
-    return intToByteString(satoshis, 8n) + scriptHash + dataHash;
+    return TxUtils.satoshisToByteString(satoshis) + scriptHash + dataHash;
   }
 
   /**
@@ -140,13 +140,24 @@ export class TxUtils extends SmartContractLib {
   }
 
   /**
-   * convert a `Int32` number to 8 bytes in little-end order.
-   * @param {Int32} n - the satoshi amount
+   * convert a `UInt64` number to 8 bytes in little-end order.
+   * @param {UInt64} n - the satoshi amount
    * @returns {ByteString} a `ByteString`
    */
   @method()
   static satoshisToByteString(n: UInt64): ByteString {
     return StdUtils.uint64ToByteString(n);
+  }
+
+  /**
+   * convert a `ByteString` to a `UInt64` number
+   * @param {ByteString} bs - the satoshi amount
+   * @returns {UInt64} a `UInt64`
+   */
+  @method()
+  static byteStringToSatoshis(bs: ByteString): UInt64 {
+    assert(len(bs) == 8n, "satoshis must be 8 bytes");
+    return StdUtils.fromLEUnsigned(bs);
   }
 
 }

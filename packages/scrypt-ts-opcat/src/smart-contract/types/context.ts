@@ -17,9 +17,8 @@ import {
 export interface IContext extends SHPreimage, DerivedCtx {
 
   /**
-   * @type {FixedArray<Outpoint, typeof TX_INPUT_COUNT_MAX>}
+   * @type {Prevouts}
    * prevouts is an array of the previous outpoints.
-   * each non-empty element is a ByteString of 36 bytes, which is the concatenation of txid and index.
    */
   prevouts: Prevouts;
 
@@ -37,7 +36,6 @@ export interface IContext extends SHPreimage, DerivedCtx {
 
   /**
    * @type {SpentDataHashes}
-   * The data of the inputs.
    */
   spentDataHashes: SpentDataHashes;
 }

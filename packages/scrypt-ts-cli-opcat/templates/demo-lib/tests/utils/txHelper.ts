@@ -8,7 +8,7 @@ import { genPrivKey } from './privateKey'
 
 export function getDefaultSigner(): DefaultSigner {
     const network: SupportedNetwork =
-        (process.env.NETWORK as SupportedNetwork) || 'fractal-testnet'
+        (process.env.NETWORK as SupportedNetwork) || 'opcat-testnet'
 
     const key = genPrivKey(network)
 
@@ -25,13 +25,11 @@ export const sleep = async (seconds: number) => {
     })
 }
 
-export function getDefaultProvider(network?: SupportedNetwork) {
+export function getDefaultProvider() {
+    const network: SupportedNetwork =
+        (process.env.NETWORK as SupportedNetwork) || 'opcat-testnet'
     if (process.env.DUMMY_PROVIDER) {
-        return new DummyProvider()
+        return new DummyProvider(network)
     }
-    const _network: SupportedNetwork =
-        network ||
-        (process.env.NETWORK as SupportedNetwork) ||
-        'fractal-testnet'
-    return new MempoolProvider(_network)
+    return new MempoolProvider(network)
 }
