@@ -1,26 +1,26 @@
 import {
   assert,
-  int32ToByteString,
+  intToByteString,
   len,
   toByteString,
   OpCode,
   ByteString,
   FixedArray,
   Int32,
-  SpentScripts,
-  TX_INPUT_COUNT_MAX,
-  TX_P2TR_OUTPUT_SCRIPT_BYTE_LEN,
   Addr,
   method,
   prop,
   SmartContractLib,
-  XOnlyPubKey,
+  PubKey,
 } from '@opcat-labs/scrypt-ts-opcat';
 
 type ChangeInfo = {
   script: ByteString;
   satoshis: ByteString;
 };
+
+const TX_INPUT_COUNT_MAX = 6;
+const TX_P2TR_OUTPUT_SCRIPT_BYTE_LEN = 107;
 
 export class UtilsA extends SmartContractLib {
   @prop()
@@ -37,11 +37,11 @@ export class UtilsA extends SmartContractLib {
   }
 
   @method()
-  static mergeSpentScripts(spentScriptsCtx: SpentScripts): ByteString {
+  static mergeSpentScripts(spentScriptsCtx: FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>): ByteString {
     let result = toByteString('');
     for (let index = 0; index < TX_INPUT_COUNT_MAX; index++) {
       const spentScript = spentScriptsCtx[index];
-      result += int32ToByteString(len(spentScript)) + spentScript;
+      result += intToByteString(len(spentScript)) + spentScript;
     }
     return result;
   }
@@ -50,12 +50,12 @@ export class UtilsA extends SmartContractLib {
   static buildOutput(script: ByteString, satoshis: ByteString): ByteString {
     const nlen = len(script);
     assert(nlen <= TX_P2TR_OUTPUT_SCRIPT_BYTE_LEN);
-    return satoshis + int32ToByteString(nlen) + script;
+    return satoshis + intToByteString(nlen) + script;
   }
 
   @method()
   static checkIndex(indexVal: Int32, index: ByteString): boolean {
-    let indexByte = int32ToByteString(indexVal);
+    let indexByte = intToByteString(indexVal);
     if (indexByte == toByteString('')) {
       indexByte = toByteString('00');
     }
@@ -64,8 +64,8 @@ export class UtilsA extends SmartContractLib {
 
   @method()
   static buildOpReturnOutput(data: ByteString): ByteString {
-    const script = toByteString('6a') + int32ToByteString(len(data)) + data;
-    return toByteString('0000000000000000') + int32ToByteString(len(script)) + script;
+    const script = toByteString('6a') + intToByteString(len(data)) + data;
+    return toByteString('0000000000000000') + intToByteString(len(script)) + script;
   }
 
   @method()
@@ -85,7 +85,7 @@ export class UtilsA extends SmartContractLib {
     return (
       toByteString(OpCode.OP_DUP) +
       toByteString(OpCode.OP_HASH160) +
-      int32ToByteString(20n) +
+      intToByteString(20n) +
       addr +
       toByteString(OpCode.OP_EQUALVERIFY) +
       toByteString(OpCode.OP_CHECKSIG)
@@ -110,7 +110,7 @@ export class UtilsA extends SmartContractLib {
    * @returns {ByteString} a `ByteString` representing the P2PKH script
    */
   static buildP2WPKHScript(addr: Addr): ByteString {
-    return toByteString(OpCode.OP_0) + int32ToByteString(20n) + addr;
+    return toByteString(OpCode.OP_0) + intToByteString(20n) + addr;
   }
 
   /**
@@ -130,8 +130,8 @@ export class UtilsA extends SmartContractLib {
    * @param {XOnlyPubKey} xpubkey - the recipient's x-only key
    * @returns {ByteString} a `ByteString` representing the P2PKH script
    */
-  static buildP2TRScript(xpubkey: XOnlyPubKey): ByteString {
-    return toByteString(OpCode.OP_1) + int32ToByteString(32n) + xpubkey;
+  static buildP2TRScript(xpubkey: PubKey): ByteString {
+    return toByteString(OpCode.OP_1) + intToByteString(32n) + xpubkey;
   }
 
   /**
@@ -141,13 +141,13 @@ export class UtilsA extends SmartContractLib {
    * @returns {ByteString} a `ByteString` representing the P2PKH output
    */
   @method()
-  static buildP2TROutput(xpubkey: XOnlyPubKey, amount: ByteString): ByteString {
+  static buildP2TROutput(xpubkey: PubKey, amount: ByteString): ByteString {
     return UtilsA.buildOutput(UtilsA.buildP2TRScript(xpubkey), amount);
   }
 
   @method()
   static checkInt32(i: Int32, b: ByteString): boolean {
-    const iByte = int32ToByteString(i);
+    const iByte = intToByteString(i);
     const l = len(iByte);
     let fullByte = toByteString('');
     if (l == 0n) {
@@ -168,7 +168,7 @@ export class UtilsA extends SmartContractLib {
 
   @method()
   static toSatoshis(n: Int32): ByteString {
-    let int32Bytes = int32ToByteString(n);
+    let int32Bytes = intToByteString(n);
     const amountBytesLen = len(int32Bytes);
     assert(amountBytesLen < 8n);
     if (amountBytesLen == 0n) {

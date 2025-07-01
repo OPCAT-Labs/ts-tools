@@ -3,7 +3,6 @@ import {
   SmartContract,
   method,
   TxUtils,
-  sha256,
   assert,
   StructObject,
 } from '@opcat-labs/scrypt-ts-opcat';
@@ -25,15 +24,11 @@ export class Counter2 extends SmartContract<Counter2State> {
   f1(): void {
     this.state.count++;
 
-    this.appendStateOutput(
-      // new output of the contract
-      TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-      // new state hash of the contract
-      Counter2.stateHash(this.state),
-    );
+    const nextOutput = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, Counter2.stateHash(this.state))
 
-    const outputs = this.buildStateOutputs() + this.buildChangeOutput();
 
-    assert(sha256(outputs) === this.ctx.shaOutputs, `output hash mismatch`);
+    const outputs = nextOutput + this.buildChangeOutput();
+
+    assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
   }
 }

@@ -22,14 +22,14 @@ export class CodeSeparator extends SmartContract {
   @method()
   public unlock(sigs: FixedArray<Sig, 3>, pubKeys: FixedArray<PubKey, 3>) {
     assert(hash160(pubKeys[0]) == this.addresses[0]);
-    this.insertCodeSeparator();
+    //this.insertCodeSeparator();
     assert(this.checkSig(sigs[0], pubKeys[0]));
 
-    this.insertCodeSeparator();
+    //this.insertCodeSeparator();
     assert(hash160(pubKeys[1]) == this.addresses[1]);
     assert(this.checkSig(sigs[1], pubKeys[1]));
 
-    this.insertCodeSeparator();
+    //this.insertCodeSeparator();
     assert(hash160(pubKeys[2]) == this.addresses[2]);
     assert(this.checkSig(sigs[2], pubKeys[2]));
   }

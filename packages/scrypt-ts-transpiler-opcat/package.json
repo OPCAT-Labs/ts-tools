@@ -24,7 +24,6 @@
   "dependencies": {
     "@opcat-labs/scrypt-ts-opcat": "1.0.1",
     "@phenomnomnominal/tsquery": "^6.1.2",
-    "@scrypt-inc/bitcoinjs-lib": "^1.0.11",
     "chalk": "^4.1.2",
     "get-proxy-settings": "^0.1.13",
     "https-proxy-agent": "^7.0.6",

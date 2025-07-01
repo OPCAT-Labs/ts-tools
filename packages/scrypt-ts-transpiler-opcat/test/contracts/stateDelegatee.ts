@@ -6,10 +6,12 @@ import {
   sha256,
   TxUtils,
   ByteString,
-  TX_INPUT_COUNT_MAX,
+  slice,
+  byteStringToInt,
 } from '@opcat-labs/scrypt-ts-opcat';
 import { DelegateeState, DelegatorState, DelegatorStateLib } from './stateLibs.js';
 
+const TX_INPUT_COUNT_MAX =  6;
 export class StateDelegatee extends SmartContract<DelegateeState> {
   @method({ autoCheckInputState: false })
   public unlock(
@@ -19,22 +21,14 @@ export class StateDelegatee extends SmartContract<DelegateeState> {
   ) {
     // manually check this.state
     for (let i = 0; i < TX_INPUT_COUNT_MAX; i++) {
-      if (BigInt(i) === this.ctx.inputIndexVal) {
-        this.checkInputStateHash(BigInt(i), StateDelegatee.stateHash(this.state));
-        assert(this.ctx.inputStateProof === this.ctx.inputStateProofs[i]);
+      if (BigInt(i) === this.ctx.inputIndex) {
+        this.checkInputState(BigInt(i), StateDelegatee.serializeState(this.state));
       }
     }
 
     // check the delegator state
-    this.checkInputStateHash(delegatorInputVal, DelegatorStateLib.stateHash(delegatorState));
+    this.checkInputState(delegatorInputVal, DelegatorStateLib.serializeState(delegatorState));
 
-    assert(
-      // the initial output index after deployment
-      this.ctx.inputStateProofs[Number(this.ctx.inputIndexVal)].outputIndexVal === 1n ||
-        // the output index after the first call
-        this.ctx.inputStateProof.outputIndexVal === 2n,
-      'Invalid output index',
-    );
 
     assert(!delegatorState.delegated, 'Delegator has been already delegated');
 
@@ -42,13 +36,12 @@ export class StateDelegatee extends SmartContract<DelegateeState> {
     delegatorState.delegated = true;
 
     // check the first input is the delegator
-    assert(this.ctx.spentScripts[0] === delegatorScript);
+    assert(slice(this.ctx.spentScriptHashes, 0n, 32n) === sha256(delegatorScript));
 
     // build delegator output
-    this.appendStateOutput(
-      TxUtils.buildOutput(delegatorScript, this.ctx.spentAmounts[Number(delegatorInputVal)]),
-      DelegatorStateLib.stateHash(delegatorState),
-    );
+    const spentAmount = slice(this.ctx.spentAmounts, delegatorInputVal, (delegatorInputVal + 1n)*32n);
+    let outputs = TxUtils.buildDataOutput(sha256(delegatorScript), byteStringToInt(spentAmount), DelegatorStateLib.stateHash(delegatorState))
+
 
     // check current state
     // DelegateeStateLib.checkState(this.state);
@@ -57,13 +50,11 @@ export class StateDelegatee extends SmartContract<DelegateeState> {
     this.state.total++;
 
     // build delegatee output
-    this.appendStateOutput(
-      TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-      StateDelegatee.stateHash(this.state),
-    );
+    outputs += 
+      TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, StateDelegatee.stateHash(this.state))
 
-    const outputs = this.buildStateOutputs() + this.buildChangeOutput();
+    outputs += this.buildChangeOutput();
 
-    assert(sha256(outputs) === this.ctx.shaOutputs);
+    assert(this.checkOutputs(outputs), "checkoutput failed");
   }
 }

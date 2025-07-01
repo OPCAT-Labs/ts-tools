@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from 'fs';
 import { join, extname, dirname } from 'path';
-import { Indexer, Symbol, compileContract } from '@scrypt-inc/scrypt-ts-transpiler-btc';
-import { alterFileExt } from '@scrypt-inc/scrypt-ts-transpiler-btc/dist/utils';
-import { SmartContract, SmartContractLib, Artifact } from '@scrypt-inc/scrypt-ts-btc';
+import { Indexer, Symbol, compileContract } from '@opcat-labs/scrypt-ts-transpiler-opcat';
+import { alterFileExt } from '@opcat-labs/scrypt-ts-transpiler-opcat/dist/utils';
+import { SmartContract, SmartContractLib, Artifact } from '@opcat-labs/scrypt-ts-opcat';
 import path from 'path';
 
 export function getRandomInt(min: number, max: number) {
@@ -11,7 +11,7 @@ export function getRandomInt(min: number, max: number) {
   return Math.floor(Math.random() * (max - min) + min); // The maximum is exclusive and the minimum is inclusive
 }
 export function loadTransformerResult(
-  smartContract: typeof SmartContract<unknown> | typeof SmartContractLib,
+  smartContract: typeof SmartContract<any> | typeof SmartContractLib,
 ): {
   success: boolean;
   errors: string[];

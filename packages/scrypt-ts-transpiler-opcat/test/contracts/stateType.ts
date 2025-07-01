@@ -9,7 +9,6 @@ import {
   Sha256,
   Bool,
   ByteString,
-  XOnlyPubKey,
   Ripemd160,
   OpCodeType,
   FixedArray,
@@ -56,7 +55,6 @@ export interface StateTypeState extends StructObject {
   sha1: Sha1;
   sig: Sig;
   pubKey: PubKey;
-  xOnlyPubKey: XOnlyPubKey;
   // enum type is not supported
   // sigHashType: SigHashType;
   ripemd160: Ripemd160;
@@ -71,7 +69,6 @@ export interface StateTypeState extends StructObject {
   fixedArraySha1: FixedArray<Sha1, 2>;
   fixedArraySig: FixedArray<Sig, 2>;
   fixedArrayPubKey: FixedArray<PubKey, 2>;
-  fixedArrayXOnlyPubKey: FixedArray<XOnlyPubKey, 2>;
   // enum type is not supported
   // fixedArraySigHashType: FixedArray<SigHashType, 2>;
 
@@ -95,11 +92,9 @@ export interface StateTypeState extends StructObject {
 export class StateType extends SmartContract<StateTypeState> {
   @method()
   public unlock() {
-    this.appendStateOutput(
-      TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-      StateType.stateHash(this.state),
-    );
-    const outputs = this.buildStateOutputs() + this.buildChangeOutput();
-    assert(sha256(outputs) === this.ctx.shaOutputs, `output hash mismatch`);
+
+    let outputs = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value,  StateType.stateHash(this.state))
+    outputs += this.buildChangeOutput();
+    assert(this.checkOutputs(outputs), `output hash mismatch`);
   }
 }

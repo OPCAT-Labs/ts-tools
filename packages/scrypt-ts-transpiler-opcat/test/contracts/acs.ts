@@ -1,10 +1,10 @@
 import {
   assert,
   ByteString,
+  hash256,
   method,
   prop,
   PubKeyHash,
-  sha256,
   SmartContract,
   TxUtils,
 } from '@opcat-labs/scrypt-ts-opcat';
@@ -21,9 +21,9 @@ export class AnyoneCanSpend extends SmartContract {
 
   @method()
   public unlock() {
-    let outputs: ByteString = TxUtils.buildP2PKHOutput(this.pubKeyHash, this.changeInfo.script);
+    let outputs: ByteString = TxUtils.buildP2PKHOutput(this.ctx.value, this.pubKeyHash);
 
     outputs += this.buildChangeOutput();
-    assert(sha256(outputs) == this.ctx.shaOutputs, 'check shaOutputs failed');
+    assert(hash256(outputs) == this.ctx.hashOutputs, 'check hashOutputs failed');
   }
 }

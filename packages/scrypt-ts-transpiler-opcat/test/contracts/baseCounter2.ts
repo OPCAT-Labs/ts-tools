@@ -22,17 +22,13 @@ export class BaseCounter2<T extends StructObject> extends SmartContract<T> {
   @method()
   public donothing() {
     this.checkDummyProp();
+    let outputs = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, BaseCounter2.stateHash(this.state));
 
-    this.appendStateOutput(
-      TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-      BaseCounter2.stateHash(this.state),
-    );
+    outputs += this.buildChangeOutput();
 
-    assert(
-      this.ctx.shaOutputs == sha256(this.buildStateOutputs() + this.buildChangeOutput()),
-      'shaOutputs check failed',
-    );
+    assert(this.checkOutputs(outputs), 'checkOutputs failed');
   }
+
 
   @method()
   checkDummyProp(): void {

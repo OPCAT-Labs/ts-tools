@@ -26,14 +26,11 @@ export class BaseCounter extends SmartContract<BaseCounterState> {
   public incOnchain() {
     this.incCounter();
 
-    this.appendStateOutput(
-      TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-      BaseCounter.stateHash(this.state),
-    );
+    let outputs = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, BaseCounter.stateHash(this.state));
 
-    assert(
-      this.ctx.shaOutputs == sha256(this.buildStateOutputs() + this.buildChangeOutput()),
-      'shaOutputs check failed',
+    outputs += this.buildChangeOutput()
+    assert(this.checkOutputs(outputs),
+      'checkOutputs failed',
     );
   }
 

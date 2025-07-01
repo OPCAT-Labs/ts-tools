@@ -5,24 +5,22 @@ import {
   method,
   SmartContract,
   TxUtils,
+  hash256,
 } from '@opcat-labs/scrypt-ts-opcat';
+
 
 export class Clone extends SmartContract {
   constructor() {
     super();
   }
 
-  // see https://scrypt.io/scrypt-ts/getting-started/what-is-scriptcontext#sighash-type
   @method()
   public unlock() {
     // make sure balance in the contract does not change
 
-    const script = this.ctx.spentScripts[Number(this.ctx.inputIndexVal)];
-    const amount: ByteString = this.ctx.spentAmounts[Number(this.ctx.inputIndexVal)];
-
     // output containing the latest state
-    const output: ByteString = TxUtils.buildOutput(script, amount);
+    const output: ByteString = TxUtils.buildOutput(this.ctx.spentScriptHash, this.ctx.value);
     // verify current tx has this single output
-    assert(this.ctx.shaOutputs == sha256(output), 'shaOutputs mismatch');
+    assert(this.ctx.hashOutputs == hash256(output), 'hashOutputs mismatch');
   }
 }

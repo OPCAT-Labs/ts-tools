@@ -1,4 +1,4 @@
-import { method, prop, SmartContract, assert, sha256 } from '@opcat-labs/scrypt-ts-opcat';
+import { method, prop, SmartContract, assert, sha256, hash256 } from '@opcat-labs/scrypt-ts-opcat';
 
 // Enum representing shipping status
 enum Status {
@@ -40,6 +40,6 @@ export class Enum2 extends SmartContract {
 
     assert(s == Status.Accepted, 'invalid stauts');
 
-    assert(this.ctx.shaOutputs == sha256(this.buildChangeOutput()), 'hashOutputs check failed');
+    assert(this.ctx.hashOutputs == hash256(this.buildChangeOutput()), 'hashOutputs check failed');
   }
 }

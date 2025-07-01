@@ -19,24 +19,14 @@ export class DebugFunctionsTest extends SmartContract<DebugFunctionsTestState> {
     super(...arguments);
   }
 
-  // @method(SigHash.SINGLE)
   @method()
   public increment() {
     this.state.counter++;
-    this.appendStateOutput(
-      TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-      DebugFunctionsTest.stateHash(this.state),
-    );
-    const outputs = this.buildStateOutputs();
-    this.debug.diffOutputs(outputs);
-    assert(this.ctx.shaOutputs == sha256(outputs));
-  }
+    const nextOutput = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, DebugFunctionsTest.stateHash(this.state))
 
-  @method()
-  public incrementThrow() {
-    this.state.counter++;
-    this.debug.diffOutputs(this.buildStateOutputs());
-    const outputs = this.buildStateOutputs();
-    assert(this.ctx.shaOutputs == sha256(outputs));
+
+    const outputs = nextOutput + this.buildChangeOutput();
+    this.debug.diffOutputs(outputs);
+    assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
   }
 }

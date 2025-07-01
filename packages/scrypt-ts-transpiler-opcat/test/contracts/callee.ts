@@ -4,7 +4,7 @@ import {
   SmartContract,
   TxUtils,
   hash256,
-  int32ToByteString,
+  intToByteString,
   method,
   prop,
 } from '@opcat-labs/scrypt-ts-opcat';
@@ -27,10 +27,10 @@ export class Callee extends SmartContract {
     assert(co.a + x + x + co.b + x + co.c == 0n);
 
     const data: ByteString =
-      int32ToByteString(co.a) + int32ToByteString(co.b) + int32ToByteString(co.c);
+      intToByteString(co.a) + intToByteString(co.b) + intToByteString(co.c);
 
     const outputs: ByteString = TxUtils.buildOpReturnOutput(data);
 
-    assert(hash256(outputs) == this.ctx.shaOutputs);
+    assert(hash256(outputs) == this.ctx.hashOutputs);
   }
 }

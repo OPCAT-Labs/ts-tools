@@ -7,9 +7,9 @@ import {
   compileContract,
   compileContractAsync,
   CompileErrorType,
-} from '@scrypt-inc/scrypt-ts-transpiler-btc';
+} from '@opcat-labs/scrypt-ts-transpiler-opcat';
 
-import { ABIEntityType } from '@scrypt-inc/scrypt-ts-btc';
+import { ABIEntityType } from '@opcat-labs/scrypt-ts-opcat';
 describe('compile()', () => {
   it('compile successfully', () => {
     const result = compileContract(getContractFilePath('p2pkh.scrypt'));

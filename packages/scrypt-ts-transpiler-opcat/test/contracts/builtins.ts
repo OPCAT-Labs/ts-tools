@@ -4,7 +4,7 @@ import {
   assert,
   ByteString,
   toByteString,
-  int32ToByteString,
+  intToByteString,
   max,
   min,
   within,
@@ -14,7 +14,7 @@ import {
 export class Builtins extends SmartContract {
   @method()
   public unlockInt2ByteString(data: ByteString, n: bigint) {
-    assert(int32ToByteString(n) == data, 'bad `int2ByteString` function');
+    assert(intToByteString(n) == data, 'bad `int2ByteString` function');
   }
 
   @method()

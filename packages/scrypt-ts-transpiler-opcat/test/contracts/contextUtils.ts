@@ -1,12 +1,7 @@
-import { prop, method } from '../decorators.js';
-import { assert } from '../fns/assert.js';
-import { byteStringToInt, intToByteString, len, reverseByteString, slice, toByteString } from '../fns/byteString.js';
-import { hash256 } from '../fns/hashes.js';
-import { SmartContractLib } from '../smartContractLib.js';
-import { PubKey, ByteString, Sig, Int32, UInt32, PrivKey, SigHashPreimage } from '../types/primitives.js';
-import { SHPreimage, SpentScriptHashes, SpentAmounts, Prevouts, Outpoint, SpentDataHashes } from '../types/structs.js';
-import { StdUtils } from './stdUtils.js';
-import { TxUtils } from './txUtils.js';
+import { prop, method, assert, byteStringToInt, intToByteString, len, 
+  SmartContractLib, reverseByteString, slice, toByteString, hash256, PubKey, ByteString, Sig, Int32, 
+  PrivKey, SHPreimage, SpentScriptHashes, SpentAmounts, Prevouts, Outpoint, StdUtils, TxUtils, SigHashPreimage} from '@opcat-labs/scrypt-ts-opcat';
+
 
 /**
  * Library for verifying preimage.
@@ -153,7 +148,7 @@ export class ContextUtils extends SmartContractLib {
   static checkPrevouts(
     prevouts: Prevouts,
     t_hashPrevouts: ByteString,
-    t_inputIndex: UInt32,
+    t_inputIndex: Int32,
     t_inputCount: Int32,
   ): Outpoint {
     // check prevouts
@@ -201,7 +196,7 @@ export class ContextUtils extends SmartContractLib {
 
   @method()
   static checkSpentDataHashes(
-    spentDataHashes: SpentDataHashes,
+    spentDataHashes: ByteString,
     t_hashSpentDataHashes: ByteString,
     t_inputCount: bigint,
   ): void {
@@ -228,7 +223,7 @@ export class ContextUtils extends SmartContractLib {
 
   @method()
   static getSpentDataHash(
-    spentDataHashes: SpentDataHashes,
+    spentDataHashes: ByteString,
     inputIndex: Int32,
   ): ByteString {
     return slice(spentDataHashes, inputIndex * 32n, (inputIndex + 1n) * 32n);
@@ -237,7 +232,7 @@ export class ContextUtils extends SmartContractLib {
   @method()
   static checknLockTime(
     shPreimage: SHPreimage,
-    nlockTime: UInt32,
+    nlockTime: Int32,
   ) : boolean {
     const nSequence = StdUtils.fromLEUnsigned(shPreimage.nSequence);
     return (nSequence < 4294967295n && (nlockTime < 500000000n ? shPreimage.nLockTime < 500000000n : true) && shPreimage.nLockTime >= nlockTime)

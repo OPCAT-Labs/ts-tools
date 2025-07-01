@@ -6,9 +6,6 @@ import JSONbig from 'json-bigint';
 import { buildTypeResolver } from '../resolver';
 import { md5, path2uri, sha1 } from '../utils';
 import { findCompiler } from './findCompiler';
-import { script as bscript, reverse_opcodes, isOpSuccess } from '@scrypt-inc/bitcoinjs-lib';
-
-import * as tools from 'uint8array-tools';
 import {
   ABI,
   ABIEntity,
@@ -390,20 +387,6 @@ function calcHexMd5(hex: string) {
   return md5(chex);
 }
 
-function getHex(hex: string) {
-  return hex.replace(/<([^>]+)>/g, '');
-}
-
-function findDisableOpCode(hex: string): number | undefined {
-  const script = bscript.decompile(tools.fromHex(hex));
-
-  return script.find((chuck) => {
-    if (typeof chuck === 'number') {
-      return isOpSuccess(chuck);
-    }
-    return false;
-  }) as number | undefined;
-}
 
 export function handleCompilerOutput(
   sourcePath: string,

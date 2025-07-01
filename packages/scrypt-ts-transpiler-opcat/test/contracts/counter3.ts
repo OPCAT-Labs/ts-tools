@@ -10,17 +10,11 @@ export class Counter3 extends SmartContract<Counter3State> {
   public increase() {
     this.state.count++;
 
-    this.appendStateOutput(
-      // new output of the contract
-      TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-      // new state hash of the contract
-      Counter3.stateHash(this.state),
-    );
+   const nextOutput = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, Counter3.stateHash(this.state))
 
-    const outputs = this.buildStateOutputs() + this.buildChangeOutput();
 
-    // this.debug.diffOutputs(outputs);
+    const outputs = nextOutput + this.buildChangeOutput();
 
-    assert(sha256(outputs) === this.ctx.shaOutputs, `output hash mismatch`);
+    assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
   }
 }

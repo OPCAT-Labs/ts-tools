@@ -19,7 +19,7 @@ export class Util extends SmartContract {
   public unlock(x: bigint, txPreimage: SHPreimage) {
     let output: ByteString = TxUtils.buildOutput(
       toByteString('000100'),
-      toByteString('0000000000000000'),
+      1n,
     );
     assert(output == toByteString('153400000000000003000100'));
 
@@ -32,25 +32,25 @@ export class Util extends SmartContract {
     assert(output == toByteString('76a9146791d7f19d3cda962e5b375a3f98f79a1971b7e188ac'));
 
     assert(
-      txPreimage.shaOutputs ==
+      txPreimage.hashOutputs ==
         toByteString('9f778ea594cfb552093773d85bad30c411ee47c5b5276da334da75f08152b093'),
     );
 
     assert(txPreimage.nVersion == toByteString('01000000'));
 
     assert(
-      txPreimage.shaPrevouts ==
+      txPreimage.hashPrevouts ==
         toByteString('9ceca721285f50c306c6c1dfe65eaa3d6d13e4231facdf22f15528f086b0037e'),
     );
 
     assert(
-      txPreimage.shaSequences ==
+      txPreimage.hashSequences ==
         toByteString('3bb13029ce7b1f559ef5e747fcac439f1455a2ec7c5f09b72290795e70665044'),
     );
 
-    assert(txPreimage.shaSpentScripts == toByteString('d830ec2a95365558adc015467958c2fc0e0a9804'));
+    assert(txPreimage.spentScriptHash == toByteString('d830ec2a95365558adc015467958c2fc0e0a9804'));
 
-    assert(txPreimage.nLockTime == toByteString('ffffffffffffffffff'));
+    assert(txPreimage.nLockTime == 0n);
 
     assert(x > 0);
   }

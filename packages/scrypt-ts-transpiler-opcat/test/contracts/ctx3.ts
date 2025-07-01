@@ -6,31 +6,26 @@ export class CTX3 extends SmartContract {
   public unlock() {
     this.ctx.nVersion;
     this.ctx.nLockTime;
-    this.ctx.shaPrevouts;
-    this.ctx.shaSpentAmounts;
-    this.ctx.shaSpentScripts;
-    this.ctx.shaSequences;
-    this.ctx.shaOutputs;
-    this.ctx.spendType;
+    this.ctx.hashPrevouts;
+    this.ctx.hashSpentAmounts;
+    this.ctx.hashSpentScriptHashes;
+    this.ctx.hashSequences;
+    this.ctx.hashSpentDataHashes;
     this.ctx.inputIndex;
-    this.ctx.tapLeafHash;
-    this.ctx.keyVersion;
-    this.ctx.codeSepPos;
-    this.ctx._eWithoutLastByte;
-    this.ctx._eLastByte;
+    this.ctx.spentScriptHash;
+    this.ctx.spentDataHash;
+    this.ctx.value;
+    this.ctx.nSequence;
+    this.ctx.sigHashType;
 
-    this.ctx.inputIndexVal;
+    this.ctx.prevout;
     this.ctx.prevouts;
-    this.ctx.spentScripts[0];
-    this.ctx.spentAmounts[0];
+    this.ctx.hashSpentScriptHashes;
+    this.ctx.spentAmounts;
 
     this.ctx.prevout.outputIndex;
     this.ctx.prevout.txHash;
-    this.ctx.spentScript;
-    this.ctx.spentAmount;
     this.ctx.inputCount;
-    this.ctx.nextStateHashes;
-
     assert(true);
   }
 }

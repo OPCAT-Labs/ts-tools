@@ -1,6 +1,6 @@
 import { BaseCounter2 } from './baseCounter2';
 
-import { method, prop, assert, hash256, TxUtils, Int32 } from '@opcat-labs/scrypt-ts-opcat';
+import { method, assert, Int32 } from '@opcat-labs/scrypt-ts-opcat';
 
 export type HeritageCounter2State = {
   counter: Int32;

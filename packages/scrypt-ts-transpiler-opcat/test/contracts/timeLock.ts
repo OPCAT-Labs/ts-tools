@@ -11,8 +11,8 @@ export class TimeLock extends SmartContract {
 
   @method()
   public unlock() {
-    assert(this.cltv(this.matureTime));
-    assert(!this.cltv(this.matureTime + 10000n));
-    assert(!this.cltv(this.matureTime + 10000n) && true, 'invalid time lock');
+    assert(this.timeLock(this.matureTime));
+    assert(!this.timeLock(this.matureTime + 10000n));
+    assert(!this.timeLock(this.matureTime + 10000n) && true, 'invalid time lock');
   }
 }

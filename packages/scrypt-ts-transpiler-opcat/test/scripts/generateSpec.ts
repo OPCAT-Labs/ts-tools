@@ -172,7 +172,7 @@ function generateCompileSpec(list: ContractMetadata[]) {
 
 import chai, { expect } from 'chai';
 import chaiExclude from 'chai-exclude';
-import { Relinker } from '@scrypt-inc/scrypt-ts-transpiler-btc/dist/relinker';
+import { Relinker } from '@opcat-labs/scrypt-ts-transpiler-opcat';
 
 chai.use(chaiExclude);
 

@@ -7,6 +7,6 @@ export class ChangeAmountExample extends SmartContract {
 
   @method()
   public unlock(destOutput: ByteString) {
-    assert(hash256(destOutput + this.buildChangeOutput()) == this.ctx.shaOutputs);
+    assert(hash256(destOutput + this.buildChangeOutput()) == this.ctx.hashOutputs);
   }
 }

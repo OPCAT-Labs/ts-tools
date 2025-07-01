@@ -1,60 +1,77 @@
 import {
-  assert,
-  ByteString,
-  hash256,
-  Int32,
-  method,
-  prop,
-  PubKey,
-  PubKeyHash,
-  sha256,
-  Sig,
-  SmartContract,
-  TxUtils,
-  StdUtils,
-} from '@opcat-labs/scrypt-ts-opcat';
+    assert,
+    ByteString,
+    method,
+    prop,
+    PubKey,
+    Sig,
+    SmartContract,
+    pubKey2Addr,
+    TxUtils,
+} from '@opcat-labs/scrypt-ts-opcat'
 
-export interface AuctionState {
-  bidder: PubKeyHash;
-  auctioneer: PubKey;
-  auctionDeadline: Int32;
-}
+export type AuctionState = {
+    bidder: PubKey
+};
 
+
+/*
+ * Read Medium article about this contract:
+ * https://medium.com/@xiaohuiliu/auction-on-bitcoin-4ba2b6c18ba7
+ */
 export class Auction extends SmartContract<AuctionState> {
-  // bid with a higher offer
-  @method()
-  public bid(bidder: PubKeyHash, bid: Int32, spentAmountVal: Int32) {
-    assert(bid > spentAmountVal, 'the auction bid is lower than the current highest bid');
-    assert(this.ctx.spentAmount == TxUtils.toSatoshis(spentAmountVal), 'spentAmount check failed');
 
-    const highestBidder: PubKeyHash = this.state.bidder;
-    this.state.bidder = bidder;
 
-    // auction continues with a higher bidder
-    this.appendStateOutput(
-      TxUtils.buildOutput(this.ctx.spentScript, TxUtils.toSatoshis(bid)),
-      Auction.stateHash(this.state),
-    );
+    // The auctioneer's public key.
+    @prop()
+    readonly auctioneer: PubKey
 
-    const refundScript: ByteString = TxUtils.buildP2PKHScript(highestBidder);
-    const refundOutput: ByteString = TxUtils.buildOutput(refundScript, this.ctx.spentAmount);
+    // Deadline of the auction. Can be block height or timestamp.
+    @prop()
+    readonly auctionDeadline: bigint
 
-    assert(
-      this.ctx.shaOutputs == sha256(this.buildStateOutputs() + this.buildChangeOutput()),
-      'shaOutputs check failed',
-    );
+    constructor(auctioneer: PubKey, auctionDeadline: bigint) {
+        super(...arguments)
+        this.auctioneer = auctioneer
+        this.auctionDeadline = auctionDeadline
+    }
 
-    // refund previous highest bidder
+    // Call this public method to bid with a higher offer.
+    @method()
+    public bid(bidder: PubKey, bid: bigint) {
+        const highestBid: bigint = this.ctx.value
+        assert(
+            bid > highestBid,
+            'the auction bid is lower than the current highest bid'
+        )
 
-    const outputs: ByteString = this.buildStateOutputs() + refundOutput + this.buildChangeOutput();
+        // Change the public key of the highest bidder.
+        const highestBidder: PubKey = this.state.bidder;
+        this.state.bidder = bidder
 
-    assert(sha256(outputs) == this.ctx.shaOutputs, 'shaOutputs check failed');
-  }
+        // Auction continues with a higher bidder.
+        const auctionOutput: ByteString = TxUtils.buildDataOutput(this.ctx.spentScriptHash, bid, Auction.stateHash(this.state));
 
-  @method()
-  public close(sig: Sig, nLockTime: Int32) {
-    assert(StdUtils.checkInt32(nLockTime, this.ctx.nLockTime), 'checkInt32 fail');
-    assert(this.cltv(nLockTime), 'auction is not over yet');
-    assert(this.checkSig(sig, this.state.auctioneer, 'auctioneer signature check failed'));
-  }
+        // Refund previous highest bidder.
+        const refundOutput: ByteString = TxUtils.buildP2PKHOutput(highestBid, pubKey2Addr(highestBidder))
+        let outputs: ByteString = auctionOutput + refundOutput
+
+        // Add change output.
+        outputs += this.buildChangeOutput()
+
+        assert(
+            this.checkOutputs(outputs),
+            'hashOutputs check failed'
+        )
+    }
+
+    // Close the auction if deadline is reached.
+    @method()
+    public close(sig: Sig) {
+        // Check auction deadline.
+        assert(this.timeLock(this.auctionDeadline), 'deadline not reached')
+
+        // Check signature of the auctioneer.
+        assert(this.checkSig(sig, this.auctioneer), 'signature check failed')
+    }
 }

@@ -1,7 +1,6 @@
 import {
   assert,
   ByteString,
-  hash256,
   Int32,
   method,
   prop,
@@ -40,7 +39,7 @@ export class Recallable extends SmartContract<RecallableState> {
     satoshisTotal: Int32,
   ) {
     // total satoshis locked in this contract utxo
-    assert(TxUtils.toSatoshis(satoshisTotal) == this.ctx.spentAmount, 'satoshisTotal check failed');
+    assert(satoshisTotal == this.ctx.value, 'satoshisTotal check failed');
 
     // require the amount requested to be transferred is valid
     assert(
@@ -58,27 +57,23 @@ export class Recallable extends SmartContract<RecallableState> {
 
     // the output send to `receiver`
     this.state.userPubKey = receiverPubKey;
-    this.appendStateOutput(
-      TxUtils.buildOutput(this.ctx.spentScript, TxUtils.toSatoshis(satoshisSent)),
-      Recallable.stateHash(this.state),
-    );
+
+    let outputs = TxUtils.buildDataOutput(this.ctx.spentScriptHash, satoshisSent, Recallable.stateHash(this.state));
+
 
     // the change output back to previous `user`
     const satoshisLeft = satoshisTotal - satoshisSent;
     if (satoshisLeft > 0) {
       this.state.userPubKey = previousUserPubKey;
-      this.appendStateOutput(
-        TxUtils.buildOutput(this.ctx.spentScript, TxUtils.toSatoshis(satoshisLeft)),
-        Recallable.stateHash(this.state),
-      );
+
+      outputs += TxUtils.buildDataOutput(this.ctx.spentScriptHash, satoshisLeft, Recallable.stateHash(this.state))
     }
 
-    let outputs = this.buildStateOutputs();
     // the change output for paying the transaction fee
     outputs += this.buildChangeOutput();
 
     // require all of these outputs are actually in the unlocking transaction
-    assert(sha256(outputs) == this.ctx.shaOutputs, 'shaOutputs check failed');
+    assert(this.checkOutputs(outputs), 'hashOutputs check failed');
   }
 
   @method()
@@ -88,15 +83,12 @@ export class Recallable extends SmartContract<RecallableState> {
 
     this.state.userPubKey = this.issuerPubKey;
     // the amount is satoshis locked in this UTXO
-    this.appendStateOutput(
-      TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-      Recallable.stateHash(this.state),
-    );
-    let outputs = this.buildStateOutputs();
+
+    let outputs = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, Recallable.stateHash(this.state))
 
     outputs += this.buildChangeOutput();
 
     // require all of these outputs are actually in the unlocking transaction
-    assert(sha256(outputs) == this.ctx.shaOutputs, 'shaOutputs check failed');
+    assert(this.checkOutputs(outputs), 'hashOutputs check failed');
   }
 }

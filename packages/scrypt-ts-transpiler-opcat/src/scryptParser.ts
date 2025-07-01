@@ -320,8 +320,8 @@ export class ScryptFileParser {
       import "./cat721State.scrypt";
       import "./cat721GuardState.scrypt";
       import "../utils/ownerUtils.scrypt";
-      import "@scrypt-inc/scrypt-ts-transpiler-btc/assets/smart-contract/types/structs.scrypt";
-      import "@scrypt-inc/scrypt-ts-transpiler-btc/assets/smart-contract/builtin-libs/txUtils.scrypt";
+      import "@opcat-labs/scrypt-ts-transpiler-opcat/assets/smart-contract/types/structs.scrypt";
+      import "@opcat-labs/scrypt-ts-transpiler-opcat/assets/smart-contract/builtin-libs/txUtils.scrypt";
     */
     const regex = /\bimport\s+['"]([^'"]+)['"];/g;
     let match: RegExpExecArray | null;

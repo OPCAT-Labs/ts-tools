@@ -121,3 +121,4 @@ export * from './compile/findCompiler';
 export * from './compile/compilerWrapper';
 export * from './compile/getBinary';
 export * from './resolver';
+export * from './relinker';

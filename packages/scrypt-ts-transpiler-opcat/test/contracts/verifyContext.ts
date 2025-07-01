@@ -6,24 +6,25 @@ import {
   ContextUtils,
   FixedArray,
   Int32,
-  TX_INPUT_COUNT_MAX,
-  TX_OUTPUT_COUNT_MAX,
   TxUtils,
-  int32ToByteString,
   len,
   sha256,
   toByteString,
+  hash256,
+  hash160,
 } from '@opcat-labs/scrypt-ts-opcat';
 
+  const TX_INPUT_COUNT_MAX = 6;
+  const TX_OUTPUT_COUNT_MAX = 6;
 export class VerifyContext extends SmartContract {
   @method()
   public unlock(
-    nLockTime: ByteString,
+    nLockTime: Int32,
     sequences: FixedArray<ByteString, typeof TX_INPUT_COUNT_MAX>, // uint32string array
     inputCount: Int32,
     currentInputIndex: Int32,
     outputScriptListExceptChange: FixedArray<ByteString, typeof TX_OUTPUT_COUNT_MAX>,
-    outputSatoshisListExceptChange: FixedArray<ByteString, typeof TX_OUTPUT_COUNT_MAX>,
+    outputSatoshisListExceptChange: FixedArray<Int32, typeof TX_OUTPUT_COUNT_MAX>,
   ) {
     // verify this.ctx.nVersion
     assert(this.ctx.nVersion === toByteString('02000000'), 'nVersion is not 2');
@@ -34,41 +35,23 @@ export class VerifyContext extends SmartContract {
     // verify this.ctx.shaPrevouts and Prevouts
     ContextUtils.checkPrevouts(
       this.ctx.prevouts,
-      this.ctx.prevout,
-      this.ctx.shaPrevouts,
-      this.ctx.inputIndexVal,
+      this.ctx.hashPrevouts,
+      this.ctx.inputIndex,
+      this.ctx.inputCount,
     );
 
     // verify this.ctx.shaSpentAmounts and SpentAmounts
     {
-      let spentAmounts = toByteString('');
-      for (let index = 0; index < TX_INPUT_COUNT_MAX; index++) {
-        if (index < inputCount) {
-          spentAmounts += this.ctx.spentAmounts[index];
-        } else {
-          assert(len(this.ctx.spentAmounts[index]) === 0n, 'spentAmount length is not 0');
-        }
-      }
-      assert(sha256(spentAmounts) === this.ctx.shaSpentAmounts, 'shaSpentAmounts is not correct');
+      assert(hash256(this.ctx.spentAmounts) === this.ctx.hashSpentAmounts, 'shaSpentAmounts is not correct');
     }
 
     // verify this.ctx.shaSpentScripts and SpentScripts
-    ContextUtils.checkSpentScripts(this.ctx.spentScripts, this.ctx.shaSpentScripts, inputCount);
+    ContextUtils.checkSpentScripts(this.ctx.spentScriptHashes, this.ctx.hashSpentDataHashes, inputCount);
     {
-      let mergedSpentScripts = toByteString('');
-      for (let index = 0; index < TX_INPUT_COUNT_MAX; index++) {
-        if (index < inputCount) {
-          mergedSpentScripts =
-            mergedSpentScripts +
-            int32ToByteString(len(this.ctx.spentScripts[index])) +
-            this.ctx.spentScripts[index];
-        } else {
-          assert(len(this.ctx.spentScripts[index]) === 0n, 'spentScript length is not 0');
-        }
-      }
+
       assert(
-        sha256(mergedSpentScripts) === this.ctx.shaSpentScripts,
-        'shaSpentScripts is not correct',
+        hash256(this.ctx.spentScriptHashes) === this.ctx.hashSpentScriptHashes,
+        'hashSpentScriptHashes is not correct',
       );
     }
 
@@ -84,7 +67,7 @@ export class VerifyContext extends SmartContract {
         }
         mergedSequences += sequence;
       }
-      assert(this.ctx.shaSequences === sha256(mergedSequences), 'shaSequences is not correct');
+      assert(this.ctx.hashSequences === hash160(mergedSequences), 'shaSequences is not correct');
     }
 
     // verify this.ctx.shaOutputs
@@ -99,16 +82,12 @@ export class VerifyContext extends SmartContract {
         }
       }
       mergedOutputs += this.buildChangeOutput();
-      assert(sha256(mergedOutputs) === this.ctx.shaOutputs, 'shaOutputs is not correct');
+      assert(sha256(mergedOutputs) === this.ctx.hashOutputs, 'shaOutputs is not correct');
     }
 
-    // verify this.ctx.spendType
-    // @note since we are using tapLeafHash, not using annex, so the value of spendType is 2n
-    assert(this.ctx.spendType === toByteString('02'), 'spendType is not correct');
 
     // verify this.ctx.inputIndex
-    assert(this.ctx.inputIndexVal === currentInputIndex, 'inputIndexVal is not correct');
-    TxUtils.checkIndex(currentInputIndex, this.ctx.inputIndex);
+    assert(this.ctx.inputIndex === currentInputIndex, 'inputIndex is not correct');
 
     // verify this.ctx.tapLeafHash.
     // we can not verify it here, because we cannot access information about the control block or the taproot key.
@@ -116,12 +95,7 @@ export class VerifyContext extends SmartContract {
     // the field is only used in the checkSHPreimage method.
 
     // verify keyVersion, constant value 0x00
-    assert(this.ctx.keyVersion === toByteString('00'), 'keyVersion is not correct');
+    assert(this.ctx.nLockTime === 0n, 'keyVersion is not correct');
 
-    // verify codeSepPos
-    // current we are not using codeSepPos, so the value of codeSepPos is 0xffffffff
-    assert(this.ctx.codeSepPos === toByteString('ffffffff'), 'codeSepPos is not correct');
-
-    // this.ctx._e and  this.ctx.eLastByte, are verify by checkSig at @link ./src/methods/checkSHPreimage.ts
   }
 }

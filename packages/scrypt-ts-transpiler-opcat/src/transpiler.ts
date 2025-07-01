@@ -2230,6 +2230,10 @@ export class Transpiler {
                 accessSHPreimage: true,
                 accessCLTV: true,
               });
+            }  else if (['checkOutputs'].includes(methodName)) {
+              Object.assign(accessInfo, {
+                accessSHPreimage: true,
+              });
             } else if (['backtraceToOutpoint', 'backtraceToScript'].includes(methodName)) {
               Object.assign(accessInfo, {
                 accessSHPreimage: true,
@@ -2904,7 +2908,6 @@ export class Transpiler {
           const type = this._checker.getTypeAtLocation(d.initializer);
 
           if (type.flags === ts.TypeFlags.String) {
-            // fix https://github.com/sCrypt-Inc/scrypt-ts/issues/390
             const coordinates: ts.LineAndCharacter = this.getCoordinates(d.initializer.getStart())!;
             return toSection
               .append('bytes', coordinates)
@@ -5319,11 +5322,12 @@ export class Transpiler {
   }
 
   private transformCallCLTV(node: ts.CallExpression, toSection: EmittedSection): EmittedSection {
-    const arg = node.arguments[0]
     const shouldAccessThis = this.shouldAutoAppendSighashPreimage(this.getMethodContainsTheNode(node)).shouldAccessThis;
     return toSection.append(
-      `ContextUtils.checknLockTime(${shouldAccessThis ? 'this.' : ''}${InjectedProp_SHPreimage}, ${arg.getText()})`,
+      `ContextUtils.checknLockTime(${shouldAccessThis ? 'this.' : ''}${InjectedProp_SHPreimage},`,
     )
+    .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
+    .append(')');
   }
 
   private transformCallCheckSig(
@@ -5638,9 +5642,13 @@ export class Transpiler {
     node: ts.CallExpression,
     toSection: EmittedSection,
   ): EmittedSection {
+    const methodNode = this.getMethodContainsTheNode(node);
+    const { shouldAccessThis } = this.shouldAutoAppendSighashPreimage(methodNode);
+    const hashOutputs = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.hashOutputs`;
+
     return toSection
       .append(`hash256(`)
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
-      .append(`) == ${InjectedParam_SHPreimage}.hashOutputs`);
+      .append(`) == ${hashOutputs}`);
   }
 }

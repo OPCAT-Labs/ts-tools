@@ -1,6 +1,4 @@
 import {
-  sha256,
-  TX_INPUT_COUNT_MAX,
   TxUtils,
   toByteString,
   assert,
@@ -10,6 +8,8 @@ import {
   ByteString,
   FixedArray,
   StructObject,
+  StdUtils,
+  slice,
 } from '@opcat-labs/scrypt-ts-opcat';
 
 export interface VirtualUTXOState extends StructObject {
@@ -30,23 +30,25 @@ export class VirtualUTXO extends SmartContract<VirtualUTXOState> {
   ) {
     // verify prevoutTxids and prevoutOutputIndexes
     for (let i = 0; i < LOGICAL_UTXO_SIZE; i++) {
+      const  prevout = slice(this.ctx.prevouts, BigInt(i) * 32n, (BigInt(i) + 1n) * 32n)
       assert(
-        this.ctx.prevouts[i] ==
-          prevoutTxids[i] + TxUtils.indexValueToBytes(prevoutOutputIndexes[i]),
+        prevout ==
+          prevoutTxids[i] + StdUtils.uint32ToByteString(prevoutOutputIndexes[i]),
         'prevout mismatch',
       );
     }
-    for (let i = 0; i < TX_INPUT_COUNT_MAX; i++) {
+    for (let i = 0; i < 6; i++) {
       if (i >= LOGICAL_UTXO_SIZE) {
-        assert(this.ctx.prevouts[i] == toByteString(''), 'prevout is not empty');
+        const prevout = slice(this.ctx.prevouts, BigInt(i) * 32n, (BigInt(i) + 1n) * 32n)
+        assert(prevout == toByteString(''), 'prevout is not empty');
       }
     }
 
     // The prevout of the current input which is being executed.
-    const currentPrevout = this.ctx.prevouts[Number(this.ctx.inputIndexVal)];
+    const currentPrevout = slice(this.ctx.prevouts, this.ctx.inputIndex * 32n, (this.ctx.inputIndex + 1n) * 32n);
 
     for (let i = 0; i < LOGICAL_UTXO_SIZE; i++) {
-      const prevout = prevoutTxids[i] + TxUtils.indexValueToBytes(prevoutOutputIndexes[i]);
+      const prevout = prevoutTxids[i] + StdUtils.uint32ToByteString(prevoutOutputIndexes[i]);
 
       // Within the prevouts array, find the prevout for the currently executed input.
       if (prevout == currentPrevout) {
@@ -70,11 +72,8 @@ export class VirtualUTXO extends SmartContract<VirtualUTXOState> {
     }
 
     // Propagate contract.
-    this.appendStateOutput(
-      TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-      VirtualUTXO.stateHash(this.state),
-    );
-    const outputs = this.buildStateOutputs();
-    assert(sha256(outputs) == this.ctx.shaOutputs, 'shaOutputs mismatch');
+    let outputs = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, VirtualUTXO.stateHash(this.state))
+    outputs += this.buildChangeOutput();
+    assert(this.checkOutputs(outputs), 'outputs mismatch');
   }
 }

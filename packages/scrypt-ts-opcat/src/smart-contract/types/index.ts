@@ -16,6 +16,7 @@ export {
   Sha256,
   SigHashType,
   OpCodeType,
+  SigHashPreimage
 } from './primitives.js';
 
 export {

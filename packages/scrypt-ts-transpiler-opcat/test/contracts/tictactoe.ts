@@ -52,32 +52,28 @@ export class TicTacToe extends SmartContract<TicTacToeState> {
     this.state.board[Number(n)] = play;
     this.state.is_alice_turn = !this.state.is_alice_turn;
     const spentAmountVal = halfSpentAmountVal + halfSpentAmountVal;
-    assert(TxUtils.toSatoshis(spentAmountVal) == this.ctx.spentAmount);
+    assert(spentAmountVal == this.ctx.value);
 
     let outputs = toByteString('');
     if (this.won(play)) {
-      outputs = TxUtils.buildP2PKHOutput(hash160(player), this.ctx.spentAmount);
+      outputs = TxUtils.buildP2PKHOutput(this.ctx.value, hash160(player));
     } else if (this.full()) {
       const aliceOutput = TxUtils.buildP2PKHOutput(
+        halfSpentAmountVal,
         hash160(this.alice),
-        TxUtils.toSatoshis(halfSpentAmountVal),
       );
       const bobOutput = TxUtils.buildP2PKHOutput(
+        halfSpentAmountVal,
         hash160(this.bob),
-        TxUtils.toSatoshis(halfSpentAmountVal),
       );
       outputs = aliceOutput + bobOutput;
     } else {
-      this.appendStateOutput(
-        TxUtils.buildOutput(this.ctx.spentScript, this.ctx.spentAmount),
-        TicTacToe.stateHash(this.state),
-      );
-      outputs = this.buildStateOutputs();
+      outputs = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, TicTacToe.stateHash(this.state));
     }
 
     outputs += this.buildChangeOutput();
 
-    assert(this.ctx.shaOutputs == sha256(outputs));
+    assert(this.checkOutputs(outputs), "invalid outputs");
   }
 
   @method()
