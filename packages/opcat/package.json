@@ -1,6 +1,6 @@
 {
   "name": "@opcat-labs/opcat",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "opcat base SDK",
   "main": "./index.js",
   "types": "./index.d.ts",

@@ -1,7 +1,7 @@
 {
   "name": "@opcat-labs/scrypt-ts-opcat",
   "description": "A TypeScript library for building OPCAT smart contracts with sCrypt.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
@@ -65,7 +65,7 @@
     "typedoc-plugin-markdown": "=4.4.2"
   },
   "dependencies": {
-    "@opcat-labs/opcat": "1.0.0",
+    "@opcat-labs/opcat": "1.0.1",
     "@opcat-labs/bip174": "1.0.1",
     "uint8array-tools": "^0.0.9",
     "valibot": "^0.38.0",
