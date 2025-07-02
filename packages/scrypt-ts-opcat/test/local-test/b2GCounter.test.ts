@@ -1,8 +1,8 @@
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { BacktraceInfo, call,  deployGenesis, IExtPsbt, Signer } from '@opcat-labs/scrypt-ts-opcat';
-import { B2GCounter } from '@opcat-labs/examples'
-import { getDefaultSigner, getDefaultProvider, sleep } from '../utils/index.js';
+import { B2GCounter } from '../contracts/b2GCounter.js'
+import { getDefaultSigner, getDefaultProvider, sleep, readArtifact } from '../utils/index.js';
 use(chaiAsPromised);
 
 describe('Test B2GCounter local', () => {
@@ -10,7 +10,7 @@ describe('Test B2GCounter local', () => {
   let provider = getDefaultProvider();
   let counter: B2GCounter
   before(async () => {
-
+    B2GCounter.loadArtifact(readArtifact('b2GCounter.json'));
   });
 
   it('should deploy successfully', async () => {

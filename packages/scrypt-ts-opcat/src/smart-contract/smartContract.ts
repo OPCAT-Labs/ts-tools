@@ -270,17 +270,16 @@ export class SmartContract<StateT extends OpcatState = undefined>
   }
 
   /**
-   * check StateHash of the input. By default, the system checks the StateHash of all inputs.
-   * If you use this function to specify checking only specific inputs' StateHash, you must set the `autoCheckInputState`
+   * check state of the input. 
    * option in the `@method()` decorator to false.
    * @onchain
    * @param inputIndex index of the input
-   * @param stateHash the state hash of the input
+   * @param serializedState the state of the input
    * @returns success if stateHash is valid
    */
-  override checkInputState(inputIndex: Int32, stateHash: ByteString): boolean {
+  override checkInputState(inputIndex: Int32, serializedState: ByteString): boolean {
     const _stateHash = slice(this.inputContext.spentDataHashes, inputIndex * 32n, (inputIndex +  1n) * 32n);
-    assert(stateHash == _stateHash, 'stateHash mismatch');
+    assert(sha256(serializedState) == _stateHash, 'stateHash mismatch');
     return true;
   }
 
