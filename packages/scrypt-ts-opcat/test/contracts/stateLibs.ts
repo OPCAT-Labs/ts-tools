@@ -1,4 +1,4 @@
-import { OpcatState, StateLib, Int32, assert, method } from '@opcat-labs/scrypt-ts-opcat';
+import { OpcatState, StateLib, Int32, assert, method } from '../../src/index.js';
 
 export interface DelegateeState extends OpcatState {
   total: Int32;

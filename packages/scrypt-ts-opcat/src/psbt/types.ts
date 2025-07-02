@@ -9,8 +9,8 @@ import { BacktraceInfo } from '../smart-contract/types/structs.js';
 /**
  * A options used to determine how to unlock the covenant.
  */
-export type ContractCall = (
-  contract: SmartContract<OpcatState>,
+export type ContractCall<Contract> = (
+  contract: Contract,
   psbt: IExtPsbt,
   backtraceInfo?: BacktraceInfo,
 ) => void;
@@ -21,7 +21,7 @@ export interface IExtPsbt extends Psbt, Contextual {
    * @param contract
    * @param subContractAlias
    */
-  addContractInput<Contract extends SmartContract<OpcatState>>(contract: Contract, contractCall?: ContractCall): this;
+  addContractInput<Contract extends SmartContract<OpcatState>>(contract: Contract, contractCall?: ContractCall<Contract>): this;
 
   /**
    * Add an output to create new contract.
@@ -36,9 +36,9 @@ export interface IExtPsbt extends Psbt, Contextual {
    * @param inputIndex index of the input
    * @param subContractCall A options used to determine how to unlock the covenant.
    */
-  updateContractInput(
+  updateContractInput<Contract extends SmartContract<OpcatState>>(
     inputIndex: number,
-    contractCall: ContractCall,
+    contractCall: ContractCall<Contract>,
   ): this;
 
   /**
@@ -50,9 +50,9 @@ export interface IExtPsbt extends Psbt, Contextual {
   change(address: string, feeRate: number, data?: Uint8Array): this;
 
   /**
-   * Estimate the virtual size of the transaction.
+   * Estimate the size of the transaction.
    */
-  estimateVSize(): number;
+  estimateSize(): number;
 
   /**
    * Estimate the fee of the transaction.

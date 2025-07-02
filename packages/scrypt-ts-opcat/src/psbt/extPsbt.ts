@@ -271,7 +271,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   addContractInput<Contract extends SmartContract<OpcatState>>(
     contract: Contract,
-    contractCall?: ContractCall,
+    contractCall?: ContractCall<Contract>,
   ): this {
     const fromUtxo = contract.utxo;
     if (!fromUtxo) {
@@ -322,9 +322,9 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
-  updateContractInput(
+  updateContractInput<Contract extends SmartContract<OpcatState>>(
     inputIndex: number,
-    contractCall: ContractCall,
+    contractCall: ContractCall<Contract>,
   ): this {
 
     const contract = this._inputContracts.get(inputIndex);
@@ -335,19 +335,14 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
     // update the contract binding to the current psbt input
     contract.spentFromInput(this, inputIndex);
-
     const backtraceInfo = this._B2GInfos.get(inputIndex);
-
-    contractCall(contract, this, backtraceInfo);
-    const us = contract.getUnlockingScript();
-    this._cacheInputUnlockScript(inputIndex, us);
 
     const finalizer: Finalizer = (
       _self: ExtPsbt,
       _inputIndex: number, // Which input is it?
       _input: PsbtInput, // The PSBT input contents
     ) => {
-      contractCall(contract, this, backtraceInfo);
+      contractCall(contract as Contract, this, backtraceInfo);
       return contract.getUnlockingScript();
     };
     this._setInputFinalizer(inputIndex, finalizer);
@@ -355,7 +350,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
-  addContractOutput(contract: SmartContract<OpcatState>, satoshis: number): this {
+  addContractOutput<Contract extends SmartContract<OpcatState>>(contract: Contract, satoshis: number): this {
 
 
     const Contract = Object.getPrototypeOf(contract).constructor as typeof SmartContract;
@@ -411,7 +406,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       return this;
     }
 
-    const estVSize = this.estimateVSize(); // NOTE: this may be inaccurate due to the unknown call args size
+    const estVSize = this.estimateSize(); // NOTE: this may be inaccurate due to the unknown call args size
 
     const changeAmount = this.inputAmount - (this.outputAmount - DUMMY_CHANGE_SATOSHIS) - BigInt(Math.ceil(estVSize * this._changeFeeRate));
 
@@ -463,12 +458,12 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return (this as any).opts.network || Networks.livenet;
   }
 
-  estimateVSize(): number {
+  estimateSize(): number {
     return this.unsignedTx.getEstimateSize() + this._unfinalizedCallArgsSize();
   }
 
   estimateFee(feeRate: number): number {
-    return this.estimateVSize() * feeRate;
+    return this.estimateSize() * feeRate;
   }
 
   private _setInputFinalizer(inputIndex: InputIndex, finalizer: Finalizer): this {
@@ -734,6 +729,12 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   seal(): this {
+    // calculate and cache the input unlockingScripts to calculate the tx size
+    for (const [inputIndex, finalizer] of this._finalizers) {
+      const unlockingScript = finalizer(this, inputIndex, this.data.inputs[inputIndex]);
+      this._cacheInputUnlockScript(inputIndex, unlockingScript);
+    }
+
     if (this._changeToAddr) {
       this.finalizeChangeOutput();
     }
