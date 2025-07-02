@@ -1,0 +1,29 @@
+name: Test
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Prepare git
+        run: git config --global core.autocrlf false
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22
+      - name: Yarn Install
+        run: yarn install
+      - name: Yarn Build
+        run: yarn build
+      - name: Yarn test
+        run: yarn test
