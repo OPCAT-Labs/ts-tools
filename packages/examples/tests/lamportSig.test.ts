@@ -1,12 +1,9 @@
 import { expect, use } from 'chai'
 import {
     ByteString,
-    FixedArray,
     byteStringToInt,
-    fill,
     hash256,
     lshift,
-    sha256,
     slice,
     toByteString,
     and, deploy,

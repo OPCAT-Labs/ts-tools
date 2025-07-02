@@ -1,6 +1,5 @@
 import { expect, use } from 'chai'
 import {
-    sha256,
     toByteString,
     deploy,
     call,

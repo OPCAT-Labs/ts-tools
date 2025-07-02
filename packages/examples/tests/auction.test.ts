@@ -1,16 +1,12 @@
 import { expect, use } from 'chai'
 import {
-    sha256,
-    toByteString,
     deploy,
-    call,
     IExtPsbt,
     PubKey,
     Signer,
     UtxoProvider,
     ChainProvider,
     ExtPsbt,
-    pubKey2Addr,
     fromSupportedNetwork,
     markSpent,
 } from '@opcat-labs/scrypt-ts-opcat'

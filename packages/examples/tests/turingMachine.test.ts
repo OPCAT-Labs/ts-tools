@@ -1,7 +1,6 @@
 import { expect, use } from 'chai'
 import { TuringMachine, TuringMachineState } from '@opcat-labs/examples'
 import { getDefaultProvider, getDefaultSigner } from './utils/helper'
-import { MethodCallOptions } from 'scrypt-ts'
 import chaiAsPromised from 'chai-as-promised'
 import { call, cloneDeep, deploy } from '@opcat-labs/scrypt-ts-opcat'
 use(chaiAsPromised)

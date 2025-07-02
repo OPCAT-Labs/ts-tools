@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { CandidateName, Voting, Candidate, VotingState } from '@opcat-labs/examples'
+import { CandidateName, Voting, Candidate } from '@opcat-labs/examples'
 import { getDefaultProvider, getDefaultSigner, getRandomInt } from './utils/helper'
 import { call, cloneDeep, deploy, IExtPsbt, FixedArray,  toByteString } from '@opcat-labs/scrypt-ts-opcat'
 
