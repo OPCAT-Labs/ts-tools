@@ -145,7 +145,7 @@
   {
    "symbol": "Voting",
    "path": "contracts/voting.scrypt.tpl",
-   "md5": "2b4995858697ea6dde0c222c0ede38b2",
+   "md5": "e0a36cb71ea65f20f98cd952925a289e",
    "stateType": "VotingState"
   },
   {
