@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 
-import { bvmVerify, DefaultSigner, ExtPsbt } from '../../src/index.js';
+import { bvmVerify, DefaultSigner, ExtPsbt } from '@opcat-labs/scrypt-ts-opcat';
 
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';

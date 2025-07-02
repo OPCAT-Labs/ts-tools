@@ -1,12 +1,11 @@
 import {
-  DefaultSigner,
+  fromSupportedNetwork,
   SupportedNetwork,
 } from '@opcat-labs/scrypt-ts-opcat';
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import { pathToFileURL } from 'url';
 import { PrivateKey } from '@opcat-labs/opcat';
-import { fromSupportedNetwork } from '../../src/index.js';
 
 // apply .env file
 dotenv.config();

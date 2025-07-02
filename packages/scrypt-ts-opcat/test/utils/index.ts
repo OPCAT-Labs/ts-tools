@@ -1,7 +1,7 @@
 import { join } from 'path';
 import { readFileSync } from 'fs';
 import { getTestAddress, network } from './privateKey.js';
-import { UTXO, SupportedNetwork } from '../../src/index.js';
+import { UTXO, SupportedNetwork } from '@opcat-labs/scrypt-ts-opcat';
 
 import * as dotenv from 'dotenv';
 import { Script } from '@opcat-labs/opcat';

@@ -7,7 +7,7 @@ import {
   ByteString,
   slice,
   StdUtils,
-} from '../../src/index.js';
+} from '@opcat-labs/scrypt-ts-opcat';
 import { DelegateeState, DelegatorState, DelegatorStateLib } from './stateLibs.js';
 
 export class StateDelegatee extends SmartContract<DelegateeState> {

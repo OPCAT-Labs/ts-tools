@@ -5,7 +5,6 @@
   "main": "./index.js",
   "types": "./index.d.ts",
   "scripts": {
-    "lint": "standard --fix",
     "test": "mocha"
   },
   "dependencies": {

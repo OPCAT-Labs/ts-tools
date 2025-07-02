@@ -1,4 +1,4 @@
-import { SmartContract, method, assert, ByteString, prop, sha256, slice} from '../../src/index.js';
+import { SmartContract, method, assert, ByteString, prop, sha256, slice} from '@opcat-labs/scrypt-ts-opcat';
 import { DelegatorState } from './stateLibs.js';
 
 export class StateDelegator extends SmartContract<DelegatorState> {

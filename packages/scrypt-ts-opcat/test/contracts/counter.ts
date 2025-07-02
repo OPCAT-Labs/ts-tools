@@ -7,7 +7,7 @@ import {
   Int32,
   sha256,
   TxUtils,
-} from '../../src/index.js';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export interface CounterState extends OpcatState {
   count: Int32

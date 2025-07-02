@@ -1,7 +1,7 @@
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 use(chaiAsPromised);
-import { DefaultSigner, ExtPsbt, sha256, toByteString } from '../../src/index.js';
+import { DefaultSigner, ExtPsbt, sha256, toByteString } from '@opcat-labs/scrypt-ts-opcat';
 import { getDummyUtxo, readArtifact } from '../utils/index.js';
 
 import { StateDelegatee } from '../contracts/stateDelegatee.js';

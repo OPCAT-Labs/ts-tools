@@ -6,7 +6,7 @@ import {
   assert,
   ByteString,
   Ripemd160,
-} from '../../src/index.js';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 // calling state methods (this.appendStateOutput, this.buildStateOutputs) in a non stateful contract is allowed
 

@@ -7,7 +7,7 @@ import {
   PubKey,
   pubKey2Addr,
   assert,
-} from '../../src/index.js';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 /*
  * A simple Pay to Public Key Hash (P2PKH) contract.

@@ -4,7 +4,7 @@ import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { Demo } from '../contracts/demo.js';
 import { readArtifact } from '../utils/index.js';
-import { DefaultSigner, ExtPsbt, bvmVerify } from '../../src/index.js';
+import { DefaultSigner, ExtPsbt, bvmVerify } from '@opcat-labs/scrypt-ts-opcat';
 use(chaiAsPromised);
 
 dotenv.config();

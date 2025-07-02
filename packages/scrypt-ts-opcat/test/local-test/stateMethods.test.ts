@@ -4,7 +4,7 @@ import {
   Ripemd160,
   bvmVerify,
   sha256,
-} from '../../src/index.js';
+} from '@opcat-labs/scrypt-ts-opcat';
 import { Counter, CounterStateLib } from '../contracts/counter.js';
 import { StateMethods } from '../contracts/stateMethods.js';
 

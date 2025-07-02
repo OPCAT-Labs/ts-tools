@@ -3,7 +3,6 @@ import chaiAsPromised from 'chai-as-promised';
 
 import { AccumulatorMultiSig } from '../contracts/accumulatorMultiSig.js';
 import { readArtifact } from '../utils/index.js';
-import { hash160 } from '../../src/smart-contract/fns/index.js';
 import {
   DefaultSigner,
   ExtPsbt,
@@ -11,7 +10,8 @@ import {
   PubKey,
   Sig,
   bvmVerify,
-} from '../../src/index.js';
+  hash160,
+} from '@opcat-labs/scrypt-ts-opcat';
 
 use(chaiAsPromised);
 

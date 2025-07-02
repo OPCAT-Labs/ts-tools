@@ -2,7 +2,7 @@ import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 use(chaiAsPromised);
 
-import { DefaultSigner, ExtPsbt } from '../../src/index.js';
+import { DefaultSigner, ExtPsbt } from '@opcat-labs/scrypt-ts-opcat';
 import { getDummyUtxo } from '../utils/index.js';
 
 import { Counter, CounterStateLib } from '../contracts/counter.js';

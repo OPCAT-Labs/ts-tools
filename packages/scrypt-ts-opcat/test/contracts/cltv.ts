@@ -1,4 +1,4 @@
-import { Int32, SmartContract, assert, method, prop } from '../../src/index.js';
+import { Int32, SmartContract, assert, method, prop } from '@opcat-labs/scrypt-ts-opcat';
 
 export class CLTV extends SmartContract {
 

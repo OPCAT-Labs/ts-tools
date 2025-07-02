@@ -1,4 +1,4 @@
-import { SmartContract, method, prop, assert } from '../../src/index.js';
+import { SmartContract, method, prop, assert } from '@opcat-labs/scrypt-ts-opcat';
 
 export class Demo extends SmartContract {
   @prop()

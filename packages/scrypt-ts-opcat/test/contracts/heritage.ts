@@ -1,4 +1,4 @@
-import { method, prop, assert } from '../../src/index.js';
+import { method, prop, assert } from '@opcat-labs/scrypt-ts-opcat';
 import { Demo } from './demo.js';
 
 export class HeritageDemo extends Demo {

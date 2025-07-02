@@ -8,7 +8,7 @@ import {
   Sig,
   hash160,
   prop,
-} from '../../src/index.js';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 export class AccumulatorMultiSig extends SmartContract {
   @prop()

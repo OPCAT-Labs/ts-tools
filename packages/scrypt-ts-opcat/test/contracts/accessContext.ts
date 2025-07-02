@@ -1,4 +1,4 @@
-import { SmartContract, method, assert, hash256, intToByteString, slice, toByteString } from '../../src/index.js';
+import { SmartContract, method, assert, hash256, intToByteString, slice, toByteString } from '@opcat-labs/scrypt-ts-opcat';
 
 
 export class AccessContext extends SmartContract {
