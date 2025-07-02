@@ -19,7 +19,8 @@
   },
   "devDependencies": {
     "parcel": "^2.15.2",
-    "sinon": "^20.0.0"
+    "sinon": "^20.0.0",
+    "clone-deep": "^4.0.1"
   },
   "author": "",
   "license": "ISC"
