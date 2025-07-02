@@ -1,9 +1,8 @@
 import { expect, use } from 'chai'
-import { toByteString } from 'scrypt-ts'
 import { Rule110 } from '@opcat-labs/examples'
 import { getDefaultProvider, getDefaultSigner } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'
-import { call, deploy, IExtPsbt } from '@opcat-labs/scrypt-ts-opcat'
+import { call, deploy, IExtPsbt, toByteString } from '@opcat-labs/scrypt-ts-opcat'
 use(chaiAsPromised)
 
 describe('Test SmartContract `Rule110`', () => {
