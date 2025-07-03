@@ -34,12 +34,11 @@ describe('Test Contract with verifyContext', () => {
       network: testSigner.network,
     })
       // add covenant0 and covenant1 to test the context for different inputs
-      .addContractInput(accessContext)
+      .addContractInput(accessContext, (accessContext) => {
+        accessContext.unlock();
+      })
       .change(address, 1)
       .seal();
-      psbt.updateContractInput(0, (accessContext: AccessContext, psbt: IExtPsbt) => {
-        accessContext.unlock();
-      });
 
     expect(async () => {
       await psbt.sign(testSigner)

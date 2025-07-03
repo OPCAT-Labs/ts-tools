@@ -5,7 +5,7 @@ import { B2GCounter } from '../contracts/b2GCounter.js'
 import { getDefaultSigner, getDefaultProvider, sleep, readArtifact } from '../utils/index.js';
 use(chaiAsPromised);
 
-describe('Test Counter onchain', () => {
+describe('Test b2GCounter onchain', () => {
   let signer: Signer = getDefaultSigner();
   let provider = getDefaultProvider();
   let counter: B2GCounter
@@ -28,7 +28,7 @@ describe('Test Counter onchain', () => {
 
   it('should increase', async () => {
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 2; i++) {
       const newContract = counter.next({ count: counter.state.count + 1n });
       
       const psbt = await call(

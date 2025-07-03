@@ -15,7 +15,7 @@ import {
   PubKey,
 } from '../../src/index.js';
 import { getTestKeyPair, network } from '../utils/privateKey.js';
-import { createLogger } from '../utils/index.js';
+import { createLogger, getDefaultProvider } from '../utils/index.js';
 import { P2PKH } from '../contracts/p2pkh.js';
 
 import artifact from '../fixtures/p2pkh.json' with { type: 'json' };
@@ -33,7 +33,7 @@ describe('Test P2PKH onchain', () => {
     P2PKH.loadArtifact(artifact);
     signer = new DefaultSigner(getTestKeyPair());
     pubKey = await signer.getPublicKey();
-    provider = new RPCProvider(network, process.env.RPC_URL, process.env.RPC_WALLET_NAME, process.env.RPC_USER, process.env.RPC_PASS);
+    provider = getDefaultProvider(network)
   });
 
   it('should deploy successfully', async () => {

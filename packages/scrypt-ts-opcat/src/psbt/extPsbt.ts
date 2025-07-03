@@ -271,7 +271,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   addContractInput<Contract extends SmartContract<OpcatState>>(
     contract: Contract,
-    contractCall?: ContractCall<Contract>,
+    contractCall: ContractCall<Contract>,
   ): this {
     const fromUtxo = contract.utxo;
     if (!fromUtxo) {
@@ -322,7 +322,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
-  updateContractInput<Contract extends SmartContract<OpcatState>>(
+  private updateContractInput<Contract extends SmartContract<OpcatState>>(
     inputIndex: number,
     contractCall: ContractCall<Contract>,
   ): this {
@@ -335,13 +335,13 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
     // update the contract binding to the current psbt input
     contract.spentFromInput(this, inputIndex);
-    const backtraceInfo = this._B2GInfos.get(inputIndex);
 
     const finalizer: Finalizer = (
       _self: ExtPsbt,
       _inputIndex: number, // Which input is it?
       _input: PsbtInput, // The PSBT input contents
     ) => {
+      const backtraceInfo = this._B2GInfos.get(inputIndex);
       contractCall(contract as Contract, this, backtraceInfo);
       return contract.getUnlockingScript();
     };
@@ -558,7 +558,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     this.data.inputs.forEach((input, _inputIndex) => {
       if (!this.isContractInput(_inputIndex)) {
         // p2pkh
-        size += P2PKH_SIG_LEN + P2PKH_PUBKEY_LEN;
+        size += P2PKH_SIG_LEN + P2PKH_PUBKEY_LEN + new BufferWriter().writeVarintNum(P2PKH_SIG_LEN + P2PKH_PUBKEY_LEN).toBuffer().length;
       } else {
         if (!isFinalized(input)) {
           if (this._hasInputUnlockScript(_inputIndex)) {
@@ -704,8 +704,6 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       }
     }
   }
-
-
 
   isB2GUtxo(utxo: object): boolean {
     return (

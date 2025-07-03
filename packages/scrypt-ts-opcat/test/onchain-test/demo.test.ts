@@ -15,7 +15,7 @@ import {
   PubKey,
 } from '../../src/index.js';
 import { getTestKeyPair, network } from '../utils/privateKey.js';
-import { createLogger } from '../utils/index.js';
+import { createLogger, getDefaultProvider } from '../utils/index.js';
 import { Demo } from '../contracts/demo.js';
 
 import artifact from '../fixtures/demo.json' with { type: 'json' };
@@ -33,7 +33,7 @@ describe('Test Demo onchain', () => {
     Demo.loadArtifact(artifact);
     signer = new DefaultSigner(getTestKeyPair());
     pubKey = await signer.getPublicKey();
-    provider = new MempoolProvider(network);
+    provider = getDefaultProvider(network)
   });
 
   it('should deploy successfully', async () => {

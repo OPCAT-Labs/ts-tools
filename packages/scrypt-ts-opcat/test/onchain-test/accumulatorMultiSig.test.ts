@@ -1,7 +1,7 @@
 import chaiAsPromised from 'chai-as-promised';
 
 import { AccumulatorMultiSig } from '../contracts/accumulatorMultiSig.js';
-import { createLogger, readArtifact } from '../utils/index.js';
+import { createLogger, getDefaultProvider, readArtifact } from '../utils/index.js';
 import { hash160 } from '../../src/smart-contract/fns/index.js';
 import {
   ChainProvider,
@@ -24,7 +24,7 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
   before(() => {
     AccumulatorMultiSig.loadArtifact(readArtifact('accumulatorMultiSig.json'));
     signer = new DefaultSigner(getTestKeyPair());
-    provider = new MempoolProvider(network);
+    provider = getDefaultProvider(network)
   });
 
   it('should successfully with all three right.', async () => {

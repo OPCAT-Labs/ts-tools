@@ -37,7 +37,9 @@ use(chaiAsPromised)
     const network = await provider.getNetwork();
   
     const psbt = new ExtPsbt({ network: network })
-      .addContractInput(contract)
+      .addContractInput(contract, (auction) => {
+        auction.bid(PubKey(publicKey), bid);
+    })
       .spendUTXO(utxos.slice(0, 10));
   
     const next = contract.next({
@@ -58,9 +60,6 @@ use(chaiAsPromised)
     psbt.change(address, feeRate);
   
 
-    psbt.updateContractInput(0, (auction: Auction, psbt: IExtPsbt) => {
-        auction.bid(PubKey(publicKey), bid);
-    });
     psbt.seal();
   
     const signedPsbtHex = await signer.signPsbt(psbt.toHex(), psbt.psbtOptions());

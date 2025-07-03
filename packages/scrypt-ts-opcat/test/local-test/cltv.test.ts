@@ -31,7 +31,9 @@ describe('Test CLTV', () => {
     const address = await testSigner.getAddress();
 
     const psbt = new ExtPsbt()
-      .addContractInput(cltv)
+      .addContractInput(cltv, (contract) => {
+        contract.unlock();
+      })
       .change(address, 1);
 
     psbt
@@ -40,9 +42,6 @@ describe('Test CLTV', () => {
       .setInputSequence(0, 0xfffffffe)
       .setLocktime(Number(lockedBlock))
       .seal()
-      .updateContractInput(0, (contract: CLTV) => {
-        contract.unlock();
-      },)
       .finalizeAllInputs();
 
     expect(psbt.isFinalized).to.be.true;
