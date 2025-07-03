@@ -76,18 +76,16 @@ describe('Test StateDelegatee & StateDelegator', () => {
     const newDelagatorCov = delegatorCov.next({ delegated: true });
     const newDelegateeCov = delegateeCov.next({ total: delegateeCov.state.total + 1n });
     const psbt = new ExtPsbt()
-      .addContractInput(delegatorCov)
-      .addContractInput(delegateeCov)
+      .addContractInput(delegatorCov, (contract) => {
+        contract.unlock();
+      })
+      .addContractInput(delegateeCov,  (contract) => {
+        contract.unlock(sha256(toByteString(delegatorCov.lockingScript.toHex())), delegatorCov.state, 0n);
+      })
       .spendUTXO(getDummyUtxo(address))
       .addContractOutput(newDelagatorCov, 1000)
       .addContractOutput(newDelegateeCov, 1000)
       .change(address, 1)
-      .updateContractInput(0,  (contract: StateDelegator) => {
-        contract.unlock();
-      })
-      .updateContractInput(1, (contract: StateDelegatee) => {
-        contract.unlock(sha256(toByteString(delegatorCov.lockingScript.toHex())), delegatorCov.state, 0n);
-      })
       .seal();
 
     await psbt.sign(signer);

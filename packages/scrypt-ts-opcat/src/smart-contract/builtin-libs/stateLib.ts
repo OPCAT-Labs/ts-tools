@@ -75,8 +75,6 @@ export class StateLib<ST extends OpcatState> extends SmartContractLib {
     return sha256((this as any).serializeState(state));
   }
 
-  // keep this method to enable the typecheck for stateHash method in ts
-  private _id(_state: ST): ST {
-    return _state;
-  }
+  // keep this field to enable the typecheck for stateHash method in ts
+  protected __state_lib_dummy_private_field__: ST
 }

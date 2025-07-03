@@ -41,8 +41,8 @@ export class StateDelegatee extends SmartContract<DelegateeState> {
     this.state.total++;
 
     // build delegatee output
-    outputs = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, StateDelegatee.stateHash(this.state)) + this.buildChangeOutput();
+    outputs = outputs + TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, StateDelegatee.stateHash(this.state)) + this.buildChangeOutput();
 
-    this.checkOutputs(outputs)
+    assert(this.checkOutputs(outputs), 'outputs check failed');
   }
 }

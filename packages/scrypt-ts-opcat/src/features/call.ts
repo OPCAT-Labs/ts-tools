@@ -29,11 +29,11 @@ export type CallOptions = {
  * @param options the new contract, such as `{ contract: newContract, satoshis: 1 }`
  * @returns the called psbt
  */
-export async function call(
+export async function call<Contract extends SmartContract<OpcatState>>(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
-  contract: SmartContract<OpcatState>,
-  contractCall: ContractCall,
+  contract: Contract,
+  contractCall: ContractCall<Contract>,
   options?: CallOptions,
 ): Promise<ExtPsbt> {
   const address = await signer.getAddress();

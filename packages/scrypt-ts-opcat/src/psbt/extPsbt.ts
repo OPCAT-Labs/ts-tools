@@ -24,7 +24,7 @@ import { hash256, sha256 } from '../smart-contract/fns/index.js';
 
 import { FinalScriptsFunc, isFinalized, Psbt, PsbtOptsOptional, PsbtOutputExtended, TransactionInput } from './psbt.js';
 import { fromSupportedNetwork } from '../networks.js';
-import { Transaction, PublicKey, Networks } from '@opcat-labs/opcat';
+import { Transaction, PublicKey, Networks, encoding } from '@opcat-labs/opcat';
 import { SmartContract } from '../smart-contract/smartContract.js';
 import { OpcatState } from '../smart-contract/types/primitives.js';
 import { BacktraceInfo, SpentDataHashes } from '../smart-contract/types/structs.js';
@@ -32,8 +32,11 @@ import { UtxoProvider } from '../providers/utxoProvider.js';
 import { ChainProvider } from '../providers/chainProvider.js';
 import { toTxHashPreimage } from '../utils/proof.js';
 
+const { BufferWriter } = encoding;
+
 const P2PKH_SIG_LEN = 0x49; // 73 bytes signature
 const P2PKH_PUBKEY_LEN = 0x21; // 33 bytes pubkey
+const DUMMY_CHANGE_SATOSHIS = BigInt(2100e16); // use the max value to avoid change.satoshis size getting bigger when sealing
 
 type Finalizer = (
   self: ExtPsbt,
@@ -268,7 +271,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   addContractInput<Contract extends SmartContract<OpcatState>>(
     contract: Contract,
-    contractCall?: ContractCall,
+    contractCall?: ContractCall<Contract>,
   ): this {
     const fromUtxo = contract.utxo;
     if (!fromUtxo) {
@@ -319,9 +322,9 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
-  updateContractInput(
+  updateContractInput<Contract extends SmartContract<OpcatState>>(
     inputIndex: number,
-    contractCall: ContractCall,
+    contractCall: ContractCall<Contract>,
   ): this {
 
     const contract = this._inputContracts.get(inputIndex);
@@ -332,19 +335,14 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
     // update the contract binding to the current psbt input
     contract.spentFromInput(this, inputIndex);
-
     const backtraceInfo = this._B2GInfos.get(inputIndex);
-
-    contractCall(contract, this, backtraceInfo);
-    const us = contract.getUnlockingScript();
-    this._cacheInputUnlockScript(inputIndex, us);
 
     const finalizer: Finalizer = (
       _self: ExtPsbt,
       _inputIndex: number, // Which input is it?
       _input: PsbtInput, // The PSBT input contents
     ) => {
-      contractCall(contract, this, backtraceInfo);
+      contractCall(contract as Contract, this, backtraceInfo);
       return contract.getUnlockingScript();
     };
     this._setInputFinalizer(inputIndex, finalizer);
@@ -352,7 +350,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
-  addContractOutput(contract: SmartContract<OpcatState>, satoshis: number): this {
+  addContractOutput<Contract extends SmartContract<OpcatState>>(contract: Contract, satoshis: number): this {
 
 
     const Contract = Object.getPrototypeOf(contract).constructor as typeof SmartContract;
@@ -370,13 +368,17 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
-  get inputAmount(): number {
-    return this.data.inputs.reduce((total, input) => total + Number(input.opcatUtxo!.value), 0);
+  get inputAmount(): bigint {
+    // should use bigint here, because the input amount is too large
+    // 2100e16 + 1 = 21000000000000000000
+    // BigInt(2100e16) + 1n = 21000000000000000001n
+    return this.data.inputs.reduce((total, input) => total + input.opcatUtxo!.value, 0n);
   }
 
-  get outputAmount(): number {
-    return this.txOutputs.reduce((total, output) => total + Number(output.value), 0);
+  get outputAmount(): bigint {
+    return this.txOutputs.reduce((total, output) => total + output.value, 0n);
   }
+
 
   change(toAddr: string, feeRate: number, data?: Uint8Array | string): this {
     const changeScript = Script.fromAddress(toAddr);
@@ -387,7 +389,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     if (this._changeOutputIndex === null) {
       super.addOutput({
         script: changeScript.toBuffer(),
-        value: BigInt(0),
+        value: DUMMY_CHANGE_SATOSHIS,
         data: data,
       });
 
@@ -404,9 +406,9 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       return this;
     }
 
-    const estVSize = this.estimateVSize(); // NOTE: this may be inaccurate due to the unknown call args size
+    const estVSize = this.estimateSize(); // NOTE: this may be inaccurate due to the unknown call args size
 
-    const changeAmount = this.inputAmount - this.outputAmount - estVSize * this._changeFeeRate;
+    const changeAmount = this.inputAmount - (this.outputAmount - DUMMY_CHANGE_SATOSHIS) - BigInt(Math.ceil(estVSize * this._changeFeeRate));
 
     if (changeAmount < 0) {
       throw new Error('Insufficient input satoshis!');
@@ -414,7 +416,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
     if (changeAmount >= DUST_LIMIT) {
       const outputs = this.unsignedTx.outputs;
-      outputs[this._changeOutputIndex].satoshis = changeAmount;
+      outputs[this._changeOutputIndex].satoshis = Number(changeAmount);
     } else {
       this.txOutputs.splice(this._changeOutputIndex, 1);
       this._changeOutputIndex = null;
@@ -456,13 +458,12 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return (this as any).opts.network || Networks.livenet;
   }
 
-  estimateVSize(): number {
-    const compensation = 1; // vsize diff compensation in bytes
-    return this.unsignedTx.getEstimateSize() + this._unfinalizedCallArgsSize() + compensation;
+  estimateSize(): number {
+    return this.unsignedTx.getEstimateSize() + this._unfinalizedCallArgsSize();
   }
 
   estimateFee(feeRate: number): number {
-    return this.estimateVSize() * feeRate;
+    return this.estimateSize() * feeRate;
   }
 
   private _setInputFinalizer(inputIndex: InputIndex, finalizer: Finalizer): this {
@@ -553,7 +554,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   private _unfinalizedCallArgsSize(): number {
-    let size = 0;
+    let size = 0
     this.data.inputs.forEach((input, _inputIndex) => {
       if (!this.isContractInput(_inputIndex)) {
         // p2pkh
@@ -561,8 +562,8 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       } else {
         if (!isFinalized(input)) {
           if (this._hasInputUnlockScript(_inputIndex)) {
-            const us = this._getInputUnlockScript(_inputIndex)!;
-            size += us.toBuffer().length;
+            const scriptBuffer = this._getInputUnlockScript(_inputIndex)!.toBuffer();
+            size += new BufferWriter().writeVarintNum(scriptBuffer.length).write(scriptBuffer).toBuffer().length;
           } else {
             // if no unknownKeyVals, we assume the input is not finalized yet
             // and we should not count the size of finalScriptSig
@@ -571,7 +572,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
           }
         } else {
           if (input.finalScriptSig) {
-            size += input.finalScriptSig.length;
+            size += new BufferWriter().writeVarintNum(input.finalScriptSig.length).write(Buffer.from(input.finalScriptSig)).toBuffer().length;
           } else {
             throw new Error(
               'The input should be finalized with either finalScriptSig',
@@ -728,6 +729,12 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   seal(): this {
+    // calculate and cache the input unlockingScripts to calculate the tx size
+    for (const [inputIndex, finalizer] of this._finalizers) {
+      const unlockingScript = finalizer(this, inputIndex, this.data.inputs[inputIndex]);
+      this._cacheInputUnlockScript(inputIndex, unlockingScript);
+    }
+
     if (this._changeToAddr) {
       this.finalizeChangeOutput();
     }

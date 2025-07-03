@@ -15,10 +15,10 @@ import { toGenesisOutpoint } from '../utils/proof.js';
  * @param satoshis the satoshis to deploy the contract
  * @returns the deployed psbt
  */
-export async function deployGenesis(
+export async function deployGenesis<Contract extends SmartContract<OpcatState>>(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
-  createContract: (genesisOutpoint: ByteString) => SmartContract<OpcatState>, // Function to create the contract with genesisOutpoint
+  createContract: (genesisOutpoint: ByteString) => Contract, // Function to create the contract with genesisOutpoint
   satoshis: number = 1,
 ): Promise<{
   psbt: ExtPsbt;
