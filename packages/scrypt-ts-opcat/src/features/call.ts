@@ -45,7 +45,7 @@ export async function call<Contract extends SmartContract<OpcatState>>(
   const network = await provider.getNetwork();
 
   const psbt = new ExtPsbt({ network: network })
-    .addContractInput(contract)
+    .addContractInput(contract, contractCall)
     .spendUTXO(utxos.slice(0, 10));
 
   if (options && options.contract) {
@@ -65,7 +65,6 @@ export async function call<Contract extends SmartContract<OpcatState>>(
   if (options?.withBackTraceInfo) {
     await psbt.calculateBacktraceInfo(provider, options.prevPrevTxFinder);
   }
-  psbt.updateContractInput(0, contractCall);
   psbt.seal();
 
   const signedPsbtHex = await signer.signPsbt(psbt.toHex(), psbt.psbtOptions());

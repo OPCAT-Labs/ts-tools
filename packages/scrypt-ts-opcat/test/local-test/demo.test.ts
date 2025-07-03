@@ -27,14 +27,11 @@ describe('Test Demo', () => {
     });
     const address = await testSigner.getAddress();
     const psbt = new ExtPsbt()
-      .addContractInput(demo)
-      .change(address, 1)
-      .seal();
-
-    psbt
-      .updateContractInput(0,  (contract: Demo) => {
+      .addContractInput(demo, (contract) => {
         contract.add(x + y);
       })
+      .change(address, 1)
+      .seal()
       .finalizeAllInputs();
 
     expect(psbt.isFinalized).to.be.true;
@@ -51,14 +48,11 @@ describe('Test Demo', () => {
     });
     const address = await testSigner.getAddress();
     const psbt = new ExtPsbt()
-      .addContractInput(demo)
-      .change(address, 1)
-      .seal();
-
-    psbt
-      .updateContractInput(0,  (contract: Demo) => {
+      .addContractInput(demo, (contract) => {
         contract.sub(x - y);
       })
+      .change(address, 1)
+      .seal()
       .finalizeAllInputs();
 
     expect(psbt.isFinalized).to.be.true;

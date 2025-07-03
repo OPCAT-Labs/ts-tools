@@ -26,7 +26,14 @@ export function getDefaultProvider(network?: SupportedNetwork) {
         return new DummyProvider(network)
     }
 
-    return new MempoolProvider(network)
+    const provider = new MempoolProvider(network)
+    const originalGetUtxos = provider.getUtxos.bind(provider)
+    provider.getUtxos = async (address: string) => {
+        await sleep(2) // wait for 2 seconds, so that the utxos are ready
+        const utxos = await originalGetUtxos(address)
+        return utxos.slice(0, 10)
+    }
+    return provider
 }
 
 

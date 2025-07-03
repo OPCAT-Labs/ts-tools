@@ -49,14 +49,13 @@ describe('Test Counter', () => {
     const newContract = counter.next({ count: counter.state.count + 1n });
     const address = await testSigner.getAddress();
     const psbt = new ExtPsbt()
-      .addContractInput(counter)
+      .addContractInput(counter,  (contract) => {
+        contract.increase();
+      })
       .spendUTXO(getDummyUtxo(address))
       .addContractOutput(newContract, 1)
       .change(address, 1)
       .seal()
-      .updateContractInput(0, (contract: Counter) => {
-          contract.increase();
-        })
 
     await psbt.sign(testSigner);
 

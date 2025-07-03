@@ -39,14 +39,13 @@ describe('Test P2PKH', () => {
       data: ''
     });
 
-    const psbt = new ExtPsbt({
-      network: testSigner.network,
-    }).addContractInput(c).change(address, 1).seal();
-
-    psbt.updateContractInput(0, (p2pkh: P2PKH, psbt: IExtPsbt) => {
+    const psbt = new ExtPsbt({network: testSigner.network,})
+      .addContractInput(c, (p2pkh, psbt) => {
         const sig = psbt.getSig(0, { address: address });
         p2pkh.unlock(sig, PubKey(pubKey));
-      });
+      })
+      .change(address, 1)
+      .seal();
 
     expect(async () => {
       await psbt.sign(testSigner)
@@ -70,12 +69,13 @@ describe('Test P2PKH', () => {
     const wrongSigner = new DefaultSigner();
     const wrongAddress = await wrongSigner.getAddress();
 
-    const psbt = new ExtPsbt().addContractInput(c).change(address, 1).seal();
-
-    psbt.updateContractInput(0, (p2pkh: P2PKH, psbt: IExtPsbt) => {
+    const psbt = new ExtPsbt()
+      .addContractInput(c, (p2pkh, psbt) => {
         const sig = psbt.getSig(0, { address: wrongAddress });
         p2pkh.unlock(sig, PubKey(pubKey));
-      });
+      })
+      .change(address, 1)
+      .seal();
 
     const signedPsbtHex = await wrongSigner.signPsbt(psbt.toHex(), {
       autoFinalized: false,

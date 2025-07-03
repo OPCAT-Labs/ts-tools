@@ -15,7 +15,7 @@ import {
   PubKey,
 } from '../../src/index.js';
 import { getTestKeyPair, network } from '../utils/privateKey.js';
-import { createLogger } from '../utils/index.js';
+import { createLogger, getDefaultProvider } from '../utils/index.js';
 import { CLTV } from '../contracts/cltv.js';
 
 import artifact from '../fixtures/cltv.json' with { type: 'json' };
@@ -24,7 +24,7 @@ use(chaiAsPromised);
 
 describe('Test CLTV onchain', () => {
   let signer: Signer;
-  let provider: MempoolProvider;
+  let provider: ChainProvider & UtxoProvider;
   let pubKey: string;
   let cltv: CLTV;
   const logger = createLogger('Test CLTV onchain');
@@ -33,7 +33,7 @@ describe('Test CLTV onchain', () => {
     CLTV.loadArtifact(artifact);
     signer = new DefaultSigner(getTestKeyPair());
     pubKey = await signer.getPublicKey();
-    provider = new MempoolProvider(network);
+    provider = getDefaultProvider(network)
   });
 
   it('should deploy successfully', async () => {
@@ -45,7 +45,7 @@ describe('Test CLTV onchain', () => {
   });
 
   it('should unlock successfully', async () => {
-    const psbt = await call(signer, provider, cltv, (cltv: CLTV, psbt: ExtPsbt) => {
+    const psbt = await call(signer, provider, cltv, (cltv) => {
       cltv.unlock();
     });
 

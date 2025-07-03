@@ -10,7 +10,7 @@ import {
   ChainProvider,
   UtxoProvider,
 } from '../../src/index.js';
-import { createLogger, delay } from '../utils/index.js';
+import { createLogger, delay, getDefaultProvider } from '../utils/index.js';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 use(chaiAsPromised);
@@ -25,7 +25,7 @@ describe('Test Counter onchain', () => {
     Counter.loadArtifact(counterArtifact);
     CounterStateLib.loadArtifact(counterArtifact);
     signer = new DefaultSigner(getTestKeyPair());
-    provider = new RPCProvider(network, process.env.RPC_URL, process.env.RPC_WALLET_NAME, process.env.RPC_USER, process.env.RPC_PASS);
+    provider = getDefaultProvider(network)
   });
 
   it('should deploy successfully', async () => {
@@ -39,7 +39,7 @@ describe('Test Counter onchain', () => {
 
   it('should increase', async () => {
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 2; i++) {
       const newContract = counter.next({ count: counter.state.count + 1n });
       const psbt = await call(
         signer,

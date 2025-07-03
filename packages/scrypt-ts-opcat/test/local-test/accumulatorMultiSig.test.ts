@@ -45,18 +45,20 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
       data: ''
     });
 
-    const psbt = new ExtPsbt().addContractInput(c).change(address1, 1).seal();
+    const psbt = new ExtPsbt()
+      .addContractInput(c, (accumulatorMultiSig, psbt) => {
+        const sig1 = psbt.getSig(0, { address: address1 });
+        const sig2 = psbt.getSig(0, { address: address2 });
+        const sig3 = psbt.getSig(0, { address: address3 });
+        accumulatorMultiSig.main(
+          [PubKey(publicKey1), PubKey(publicKey2), PubKey(publicKey3)],
+          [sig1, sig2, sig3],
+          [true, true, true],
+        );
+      })
+      .change(address1, 1)
+      .seal();
 
-    psbt.updateContractInput(0, (accumulatorMultiSig: AccumulatorMultiSig, psbt: IExtPsbt) => {
-      const sig1 = psbt.getSig(0, { address: address1 });
-      const sig2 = psbt.getSig(0, { address: address2 });
-      const sig3 = psbt.getSig(0, { address: address3 });
-      accumulatorMultiSig.main(
-        [PubKey(publicKey1), PubKey(publicKey2), PubKey(publicKey3)],
-        [sig1, sig2, sig3],
-        [true, true, true],
-      );
-    });
 
     const signedPsbtHex1 = await testSigner1.signPsbt(psbt.toHex(), {
       autoFinalized: false,
@@ -124,18 +126,19 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
       data: ''
     });
 
-    const psbt = new ExtPsbt().addContractInput(c).change(address1, 1).seal();
-
-    psbt.updateContractInput(0, (accumulatorMultiSig: AccumulatorMultiSig, psbt: IExtPsbt) => {
-      const sig1 = psbt.getSig(0, { address: address1 });
-      const sig2 = psbt.getSig(0, { address: address2 });
-      const sig3 = Sig('00'.repeat(32));
-      accumulatorMultiSig.main(
-        [PubKey(publicKey1), PubKey(publicKey2), PubKey(publicKey3)],
-        [sig1, sig2, sig3],
-        [true, true, false],
-      );
-    });
+    const psbt = new ExtPsbt()
+      .addContractInput(c, (accumulatorMultiSig, psbt) => {
+        const sig1 = psbt.getSig(0, { address: address1 });
+        const sig2 = psbt.getSig(0, { address: address2 });
+        const sig3 = Sig('00'.repeat(32));
+        accumulatorMultiSig.main(
+          [PubKey(publicKey1), PubKey(publicKey2), PubKey(publicKey3)],
+          [sig1, sig2, sig3],
+          [true, true, false],
+        );
+      })
+      .change(address1, 1)
+      .seal();
 
     const signedPsbtHex1 = await testSigner1.signPsbt(psbt.toHex(), {
       autoFinalized: false,
@@ -192,18 +195,19 @@ describe('Test SmartContract `AccumulatorMultiSig`', () => {
       data: ''
     });
 
-    const psbt = new ExtPsbt().addContractInput(c).change(address1, 1).seal();
-
-    psbt.updateContractInput(0, (accumulatorMultiSig: AccumulatorMultiSig, psbt: IExtPsbt) => {
-      const sig1 = psbt.getSig(0, { address: address1 });
-      const sig2 = Sig('00'.repeat(32));
-      const sig3 = Sig('00'.repeat(32));
-      accumulatorMultiSig.main(
-        [PubKey(publicKey1), PubKey(publicKey2), PubKey(publicKey3)],
-        [sig1, sig2, sig3],
-        [true, true, false],
-      );
-    });
+    const psbt = new ExtPsbt()
+      .addContractInput(c, (accumulatorMultiSig: AccumulatorMultiSig, psbt: IExtPsbt) => {
+        const sig1 = psbt.getSig(0, { address: address1 });
+        const sig2 = Sig('00'.repeat(32));
+        const sig3 = Sig('00'.repeat(32));
+        accumulatorMultiSig.main(
+          [PubKey(publicKey1), PubKey(publicKey2), PubKey(publicKey3)],
+          [sig1, sig2, sig3],
+          [true, true, false],
+        );
+      })
+      .change(address1, 1)
+      .seal();
 
     const signedPsbtHex1 = await testSigner1.signPsbt(psbt.toHex(), {
       autoFinalized: false,

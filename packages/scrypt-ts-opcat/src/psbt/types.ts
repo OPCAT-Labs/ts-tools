@@ -18,28 +18,17 @@ export type ContractCall<Contract> = (
 export interface IExtPsbt extends Psbt, Contextual {
   /**
    * Add an input to spend the contract.
-   * @param contract
-   * @param subContractAlias
+   * @param contract the contract
+   * @param contractCall the contract call function, such as `(contract: Counter) => { contract.increase() }`, used to determine how to unlock the contract.
    */
-  addContractInput<Contract extends SmartContract<OpcatState>>(contract: Contract, contractCall?: ContractCall<Contract>): this;
+  addContractInput<Contract extends SmartContract<OpcatState>>(contract: Contract, contractCall: ContractCall<Contract>): this;
 
   /**
    * Add an output to create new contract.
-   * @param covenant a new contract
+   * @param contract a new contract
    * @param satoshis the output includes the amount of satoshis.
-   * @param data the data to be included in the output, such as the raw state.
    */
   addContractOutput(contract: SmartContract<OpcatState>, satoshis: number): this;
-
-  /**
-   * Populate the call arguments for the contract spending input.
-   * @param inputIndex index of the input
-   * @param subContractCall A options used to determine how to unlock the covenant.
-   */
-  updateContractInput<Contract extends SmartContract<OpcatState>>(
-    inputIndex: number,
-    contractCall: ContractCall<Contract>,
-  ): this;
 
   /**
    * Add a change output to the transaction if neccesarry.

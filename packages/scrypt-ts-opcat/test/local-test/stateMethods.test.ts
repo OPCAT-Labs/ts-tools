@@ -43,22 +43,20 @@ describe('Test stateMethods in a stateless contract', () => {
     const nextCounter = counter.next({ count: 2n });
 
     const spendPsbt = new ExtPsbt()
-      .addContractInput(counter)
-      .addContractInput(stateMethods)
-      .spendUTXO(getDummyUtxo(address))
-      .addContractOutput(nextCounter, 1000)
-      .change(address, 1)
-      .seal()
-      .updateContractInput(0, (contract: Counter) => {
+      .addContractInput(counter, (contract: Counter) => {
         contract.increase();
       })
-      .updateContractInput(1, (contract: StateMethods) => {
+      .addContractInput(stateMethods, (contract) => {
         contract.unlock(
           sha256(nextCounter.lockingScript.toHex()),
           1000n,
           Ripemd160(Counter.stateHash(nextCounter.state)),
         );
-      });
+      })
+      .spendUTXO(getDummyUtxo(address))
+      .addContractOutput(nextCounter, 1000)
+      .change(address, 1)
+      .seal()
 
 
     await spendPsbt.sign(signer);
