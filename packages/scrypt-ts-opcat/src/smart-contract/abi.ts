@@ -7,6 +7,7 @@ import {
   subscript,
 } from './abiutils.js';
 import {
+  ABIEntity,
   ABIEntityType,
   AliasEntity,
   Artifact,
@@ -20,6 +21,8 @@ import { toScriptHex } from './serializer.js';
 import { SymbolType, TypeInfo, TypeResolver, isScryptType } from './types/abi.js';
 import { PrimitiveTypes, StructObject, SupportedParamType } from './types/primitives.js';
 import { Script } from './types/script.js';
+import { uint8ArrayToHex } from '../utils/common.js';
+import { deserializeArgfromHex, hex2int } from './deserializer.js';
 
 /**
  * @ignore
@@ -212,6 +215,81 @@ export class ABICoder {
     return Script.fromHex(unlockingScriptHex);
   }
 
+  decodePubFunctionCall(unlockingScript: Script | Uint8Array | string) {
+    let unlockingScriptHex: string;
+    if (typeof unlockingScript === 'string') {
+      unlockingScriptHex = unlockingScript;
+    } else if (unlockingScript instanceof Uint8Array) {
+      unlockingScriptHex = uint8ArrayToHex(unlockingScript);
+    } else {
+      unlockingScriptHex = unlockingScript.toHex();
+    }
+
+    const usASM = Script.fromHex(unlockingScriptHex).toASM()
+
+    const pubFunAbis = this.artifact.abi.filter(entity => entity.type === ABIEntityType.FUNCTION);
+    const pubFunCount = pubFunAbis.length;
+
+    if (pubFunCount === 0) {
+      throw new Error(`no public function found in contract: ${this.artifact.contract}`);
+    }
+
+    let entity: ABIEntity | undefined = undefined;
+    if (pubFunCount === 1) {
+      entity = pubFunAbis[0];
+    } else {
+
+      const pubFuncIndexASM = usASM.slice(usASM.lastIndexOf(' ') + 1);
+      const pubFuncIndex = hex2int(Script.fromASM(pubFuncIndexASM).toHex());
+      entity = pubFunAbis.find(entity => entity.index === Number(pubFuncIndex));
+    }
+
+    if (!entity) {
+      throw new Error(`the unlocking script cannot match the contract '${this.artifact.contract}'`);
+    }
+
+    const cParams = entity.params || [];
+    
+    const resolver = buildTypeResolverFromArtifact(this.artifact);
+    const dummyArgs = cParams.map(p => {
+      const dummyArg = Object.assign({}, p, { value: false });
+      return flatternArg(dummyArg, resolver, { state: true, ignoreValue: true });
+    }).flat(Infinity) as Arguments;
+
+
+    let fArgsLen = dummyArgs.length;
+    if (this.artifact.abi.length > 2 && entity.index !== undefined) {
+      fArgsLen += 1;
+    }
+    const asmOpcodes = usASM.split(' ');
+    if (fArgsLen != asmOpcodes.length) {
+      throw new Error(`the raw unlockingScript cannot match the arguments of public function ${entity.name} of contract ${this.artifact.contract}`);
+    }
+
+    const hexTemplateArgs: Map<string, string> = new Map();
+    dummyArgs.forEach((farg: Argument, index: number) => {
+      hexTemplateArgs.set(`<${farg.name}>`, Script.fromASM(asmOpcodes[index]).toHex());
+    });
+
+    const args: Arguments = cParams.map(
+      param => deserializeArgfromHex(
+        resolver, 
+        Object.assign(
+          param, 
+          {
+            value: false //fake value
+          }
+        ), 
+        hexTemplateArgs, 
+      )
+    );
+
+    return {
+      method: entity.name,
+      args,
+    }
+  }
+
   flattenStruct(arg: StructObject, type: string, ignoreValue: boolean = false): Arguments {
     const resolver = buildTypeResolverFromArtifact(this.artifact);
     return flatternStruct(
@@ -285,74 +363,6 @@ export class ABICoder {
 
     return arg;
   }
-
-  /**
-   * build a CallData by unlocking script in hex.
-   * @param hex hex of unlocking script
-   * @returns a CallData which contains the function parameters that have been deserialized
-   */
-  // parseCallData(hex: string): CallData {
-
-  //   const unlockingScript = bsv.Script.fromHex(hex);
-
-  //   const usASM = unlockingScript.toASM() as string;
-
-  //   const pubFunAbis = this.abi.filter(entity => entity.type === 'function');
-  //   const pubFunCount = pubFunAbis.length;
-
-  //   let entity: ABIEntity | undefined = undefined;
-  //   if (pubFunCount === 1) {
-  //     entity = pubFunAbis[0];
-  //   } else {
-
-  //     const pubFuncIndexASM = usASM.slice(usASM.lastIndexOf(' ') + 1);
-
-  //     const pubFuncIndex = asm2int(pubFuncIndexASM);
-
-  //     entity = this.abi.find(entity => entity.index === pubFuncIndex);
-  //   }
-
-  //   if (!entity) {
-  //     throw new Error(`the raw unlocking script cannot match the contract ${this.constructor.name}`);
-  //   }
-
-  //   const cParams = entity.params || [];
-
-  //   const dummyArgs = cParams.map(p => {
-  //     const dummyArg = Object.assign({}, p, { value: false });
-  //     return flatternArg(dummyArg, this.resolver, { state: true, ignoreValue: true });
-  //   }).flat(Infinity) as Arguments;
-
-  //   let fArgsLen = dummyArgs.length;
-  //   if (this.abi.length > 2 && entity.index !== undefined) {
-  //     fArgsLen += 1;
-  //   }
-
-  //   const asmOpcodes = usASM.split(' ');
-
-  //   if (fArgsLen != asmOpcodes.length) {
-  //     throw new Error(`the raw unlockingScript cannot match the arguments of public function ${entity.name} of contract ${this.contractName}`);
-  //   }
-
-  //   const hexTemplateArgs: Map<string, string> = new Map();
-
-  //   dummyArgs.forEach((farg: Argument, index: number) => {
-
-  //     hexTemplateArgs.set(`<${farg.name}>`, bsv.Script.fromASM(asmOpcodes[index]).toHex());
-
-  //   });
-
-  //   const args: Arguments = cParams.map(param => deserializeArgfromHex(this.resolver, Object.assign(param, {
-  //     value: false //fake value
-  //   }), hexTemplateArgs, { state: false }));
-
-  //   return {
-  //     methodName: entity.name,
-  //     args,
-  //     unlockingScript
-  //   };
-
-  // }
 }
 
 function flatternArray(
