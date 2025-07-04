@@ -1,5 +1,6 @@
 'use strict';
-var HashCache = require('../lib/hash-cache');
+var opcat = require('../');
+var HashCache = opcat.HashCache;
 var chai = require('chai');
 var should = chai.should();
 

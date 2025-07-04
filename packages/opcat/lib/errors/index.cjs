@@ -1,7 +1,7 @@
 'use strict';
 
-var _ = require('../util/_');
-var data = require('./spec');
+var _ = require('../util/_.cjs');
+var data = require('./spec.cjs');
 
 function format(message, args) {
   return message.replace('{0}', args[0]).replace('{1}', args[1]).replace('{2}', args[2]);

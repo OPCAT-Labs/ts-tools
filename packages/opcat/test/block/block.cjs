@@ -1,7 +1,7 @@
 'use strict';
 
 var opcat = require('../..');
-var BN = require('../../lib/crypto/bn');
+var BN = opcat.crypto.BN
 var BufferReader = opcat.encoding.BufferReader;
 var BufferWriter = opcat.encoding.BufferWriter;
 var BlockHeader = opcat.BlockHeader;
@@ -13,7 +13,7 @@ var Transaction = opcat.Transaction;
 
 
 var dataJson = fs.readFileSync('test/data/blk86756-testnet.json').toString();
-var data = require('../data/blk86756-testnet');
+var data = require('../data/blk86756-testnet.cjs');
 var dataBlocks = require('../data/bitcoind/blocks');
 var bockHex = fs.readFileSync('test/data/block.hex').toString();
 

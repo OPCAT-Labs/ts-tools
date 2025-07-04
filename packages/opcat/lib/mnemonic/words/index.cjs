@@ -1,9 +1,9 @@
-var chinese = require('./chinese');
-var english = require('./english');
-var french = require('./french');
-var italian = require('./italian');
-var japanese = require('./japanese');
-var spanish = require('./spanish');
+var chinese = require('./chinese.cjs');
+var english = require('./english.cjs');
+var french = require('./french.cjs');
+var italian = require('./italian.cjs');
+var japanese = require('./japanese.cjs');
+var spanish = require('./spanish.cjs');
 
 module.exports = {
   CHINESE: chinese,

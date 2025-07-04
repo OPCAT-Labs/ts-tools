@@ -1,11 +1,11 @@
 'use strict';
 
-var _ = require('./util/_');
-var $ = require('./util/preconditions');
-var Base58Check = require('./encoding/base58check');
-var Networks = require('./networks');
-var Hash = require('./crypto/hash');
-var JSUtil = require('./util/js');
+var _ = require('./util/_.cjs');
+var $ = require('./util/preconditions.cjs');
+var Base58Check = require('./encoding/base58check.cjs');
+var Networks = require('./networks.cjs');
+var Hash = require('./crypto/hash.cjs');
+var JSUtil = require('./util/js.cjs');
 
 /**
  * Instantiate an address from an address String or Buffer, a public key hash Buffer,

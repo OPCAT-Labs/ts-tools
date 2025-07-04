@@ -6,11 +6,11 @@
 //   * store test vectors at the end, latedef: false
 //   * should call is never defined
 
-var _ = require('../lib/util/_');
 require('chai').should();
 var expect = require('chai').expect;
 var sinon = require('sinon');
 var opcat = require('..');
+var _ = opcat.util._;
 var Networks = opcat.Networks;
 var HDPrivateKey = opcat.HDPrivateKey;
 var HDPublicKey = opcat.HDPublicKey;

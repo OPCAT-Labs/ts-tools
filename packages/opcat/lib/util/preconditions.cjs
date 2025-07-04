@@ -1,7 +1,7 @@
 'use strict';
 
-var errors = require('../errors');
-var _ = require('./_');
+var errors = require('../errors/index.cjs');
+var _ = require('./_.cjs');
 
 module.exports = {
   checkState: function (condition, message) {

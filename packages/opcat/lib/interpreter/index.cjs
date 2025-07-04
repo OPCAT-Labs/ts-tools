@@ -1,2 +1,2 @@
-var Interpreter = require('./interpreter');
+var Interpreter = require('./interpreter.cjs');
 module.exports = Interpreter

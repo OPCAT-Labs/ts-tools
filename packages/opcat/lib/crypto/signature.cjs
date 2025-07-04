@@ -1,9 +1,9 @@
 'use strict';
 
-var BN = require('./bn');
-var _ = require('../util/_');
-var $ = require('../util/preconditions');
-var JSUtil = require('../util/js');
+var BN = require('./bn.cjs');
+var _ = require('../util/_.cjs');
+var $ = require('../util/preconditions.cjs');
+var JSUtil = require('../util/js.cjs');
 
 var Signature = function Signature(r, s) {
   if (!(this instanceof Signature)) {

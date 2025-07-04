@@ -1,25 +1,25 @@
 'use strict';
-var util = require('./util/index.js');
-var encoding = require('./encoding/index.js');
-var crypto = require('./crypto/index.js');
-var errors = require('./errors/index.js');
+var util = require('./util/index.cjs');
+var encoding = require('./encoding/index.cjs');
+var crypto = require('./crypto/index.cjs');
+var errors = require('./errors/index.cjs');
 
-var Address = require('./address.js');
-var Block = require('./block/index.js');
-var MerkleBlock = require('./block/merkleblock.js');
-var BlockHeader = require('./block/blockheader.js');
-var HDPrivateKey = require('./hdprivatekey.js');
-var HDPublicKey = require('./hdpublickey.js');
-var Networks = require('./networks.js');
-var Opcode = require('./opcode.js');
-var PrivateKey = require('./privatekey.js');
-var PublicKey = require('./publickey.js');
-var Script = require('./script/index.js');
-var Transaction = require('./transaction/index.js');
-var HashCache = require('./hash-cache.js');
-var Message = require('./message/message.js');
-var Mnemonic = require('./mnemonic/mnemonic.js');
-var Interpreter = require('./interpreter/index.js');
+var Address = require('./address.cjs');
+var Block = require('./block/index.cjs');
+var MerkleBlock = require('./block/merkleblock.cjs');
+var BlockHeader = require('./block/blockheader.cjs');
+var HDPrivateKey = require('./hdprivatekey.cjs');
+var HDPublicKey = require('./hdpublickey.cjs');
+var Networks = require('./networks.cjs');
+var Opcode = require('./opcode.cjs');
+var PrivateKey = require('./privatekey.cjs');
+var PublicKey = require('./publickey.cjs');
+var Script = require('./script/index.cjs');
+var Transaction = require('./transaction/index.cjs');
+var HashCache = require('./hash-cache.cjs');
+var Message = require('./message/message.cjs');
+var Mnemonic = require('./mnemonic/mnemonic.cjs');
+var Interpreter = require('./interpreter/index.cjs');
 
 
 

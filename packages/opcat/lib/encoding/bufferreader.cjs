@@ -1,8 +1,8 @@
 'use strict';
 
-var _ = require('../util/_');
-var $ = require('../util/preconditions');
-var BN = require('../crypto/bn');
+var _ = require('../util/_.cjs');
+var $ = require('../util/preconditions.cjs');
+var BN = require('../crypto/bn.cjs');
 
 var BufferReader = function BufferReader(buf) {
   if (!(this instanceof BufferReader)) {

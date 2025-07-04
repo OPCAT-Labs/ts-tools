@@ -1,8 +1,8 @@
 'use strict';
 
-var _ = require('../util/_');
-var Base58 = require('./base58');
-var Hash = require('../crypto/hash');
+var _ = require('../util/_.cjs');
+var Base58 = require('./base58.cjs');
+var Hash = require('../crypto/hash.cjs');
 
 /**
  * A Base58check object can encode/decodd Base 58, which is used primarily for

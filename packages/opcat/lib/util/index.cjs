@@ -1,7 +1,7 @@
-var js = require('./js');
-var preconditions = require('./preconditions');
-var _ = require('./_');
-var derivation = require('./derivation');
+var js = require('./js.cjs');
+var preconditions = require('./preconditions.cjs');
+var _ = require('./_.cjs');
+var derivation = require('./derivation.cjs');
 module.exports = {
     js,
     preconditions,

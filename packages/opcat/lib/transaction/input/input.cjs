@@ -1,17 +1,17 @@
 'use strict';
 
-var _ = require('../../util/_');
-var $ = require('../../util/preconditions');
-var errors = require('../../errors');
-var BufferWriter = require('../../encoding/bufferwriter');
-var JSUtil = require('../../util/js');
-var Script = require('../../script');
-var Sighash = require('../sighash');
-var Output = require('../output');
-var Signature = require('../../crypto/signature');
-var TransactionSignature = require('../signature');
-var Hash = require('../../crypto/hash');
-var PrivateKey = require('../../privatekey');
+var _ = require('../../util/_.cjs');
+var $ = require('../../util/preconditions.cjs');
+var errors = require('../../errors/index.cjs');
+var BufferWriter = require('../../encoding/bufferwriter.cjs');
+var JSUtil = require('../../util/js.cjs');
+var Script = require('../../script/index.cjs');
+var Sighash = require('../sighash.cjs');
+var Output = require('../output.cjs');
+var Signature = require('../../crypto/signature.cjs');
+var TransactionSignature = require('../signature.cjs');
+var Hash = require('../../crypto/hash.cjs');
+var PrivateKey = require('../../privatekey.cjs');
 
 var MAXINT = 0xffffffff; // Math.pow(2, 32) - 1;
 var DEFAULT_RBF_SEQNUMBER = MAXINT - 2;

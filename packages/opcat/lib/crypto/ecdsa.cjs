@@ -1,13 +1,13 @@
 'use strict';
 
-var BN = require('./bn');
-var Point = require('./point');
-var Signature = require('./signature');
-var PublicKey = require('../publickey');
-var Random = require('./random');
-var Hash = require('./hash');
-var _ = require('../util/_');
-var $ = require('../util/preconditions');
+var BN = require('./bn.cjs');
+var Point = require('./point.cjs');
+var Signature = require('./signature.cjs');
+var PublicKey = require('../publickey.cjs');
+var Random = require('./random.cjs');
+var Hash = require('./hash.cjs');
+var _ = require('../util/_.cjs');
+var $ = require('../util/preconditions.cjs');
 
 var ECDSA = function ECDSA(obj) {
   if (!(this instanceof ECDSA)) {

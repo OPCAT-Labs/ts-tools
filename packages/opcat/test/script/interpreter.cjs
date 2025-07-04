@@ -9,11 +9,11 @@ var Script = opcat.Script;
 var BN = opcat.crypto.BN;
 var BufferWriter = opcat.encoding.BufferWriter;
 var Opcode = opcat.Opcode;
-var _ = require('../../lib/util/_');
+var _ = opcat.util._;
 
-var scriptTests = require('../data/bitcoind/script_tests');
-var txValid = require('../data/bitcoind/tx_valid');
-var txInvalid = require('../data/bitcoind/tx_invalid');
+var scriptTests = require('../data/bitcoind/script_tests.json');
+var txValid = require('../data/bitcoind/tx_valid.json');
+var txInvalid = require('../data/bitcoind/tx_invalid.json');
 
 // the script string format used in bitcoind data tests
 Script.fromBitcoindString = function (str) {

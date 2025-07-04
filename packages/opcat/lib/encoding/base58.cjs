@@ -1,6 +1,6 @@
 'use strict';
 
-var _ = require('../util/_');
+var _ = require('../util/_.cjs');
 var bs58 = require('bs58');
 
 /**

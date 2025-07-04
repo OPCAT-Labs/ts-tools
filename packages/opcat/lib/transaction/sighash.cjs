@@ -1,13 +1,13 @@
 'use strict'
-var Signature = require('../crypto/signature')
-var Script = require('../script')
-var Output = require('./output')
-var BufferReader = require('../encoding/bufferreader')
-var BufferWriter = require('../encoding/bufferwriter')
-var Hash = require('../crypto/hash')
-var ECDSA = require('../crypto/ecdsa')
-var $ = require('../util/preconditions')
-var _ = require('../util/_')
+var Signature = require('../crypto/signature.cjs')
+var Script = require('../script/index.cjs')
+var Output = require('./output.cjs')
+var BufferReader = require('../encoding/bufferreader.cjs')
+var BufferWriter = require('../encoding/bufferwriter.cjs')
+var Hash = require('../crypto/hash.cjs')
+var ECDSA = require('../crypto/ecdsa.cjs')
+var $ = require('../util/preconditions.cjs')
+var _ = require('../util/_.cjs')
 
 var SIGHASH_SINGLE_BUG = Buffer.from('0000000000000000000000000000000000000000000000000000000000000001', 'hex')
 

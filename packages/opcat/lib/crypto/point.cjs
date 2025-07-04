@@ -1,6 +1,6 @@
 'use strict';
 
-var BN = require('./bn');
+var BN = require('./bn.cjs');
 var elliptic = require('elliptic');
 var EC = elliptic.ec;
 var ec = new EC('secp256k1');

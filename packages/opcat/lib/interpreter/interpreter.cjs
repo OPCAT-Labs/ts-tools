@@ -1,15 +1,15 @@
 'use strict';
 
-var _ = require('../util/_');
+var _ = require('../util/_.cjs');
 
-var Script = require('../script');
-var Opcode = require('../opcode');
-var BN = require('../crypto/bn');
-var Hash = require('../crypto/hash');
-var Signature = require('../crypto/signature');
-var PublicKey = require('../publickey');
-var Stack = require('./stack');
-var Transaction = require('../transaction');
+var Script = require('../script/index.cjs');
+var Opcode = require('../opcode.cjs');
+var BN = require('../crypto/bn.cjs');
+var Hash = require('../crypto/hash.cjs');
+var Signature = require('../crypto/signature.cjs');
+var PublicKey = require('../publickey.cjs');
+var Stack = require('./stack.cjs');
+var Transaction = require('../transaction/index.cjs');
 
 /**
  * Bitcoin transactions contain scripts. Each input has a script called the

@@ -1,7 +1,7 @@
-const decodeHex = require('./decode-hex');
-const opcodes = require('../opcode');
-const BufferWriter = require('./bufferwriter');
-const writePushData = require('../script/write-push-data');
+const decodeHex = require('./decode-hex.cjs');
+const opcodes = require('../opcode.cjs');
+const BufferWriter = require('./bufferwriter.cjs');
+const writePushData = require('../script/write-push-data.cjs');
 
 function decodeASM(script) {
   const parts = script.split(' ');

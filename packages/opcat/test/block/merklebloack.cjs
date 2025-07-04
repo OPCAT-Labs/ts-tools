@@ -7,7 +7,7 @@ var MerkleBlock = opcat.MerkleBlock;
 var BufferReader = opcat.encoding.BufferReader;
 var BufferWriter = opcat.encoding.BufferWriter;
 var Transaction = opcat.Transaction;
-var data = require('../data/merkleblocks.js');
+var data = require('../data/merkleblocks.cjs');
 var transactionVector = require('../data/tx_creation');
 
 describe('MerkleBlock', function () {

@@ -2,11 +2,11 @@
 
 var assert = require('assert');
 
-const writeU8LE = require('../script/write-u8-le');
-const writeU16LE = require('../script/write-u16-le');
-const writeU32LE = require('../script/write-u32-le');
-const writeI32LE = require('../script/write-i32-le');
-const writeVarint = require('../script/write-varint');
+const writeU8LE = require('../script/write-u8-le.cjs');
+const writeU16LE = require('../script/write-u16-le.cjs');
+const writeU32LE = require('../script/write-u32-le.cjs');
+const writeI32LE = require('../script/write-i32-le.cjs');
+const writeVarint = require('../script/write-varint.cjs');
 
 class BufferWriter {
   constructor(obj) {

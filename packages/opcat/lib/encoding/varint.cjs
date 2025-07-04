@@ -1,8 +1,8 @@
 'use strict';
 
-var BufferWriter = require('./bufferwriter');
-var BufferReader = require('./bufferreader');
-var BN = require('../crypto/bn');
+var BufferWriter = require('./bufferwriter.cjs');
+var BufferReader = require('./bufferreader.cjs');
+var BN = require('../crypto/bn.cjs');
 
 var Varint = function Varint(buf) {
   if (!(this instanceof Varint)) {

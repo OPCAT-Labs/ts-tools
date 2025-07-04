@@ -1,16 +1,16 @@
 'use strict';
 
-var _ = require('../lib/util/_');
 var assert = require('assert');
 var should = require('chai').should();
 var expect = require('chai').expect;
 var opcat = require('..');
+var _ = opcat.util._;
 var errors = opcat.errors;
 var hdErrors = errors.HDPrivateKey;
 var buffer = require('buffer');
 var Networks = opcat.Networks;
-var JSUtil = require('../lib/util/js');
-var Derivation = require('../lib/util/derivation');
+var JSUtil = opcat.util.js;
+var Derivation = opcat.util.derivation;
 var HDPrivateKey = opcat.HDPrivateKey;
 var Base58Check = opcat.encoding.Base58Check;
 

@@ -1,6 +1,6 @@
 /* global VARIANT */
 
-const isHex = require('./is-hex');
+const isHex = require('./is-hex.cjs');
 
 // Prefer our implementation of decodeHex over Buffer when we don't know the VARIANT
 // to avoid accidentally importing the Buffer shim in the browser.

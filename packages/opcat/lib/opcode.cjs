@@ -1,8 +1,8 @@
 'use strict';
 
-var _ = require('./util/_');
-var $ = require('./util/preconditions');
-var JSUtil = require('./util/js');
+var _ = require('./util/_.cjs');
+var $ = require('./util/preconditions.cjs');
+var JSUtil = require('./util/js.cjs');
 
 function Opcode(num) {
   if (!(this instanceof Opcode)) {

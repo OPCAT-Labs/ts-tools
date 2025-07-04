@@ -1,11 +1,11 @@
 'use strict';
 
-var _ = require('../util/_');
-var BN = require('../crypto/bn');
-var BufferReader = require('../encoding/bufferreader');
-var BufferWriter = require('../encoding/bufferwriter');
-var Hash = require('../crypto/hash');
-var $ = require('../util/preconditions');
+var _ = require('../util/_.cjs');
+var BN = require('../crypto/bn.cjs');
+var BufferReader = require('../encoding/bufferreader.cjs');
+var BufferWriter = require('../encoding/bufferwriter.cjs');
+var Hash = require('../crypto/hash.cjs');
+var $ = require('../util/preconditions.cjs');
 
 var GENESIS_BITS = 0x1d00ffff;
 

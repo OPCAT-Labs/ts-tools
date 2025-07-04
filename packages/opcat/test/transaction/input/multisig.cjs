@@ -1,13 +1,14 @@
 'use strict';
 
 var should = require('chai').should();
-var _ = require('../../../lib/util/_');
 
 var opcat = require('../../..');
 var Transaction = opcat.Transaction;
 var PrivateKey = opcat.PrivateKey;
 var Script = opcat.Script;
 var MultiSigInput = opcat.Transaction.Input.MultiSig;
+var _ = opcat.util._;
+
 
 describe('MultiSigInput', function () {
   var privateKey1 = new PrivateKey('KwF9LjRraetZuEjR8VqEq539z137LW5anYDUnVK11vM3mNMHTWb4');

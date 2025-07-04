@@ -1,13 +1,13 @@
 'use strict';
 
-var _ = require('../util/_');
-var BlockHeader = require('./blockheader');
-var BufferReader = require('../encoding/bufferreader');
-var BufferWriter = require('../encoding/bufferwriter');
-var Hash = require('../crypto/hash');
-var Transaction = require('../transaction');
-var errors = require('../errors');
-var $ = require('../util/preconditions');
+var _ = require('../util/_.cjs');
+var BlockHeader = require('./blockheader.cjs');
+var BufferReader = require('../encoding/bufferreader.cjs');
+var BufferWriter = require('../encoding/bufferwriter.cjs');
+var Hash = require('../crypto/hash.cjs');
+var Transaction = require('../transaction/index.cjs');
+var errors = require('../errors/index.cjs');
+var $ = require('../util/preconditions.cjs');
 
 /**
  * Instantiate a MerkleBlock from a Buffer, JSON object, or Object with

@@ -1,7 +1,7 @@
 'use strict';
-var _ = require('./util/_');
+var _ = require('./util/_.cjs');
 
-var JSUtil = require('./util/js');
+var JSUtil = require('./util/js.cjs');
 var networks = [];
 var networkMaps = {};
 

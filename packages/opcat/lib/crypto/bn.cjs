@@ -1,8 +1,8 @@
 'use strict';
 
-var BN = require('../bn');
-var $ = require('../util/preconditions');
-var _ = require('../util/_');
+var BN = require('../bn.cjs');
+var $ = require('../util/preconditions.cjs');
+var _ = require('../util/_.cjs');
 
 var reversebuf = function (buf) {
   var buf2 = Buffer.alloc(buf.length);

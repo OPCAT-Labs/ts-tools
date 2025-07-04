@@ -1,26 +1,26 @@
 'use strict';
 
-var _ = require('../util/_');
-var $ = require('../util/preconditions');
+var _ = require('../util/_.cjs');
+var $ = require('../util/preconditions.cjs');
 
-var errors = require('../errors');
-var JSUtil = require('../util/js');
-var BufferReader = require('../encoding/bufferreader');
-var BufferWriter = require('../encoding/bufferwriter');
-var Varint = require('../encoding/varint');
-var Hash = require('../crypto/hash');
-var Signature = require('../crypto/signature');
-var Sighash = require('./sighash');
+var errors = require('../errors/index.cjs');
+var JSUtil = require('../util/js.cjs');
+var BufferReader = require('../encoding/bufferreader.cjs');
+var BufferWriter = require('../encoding/bufferwriter.cjs');
+var Varint = require('../encoding/varint.cjs');
+var Hash = require('../crypto/hash.cjs');
+var Signature = require('../crypto/signature.cjs');
+var Sighash = require('./sighash.cjs');
 
-var Address = require('../address');
-var UnspentOutput = require('./unspentoutput');
-var Input = require('./input');
+var Address = require('../address.cjs');
+var UnspentOutput = require('./unspentoutput.cjs');
+var Input = require('./input/index.cjs');
 var PublicKeyHashInput = Input.PublicKeyHash;
 var PublicKeyInput = Input.PublicKey;
-var Output = require('./output');
-var Script = require('../script');
-var PrivateKey = require('../privatekey');
-var BN = require('../crypto/bn');
+var Output = require('./output.cjs');
+var Script = require('../script/index.cjs');
+var PrivateKey = require('../privatekey.cjs');
+var BN = require('../crypto/bn.cjs');
 /**
  * Represents a transaction, a set of inputs and outputs to change ownership of tokens
  *

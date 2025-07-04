@@ -1,23 +1,23 @@
 'use strict';
 
 var assert = require('assert');
-var _ = require('./util/_');
-var $ = require('./util/preconditions');
-var Derivation = require('./util/derivation');
+var _ = require('./util/_.cjs');
+var $ = require('./util/preconditions.cjs');
+var Derivation = require('./util/derivation.cjs');
 
-var BN = require('./crypto/bn');
-var Base58 = require('./encoding/base58');
-var Base58Check = require('./encoding/base58check');
-var Hash = require('./crypto/hash');
-var Network = require('./networks');
-var Point = require('./crypto/point');
-var PrivateKey = require('./privatekey');
-var Random = require('./crypto/random');
-var HDPublicKey = require('./hdpublickey');
+var BN = require('./crypto/bn.cjs');
+var Base58 = require('./encoding/base58.cjs');
+var Base58Check = require('./encoding/base58check.cjs');
+var Hash = require('./crypto/hash.cjs');
+var Network = require('./networks.cjs');
+var Point = require('./crypto/point.cjs');
+var PrivateKey = require('./privatekey.cjs');
+var Random = require('./crypto/random.cjs');
+var HDPublicKey = require('./hdpublickey.cjs');
 
-var errors = require('./errors');
+var errors = require('./errors/index.cjs');
 var hdErrors = errors.HDPrivateKey;
-var JSUtil = require('./util/js');
+var JSUtil = require('./util/js.cjs');
 
 var MINIMUM_ENTROPY_BITS = 128;
 var BITS_TO_BYTES = 1 / 8;

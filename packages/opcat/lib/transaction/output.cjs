@@ -1,14 +1,14 @@
 'use strict';
 
-var _ = require('../util/_');
-var BN = require('../crypto/bn');
-var JSUtil = require('../util/js');
-var BufferWriter = require('../encoding/bufferwriter');
-var Varint = require('../encoding/varint');
-var Script = require('../script');
-var $ = require('../util/preconditions');
-var errors = require('../errors');
-var Hash = require('../crypto/hash')
+var _ = require('../util/_.cjs');
+var BN = require('../crypto/bn.cjs');
+var JSUtil = require('../util/js.cjs');
+var BufferWriter = require('../encoding/bufferwriter.cjs');
+var Varint = require('../encoding/varint.cjs');
+var Script = require('../script/index.cjs');
+var $ = require('../util/preconditions.cjs');
+var errors = require('../errors/index.cjs');
+var Hash = require('../crypto/hash.cjs')
 
 var MAX_SAFE_INTEGER = 0x1fffffffffffff;
 

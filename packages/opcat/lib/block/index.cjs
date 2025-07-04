@@ -1,6 +1,6 @@
-var Block = require('./block');
-var BlockHeader = require('./blockheader');
-var MerkleBlock = require('./merkleblock');
+var Block = require('./block.cjs');
+var BlockHeader = require('./blockheader.cjs');
+var MerkleBlock = require('./merkleblock.cjs');
 
 
 module.exports = Block

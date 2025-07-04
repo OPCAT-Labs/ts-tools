@@ -2,15 +2,15 @@
 
 var inherits = require('inherits');
 
-var $ = require('../../util/preconditions');
+var $ = require('../../util/preconditions.cjs');
 
-var Hash = require('../../crypto/hash');
-var Input = require('./input');
-var Output = require('../output');
-var Sighash = require('../sighash');
-var Script = require('../../script');
-var Signature = require('../../crypto/signature');
-var TransactionSignature = require('../signature');
+var Hash = require('../../crypto/hash.cjs');
+var Input = require('./input.cjs');
+var Output = require('../output.cjs');
+var Sighash = require('../sighash.cjs');
+var Script = require('../../script/index.cjs');
+var Signature = require('../../crypto/signature.cjs');
+var TransactionSignature = require('../signature.cjs');
 
 /**
  * Represents a special kind of input of PayToPublicKeyHash kind.

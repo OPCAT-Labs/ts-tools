@@ -1,15 +1,15 @@
 'use strict';
 
-var _ = require('../util/_');
-var PrivateKey = require('../privatekey');
-var PublicKey = require('../publickey');
-var Address = require('../address');
-var BufferWriter = require('../encoding/bufferwriter');
-var ECDSA = require('../crypto/ecdsa');
-var Signature = require('../crypto/signature');
-var sha256sha256 = require('../crypto/hash').sha256sha256;
-var JSUtil = require('../util/js');
-var $ = require('../util/preconditions');
+var _ = require('../util/_.cjs');
+var PrivateKey = require('../privatekey.cjs');
+var PublicKey = require('../publickey.cjs');
+var Address = require('../address.cjs');
+var BufferWriter = require('../encoding/bufferwriter.cjs');
+var ECDSA = require('../crypto/ecdsa.cjs');
+var Signature = require('../crypto/signature.cjs');
+var sha256sha256 = require('../crypto/hash.cjs').sha256sha256;
+var JSUtil = require('../util/js.cjs');
+var $ = require('../util/preconditions.cjs');
 
 /**
  * constructs a new message to sign and verify.

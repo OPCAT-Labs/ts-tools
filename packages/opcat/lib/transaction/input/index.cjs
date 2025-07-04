@@ -1,8 +1,8 @@
 
-var Input = require('./input.js');
-var PublicKey = require('./publickey.js');
-var PublicKeyHash = require('./publickeyhash.js');
-var MultiSig = require('./multisig.js');
+var Input = require('./input.cjs');
+var PublicKey = require('./publickey.cjs');
+var PublicKeyHash = require('./publickeyhash.cjs');
+var MultiSig = require('./multisig.cjs');
 
 Input.PublicKey = PublicKey;
 Input.PublicKeyHash = PublicKeyHash;

@@ -1,7 +1,7 @@
 'use strict';
 
 var crypto = require('crypto');
-var $ = require('../util/preconditions');
+var $ = require('../util/preconditions.cjs');
 
 var Hash = function Hash() {
 };

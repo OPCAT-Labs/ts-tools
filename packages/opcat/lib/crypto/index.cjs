@@ -1,9 +1,9 @@
-var BN = require('./bn.js');
-var ECDSA = require('./ecdsa.js');
-var Hash = require('./hash.js');
-var Random = require('./random.js');
-var Point = require('./point.js');
-var Signature = require('./signature.js');
+var BN = require('./bn.cjs');
+var ECDSA = require('./ecdsa.cjs');
+var Hash = require('./hash.cjs');
+var Random = require('./random.cjs');
+var Point = require('./point.cjs');
+var Signature = require('./signature.cjs');
 
 module.exports = {
     BN: BN,

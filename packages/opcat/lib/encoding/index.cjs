@@ -1,8 +1,8 @@
-var Base58 = require('./base58.js');
-var Base58Check = require('./base58check.js');
-var BufferReader = require('./bufferreader.js');
-var BufferWriter = require('./bufferwriter.js');
-var Varint = require('./varint.js');
+var Base58 = require('./base58.cjs');
+var Base58Check = require('./base58check.cjs');
+var BufferReader = require('./bufferreader.cjs');
+var BufferWriter = require('./bufferwriter.cjs');
+var Varint = require('./varint.cjs');
 
 
 module.exports = {

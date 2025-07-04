@@ -1,19 +1,19 @@
 'use strict';
 
-var Address = require('../address');
-var BufferWriter = require('../encoding/bufferwriter');
-var Hash = require('../crypto/hash');
-var Opcode = require('../opcode');
-var PublicKey = require('../publickey');
-var Signature = require('../crypto/signature');
-var Networks = require('../networks');
-var $ = require('../util/preconditions');
-var _ = require('../util/_');
-var errors = require('../errors');
-var JSUtil = require('../util/js');
-const decodeScriptChunks = require('../encoding/decode-script-chunks');
-const decodeASM = require('../encoding/decode-asm');
-const encodeHex = require('../encoding/encode-hex');
+var Address = require('../address.cjs');
+var BufferWriter = require('../encoding/bufferwriter.cjs');
+var Hash = require('../crypto/hash.cjs');
+var Opcode = require('../opcode.cjs');
+var PublicKey = require('../publickey.cjs');
+var Signature = require('../crypto/signature.cjs');
+var Networks = require('../networks.cjs');
+var $ = require('../util/preconditions.cjs');
+var _ = require('../util/_.cjs');
+var errors = require('../errors/index.cjs');
+var JSUtil = require('../util/js.cjs');
+const decodeScriptChunks = require('../encoding/decode-script-chunks.cjs');
+const decodeASM = require('../encoding/decode-asm.cjs');
+const encodeHex = require('../encoding/encode-hex.cjs');
 
 // These WeakMap caches allow the objects themselves to maintain their immutability
 const SCRIPT_TO_CHUNKS_CACHE = new WeakMap();

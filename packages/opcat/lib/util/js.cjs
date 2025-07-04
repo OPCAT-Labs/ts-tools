@@ -1,7 +1,7 @@
 'use strict';
 
-var _ = require('./_');
-var $ = require('./preconditions');
+var _ = require('./_.cjs');
+var $ = require('./preconditions.cjs');
 
 var JSUtil = function JSUtil() {
 }

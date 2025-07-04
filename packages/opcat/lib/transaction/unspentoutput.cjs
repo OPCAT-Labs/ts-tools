@@ -1,11 +1,11 @@
 'use strict';
 
-var _ = require('../util/_');
-var $ = require('../util/preconditions');
-var JSUtil = require('../util/js');
+var _ = require('../util/_.cjs');
+var $ = require('../util/preconditions.cjs');
+var JSUtil = require('../util/js.cjs');
 
-var Script = require('../script');
-var Address = require('../address');
+var Script = require('../script/index.cjs');
+var Address = require('../address.cjs');
 
 /**
  * Represents an unspent output information: its script, associated amount and address,

@@ -1,15 +1,15 @@
 'use strict';
 
-var _ = require('./util/_');
-var Address = require('./address');
-var Base58Check = require('./encoding/base58check');
-var BN = require('./crypto/bn');
-var JSUtil = require('./util/js');
-var Networks = require('./networks');
-var Point = require('./crypto/point');
-var PublicKey = require('./publickey');
-var Random = require('./crypto/random');
-var $ = require('./util/preconditions');
+var _ = require('./util/_.cjs');
+var Address = require('./address.cjs');
+var Base58Check = require('./encoding/base58check.cjs');
+var BN = require('./crypto/bn.cjs');
+var JSUtil = require('./util/js.cjs');
+var Networks = require('./networks.cjs');
+var PublicKey = require('./publickey.cjs');
+var Point = require('./crypto/point.cjs');
+var Random = require('./crypto/random.cjs');
+var $ = require('./util/preconditions.cjs');
 
 /**
  * Instantiate a PrivateKey from a BN, Buffer or WIF string.

@@ -1,13 +1,13 @@
 'use strict';
 
-var _ = require('../util/_');
-var BlockHeader = require('./blockheader');
-var BN = require('../crypto/bn');
-var BufferReader = require('../encoding/bufferreader');
-var BufferWriter = require('../encoding/bufferwriter');
-var Hash = require('../crypto/hash');
-var Transaction = require('../transaction');
-var $ = require('../util/preconditions');
+var _ = require('../util/_.cjs');
+var BlockHeader = require('./blockheader.cjs');
+var BN = require('../crypto/bn.cjs');
+var BufferReader = require('../encoding/bufferreader.cjs');
+var BufferWriter = require('../encoding/bufferwriter.cjs');
+var Hash = require('../crypto/hash.cjs');
+var Transaction = require('../transaction/index.cjs');
+var $ = require('../util/preconditions.cjs');
 
 /**
  * Instantiate a Block from a Buffer, JSON object, or Object with

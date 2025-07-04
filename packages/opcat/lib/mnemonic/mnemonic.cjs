@@ -1,16 +1,16 @@
 'use strict';
-var BN = require('../crypto/bn');
-var Hash = require('../crypto/hash');
-var Random = require('../crypto/random');
+var BN = require('../crypto/bn.cjs');
+var Hash = require('../crypto/hash.cjs');
+var Random = require('../crypto/random.cjs');
 var unorm = require('unorm');
-var _ = require('../util/_');
+var _ = require('../util/_.cjs');
 
-var pbkdf2 = require('./pbkdf2');
-var errors = require('../errors');
+var pbkdf2 = require('./pbkdf2.cjs');
+var errors = require('../errors/index.cjs');
 
-var $ = require('../util/preconditions');
-var HDPrivateKey = require('../hdprivatekey');
-var words = require('./words');
+var $ = require('../util/preconditions.cjs');
+var HDPrivateKey = require('../hdprivatekey.cjs');
+var words = require('./words/index.cjs');
 
 /**
  * This is an immutable class that represents a BIP39 Mnemonic code.

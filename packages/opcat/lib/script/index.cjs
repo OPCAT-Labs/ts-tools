@@ -1,2 +1,2 @@
-var Script = require('./script');
+var Script = require('./script.cjs');
 module.exports = Script

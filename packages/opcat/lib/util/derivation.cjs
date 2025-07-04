@@ -1,5 +1,5 @@
 
-var _ = require('./_');
+var _ = require('./_.cjs');
 
 var Derivation = function Derivation() {
 }

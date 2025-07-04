@@ -1,10 +1,10 @@
-var Transaction = require('./transaction');
+var Transaction = require('./transaction.cjs');
 
-var Input = require('./input');
-var Output = require('./output');
-var UnspentOutput = require('./unspentoutput');
-var Signature = require('./signature');
-var Sighash = require('./sighash');
+var Input = require('./input/index.cjs');
+var Output = require('./output.cjs');
+var UnspentOutput = require('./unspentoutput.cjs');
+var Signature = require('./signature.cjs');
+var Sighash = require('./sighash.cjs');
 
 Transaction.Input = Input;
 Transaction.Output = Output;

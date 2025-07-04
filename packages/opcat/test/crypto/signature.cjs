@@ -1,8 +1,8 @@
 'use strict';
 
-var _ = require('../../lib/util/_');
 var should = require('chai').should();
 var opcat = require('../..');
+var _ = opcat.util._;
 var BN = opcat.crypto.BN;
 var Signature = opcat.crypto.Signature;
 var JSUtil = opcat.util.js;

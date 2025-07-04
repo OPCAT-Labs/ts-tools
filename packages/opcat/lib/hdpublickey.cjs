@@ -1,23 +1,23 @@
 'use strict';
 
-var _ = require('./util/_');
-var $ = require('./util/preconditions');
+var _ = require('./util/_.cjs');
+var $ = require('./util/preconditions.cjs');
 
-var BN = require('./crypto/bn');
-var Base58 = require('./encoding/base58');
-var Base58Check = require('./encoding/base58check');
-var Hash = require('./crypto/hash');
-var Network = require('./networks');
-var Point = require('./crypto/point');
-var PublicKey = require('./publickey');
-var Derivation = require('./util/derivation');
+var BN = require('./crypto/bn.cjs');
+var Base58 = require('./encoding/base58.cjs');
+var Base58Check = require('./encoding/base58check.cjs');
+var Hash = require('./crypto/hash.cjs');
+var Network = require('./networks.cjs');
+var Point = require('./crypto/point.cjs');
+var PublicKey = require('./publickey.cjs');
+var Derivation = require('./util/derivation.cjs');
 
-var opcatErrors = require('./errors');
+var opcatErrors = require('./errors/index.cjs');
 var errors = opcatErrors;
 var hdErrors = opcatErrors.HDPublicKey;
 var assert = require('assert');
 
-var JSUtil = require('./util/js');
+var JSUtil = require('./util/js.cjs');
 
 /**
  * The representation of an hierarchically derived public key.

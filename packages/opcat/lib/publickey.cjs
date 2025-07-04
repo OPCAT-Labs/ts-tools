@@ -1,13 +1,13 @@
 'use strict';
 
-var BN = require('./crypto/bn');
-var Point = require('./crypto/point');
-var Hash = require('./crypto/hash');
-var JSUtil = require('./util/js');
-var Network = require('./networks');
-var _ = require('./util/_');
-var $ = require('./util/preconditions');
-var Address = require('./address');
+var BN = require('./crypto/bn.cjs');
+var Point = require('./crypto/point.cjs');
+var Hash = require('./crypto/hash.cjs');
+var JSUtil = require('./util/js.cjs');
+var Network = require('./networks.cjs');
+var _ = require('./util/_.cjs');
+var $ = require('./util/preconditions.cjs');
+var Address = require('./address.cjs');
 /**
  * Instantiate a PublicKey from a {@link PrivateKey}, {@link Point}, `string`, or `Buffer`.
  *

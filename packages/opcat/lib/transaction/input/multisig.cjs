@@ -1,17 +1,17 @@
 'use strict';
 
-var _ = require('../../util/_');
+var _ = require('../../util/_.cjs');
 var inherits = require('inherits');
-var Input = require('./input');
-var Output = require('../output');
-var $ = require('../../util/preconditions');
+var Input = require('./input.cjs');
+var Output = require('../output.cjs');
+var $ = require('../../util/preconditions.cjs');
 
-var Script = require('../../script');
-var Signature = require('../../crypto/signature');
-var Sighash = require('../sighash');
-var TransactionSignature = require('../signature');
-var PublicKey = require('../../publickey');
-var Varint = require('../../encoding/varint');
+var Script = require('../../script/index.cjs');
+var Signature = require('../../crypto/signature.cjs');
+var Sighash = require('../sighash.cjs');
+var TransactionSignature = require('../signature.cjs');
+var PublicKey = require('../../publickey.cjs');
+var Varint = require('../../encoding/varint.cjs');
 
 /**
  * @constructor
