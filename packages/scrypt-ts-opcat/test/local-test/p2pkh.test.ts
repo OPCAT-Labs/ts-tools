@@ -1,14 +1,12 @@
 import * as dotenv from 'dotenv';
-
 import {
   DefaultSigner,
   hash160,
-  uint8ArrayToHex,
   ExtPsbt,
   IExtPsbt,
   PubKey,
   bvmVerify,
-} from '../../src/index.js';
+} from '@opcat-labs/scrypt-ts-opcat';
 
 import { readArtifact } from '../utils/index.js';
 import { expect, use } from 'chai';
