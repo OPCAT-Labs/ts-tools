@@ -6,8 +6,8 @@ import Base58Check from './encoding/base58check.js';
 import BN from './crypto/bn.js';
 import JSUtil from './util/js.js';
 import Networks from './networks.js';
-import Point from './crypto/point.js';
 import PublicKey from './publickey.js';
+import Point from './crypto/point.js';
 import Random from './crypto/random.js';
 import $ from './util/preconditions.js';
 

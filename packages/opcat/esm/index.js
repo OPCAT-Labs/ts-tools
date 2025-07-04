@@ -17,7 +17,7 @@ import Script from './script/index.js';
 import Transaction from './transaction/index.js';
 import HashCache from './hash-cache.js';
 import Message from './message/message.js';
-import Mnemonic from './mnemonic/mnemonic.js';
+import Mnemonic from './mnemonic/index.js';
 import Interpreter from './interpreter/index.js';
 
 
