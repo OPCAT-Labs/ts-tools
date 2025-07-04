@@ -46,6 +46,8 @@ export * from './smart-contract/fns/index.js';
 // smart contract built-in libraries
 export * from './smart-contract/builtin-libs/index.js';
 
+export * from './smart-contract/abi.js';
+
 export * from './signers/index.js';
 
 export * from './providers/index.js';
