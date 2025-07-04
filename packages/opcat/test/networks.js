@@ -11,7 +11,7 @@ describe('Networks', function () {
   it('should contain all Networks', function () {
     should.exist(networks.livenet);
     should.exist(networks.testnet);
-    should.exist(networks.stn);
+    should.exist(networks.regtest);
     should.exist(networks.defaultNetwork);
   });
 
@@ -45,11 +45,6 @@ describe('Networks', function () {
     Buffer.isBuffer(testnet.networkMagic).should.equal(true);
   });
 
-  it('should have network magic for stn', function () {
-    var stn = networks.get('stn');
-    Buffer.isBuffer(stn.networkMagic).should.equal(true);
-  });
-
   it('can remove a custom network', function () {
     networks.remove(customnet);
     var net = networks.get('customnet');
@@ -80,10 +75,10 @@ describe('Networks', function () {
   var constants = ['name', 'alias', 'pubkeyhash', 'scripthash', 'xpubkey', 'xprivkey'];
 
   constants.forEach(function (key) {
-    it('should have constant ' + key + ' for livenet, testnet and stn', function () {
+    it('should have constant ' + key + ' for livenet, testnet and regtest', function () {
       networks.testnet.hasOwnProperty(key).should.equal(true);
       networks.livenet.hasOwnProperty(key).should.equal(true);
-      networks.stn.hasOwnProperty(key).should.equal(true);
+      networks.regtest.hasOwnProperty(key).should.equal(true);
     });
   });
 
@@ -106,44 +101,30 @@ describe('Networks', function () {
     expect(networks.get('testnet').name).to.equal('testnet');
   });
 
-  it('should have stn network', function () {
-    expect(networks.get('stn').name).to.equal('stn');
-  });
-
   it('should have livenet network', function () {
     expect(networks.get('livenet').name).to.equal('livenet');
   });
 
-  it('should have bchtest cashAddrPrefix', function () {
-    expect(networks.get('testnet').cashAddrPrefix).to.equal('bchtest');
+  it('should have opcattest cashAddrPrefix', function () {
+    expect(networks.get('testnet').cashAddrPrefix).to.equal('opcattest');
   });
 
-  it('should have bchreg cashAddrPrefix', function () {
-    expect(networks.get('regtest').cashAddrPrefix).to.equal('bchreg');
+  it('should have opcatreg cashAddrPrefix', function () {
+    expect(networks.get('regtest').cashAddrPrefix).to.equal('opcatreg');
   });
 
-  it('should have bchreg cashAddrPrefix after enableRegtest is called', function () {
+  it('should have opcatreg cashAddrPrefix after enableRegtest is called', function () {
     var network = networks.get('testnet');
     networks.enableRegtest();
-    expect(network.cashAddrPrefix).to.equal('bchreg');
+    expect(network.cashAddrPrefix).to.equal('opcatreg');
   });
 
-  it('should have bchtest cashAddrPrefix after disableRegtest is called', function () {
+  it('should have opcattest cashAddrPrefix after disableRegtest is called', function () {
     var network = networks.get('testnet');
     networks.disableRegtest();
-    expect(network.cashAddrPrefix).to.equal('bchtest');
+    expect(network.cashAddrPrefix).to.equal('opcattest');
   });
-  it('should have opcatstn cashAddrPrefix after enableStn is called', function () {
-    var network = networks.get('testnet');
-    networks.enableStn();
-    expect(network.cashAddrPrefix).to.equal('opcatstn');
-  });
-
-  it('should have bchtest cashAddrPrefix after disableStn is called', function () {
-    var network = networks.get('testnet');
-    networks.disableStn();
-    expect(network.cashAddrPrefix).to.equal('bchtest');
-  });
+ 
 
   it('converts to string using the "name" property', function () {
     networks.livenet.toString().should.equal('livenet');

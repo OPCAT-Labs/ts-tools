@@ -3,7 +3,8 @@
 var crypto = require('crypto');
 var $ = require('../util/preconditions');
 
-var Hash = module.exports;
+var Hash = function Hash() {
+};
 
 /**
  * A SHA or SHA1 hash, which is always 160 bits or 20 bytes long.
@@ -169,3 +170,6 @@ Hash.sha256hmac = function (data, key) {
 Hash.sha512hmac = function (data, key) {
   return Hash.hmac(Hash.sha512, data, key);
 };
+
+
+module.exports = Hash

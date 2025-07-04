@@ -6,7 +6,7 @@ var opcat = require('../..');
 var BN = opcat.crypto.BN;
 var Signature = opcat.crypto.Signature;
 var JSUtil = opcat.util.js;
-var Interpreter = opcat.Script.Interpreter;
+var Interpreter = opcat.Interpreter;
 
 var sigCanonical = require('../data/bitcoind/sig_canonical');
 var sigNonCanonical = require('../data/bitcoind/sig_noncanonical');

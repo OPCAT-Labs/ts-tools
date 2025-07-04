@@ -967,7 +967,7 @@ Script.prototype._getInputAddressInfo = function () {
 Script.prototype.toAddress = function (network) {
   var info = this.getAddressInfo();
   if (!info) {
-    return false;
+    throw new errors.Script.CantDeriveAddress(this);
   }
   info.network = Networks.get(network) || this._network || Networks.defaultNetwork;
   return new Address(info);

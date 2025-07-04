@@ -2,7 +2,7 @@
 
 var should = require('chai').should();
 var opcat = require('../../');
-var Interpreter = opcat.Script.Interpreter;
+var Interpreter = opcat.Interpreter;
 var Transaction = opcat.Transaction;
 var PrivateKey = opcat.PrivateKey;
 var Script = opcat.Script;

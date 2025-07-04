@@ -5,7 +5,7 @@ var expect = require('chai').expect;
 var sinon = require('sinon');
 
 var opcat = require('../..');
-var _ = opcat.deps._;
+var _ = opcat.util._
 var BN = opcat.crypto.BN;
 var Transaction = opcat.Transaction;
 var Input = opcat.Transaction.Input;

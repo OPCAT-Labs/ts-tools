@@ -11,31 +11,14 @@ var Output = require('../output');
 var Signature = require('../../crypto/signature');
 var TransactionSignature = require('../signature');
 var Hash = require('../../crypto/hash');
-var Interpreter = require('../../script/interpreter');
-var Opcode = require('../../opcode');
-const PrivateKey = require('../../privatekey');
+var PrivateKey = require('../../privatekey');
 
 var MAXINT = 0xffffffff; // Math.pow(2, 32) - 1;
 var DEFAULT_RBF_SEQNUMBER = MAXINT - 2;
 var DEFAULT_SEQNUMBER = MAXINT;
 var DEFAULT_LOCKTIME_SEQNUMBER = MAXINT - 1;
 
-function getLowSPreimage(tx, sigtype, inputIndex, subscript, inputAmount) {
-  var i = 0;
-  do {
-    var preimage = Sighash.sighashPreimage(tx, sigtype, inputIndex, subscript, inputAmount);
-
-    var sighash = Hash.sha256sha256(preimage);
-
-    if (_.isPositiveNumber(sighash.readUInt8()) && _.isPositiveNumber(sighash.readUInt8(31))) {
-      return preimage;
-    }
-
-    tx.nLockTime++;
-  } while (i < Number.MAX_SAFE_INTEGER);
-}
-
-function Input(params) {
+var Input = function Input(params) {
   if (!(this instanceof Input)) {
     return new Input(params);
   }
@@ -253,7 +236,7 @@ Input.prototype.getPreimage = function (transaction, inputIndex, sigtype, isLowS
   sigtype = sigtype || Signature.SIGHASH_ALL;
   isLowS = isLowS || false;
   return isLowS
-    ? getLowSPreimage(transaction, sigtype, inputIndex)
+    ? Sighash.getLowSSighashPreimage(transaction, sigtype, inputIndex)
     : Sighash.sighashPreimage(transaction, sigtype, inputIndex);
 };
 
@@ -301,54 +284,6 @@ Input.prototype.isNull = function () {
 
 Input.prototype._estimateSize = function () {
   return this.toBufferWriter(false).toBuffer().length;
-};
-
-Input.prototype.verify = function (transaction, inputIndex) {
-  $.checkState(this.output instanceof Output);
-  $.checkState(this.script instanceof Script);
-  $.checkState(this.output.script instanceof Script);
-
-  var us = this.script;
-  var ls = this.output.script;
-  var inputSatoshis = this.output.satoshisBN;
-
-  Interpreter.MAX_SCRIPT_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
-  Interpreter.MAXIMUM_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
-
-  const bsi = new Interpreter();
-
-  let failedAt = {};
-
-  bsi.stepListener = function (step) {
-    if (
-      step.fExec ||
-      (Opcode.OP_IF <= step.opcode.toNumber() && step.opcode.toNumber() <= Opcode.OP_ENDIF)
-    ) {
-      if (
-        (Opcode.OP_IF <= step.opcode.toNumber() && step.opcode.toNumber() <= Opcode.OP_ENDIF) ||
-        step.opcode.toNumber() === Opcode.OP_RETURN
-      ) {
-        /** Opreturn */ failedAt.opcode = step.opcode;
-      } else {
-        failedAt = step;
-      }
-    }
-  };
-
-  var success = bsi.verify(
-    us,
-    ls,
-    transaction,
-    inputIndex,
-    Interpreter.DEFAULT_FLAGS,
-    inputSatoshis,
-  );
-
-  if (failedAt.opcode) {
-    failedAt.opcode = failedAt.opcode.toNumber();
-  }
-
-  return { success, error: bsi.errstr, failedAt: success ? {} : failedAt };
 };
 
 module.exports = Input;

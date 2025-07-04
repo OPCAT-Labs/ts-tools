@@ -196,7 +196,7 @@ module.exports = [
       {
         name: 'CantDeriveAddress',
         message:
-          "Can't derive address associated with script {0}, needs to be p2pkh in, p2pkh out, p2sh in, or p2sh out.",
+          "Can't derive address associated with script: {0}, needs to be p2pkh in, p2pkh out",
       },
       {
         name: 'InvalidBuffer',
@@ -251,7 +251,7 @@ module.exports = [
     errors: [
       {
         name: 'ArgumentIsPrivateExtended',
-        message: 'Argument is an extended private key: {0}',
+        message: 'Argument is an extended private key',
       },
       {
         name: 'InvalidDerivationArgument',

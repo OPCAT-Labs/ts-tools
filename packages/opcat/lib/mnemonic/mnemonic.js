@@ -10,6 +10,7 @@ var errors = require('../errors');
 
 var $ = require('../util/preconditions');
 var HDPrivateKey = require('../hdprivatekey');
+var words = require('./words');
 
 /**
  * This is an immutable class that represents a BIP39 Mnemonic code.
@@ -94,8 +95,6 @@ Mnemonic.fromRandom = function (wordlist = Mnemonic.Words.ENGLISH) {
 Mnemonic.fromString = function (mnemonic, wordlist = Mnemonic.Words.ENGLISH) {
   return new Mnemonic(mnemonic, wordlist);
 };
-
-Mnemonic.Words = require('./words');
 
 /**
  * Will return a boolean if the mnemonic is valid
@@ -300,4 +299,8 @@ Mnemonic._entropyChecksum = function (entropy) {
   return checksum;
 };
 
+Mnemonic.Words = words;
+
 module.exports = Mnemonic;
+
+module.exports.Words = words;

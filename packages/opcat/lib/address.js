@@ -2,15 +2,14 @@
 
 var _ = require('./util/_');
 var $ = require('./util/preconditions');
-var errors = require('./errors');
 var Base58Check = require('./encoding/base58check');
 var Networks = require('./networks');
 var Hash = require('./crypto/hash');
 var JSUtil = require('./util/js');
-var PublicKey = require('./publickey');
+
 /**
  * Instantiate an address from an address String or Buffer, a public key hash Buffer,
- * or an instance of {@link PublicKey}.
+ * or a {@link PublicKey} Buffer.
  *
  * This is an immutable class, and if the first parameter provided to this constructor is an
  * `Address` instance, the same argument will be returned.
@@ -89,16 +88,13 @@ function Address(data, network, type) {
  * @returns {Object} An "info" object with "type", "network", and "hashBuffer"
  */
 Address.prototype._classifyArguments = function (data, network, type) {
-  var Script = require('./script');
   // transform and validate input data
   if ((data instanceof Buffer || data instanceof Uint8Array) && data.length === 20) {
     return Address._transformHash(data);
   } else if ((data instanceof Buffer || data instanceof Uint8Array) && data.length === 21) {
     return Address._transformBuffer(data, network, type);
-  } else if (data instanceof PublicKey) {
+  } else if ((data instanceof Buffer || data instanceof Uint8Array) && (data.length === 33 || data.length === 65)) {
     return Address._transformPublicKey(data);
-  } else if (data instanceof Script) {
-    return Address._transformScript(data, network);
   } else if (typeof data === 'string') {
     return Address._transformString(data, network, type);
   } else if (_.isObject(data)) {
@@ -215,28 +211,11 @@ Address._transformBuffer = function (buffer, network, type) {
  */
 Address._transformPublicKey = function (pubkey) {
   var info = {};
-  if (!(pubkey instanceof PublicKey)) {
-    throw new TypeError('Address must be an instance of PublicKey.');
+  if (!(pubkey instanceof Buffer) && !(pubkey instanceof Uint8Array) || (pubkey.length !== 33 && pubkey.length !== 65)) {
+    throw new TypeError('Pubkey supplied is not a buffer with 33 or 65 bytes.');
   }
-  info.hashBuffer = Hash.sha256ripemd160(pubkey.toBuffer());
+  info.hashBuffer = Hash.sha256ripemd160(pubkey);
   info.type = Address.PayToPublicKeyHash;
-  return info;
-};
-
-/**
- * Internal function to transform a {@link Script} into a `info` object.
- *
- * @param {Script} script - An instance of Script
- * @returns {Object} An object with keys: hashBuffer, type
- * @private
- */
-Address._transformScript = function (script, network) {
-  var Script = require('./script');
-  $.checkArgument(script instanceof Script, 'script must be a Script instance');
-  var info = script.getAddressInfo(network);
-  if (!info) {
-    throw new errors.Script.CantDeriveAddress(script);
-  }
   return info;
 };
 
@@ -268,9 +247,9 @@ Address._transformString = function (data, network, type) {
 };
 
 /**
- * Instantiate an address from a PublicKey instance
+ * Instantiate an address from a PublicKey buffer
  *
- * @param {PublicKey} data
+ * @param {Buffer} data - A buffer of the public key
  * @param {String|Network} network - either a Network instance, 'livenet', or 'testnet'
  * @returns {Address} A new valid and frozen instance of an Address
  */
@@ -280,18 +259,6 @@ Address.fromPublicKey = function (data, network) {
   return new Address(info.hashBuffer, network, info.type);
 };
 
-/**
- * Instantiate an address from a PrivateKey instance
- *
- * @param {PrivateKey} privateKey
- * @param {String|Network} network - either a Network instance, 'livenet', or 'testnet'
- * @returns {Address} A new valid and frozen instance of an Address
- */
-Address.fromPrivateKey = function (privateKey, network) {
-  let publicKey = PublicKey.fromPrivateKey(privateKey);
-  network = network || privateKey.network || Networks.defaultNetwork;
-  return Address.fromPublicKey(publicKey, network);
-};
 
 /**
  * Instantiate an address from a ripemd160 public key hash
@@ -304,24 +271,7 @@ Address.fromPublicKeyHash = function (hash, network) {
   var info = Address._transformHash(hash);
   return new Address(info.hashBuffer, network, Address.PayToPublicKeyHash);
 };
-/**
- * Extract address from a Script. The script must be of one
- * of the following types: p2pkh input, p2pkh output, p2sh input
- * or p2sh output.
- * This will analyze the script and extract address information from it.
- * If you want to transform any script to a p2sh Address paying
- * to that script's hash instead, use {{Address#payingTo}}
- *
- * @param {Script} script - An instance of Script
- * @param {String|Network} network - either a Network instance, 'livenet', or 'testnet'
- * @returns {Address} A new valid and frozen instance of an Address
- */
-Address.fromScript = function (script, network) {
-  var Script = require('./script');
-  $.checkArgument(script instanceof Script, 'script must be a Script instance');
-  var info = Address._transformScript(script, network);
-  return new Address(info.hashBuffer, network, info.type);
-};
+
 
 /**
  * Instantiate an address from a buffer of the address

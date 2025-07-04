@@ -1,2 +1,10 @@
-if (process.browser) module.exports = require('./random.browser');
-else module.exports = require('./random.node');
+'use strict';
+var crypto = require('crypto');
+
+function Random() { }
+
+Random.getRandomBuffer = function (size) {
+    return crypto.randomBytes(size);
+};
+
+module.exports = Random;

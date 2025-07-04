@@ -50,11 +50,6 @@ describe('HDPublicKey interface', function () {
       publicKey.should.equal(new HDPublicKey(publicKey));
     });
 
-    it('returns the correct xpubkey for a xprivkey', function () {
-      var publicKey = new HDPublicKey(xprivkey);
-      publicKey.xpubkey.should.equal(xpubkey);
-    });
-
     it('allows to call the argument with no "new" keyword', function () {
       HDPublicKey(xpubkey).xpubkey.should.equal(new HDPublicKey(xpubkey).xpubkey);
     });
@@ -64,7 +59,7 @@ describe('HDPublicKey interface', function () {
     });
 
     it('should not be able to change read-only properties', function () {
-      var publicKey = new HDPublicKey(xprivkey);
+      var publicKey = HDPublicKey(xpubkey);
       expect(function () {
         publicKey.fingerPrint = 'notafingerprint';
       }).to.throw(TypeError);

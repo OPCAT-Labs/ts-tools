@@ -46,7 +46,7 @@ describe('PublicKey', function () {
       var privhex = '906977a061af29276e40bf377042ffbde414e496ae2260bbf1fa9d085637bfff';
       var pubhex = '02a1633cafcc01ebfb6d78e39f687a1f0995c62fc95f51ead10a02ee0be551b5dc';
       var privkey = new PrivateKey(new BN(Buffer.from(privhex, 'hex')));
-      var pk = new PublicKey(privkey);
+      var pk = privkey.toPublicKey();
       pk.toString().should.equal(pubhex);
     });
 
@@ -512,7 +512,7 @@ describe('PublicKey', function () {
 
     it('should output known compressed pubkey with network for console', function () {
       var privkey = PrivateKey.fromWIF('L3T1s1TYP9oyhHpXgkyLoJFGniEgkv2Jhi138d7R2yJ9F4QdDU2m');
-      var pubkey = new PublicKey(privkey);
+      var pubkey = privkey.toPublicKey();
       pubkey
         .inspect()
         .should.equal(

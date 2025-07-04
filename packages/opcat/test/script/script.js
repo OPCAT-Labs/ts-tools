@@ -1349,7 +1349,10 @@ describe('Script', function () {
     });
 
     it('fails if content is not recognized', function () {
-      Script().toAddress(Networks.livenet).should.equal(false);
+      expect(function () {
+        Script().toAddress(Networks.livenet)
+      }).to.throw(/Can't derive address associated with script:/);
+
     });
 
     it('works for p2pkh output', function () {
@@ -1376,7 +1379,10 @@ describe('Script', function () {
     // no address scripts
     it('works for OP_RETURN script', function () {
       var script = new Script('OP_RETURN 20 0x99d29051af0c29adcb9040034752bba7dde33e35');
-      script.toAddress().should.equal(false);
+      expect(function () {
+        script.toAddress()
+      }).to.throw(/Can't derive address associated with script: OP_RETURN 20 0x99d29051af0c29adcb9040034752bba7dde33e35, needs to be p2pkh in, p2pkh out/);
+      
     });
   });
   describe('equals', function () {

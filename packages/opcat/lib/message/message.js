@@ -115,7 +115,7 @@ Message.prototype.verify = function verify(bitcoinAddress, signatureString) {
   ecdsa.sig = signature;
   var publicKey = ecdsa.toPublicKey();
 
-  var signatureAddress = Address.fromPublicKey(publicKey, bitcoinAddress.network);
+  var signatureAddress = Address.fromPublicKey(publicKey.toBuffer(), bitcoinAddress.network);
 
   // check that the recovered address and specified address match
   if (bitcoinAddress.toString() !== signatureAddress.toString()) {

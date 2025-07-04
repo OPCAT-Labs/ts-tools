@@ -5,7 +5,6 @@ var Stack = function Stack(rawstack, varStack) {
   this.varStack = varStack || [];
 };
 
-module.exports = Stack;
 
 Stack.prototype.pushVar = function (varName) {
   this.varStack.push(varName || '$tmp');
@@ -107,3 +106,5 @@ Object.defineProperty(Stack.prototype, 'rawstack', {
     return this.stack;
   },
 });
+
+module.exports = Stack;

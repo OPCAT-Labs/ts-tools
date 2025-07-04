@@ -57,7 +57,9 @@ describe('BIP32 compliance', function () {
   });
 
   it('can initialize a public key from an extended private key', function () {
-    new HDPublicKey(vector1MPrivate).xpubkey.should.equal(vector1MPublic);
+    expect(()=> {
+      new HDPublicKey(vector1MPrivate)
+    }).to.throw(/Argument is an extended private key/)
   });
 
   it('toString should be equal to the `xpubkey` member', function () {

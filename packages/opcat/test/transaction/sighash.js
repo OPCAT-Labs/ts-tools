@@ -9,7 +9,7 @@ var Script = opcat.Script;
 var BN = opcat.crypto.BN;
 var Transaction = opcat.Transaction;
 var Signature = opcat.crypto.Signature;
-var sighash = Transaction.sighash;
+var sighash = Transaction.Sighash;
 
 var vectorsSighash = require('../data/sighash.json');
 

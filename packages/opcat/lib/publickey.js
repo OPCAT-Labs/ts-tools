@@ -7,7 +7,7 @@ var JSUtil = require('./util/js');
 var Network = require('./networks');
 var _ = require('./util/_');
 var $ = require('./util/preconditions');
-
+var Address = require('./address');
 /**
  * Instantiate a PublicKey from a {@link PrivateKey}, {@link Point}, `string`, or `Buffer`.
  *
@@ -98,8 +98,7 @@ PublicKey.prototype._classifyArgs = function (data, extra) {
  * @private
  */
 PublicKey._isPrivateKey = function (param) {
-  var PrivateKey = require('./privatekey');
-  return param instanceof PrivateKey;
+  return param && param.toPublicKey;
 };
 
 /**
@@ -361,8 +360,7 @@ PublicKey.prototype._getID = function _getID() {
  * @returns {Address} An address generated from the public key
  */
 PublicKey.prototype.toAddress = function (network) {
-  var Address = require('./address');
-  return Address.fromPublicKey(this, network || this.network);
+  return Address.fromPublicKey(this.toBuffer(), network || this.network);
 };
 
 /**

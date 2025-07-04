@@ -2,13 +2,15 @@
 
 var _ = require('../util/_');
 
-var Script = require('./script');
+var Script = require('../script');
 var Opcode = require('../opcode');
 var BN = require('../crypto/bn');
 var Hash = require('../crypto/hash');
 var Signature = require('../crypto/signature');
 var PublicKey = require('../publickey');
 var Stack = require('./stack');
+var Transaction = require('../transaction');
+
 /**
  * Bitcoin transactions contain scripts. Each input has a script called the
  * scriptSig, and each output has a script called the scriptPubkey. To validate
@@ -53,7 +55,6 @@ Interpreter.prototype.verify = function (
   flags,
   satoshisBN,
 ) {
-  var Transaction = require('../transaction');
 
   if (_.isUndefined(tx)) {
     tx = new Transaction();
@@ -113,7 +114,6 @@ Interpreter.prototype.verify = function (
   return true;
 };
 
-module.exports = Interpreter;
 
 Interpreter.prototype.initialize = function (obj) {
   this.stack = new Stack([]);
@@ -157,7 +157,7 @@ Interpreter.prototype.subscript = function () {
 Interpreter.getTrue = () => Buffer.from([1]);
 Interpreter.getFalse = () => Buffer.from([]);
 
-Interpreter.MAX_SCRIPT_ELEMENT_SIZE = 520;
+Interpreter.MAX_SCRIPT_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
 Interpreter.MAXIMUM_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
 
 Interpreter.LOCKTIME_THRESHOLD = 500000000;
@@ -1832,3 +1832,6 @@ Interpreter.prototype.step = function (scriptType) {
 
   return true;
 };
+
+
+module.exports = Interpreter;

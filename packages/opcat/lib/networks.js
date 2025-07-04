@@ -11,11 +11,14 @@ var networkMaps = {};
  * (a.k.a. "mainnet"), "testnet", "regtest" and "stn".
  * @constructor
  */
-function Network() {}
+var Network = function Network() {}
 
 Network.prototype.toString = function toString() {
   return this.name;
 };
+
+
+var Networks = function Networks() {}
 
 /**
  * @function
@@ -25,7 +28,7 @@ Network.prototype.toString = function toString() {
  * @param {string|Array} keys - if set, only check if the magic number associated with this name matches
  * @return Network
  */
-function get(arg, keys) {
+Networks.get = function get(arg, keys) {
   if (~networks.indexOf(arg)) {
     return arg;
   }
@@ -60,6 +63,27 @@ function cashAddrPrefixToArray(cashAddrPrefix) {
   return result;
 }
 
+
+function indexNetworkBy(network, keys) {
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var networkValue = network[key];
+    if (!_.isUndefined(networkValue) && !_.isObject(networkValue)) {
+      networkMaps[networkValue] = network;
+    }
+  }
+}
+
+function unindexNetworkBy(network, values) {
+  for (var index = 0; index < values.length; index++) {
+    var value = values[index];
+    if (networkMaps[value] === network) {
+      delete networkMaps[value];
+    }
+  }
+}
+
+
 /**
  * @function
  * @member Networks#add
@@ -77,7 +101,7 @@ function cashAddrPrefixToArray(cashAddrPrefix) {
  * @param {Array}  data.dnsSeeds - An array of dns seeds
  * @return Network
  */
-function addNetwork(data) {
+Networks.add = function add(data) {
   var network = new Network();
 
   JSUtil.defineImmutable(network, {
@@ -121,24 +145,7 @@ function addNetwork(data) {
   return network;
 }
 
-function indexNetworkBy(network, keys) {
-  for (var i = 0; i < keys.length; i++) {
-    var key = keys[i];
-    var networkValue = network[key];
-    if (!_.isUndefined(networkValue) && !_.isObject(networkValue)) {
-      networkMaps[networkValue] = network;
-    }
-  }
-}
 
-function unindexNetworkBy(network, values) {
-  for (var index = 0; index < values.length; index++) {
-    var value = values[index];
-    if (networkMaps[value] === network) {
-      delete networkMaps[value];
-    }
-  }
-}
 
 /**
  * @function
@@ -146,7 +153,7 @@ function unindexNetworkBy(network, values) {
  * Will remove a custom network
  * @param {Network} network
  */
-function removeNetwork(network) {
+Networks.remove = function remove(network) {
   for (var i = 0; i < networks.length; i++) {
     if (networks[i] === network) {
       networks.splice(i, 1);
@@ -159,17 +166,16 @@ var networkMagic = {
   livenet: 0xe3e1f3e8,
   testnet: 0xf4e5f3f4,
   regtest: 0xdab5bffa,
-  stn: 0xfbcec4f9,
 };
 
-var dnsSeeds = ['seed.bitcoinsv.org', 'seed.bitcoinunlimited.info'];
+var dnsSeeds = [''];
 
 var TESTNET = {
   PORT: 18333,
   NETWORK_MAGIC: networkMagic.testnet,
   DNS_SEEDS: dnsSeeds,
   PREFIX: 'testnet',
-  CASHADDRPREFIX: 'bchtest',
+  CASHADDRPREFIX: 'opcattest',
 };
 
 var REGTEST = {
@@ -177,22 +183,14 @@ var REGTEST = {
   NETWORK_MAGIC: networkMagic.regtest,
   DNS_SEEDS: [],
   PREFIX: 'regtest',
-  CASHADDRPREFIX: 'bchreg',
-};
-
-var STN = {
-  PORT: 9333,
-  NETWORK_MAGIC: networkMagic.stn,
-  DNS_SEEDS: ['stn-seed.bitcoinsv.io'],
-  PREFIX: 'stn',
-  CASHADDRPREFIX: 'opcatstn',
+  CASHADDRPREFIX: 'opcatreg',
 };
 
 var liveNetwork = {
   name: 'livenet',
   alias: 'mainnet',
   prefix: 'bitcoin',
-  cashAddrPrefix: 'bitcoincash',
+  cashAddrPrefix: 'opcat',
   pubkeyhash: 0x00,
   privatekey: 0x80,
   scripthash: 0x05,
@@ -230,94 +228,75 @@ var regtestNetwork = {
   dnsSeeds: [],
   indexBy: ['port', 'name', 'cashAddrPrefix', 'networkMagic'],
 };
-var stnNetwork = {
-  name: 'stn',
-  prefix: STN.PREFIX,
-  cashAddrPrefix: STN.CASHADDRPREFIX,
-  pubkeyhash: 0x6f,
-  privatekey: 0xef,
-  scripthash: 0xc4,
-  xpubkey: 0x043587cf,
-  xprivkey: 0x04358394,
-  networkMagic: STN.NETWORK_MAGIC,
-  indexBy: ['port', 'name', 'cashAddrPrefix', 'networkMagic'],
-};
-// Add configurable values for testnet/regtest
 
-addNetwork(testNetwork);
-addNetwork(stnNetwork);
-addNetwork(regtestNetwork);
-addNetwork(liveNetwork);
 
-var livenet = get('livenet');
-var regtest = get('regtest');
-var testnet = get('testnet');
-var stn = get('stn');
+Networks.add(testNetwork);
+Networks.add(regtestNetwork);
+Networks.add(liveNetwork);
 
-Object.defineProperty(testnet, 'port', {
+var livenet = Networks.get('livenet');
+var regtest = Networks.get('regtest');
+var testnet = Networks.get('testnet');
+
+Networks.livenet = livenet;
+Networks.regtest = regtest;
+Networks.testnet = testnet;
+Networks.defaultNetwork = livenet;
+
+Object.defineProperty(Networks.testnet, 'port', {
   enumerable: true,
   configurable: false,
   get: function () {
     if (this.regtestEnabled) {
       return REGTEST.PORT;
-    } else if (this.stnEnabled) {
-      return STN.PORT;
     } else {
       return TESTNET.PORT;
     }
   },
 });
 
-Object.defineProperty(testnet, 'networkMagic', {
+Object.defineProperty(Networks.testnet, 'networkMagic', {
   enumerable: true,
   configurable: false,
   get: function () {
     if (this.regtestEnabled) {
       return JSUtil.integerAsBuffer(REGTEST.NETWORK_MAGIC);
-    } else if (this.stnEnabled) {
-      return JSUtil.integerAsBuffer(STN.NETWORK_MAGIC);
     } else {
       return JSUtil.integerAsBuffer(TESTNET.NETWORK_MAGIC);
     }
   },
 });
 
-Object.defineProperty(testnet, 'dnsSeeds', {
+Object.defineProperty(Networks.testnet, 'dnsSeeds', {
   enumerable: true,
   configurable: false,
   get: function () {
     if (this.regtestEnabled) {
       return REGTEST.DNS_SEEDS;
-    } else if (this.stnEnabled) {
-      return STN.DNS_SEEDS;
     } else {
       return TESTNET.DNS_SEEDS;
     }
   },
 });
 
-Object.defineProperty(testnet, 'cashAddrPrefix', {
+Object.defineProperty(Networks.testnet, 'cashAddrPrefix', {
   enumerable: true,
   configurable: false,
   get: function () {
     if (this.regtestEnabled) {
       return REGTEST.CASHADDRPREFIX;
-    } else if (this.stnEnabled) {
-      return STN.CASHADDRPREFIX;
     } else {
       return TESTNET.CASHADDRPREFIX;
     }
   },
 });
 
-Object.defineProperty(testnet, 'cashAddrPrefixArray', {
+Object.defineProperty(Networks.testnet, 'cashAddrPrefixArray', {
   enumerable: true,
   configurable: false,
   get: function () {
     if (this.regtestEnabled) {
       return cashAddrPrefixToArray(REGTEST.CASHADDRPREFIX);
-    } else if (this.stnEnabled) {
-      return STN.cashAddrPrefixToArray(STN.CASHADDRPREFIX);
     } else {
       return cashAddrPrefixToArray(TESTNET.CASHADDRPREFIX);
     }
@@ -329,7 +308,7 @@ Object.defineProperty(testnet, 'cashAddrPrefixArray', {
  * @member Networks#enableRegtest
  * Will enable regtest features for testnet
  */
-function enableRegtest() {
+Networks.enableRegtest = function enableRegtest() {
   testnet.regtestEnabled = true;
 }
 
@@ -338,42 +317,12 @@ function enableRegtest() {
  * @member Networks#disableRegtest
  * Will disable regtest features for testnet
  */
-function disableRegtest() {
+Networks.disableRegtest = function disableRegtest() {
   testnet.regtestEnabled = false;
 }
-/**
- * @function
- * @member Networks#enableStn
- * Will enable stn features for testnet
- */
-function enableStn() {
-  testnet.stnEnabled = true;
-}
 
-/**
- * @function
- * @member Networks#disableStn
- * Will disable stn features for testnet
- */
-function disableStn() {
-  testnet.stnEnabled = false;
-}
 
 /**
  * @namespace Networks
  */
-module.exports = {
-  add: addNetwork,
-  remove: removeNetwork,
-  defaultNetwork: livenet,
-  livenet: livenet,
-  mainnet: livenet,
-  testnet: testnet,
-  regtest: regtest,
-  stn: stn,
-  get: get,
-  enableRegtest: enableRegtest,
-  disableRegtest: disableRegtest,
-  enableStn: enableStn,
-  disableStn: disableStn,
-};
+module.exports = Networks

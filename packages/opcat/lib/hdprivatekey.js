@@ -3,6 +3,7 @@
 var assert = require('assert');
 var _ = require('./util/_');
 var $ = require('./util/preconditions');
+var Derivation = require('./util/derivation');
 
 var BN = require('./crypto/bn');
 var Base58 = require('./encoding/base58');
@@ -12,6 +13,7 @@ var Network = require('./networks');
 var Point = require('./crypto/point');
 var PrivateKey = require('./privatekey');
 var Random = require('./crypto/random');
+var HDPublicKey = require('./hdpublickey');
 
 var errors = require('./errors');
 var hdErrors = errors.HDPrivateKey;
@@ -72,7 +74,7 @@ HDPrivateKey.fromRandom = function () {
  */
 HDPrivateKey.isValidPath = function (arg, hardened) {
   if (_.isString(arg)) {
-    var indexes = HDPrivateKey._getDerivationIndexes(arg);
+    var indexes = Derivation.getDerivationIndexes(arg);
     return indexes !== null && _.every(indexes, HDPrivateKey.isValidPath);
   }
 
@@ -86,44 +88,6 @@ HDPrivateKey.isValidPath = function (arg, hardened) {
   return false;
 };
 
-/**
- * Internal function that splits a string path into a derivation index array.
- * It will return null if the string path is malformed.
- * It does not validate if indexes are in bounds.
- *
- * @param {string} path
- * @return {Array}
- */
-HDPrivateKey._getDerivationIndexes = function (path) {
-  var steps = path.split('/');
-
-  // Special cases:
-  if (_.includes(HDPrivateKey.RootElementAlias, path)) {
-    return [];
-  }
-
-  if (!_.includes(HDPrivateKey.RootElementAlias, steps[0])) {
-    return null;
-  }
-
-  var indexes = steps.slice(1).map(function (step) {
-    var isHardened = step.slice(-1) === "'";
-    if (isHardened) {
-      step = step.slice(0, -1);
-    }
-    if (!step || step[0] === '-') {
-      return NaN;
-    }
-    var index = +step; // cast to number
-    if (isHardened) {
-      index += HDPrivateKey.Hardened;
-    }
-
-    return index;
-  });
-
-  return _.some(indexes, isNaN) ? null : indexes;
-};
 
 /**
  * WARNING: This method is deprecated. Use deriveChild or deriveNonCompliantChild instead. This is not BIP32 compliant
@@ -282,7 +246,7 @@ HDPrivateKey.prototype._deriveFromString = function (path, nonCompliant) {
     throw new hdErrors.InvalidPath(path);
   }
 
-  var indexes = HDPrivateKey._getDerivationIndexes(path);
+  var indexes = Derivation.getDerivationIndexes(path);
   var derived = indexes.reduce(function (prev, index) {
     return prev._deriveWithNumber(index, null, nonCompliant);
   }, this);
@@ -443,9 +407,20 @@ HDPrivateKey.fromSeed = function (hexa, network) {
 
 HDPrivateKey.prototype._calcHDPublicKey = function () {
   if (!this._hdPublicKey) {
-    var HDPublicKey = require('./hdpublickey');
-    this._hdPublicKey = new HDPublicKey(this);
+    var args = _.clone(this._buffers);
+    var point = Point.getG().mul(BN.fromBuffer(args.privateKey));
+    args.publicKey = Point.pointToCompressed(point);
+    args.version = JSUtil.integerAsBuffer(Network.get(args.version.readUInt32BE(0)).xpubkey);
+    args.privateKey = undefined;
+    args.checksum = undefined;
+    args.xprivkey = undefined;
+    this._hdPublicKey = new HDPublicKey(args);
   }
+};
+
+HDPrivateKey.prototype.toHDPublicKey = function () {
+  this._calcHDPublicKey();
+  return this._hdPublicKey;
 };
 
 /**
@@ -641,10 +616,10 @@ HDPrivateKey.prototype.toHex = function () {
 HDPrivateKey.DefaultDepth = 0;
 HDPrivateKey.DefaultFingerprint = 0;
 HDPrivateKey.DefaultChildIndex = 0;
-HDPrivateKey.Hardened = 0x80000000;
+HDPrivateKey.Hardened = Derivation.Hardened;
 HDPrivateKey.MaxIndex = 2 * HDPrivateKey.Hardened;
 
-HDPrivateKey.RootElementAlias = ['m', 'M', "m'", "M'"];
+HDPrivateKey.RootElementAlias = Derivation.RootElementAlias;
 
 HDPrivateKey.VersionSize = 4;
 HDPrivateKey.DepthSize = 1;

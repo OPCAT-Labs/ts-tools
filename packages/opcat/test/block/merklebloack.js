@@ -2,7 +2,7 @@
 
 var should = require('chai').should();
 
-var opcat = require('../../index.js');
+var opcat = require('../../');
 var MerkleBlock = opcat.MerkleBlock;
 var BufferReader = opcat.encoding.BufferReader;
 var BufferWriter = opcat.encoding.BufferWriter;

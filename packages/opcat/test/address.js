@@ -265,13 +265,7 @@ describe('Address', function () {
     it('should error because of incorrect type for pubkey transform', function () {
       (function () {
         return Address._transformPublicKey(Buffer.alloc(20));
-      }).should.throw('Address must be an instance of PublicKey.');
-    });
-
-    it('should error because of incorrect type for script transform', function () {
-      (function () {
-        return Address._transformScript(Buffer.alloc(20));
-      }).should.throw('Invalid Argument: script must be a Script instance');
+      }).should.throw('Pubkey supplied is not a buffer with 33 or 65 bytes.');
     });
 
     it('should error because of incorrect type for string transform', function () {
@@ -315,7 +309,7 @@ describe('Address', function () {
       var pubkey = new PublicKey(
         '0285e9737a74c30a873f74df05124f2aa6f53042c2fc0a130d6cbd7d16b944b004',
       );
-      var address = Address.fromPublicKey(pubkey, 'livenet');
+      var address = Address.fromPublicKey(pubkey.toBuffer(), 'livenet');
       address.toString().should.equal('19gH5uhqY6DKrtkU66PsZPUZdzTd11Y7ke');
     });
 
@@ -323,7 +317,7 @@ describe('Address', function () {
       var pubkey = new PublicKey(
         '0285e9737a74c30a873f74df05124f2aa6f53042c2fc0a130d6cbd7d16b944b004',
       );
-      var address = Address.fromPublicKey(pubkey);
+      var address = Address.fromPublicKey(pubkey.toBuffer());
       address.network.should.equal(Networks.defaultNetwork);
     });
 
@@ -332,9 +326,9 @@ describe('Address', function () {
         '0485e9737a74c30a873f74df05124f2aa6f53042c2fc0a130d6cbd7d16b944b00' +
           '4833fef26c8be4c4823754869ff4e46755b85d851077771c220e2610496a29d98',
       );
-      var a = Address.fromPublicKey(pubkey, 'livenet');
+      var a = Address.fromPublicKey(pubkey.toBuffer(), 'livenet');
       a.toString().should.equal('16JXnhxjJUhxfyx4y6H4sFcxrgt8kQ8ewX');
-      var b = new Address(pubkey, 'livenet', 'pubkeyhash');
+      var b = new Address(pubkey.toBuffer(), 'livenet', 'pubkeyhash');
       b.toString().should.equal('16JXnhxjJUhxfyx4y6H4sFcxrgt8kQ8ewX');
     });
 
@@ -358,30 +352,6 @@ describe('Address', function () {
       Networks.remove(network);
     });
 
-    describe('from a script', function () {
-      it('should fail to build address from a non p2sh,p2pkh script', function () {
-        var s = new Script('OP_CHECKMULTISIG');
-        (function () {
-          return new Address(s);
-        }).should.throw('needs to be p2pkh in, p2pkh out, p2sh in, or p2sh out');
-      });
-      it('should make this address from a p2pkh output script', function () {
-        var s = new Script(
-          'OP_DUP OP_HASH160 20 ' +
-            '0xc8e11b0eb0d2ad5362d894f048908341fa61b6e1 OP_EQUALVERIFY OP_CHECKSIG',
-        );
-        var a = Address.fromScript(s, 'livenet');
-        a.toString().should.equal('1KK9oz4bFH8c1t6LmighHaoSEGx3P3FEmc');
-        var b = new Address(s, 'livenet');
-        b.toString().should.equal('1KK9oz4bFH8c1t6LmighHaoSEGx3P3FEmc');
-      });
-
-      it('returns the same address if the script is a pay to public key hash out', function () {
-        var address = '16JXnhxjJUhxfyx4y6H4sFcxrgt8kQ8ewX';
-        var script = Script.buildPublicKeyHashOut(new Address(address));
-        Address(script, Networks.livenet).toString().should.equal(address);
-      });
-    });
 
     it('should derive from this known address string livenet', function () {
       var address = new Address(str);
@@ -475,34 +445,35 @@ describe('Address', function () {
     it('should derive from public key', function () {
       let privateKey = PrivateKey.fromRandom();
       let publicKey = PublicKey.fromPrivateKey(privateKey);
-      let address = Address.fromPublicKey(publicKey);
+      let address = Address.fromPublicKey(publicKey.toBuffer(), publicKey.network);
       address.toString()[0].should.equal('1');
     });
 
     it('should derive from public key testnet', function () {
       let privateKey = PrivateKey.fromRandom('testnet');
-      let publicKey = PublicKey.fromPrivateKey(privateKey);
-      let address = Address.fromPublicKey(publicKey, 'testnet');
-      (address.toString()[0] === 'm' || address.toString()[0] === 'n').should.equal(true);
+      let address = privateKey.toAddress()
+      let addresStr = address.toString();
+      (addresStr[0] === 'm' || addresStr[0] === 'n').should.equal(true);
     });
   });
 
   describe('#fromPrivateKey', function () {
     it('should derive from public key', function () {
       let privateKey = PrivateKey.fromRandom();
-      let address = Address.fromPrivateKey(privateKey);
+      let address = privateKey.toAddress()
       address.toString()[0].should.equal('1');
     });
 
     it('should derive from public key testnet', function () {
       let privateKey = PrivateKey.fromRandom('testnet');
-      let address = Address.fromPrivateKey(privateKey, 'testnet');
-      (address.toString()[0] === 'm' || address.toString()[0] === 'n').should.equal(true);
+      let address = privateKey.toAddress()
+      let addresStr = address.toString();
+      (addresStr[0] === 'm' || addresStr[0] === 'n').should.equal(true);
     });
 
     it('should derive from public key testnet', function () {
       let privateKey = PrivateKey.fromRandom('testnet');
-      let address = Address.fromPrivateKey(privateKey);
+      let address = privateKey.toAddress();
       (address.toString()[0] === 'm' || address.toString()[0] === 'n').should.equal(true);
     });
   });

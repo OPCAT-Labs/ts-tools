@@ -1,6 +1,7 @@
 'use strict';
 
 var _ = require('../util/_');
+var data = require('./spec');
 
 function format(message, args) {
   return message.replace('{0}', args[0]).replace('{1}', args[1]).replace('{2}', args[2]);
@@ -36,19 +37,18 @@ var traverseRoot = function (parent, errorsDefinition) {
   return parent;
 };
 
-var opcat = {};
-opcat.Error = function () {
+var OpcatError = function () {
   this.message = 'Internal error';
   this.stack = this.message + '\n' + new Error().stack;
 };
-opcat.Error.prototype = Object.create(Error.prototype);
-opcat.Error.prototype.name = 'opcat.Error';
+OpcatError.prototype = Object.create(Error.prototype);
+OpcatError.prototype.name = 'opcat.Error';
 
-var data = require('./spec');
-traverseRoot(opcat.Error, data);
 
-module.exports = opcat.Error;
+traverseRoot(OpcatError, data);
+
+module.exports = OpcatError;
 
 module.exports.extend = function (spec) {
-  return traverseNode(opcat.Error, spec);
+  return traverseNode(OpcatError, spec);
 };

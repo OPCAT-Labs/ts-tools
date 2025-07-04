@@ -12,7 +12,7 @@ var Networks = opcat.Networks;
 describe('PublicKeyHashInput', function () {
   var privateKey = new PrivateKey('KwF9LjRraetZuEjR8VqEq539z137LW5anYDUnVK11vM3mNMHTWb4');
   var publicKey = privateKey.publicKey;
-  var address = new Address(publicKey, Networks.livenet);
+  var address = new Address(publicKey.toBuffer(), Networks.livenet);
 
   var output = {
     address: address.toString(),

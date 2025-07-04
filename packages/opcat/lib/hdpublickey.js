@@ -7,10 +7,10 @@ var BN = require('./crypto/bn');
 var Base58 = require('./encoding/base58');
 var Base58Check = require('./encoding/base58check');
 var Hash = require('./crypto/hash');
-var HDPrivateKey = require('./hdprivatekey');
 var Network = require('./networks');
 var Point = require('./crypto/point');
 var PublicKey = require('./publickey');
+var Derivation = require('./util/derivation');
 
 var opcatErrors = require('./errors');
 var errors = opcatErrors;
@@ -42,18 +42,11 @@ function HDPublicKey(arg) {
       } else if (Buffer.isBuffer(arg) && !HDPublicKey.getSerializedError(arg.toString())) {
         return this._buildFromSerialized(arg.toString());
       } else {
-        if (error instanceof hdErrors.ArgumentIsPrivateExtended) {
-          return new HDPrivateKey(arg).hdPublicKey;
-        }
         throw error;
       }
     } else {
       if (_.isObject(arg)) {
-        if (arg instanceof HDPrivateKey) {
-          return this._buildFromPrivate(arg);
-        } else {
-          return this._buildFromObject(arg);
-        }
+        return this._buildFromObject(arg);
       } else {
         throw new hdErrors.UnrecognizedArgument(arg);
       }
@@ -64,7 +57,7 @@ function HDPublicKey(arg) {
 }
 
 HDPublicKey.fromHDPrivateKey = function (hdPrivateKey) {
-  return new HDPublicKey(hdPrivateKey);
+  return hdPrivateKey.toHDPublicKey()
 };
 
 /**
@@ -75,7 +68,7 @@ HDPublicKey.fromHDPrivateKey = function (hdPrivateKey) {
  */
 HDPublicKey.isValidPath = function (arg) {
   if (_.isString(arg)) {
-    var indexes = HDPrivateKey._getDerivationIndexes(arg);
+    var indexes = Derivation.getDerivationIndexes(arg);
     return indexes !== null && _.every(indexes, HDPublicKey.isValidPath);
   }
 
@@ -192,7 +185,7 @@ HDPublicKey.prototype._deriveFromString = function (path) {
     throw new hdErrors.InvalidPath(path);
   }
 
-  var indexes = HDPrivateKey._getDerivationIndexes(path);
+  var indexes = Derivation.getDerivationIndexes(path);
   var derived = indexes.reduce(function (prev, index) {
     return prev._deriveWithNumber(index);
   }, this);
@@ -245,7 +238,7 @@ HDPublicKey.getSerializedError = function (data, network) {
   }
   var version = data.readUInt32BE(0);
   if (version === Network.livenet.xprivkey || version === Network.testnet.xprivkey) {
-    return new hdErrors.ArgumentIsPrivateExtended();
+    throw new hdErrors.ArgumentIsPrivateExtended();
   }
   return null;
 };
@@ -260,17 +253,6 @@ HDPublicKey._validateNetwork = function (data, networkArg) {
     return new errors.InvalidNetwork(version);
   }
   return null;
-};
-
-HDPublicKey.prototype._buildFromPrivate = function (arg) {
-  var args = _.clone(arg._buffers);
-  var point = Point.getG().mul(BN.fromBuffer(args.privateKey));
-  args.publicKey = Point.pointToCompressed(point);
-  args.version = JSUtil.integerAsBuffer(Network.get(args.version.readUInt32BE(0)).xpubkey);
-  args.privateKey = undefined;
-  args.checksum = undefined;
-  args.xprivkey = undefined;
-  return this._buildFromBuffers(args);
 };
 
 HDPublicKey.prototype._buildFromObject = function (arg) {

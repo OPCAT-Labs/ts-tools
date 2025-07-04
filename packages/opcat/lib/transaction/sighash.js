@@ -10,6 +10,11 @@ var $ = require('../util/preconditions')
 var _ = require('../util/_')
 
 var SIGHASH_SINGLE_BUG = Buffer.from('0000000000000000000000000000000000000000000000000000000000000001', 'hex')
+
+var Sighash = function Sighash() {
+
+};
+
 /**
  * Returns a buffer with the which is hashed with sighash that needs to be signed
  * for OP_CHECKSIG.
@@ -22,7 +27,7 @@ var SIGHASH_SINGLE_BUG = Buffer.from('000000000000000000000000000000000000000000
  * @param {satoshisBN} input's amount (for  ForkId signatures)
  *
  */
-var sighashPreimage = function sighashPreimage (transaction, sighashType, inputNumber) {
+Sighash.sighashPreimage = function (transaction, sighashType, inputNumber) {
   // Check that all inputs have an output, prevent shallow transaction
   _.each(transaction.inputs, function (input) {
     $.checkState(input.output instanceof Output, 'input.output must be an instance of Output')
@@ -100,6 +105,22 @@ var sighashPreimage = function sighashPreimage (transaction, sighashType, inputN
   return bw.toBuffer()
 }
 
+Sighash.getLowSSighashPreimage = function(tx, sigtype, inputIndex) {
+  var i = 0;
+  do {
+    var preimage = Sighash.sighashPreimage(tx, sigtype, inputIndex);
+
+    var sighash = Hash.sha256sha256(preimage);
+
+    if (_.isPositiveNumber(sighash.readUInt8()) && _.isPositiveNumber(sighash.readUInt8(31))) {
+      return preimage;
+    }
+
+    tx.nLockTime++;
+  } while (i < Number.MAX_SAFE_INTEGER);
+}
+
+
 /**
  * Returns a buffer of length 32 bytes with the hash that needs to be signed
  * for OP_CHECKSIG.
@@ -110,8 +131,8 @@ var sighashPreimage = function sighashPreimage (transaction, sighashType, inputN
  * @param {number} inputNumber the input index for the signature
  *
  */
-var sighash = function sighash (transaction, sighashType, inputNumber) {
-  var preimage = sighashPreimage(transaction, sighashType, inputNumber)
+Sighash.sighash = function (transaction, sighashType, inputNumber) {
+  var preimage = Sighash.sighashPreimage(transaction, sighashType, inputNumber)
   if (preimage.compare(SIGHASH_SINGLE_BUG) === 0) return preimage
   var ret = Hash.sha256sha256(preimage)
   ret = new BufferReader(ret).readReverse()
@@ -127,8 +148,8 @@ var sighash = function sighash (transaction, sighashType, inputNumber) {
  * @param {number} inputIndex
  * @return {Signature}
  */
-function sign (transaction, privateKey, sighashType, inputIndex) {
-  var hashbuf = sighash(transaction, sighashType, inputIndex)
+Sighash.sign = function (transaction, privateKey, sighashType, inputIndex) {
+  var hashbuf = Sighash.sighash(transaction, sighashType, inputIndex)
 
   var sig = ECDSA.sign(hashbuf, privateKey, 'little').set({
     nhashtype: sighashType
@@ -149,19 +170,14 @@ function sign (transaction, privateKey, sighashType, inputIndex) {
  * @param {flags} verification flags
  * @return {boolean}
  */
-function verify (transaction, signature, publicKey, inputIndex) {
+Sighash.verify = function (transaction, signature, publicKey, inputIndex) {
   $.checkArgument(!_.isUndefined(transaction))
   $.checkArgument(!_.isUndefined(signature) && !_.isUndefined(signature.nhashtype))
-  var hashbuf = sighash(transaction, signature.nhashtype, inputIndex)
+  var hashbuf = Sighash.sighash(transaction, signature.nhashtype, inputIndex)
   return ECDSA.verify(hashbuf, signature, publicKey, 'little')
 }
 
 /**
  * @namespace Signing
  */
-module.exports = {
-  sighashPreimage: sighashPreimage,
-  sighash: sighash,
-  sign: sign,
-  verify: verify
-}
+module.exports = Sighash

@@ -10,6 +10,7 @@ var hdErrors = errors.HDPrivateKey;
 var buffer = require('buffer');
 var Networks = opcat.Networks;
 var JSUtil = require('../lib/util/js');
+var Derivation = require('../lib/util/derivation');
 var HDPrivateKey = opcat.HDPrivateKey;
 var Base58Check = opcat.encoding.Base58Check;
 
@@ -237,20 +238,20 @@ describe('HDPrivate key interface', function () {
     invalid.forEach(function (datum) {
       it('rejects illegal path ' + datum, function () {
         HDPrivateKey.isValidPath(datum).should.equal(false);
-        expect(HDPrivateKey._getDerivationIndexes(datum)).to.equal(null);
+        expect(Derivation.getDerivationIndexes(datum)).to.equal(null);
       });
     });
 
     it('generates deriving indexes correctly', function () {
       var indexes;
 
-      indexes = HDPrivateKey._getDerivationIndexes('m/-1/12');
+      indexes = Derivation.getDerivationIndexes('m/-1/12');
       expect(indexes).to.equal(null);
 
-      indexes = HDPrivateKey._getDerivationIndexes("m/0/12/12'");
+      indexes = Derivation.getDerivationIndexes("m/0/12/12'");
       indexes.should.eql([0, 12, HDPrivateKey.Hardened + 12]);
 
-      indexes = HDPrivateKey._getDerivationIndexes("m/0/12/12'");
+      indexes = Derivation.getDerivationIndexes("m/0/12/12'");
       indexes.should.eql([0, 12, HDPrivateKey.Hardened + 12]);
     });
   });

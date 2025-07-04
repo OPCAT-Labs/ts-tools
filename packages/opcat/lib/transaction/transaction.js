@@ -27,7 +27,7 @@ var BN = require('../crypto/bn');
  * @param {*} serialized
  * @constructor
  */
-function Transaction(serialized) {
+var Transaction = function Transaction(serialized) {
   if (!(this instanceof Transaction)) {
     return new Transaction(serialized);
   }

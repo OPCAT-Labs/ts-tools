@@ -333,7 +333,7 @@ PrivateKey.prototype.toHex = function () {
  */
 PrivateKey.prototype.toPublicKey = function () {
   if (!this._pubkey) {
-    this._pubkey = PublicKey.fromPrivateKey(this);
+        this._pubkey = PublicKey.fromPrivateKey(this);
   }
   return this._pubkey;
 };
@@ -346,7 +346,7 @@ PrivateKey.prototype.toPublicKey = function () {
  * @returns {Address} An address generated from the private key
  */
 PrivateKey.prototype.toAddress = function (network) {
-  var pubkey = this.toPublicKey();
+  var pubkey = this.toPublicKey().toBuffer();
   return Address.fromPublicKey(pubkey, network || this.network);
 };
 
