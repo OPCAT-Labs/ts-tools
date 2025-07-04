@@ -1,7 +1,8 @@
 'use strict';
 
 require('chai').should();
-var Hash = require('../../lib/crypto/hash.cjs');
+var opcat = require('../../')
+var Hash = opcat.crypto.Hash;
 
 describe('Hash', function () {
   var buf = Buffer.from([0, 1, 2, 3, 253, 254, 255]);

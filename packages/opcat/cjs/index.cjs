@@ -18,7 +18,7 @@ var Script = require('./script/index.cjs');
 var Transaction = require('./transaction/index.cjs');
 var HashCache = require('./hash-cache.cjs');
 var Message = require('./message/message.cjs');
-var Mnemonic = require('./mnemonic/mnemonic.cjs');
+var Mnemonic = require('./mnemonic/index.cjs');
 var Interpreter = require('./interpreter/index.cjs');
 
 
