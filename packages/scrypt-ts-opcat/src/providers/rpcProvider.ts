@@ -6,7 +6,7 @@ import { SupportedNetwork, UTXO } from '../globalTypes.js';
 import * as tools from 'uint8array-tools';
 import { duplicateFilter } from '../utils/common.js';
 /**
- * The RPCProvider is backed by [bitcoin RPC]{@link https://developer.bitcoin.org/reference/rpc/ }
+ * The RPCProvider is backed by opcat RPC
  * @category Provider
  */
 export class RPCProvider implements ChainProvider, UtxoProvider {

@@ -9,7 +9,16 @@ import { StdUtils } from './stdUtils.js';
 import { TxUtils } from './txUtils.js';
 
 /**
- * Library for verifying preimage.
+ * Utility class for Bitcoin smart contract context operations.
+ * Provides methods for:
+ * - ECDSA signature generation and verification
+ * - Transaction preimage serialization and validation
+ * - Prevouts and spent data verification
+ * - Lock time checking
+ * - Various cryptographic and serialization utilities
+ * 
+ * Contains precomputed cryptographic constants for optimized signing operations.
+ * All methods are static and can be used without class instantiation.
  * @category Library
  * @onchain
  */
@@ -32,16 +41,38 @@ export class ContextUtils extends SmartContractLib {
   static readonly rBigEndian: ByteString = toByteString('1008ce7480da41702918d1ec8e6849ba32b4d65b1e40dc669c31a1e6306b266c');
 
 
+  /**
+   * Normalizes a value to be within the range [0, modulus) by taking modulo and ensuring positivity.
+   * @param k - The value to normalize
+   * @param modulus - The modulus value
+   * @returns The normalized value (k mod modulus) guaranteed to be non-negative
+   */
   @method()
   static normalize(k: bigint, modulus: bigint): bigint {
     const res: bigint = k % modulus;
     // ensure it's positive
     return (res < 0) ? res + modulus : res;
   }
+  /**
+   * Generates a DER-encoded ECDSA signature from given parameters.
+   * 
+   * @param h - The message hash to sign (bigint)
+   * @param privKey - The private key to sign with (PrivKey)
+   * @param inverseK - The inverse of the nonce value (bigint)
+   * @param r - The r component of the signature (bigint)
+   * @param rBigEndian - The r component in big-endian byte format (ByteString)
+   * @param sigHashType - The signature hash type (ByteString)
+   * @returns A DER-encoded signature (Sig)
+   * 
+   * @remarks
+   * - Normalizes the s value to be in the lower range of the curve order
+   * - Conforms to strict DER encoding rules
+   * - Handles endianness conversion for signature components
+   */
   @method()
   static sign(h: bigint, privKey: PrivKey, inverseK: bigint, r: bigint, rBigEndian: ByteString, sigHashType: ByteString): Sig {
     // TODO: r * privKey can also be precomputed
-    let s: bigint = inverseK * (h + r * (privKey as bigint));
+    let s: bigint = inverseK * (h + r * privKey);
     const N: bigint = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
     s = ContextUtils.normalize(s, N);
     // lower S
@@ -73,6 +104,11 @@ export class ContextUtils extends SmartContractLib {
     return Sig(rb);
   }
 
+  /**
+   * Converts a big-endian unsigned byte string to a signed integer.
+   * @param b The input byte string in big-endian format.
+   * @returns The converted Int32 value.
+   */
   @method()
   static fromBEUnsigned(b: ByteString): Int32 {
     // change endian first
@@ -80,10 +116,13 @@ export class ContextUtils extends SmartContractLib {
     return byteStringToInt(reverseByteString(b, 32n) + toByteString('00'));
   }
 
+
   /**
-   * sign the transaction preimage
-   * @param shPreimage - the transaction preimage
-   * @returns a signature
+   * Checks and signs a SHPreimage by serializing it, hashing, and creating a signature.
+   * 
+   * @param shPreimage - The SHPreimage to be checked and signed.
+   * @param sigHashType - The signature hash type to use for signing.
+   * @returns The generated signature for the provided SHPreimage.
    */
   @method()
   static checkSHPreimage(shPreimage: SHPreimage, sigHashType: ByteString): Sig {
@@ -101,6 +140,13 @@ export class ContextUtils extends SmartContractLib {
     return sig;
   }
 
+  /**
+   * Serializes a SHPreimage object into a SigHashPreimage.
+   * Validates all fields of the input SHPreimage meet required specifications before serialization.
+   * @param shPreimage - The SHPreimage object containing transaction preimage data
+   * @returns A SigHashPreimage constructed from the validated and concatenated fields
+   * @throws If any field validation fails (invalid length, negative value, or unsupported sigHashType)
+   */
   @method()
   static serializeSHPreimage(shPreimage: SHPreimage): SigHashPreimage {
     assert(len(shPreimage.nVersion) == 4n, 'invalid length of nVersion');
@@ -187,29 +233,43 @@ export class ContextUtils extends SmartContractLib {
   /**
    * Check if the spent amounts array passed in matches the shaSpentAmounts
    * @param spentAmounts array of spent amounts passed in that need to be verified
-   * @param t_hashSpentAmounts the hash of the merged spent amounts, which comes from preimage and is trustable
-   * @param t_inputCount must be trustable, the number of inputs
+   * @param hashSpentAmounts the hash of the merged spent amounts, which comes from preimage and is trustable
+
    */
   @method()
   static checkSpentAmounts(
     spentAmounts: SpentAmounts,
-    t_hashSpentAmounts: ByteString,
+    hashSpentAmounts: ByteString,
   ): Int32 {
-    assert(hash256(spentAmounts) == t_hashSpentAmounts, 'hashSpentAmounts mismatch');
+    assert(hash256(spentAmounts) == hashSpentAmounts, 'hashSpentAmounts mismatch');
     return StdUtils.checkLenDivisibleBy(spentAmounts, 8n);
   }
 
+  /**
+   * Verifies the integrity of spent data hashes against the provided transaction hash and input count.
+   * 
+   * @param spentDataHashes - The hashes of spent data to be verified
+   * @param hashSpentDataHashes - The expected hash of all spent data hashes
+   * @param inputCount - The expected number of inputs (must match the length of spentDataHashes)
+   * @throws Throws an error if hash verification fails or if input count doesn't match
+   */
   @method()
   static checkSpentDataHashes(
     spentDataHashes: SpentDataHashes,
-    t_hashSpentDataHashes: ByteString,
-    t_inputCount: bigint,
+    hashSpentDataHashes: ByteString,
+    inputCount: bigint,
   ): void {
-    assert(hash256(spentDataHashes) == t_hashSpentDataHashes, 'hashSpentDataHashes mismatch');
-    assert(t_inputCount == StdUtils.checkLenDivisibleBy(spentDataHashes, 32n), 'invalid spentDataHashes');
+    assert(hash256(spentDataHashes) == hashSpentDataHashes, 'hashSpentDataHashes mismatch');
+    assert(inputCount == StdUtils.checkLenDivisibleBy(spentDataHashes, 32n), 'invalid spentDataHashes');
   }
 
 
+  /**
+   * Retrieves the spent script hash for a specific input index from the given spent scripts buffer.
+   * @param spentScriptHashes - Buffer containing all spent script hashes
+   * @param inputIndex - Index of the input to retrieve the spent script hash for
+   * @returns The spent script hash for the specified input index as a 32-byte string
+   */
   @method()
   static getSpentScriptHash(
     spentScriptHashes: SpentScriptHashes,
@@ -218,6 +278,12 @@ export class ContextUtils extends SmartContractLib {
     return slice(spentScriptHashes, inputIndex * 32n, (inputIndex + 1n) * 32n);
   }
 
+  /**
+   * Retrieves the spent amount for a specific input index from the given spent amounts buffer.
+   * @param spentAmounts - Buffer containing all spent amounts in little-endian format
+   * @param inputIndex - Index of the input to retrieve the spent amount for
+   * @returns The spent amount for the specified input index as a 32-bit integer
+   */
   @method()
   static getSpentAmount(
     spentAmounts: SpentAmounts,
@@ -226,6 +292,12 @@ export class ContextUtils extends SmartContractLib {
     return StdUtils.fromLEUnsigned(slice(spentAmounts, inputIndex * 8n, (inputIndex + 1n) * 8n));
   }
 
+  /**
+   * Retrieves the data hash for a specific input index from spent data hashes.
+   * @param spentDataHashes - The collection of spent data hashes
+   * @param inputIndex - The index of the input to retrieve
+   * @returns The 32-byte data hash corresponding to the specified input index
+   */
   @method()
   static getSpentDataHash(
     spentDataHashes: SpentDataHashes,
@@ -234,6 +306,12 @@ export class ContextUtils extends SmartContractLib {
     return slice(spentDataHashes, inputIndex * 32n, (inputIndex + 1n) * 32n);
   }
 
+  /**
+   * Checks if the lock time conditions are met for a given preimage and lock time.
+   * @param shPreimage The preimage containing lock time and sequence values.
+   * @param nlockTime The required minimum lock time to validate against.
+   * @returns True if the lock time conditions are satisfied, false otherwise.
+   */
   @method()
   static checknLockTime(
     shPreimage: SHPreimage,

@@ -45,6 +45,15 @@ function toSMBigEndian(bn: bigint) {
   return buf;
 }
 
+/**
+ * Converts a bigint to a Uint8Array buffer in signed magnitude big-endian format.
+ * Optionally pads or truncates the result to a specified byte size.
+ * 
+ * @param bn - The bigint value to convert
+ * @param size - Optional target byte size (must be large enough to hold the value)
+ * @returns Uint8Array containing the signed magnitude representation
+ * @throws Error if the value cannot fit in the specified size
+ */
 export function bn2Buf(bn: bigint, size?: number): Uint8Array {
   const tmp = toSMBigEndian(bn);
   if(typeof size === 'number' && size > 0) {
@@ -58,6 +67,15 @@ export function bn2Buf(bn: bigint, size?: number): Uint8Array {
   return toSMBigEndian(bn).reverse();
 }
 
+/**
+ * Converts a Uint8Array buffer to a bigint with minimal encoding validation.
+ * 
+ * @param buf - The input buffer to convert
+ * @param fRequireMinimal - If true, enforces minimal encoding rules
+ * @param _size - Optional size parameter (currently unused)
+ * @returns The converted bigint value
+ * @throws {Error} If fRequireMinimal is true and the encoding is not minimal
+ */
 export function buf2BN(
   buf: Uint8Array,
   fRequireMinimal: boolean,

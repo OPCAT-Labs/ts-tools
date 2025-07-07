@@ -42,7 +42,11 @@ export interface UtxoProvider {
   addNewUTXO(utxo: UTXO): void;
 }
 
-/** @ignore */
+/**
+ * Marks all inputs of a transaction as spent in the UTXO provider.
+ * @param utxoProvider - The UTXO provider to update.
+ * @param tx - The transaction whose inputs should be marked as spent.
+ */
 export function markSpent(utxoProvider: UtxoProvider, tx: Transaction) {
   for (let i = 0; i < tx.inputs.length; i++) {
     const input = tx.inputs[i];

@@ -37,9 +37,9 @@ export class ByteStringReader extends SmartContractLib {
     @method()
     readBytes(): ByteString {
         let l: bigint = 0n;
-        let buf: ByteString = this.buf;
+        const buf: ByteString = this.buf;
         let ret: ByteString = toByteString('');
-        let header: bigint = byteStringToInt(slice(this.buf, this.pos, this.pos + 1n));
+        const header: bigint = byteStringToInt(slice(this.buf, this.pos, this.pos + 1n));
         this.pos++;
 
         if (header < 0x4cn) {
@@ -77,7 +77,7 @@ export class ByteStringReader extends SmartContractLib {
      */
     @method()
     readBool(): boolean {
-        let buf: ByteString = slice(this.buf, this.pos, this.pos + 1n);
+        const buf: ByteString = slice(this.buf, this.pos, this.pos + 1n);
         this.pos++;
         return toByteString('00') != buf;
     }
@@ -89,7 +89,7 @@ export class ByteStringReader extends SmartContractLib {
     @method()
     readVarint(): bigint {
         let ret = toByteString('')
-        let header = slice(this.buf, this.pos, this.pos + 1n)
+        const header = slice(this.buf, this.pos, this.pos + 1n)
         this.pos++;
         if (header == toByteString('fd')) {
             ret = slice(this.buf, this.pos, this.pos + 2n);

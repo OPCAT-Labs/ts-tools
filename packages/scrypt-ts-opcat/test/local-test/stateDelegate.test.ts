@@ -43,7 +43,7 @@ describe('Test StateDelegatee & StateDelegator', () => {
       .change(address, 1)
       .seal();
 
-    await psbt.sign(signer);
+    await psbt.signAndFinalize(signer);
 
     return stateDelegator;
   }
@@ -59,7 +59,7 @@ describe('Test StateDelegatee & StateDelegator', () => {
       .change(address, 1)
       .seal();
 
-    await psbt.sign(signer);
+    await psbt.signAndFinalize(signer);
 
 
     return stateDelegatee;
@@ -88,7 +88,7 @@ describe('Test StateDelegatee & StateDelegator', () => {
       .change(address, 1)
       .seal();
 
-    await psbt.sign(signer);
+    await psbt.signAndFinalize(signer);
     return {
       psbt,
       newDelagatorCov,

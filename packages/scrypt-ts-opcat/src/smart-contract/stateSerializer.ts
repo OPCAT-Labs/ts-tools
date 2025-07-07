@@ -1,15 +1,23 @@
-import { byteStringToBigInt, uint8ArrayToHex } from '../utils/common.js';
-import { ABICoder, Argument } from './abi.js';
+import { byteStringToBigInt } from '../utils/common.js';
+import { ABICoder } from './abi.js';
 import { assert, hash160, intToByteString, len, slice, toByteString } from './fns/index.js';
 import { OpcatState, ByteString } from './types/primitives.js';
 import { Artifact } from './types/artifact.js';
 import { MAX_FLAT_FIELDS_IN_STATE } from './consts.js';
 import { getUnRenamedSymbol } from './abiutils.js';
+import { Argument } from './types/abi.js';
 
 const FIELD_LEN_BYTES = 2n;
 
+
 /**
+ * Serializes contract state into a ByteString format.
  * @ignore
+ * @param artifact - The contract artifact containing ABI definitions
+ * @param stateType - The name of the state struct to serialize
+ * @param state - The state object to be serialized
+ * @returns ByteString representation of the serialized state
+ * @throws Error if state struct is not found, has too many fields, or contains unflattened structs
  */
 export function serializeState(
   artifact: Artifact,
@@ -68,6 +76,17 @@ export function serializeState(
 }
 
 
+/**
+ * Deserializes a contract state from a byte string into a structured object.
+ * @ignore
+ * @template T - The type of the deserialized state object
+ * @param artifact - The contract artifact containing ABI definitions
+ * @param stateType - The name of the state struct type to deserialize
+ * @param serializedState - The byte string containing serialized state data
+ * @returns The deserialized state object of type T
+ * @throws Error if the specified state struct is not found in the artifact
+ * @throws AssertionError if the state hash check fails or data is incomplete
+ */
 export function deserializeState<T>(
   artifact: Artifact,
   stateType: string,
@@ -91,6 +110,7 @@ export function deserializeState<T>(
     const fieldNames = field.name.split('.');
     fieldNames.shift()  // remove the first element, `flattened_struct`
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let val: any;
     switch (field.type) {
       case 'number':

@@ -1,5 +1,5 @@
 import { method, prop } from '../decorators.js';
-import { assert, byteStringToInt, intToByteString, len, slice, toByteString } from '../fns/index.js';
+import { assert, len, toByteString } from '../fns/index.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import { ByteString } from '../types/primitives.js';
 import { StdUtils } from './stdUtils.js';
@@ -23,7 +23,7 @@ export class ByteStringWriter extends SmartContractLib {
      */
     @method()
     writeBytes(buf: ByteString): void {
-        let n = len(buf);
+        const n = len(buf);
 
         let header: ByteString = toByteString('');
 

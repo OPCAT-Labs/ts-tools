@@ -10,7 +10,7 @@ import { BufferReader } from '../psbt/bufferutils.js';
  * @ignore
  * int to little-endian signed magnitude
  */
-export function int2hex(n: Int32): string {
+function int2hex(n: Int32): string {
   if (n === BigInt(0)) {
     return '00';
   } else if (n === BigInt(-1)) {
@@ -28,7 +28,7 @@ export function int2hex(n: Int32): string {
  * @param b
  * @returns
  */
-export function bool2hex(b: Bool): string {
+function bool2hex(b: Bool): string {
   if (b) {
     return '51';
   }
@@ -41,7 +41,7 @@ export function bool2hex(b: Bool): string {
  * @param b
  * @returns
  */
-export function bytes2hex(b: ByteString): string {
+function bytes2hex(b: ByteString): string {
   if (b) {
     if (b.length / 2 > 1) {
       return Script.fromASM(b).toHex();
@@ -64,7 +64,7 @@ export function bytes2hex(b: ByteString): string {
  * @param x
  * @returns
  */
-export function toScriptHex(x: PrimitiveTypes): string {
+export function serializeArgToHex(x: PrimitiveTypes): string {
   if (typeof x === 'number' || typeof x === 'bigint') {
     return int2hex(x as bigint);
   } else if (typeof x === 'boolean') {
@@ -76,29 +76,6 @@ export function toScriptHex(x: PrimitiveTypes): string {
   throw new Error(`unsupport PrimitiveTypes: ${x}`);
 }
 
-
-/**
- * @ignore
- * @param indexVal
- * @returns
- */
-export function indexValueToBytes(indexVal: Int32): ByteString {
-  assert(indexVal >= TX_IO_INDEX_VAL_MIN && indexVal <= TX_IO_INDEX_VAL_MAX);
-  let indexBytes = intToByteString(indexVal);
-  if (indexBytes == toByteString('')) {
-    indexBytes = toByteString('00');
-  }
-  return indexBytes + toByteString('000000');
-}
-
-/**
- * @ignore
- * @param outpoint
- * @returns
- */
-export function outpointToBytes(outpoint: Outpoint): ByteString {
-  return outpoint.txHash + outpoint.outputIndex;
-}
 
 /**
  * @ignore

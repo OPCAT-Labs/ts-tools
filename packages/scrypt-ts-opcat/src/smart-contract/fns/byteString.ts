@@ -64,6 +64,8 @@ export function len(a: ByteString): Int32 {
 
 /**
  * Returns a section of a ByteString.
+ * @category Global Function
+ * @onchain
  * @param byteString The ByteString.
  * @param start The beginning byte index of the specified portion of ByteString, included.
  * @param end The end byte index of the specified portion of ByteString, excluded.
@@ -95,6 +97,7 @@ export function slice(byteString: ByteString, start: Int32, end?: Int32): ByteSt
  * Returns reversed bytes of b, which is of size bytes. Note size must be a compiled-time constant.
  * It is often useful when converting a number between little-endian and big-endian.
  * @category Bytes Operations
+ * @onchain
  * @param b - a ByteString to be reversed
  * @param size - the size of the ByteString.
  * @returns {ByteString} reversed ByteString.

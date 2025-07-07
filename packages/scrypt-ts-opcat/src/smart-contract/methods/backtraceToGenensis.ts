@@ -9,11 +9,13 @@ import {
 } from '../types/structs.js';
 
 /**
+ * Verifies the backtrace from a contract's UTXO to a genesis outpoint.
  * @ignore
- * @param self
- * @param backtraceInfo
- * @param genesisOutpoint
- * @returns
+ * @param _self - The contract instance containing the UTXO to backtrace from
+ * @param _backtraceInfo - Information needed for backtracing
+ * @param _genesisOutpoint - The target genesis outpoint to verify against
+ * @returns true if verification succeeds, throws Error if UTXO lacks required txHashPreimage
+ * @throws Error when UTXO doesn't have txHashPreimage required for backtracing
  */
 export function backtraceToOutpointImpl(
   _self: AbstractContract,
@@ -29,12 +31,15 @@ export function backtraceToOutpointImpl(
   return true;
 }
 
+
 /**
+ * Verifies the backtrace from current script to genesis script.
  * @ignore
- * @param self
- * @param backtraceInfo
- * @param genesisScript
- * @returns
+ * @param _self - The contract instance containing UTXO data
+ * @param _backtraceInfo - Backtrace information to verify
+ * @param _genesisScript - The genesis script to trace back to
+ * @returns true if verification succeeds, throws Error if verification fails or if UTXO lacks txHashPreimage
+ * @throws Error when UTXO doesn't have required txHashPreimage or when backtrace verification fails
  */
 export function backtraceToScriptImpl(
   _self: AbstractContract,

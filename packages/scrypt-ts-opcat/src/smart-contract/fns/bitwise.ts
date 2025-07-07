@@ -35,7 +35,7 @@ export function lshift(x: bigint, n: bigint): bigint {
 */
 export function rshift(x: bigint, n: bigint): bigint {
   assert(n >= 0, 'n < 0');
-  let ret = x / pow2(n);
+  const ret = x / pow2(n);
   return n == 0n ? x : (x % 2n == -1n ? (ret - 1n) : (x < 0n && ret == 0n) ? -1n : ret);
 }
 

@@ -1,7 +1,6 @@
 import { SupportedNetwork, UTXO } from '../globalTypes.js';
 import { ChainProvider } from './chainProvider.js';
 import { UtxoProvider, UtxoQueryOptions, getUtxoKey } from './utxoProvider.js';
-import { uint8ArrayToHex } from '../utils/common.js';
 import * as utils from '@noble/hashes/utils';
 import { Script, Transaction } from '@opcat-labs/opcat';
 

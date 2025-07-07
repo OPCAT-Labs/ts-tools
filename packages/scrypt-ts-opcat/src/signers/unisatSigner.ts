@@ -33,6 +33,11 @@ export class UnisatSigner implements Signer {
     this._unisat = unisat;
   }
 
+  /**
+   * Retrieves the Unisat API instance from either the cached property or global window object.
+   * @throws {Error} If Unisat API is not available (not installed).
+   * @returns {UnisatAPI} The Unisat API instance.
+   */
   getUnisatAPI(): UnisatAPI {
     const unisat = this._unisat || window['unisat'];
     if (typeof unisat === 'undefined') {
@@ -42,19 +47,40 @@ export class UnisatSigner implements Signer {
     return unisat;
   }
 
+  /**
+   * Gets the address from the Unisat wallet API.
+   * @returns A promise that resolves to the first account address string.
+   */
   async getAddress(): Promise<string> {
     const accounts = await this.getUnisatAPI().getAccounts();
     return accounts[0];
   }
 
+  /**
+   * Retrieves the public key from the Unisat wallet API.
+   * @returns A promise that resolves to the public key as a string.
+   */
   async getPublicKey(): Promise<string> {
     return this.getUnisatAPI().getPublicKey();
   }
 
+  /**
+   * Signs a PSBT (Partially Signed Opcat Transaction) using the Unisat wallet API.
+   * 
+   * @param psbtHex - The PSBT in hexadecimal format to be signed.
+   * @param options - Optional signing options (e.g., specific inputs to sign).
+   * @returns A Promise resolving to the signed PSBT in hexadecimal format.
+   */
   async signPsbt(psbtHex: string, options?: SignOptions): Promise<string> {
     return this.getUnisatAPI().signPsbt(psbtHex, options);
   }
 
+  /**
+   * Signs multiple PSBTs (Partially Signed Opcat Transactions) using the Unisat wallet API.
+   * 
+   * @param reqs - Array of objects containing PSBT hex strings and optional signing options
+   * @returns Promise resolving to an array of signed PSBT hex strings
+   */
   signPsbts(reqs: { psbtHex: string; options?: SignOptions }[]): Promise<string[]> {
     const options: SignOptions[] = reqs
       .filter((option) => typeof option === 'object')

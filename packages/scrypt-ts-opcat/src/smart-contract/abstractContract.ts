@@ -1,4 +1,3 @@
-import { sha256 } from './fns/hashes.js';
 import { IContext } from './types/context.js';
 import { ByteString, SHPreimage } from './types/index.js';
 import { Int32, PubKey, Sig, OpcatState } from './types/primitives.js';

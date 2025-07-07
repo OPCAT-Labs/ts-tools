@@ -8,6 +8,7 @@ import { SmartContract } from '../smart-contract/smartContract.js';
 import { OpcatState } from '../smart-contract/types/primitives.js';
 import { InputIndex } from '../globalTypes.js';
 
+
 export type CallOptions = {
   contract?: SmartContract<OpcatState>; 
   satoshis?: number, 
@@ -17,17 +18,25 @@ export type CallOptions = {
   feeRate?: number,
   withBackTraceInfo?: boolean,
   unfinalize?: boolean,
+  
   prevPrevTxFinder?: (prevTx: Transaction, provider: UtxoProvider & ChainProvider, inputIndex: InputIndex) => Promise<string>
 }
+
 /**
- * call a contract
- * @category Feature
- * @param signer a signer, such as {@link DefaultSigner}  or {@link UnisatSigner}
- * @param provider a {@link UtxoProvider} & {@link ChainProvider}
- * @param contract the contract
- * @param contractCall the contract call function, such as `(contract: Counter) => { contract.increase() }`
- * @param options the new contract, such as `{ contract: newContract, satoshis: 1 }`
- * @returns the called psbt
+ * Calls a smart contract method and broadcasts the transaction.
+ * 
+ * @param signer - The signer to sign the transaction
+ * @param provider - The provider to interact with the blockchain
+ * @param contract - The smart contract instance to call
+ * @param contractCall - The contract method call details
+ * @param options - Optional call configuration (fee rate, change address, etc.)
+ * @returns A promise resolving to the signed PSBT (Partially Signed Bitcoin Transaction)
+ * 
+ * @remarks
+ * - Automatically handles UTXO selection and change calculation
+ * - Supports contract outputs if specified in options
+ * - Can include backtrace information if enabled
+ * - Broadcasts the transaction by default (can be disabled with unfinalize option)
  */
 export async function call<Contract extends SmartContract<OpcatState>>(
   signer: Signer,

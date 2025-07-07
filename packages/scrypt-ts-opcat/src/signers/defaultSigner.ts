@@ -1,7 +1,6 @@
 
 import {  hexToUint8Array } from '../utils/common.js';
 import { SignOptions, Signer } from '../signer.js';
-import { SupportedNetwork } from '../globalTypes.js';
 import { DEFAULT_NETWORK } from '../utils/constants.js';
 import { PrivateKey, crypto} from '@opcat-labs/opcat';
 import { fromSupportedNetwork, Network } from '../networks.js';
@@ -45,16 +44,35 @@ export class DefaultSigner implements Signer {
     this.network = this.privateKey.network;
   }
 
+  /**
+   * Gets the address derived from the signer's private key and network.
+   * @returns A promise resolving to the address string.
+   */
   async getAddress(): Promise<string> {
     return Promise.resolve(
       this.privateKey.toPublicKey().toAddress(this.network).toString(),
     );
   }
 
+  /**
+   * Returns the public key in hexadecimal format derived from the private key.
+   * @returns A promise that resolves to the public key as a hex string.
+   */
   async getPublicKey(): Promise<string> {
     return Promise.resolve(this.privateKey.toPublicKey().toHex());
   }
 
+  /**
+   * Signs a PSBT (Partially Signed Bitcoin Transaction) with the signer's key pair.
+   * 
+   * @param psbtHex - The PSBT in hexadecimal format to be signed
+   * @param options - Optional signing configuration including inputs to sign
+   * @returns Promise resolving to the signed PSBT in hexadecimal format
+   * 
+   * @remarks
+   * - If options are provided, only specified inputs matching the signer's address/public key will be signed
+   * - If no options are provided, all inputs will be signed with SIGHASH_ALL
+   */
   async signPsbt(psbtHex: string, options?: SignOptions): Promise<string> {
     const psbt = Psbt.fromHex(psbtHex);
 
@@ -81,6 +99,11 @@ export class DefaultSigner implements Signer {
     }
     return Promise.resolve(psbt.toHex());
   }
+  /**
+   * Signs multiple PSBTs (Partially Signed Bitcoin Transactions) in parallel.
+   * @param reqs Array of objects containing PSBT hex strings and optional signing options
+   * @returns Promise resolving to an array of signed PSBT hex strings
+   */
   signPsbts(reqs: { psbtHex: string; options?: SignOptions }[]): Promise<string[]> {
     return Promise.all(reqs.map((req) => this.signPsbt(req.psbtHex, req.options)));
   }

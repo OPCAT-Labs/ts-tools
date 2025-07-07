@@ -39,7 +39,7 @@ describe('Test Counter', () => {
       .change(address, 1)
       .seal();
 
-    await psbt.sign(testSigner);
+    await psbt.signAndFinalize(testSigner);
 
     expect(psbt.isFinalized).to.be.true;
     return counter;
@@ -57,7 +57,7 @@ describe('Test Counter', () => {
       .change(address, 1)
       .seal()
 
-    await psbt.sign(testSigner);
+    await psbt.signAndFinalize(testSigner);
 
     expect(psbt.isFinalized).to.be.true;
 

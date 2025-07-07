@@ -6,7 +6,7 @@ import { checkCtxImpl } from './methods/checkCtx.js';
 import { checkSHPreimageImpl as checkSHPreimageImpl } from './methods/checkSHPreimage.js';
 import { checkMultiSigImpl, checkSigImpl } from './methods/checkSig.js';
 import { ByteString, PubKey, SHPreimage, Sig } from './types/index.js';
-import { ABICoder, Arguments } from './abi.js';
+import { ABICoder } from './abi.js';
 import { Script } from './types/script.js';
 import { ExtUtxo, InputIndex, Optional, UTXO } from '../globalTypes.js';
 import { uint8ArrayToHex, cloneDeep, isFinal, hexToUint8Array } from '../utils/index.js';
@@ -28,6 +28,7 @@ import { getUnRenamedSymbol } from './abiutils.js';
 import { checkInputStateHashesImpl } from './methods/checkInputStateHashes.js';
 import { toTxHashPreimage } from '../utils/proof.js';
 import { assert } from './fns/assert.js';
+import { Arguments } from './types/abi.js';
 
 
 /**
@@ -219,14 +220,17 @@ export class SmartContract<StateT extends OpcatState = undefined>
   //   return buildStateOutputImpl(this, this.state, satoshis, this.ctx.spentScriptHash);
   // }
 
+
   /**
-   * Calculate the hash of all states of the current contract
-   * @onchain
-   * @param state state of the contract
-   * @returns hash160 of the state
+   * Serializes the contract state into a ByteString.
+   * @template T - Type of the contract state extending OpcatState
+   * @param this - Constructor reference for type inference
+   * @param state - The contract state object to serialize
+   * @returns Serialized state as ByteString
+   * @throws Error if artifact is not loaded or state type is not defined
    */
   static override serializeState<T extends OpcatState>(
-    this: { new (...args: any[]): SmartContract<T> },
+    this: { new(...args: any[]): SmartContract<T> },
     state: T,
   ): ByteString {
     const selfClazz = (this as any) as typeof SmartContract;
@@ -244,8 +248,15 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return serializeState(artifact, stateType, state);
   }
 
+  /**
+   * Deserializes the contract state from a ByteString.
+   * @template T - The type of the contract state extending OpcatState
+   * @param serializedState - The serialized state as a ByteString
+   * @returns The deserialized state object of type T
+   * @throws Error if artifact is not loaded or state type is not defined
+   */
   static deserializeState<T extends OpcatState>(
-    this: { new (...args: any[]): SmartContract<T> },
+    this: { new(...args: any[]): SmartContract<T> },
     serializedState: ByteString,
   ): T {
     const selfClazz = (this as any) as typeof SmartContract;
@@ -262,8 +273,16 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return deserializeState<T>(artifact, stateType, serializedState);
   }
 
+  /**
+   * Computes the SHA-256 hash of the serialized contract state.
+   * 
+   * @template T - Type extending OpcatState
+   * @param state - The contract state to hash
+   * @returns ByteString containing the SHA-256 hash of the serialized state
+   * @override
+   */
   static override stateHash<T extends OpcatState>(
-    this: { new (...args: any[]): SmartContract<T> },
+    this: { new(...args: any[]): SmartContract<T> },
     state: T,
   ): ByteString {
     return sha256((this as any).serializeState(state));
@@ -328,10 +347,18 @@ export class SmartContract<StateT extends OpcatState = undefined>
     this._curInputIndex = inputIndex;
   }
 
+  /**
+   * Gets the PSBT (Partially Signed Bitcoin Transaction) that was used to spend this contract.
+   * Returns undefined if no spending transaction exists.
+   */
   get spentPsbt(): Contextual | undefined {
     return this._curPsbt;
   }
 
+  /**
+   * Sets the signature hash type for the current input in the PSBT.
+   * @param sigHashType - The signature hash type to set
+   */
   setSighashType(sigHashType: SigHashType) {
     this._checkPsbtBinding();
     this._curPsbt.setSighashType(this._curInputIndex, sigHashType);
@@ -351,11 +378,14 @@ export class SmartContract<StateT extends OpcatState = undefined>
   private _methodCall?: MethodCallData;
 
   /**
-   *
+   * Extends method arguments with context if needed and encodes them into a unlocking script.
    * @ignore
+   * @param method - The method name to call.
+   * @param args - The arguments to pass to the method.
+   * @param autoCheckInputState - Whether to automatically check input state before injection.
    */
   extendMethodArgs(method: string, args: SupportedParamType[], autoCheckInputState: boolean) {
-    // extend the args with the context
+  // extend the args with the context
     if (this._shouldInjectCtx(method)) {
       this._autoInject(method, args, autoCheckInputState);
     }
@@ -370,13 +400,19 @@ export class SmartContract<StateT extends OpcatState = undefined>
   }
 
   /**
-   *
-   * @ignore
+   * Checks if the given method is a public function in the smart contract.
+   * @param method - The method name to check.
+   * @returns True if the method is a public function, false otherwise.
    */
   isPubFunction(method: string): boolean {
     return this._abiCoder.isPubFunction(method);
   }
 
+  /**
+   * @ignore
+   * Checks if the current instance is a smart contract.
+   * @returns {boolean} Always returns true indicating this is a smart contract.
+   */
   isSmartContract(): boolean {
     return true;
   }

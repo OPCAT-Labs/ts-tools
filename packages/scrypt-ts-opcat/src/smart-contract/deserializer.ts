@@ -1,9 +1,8 @@
-import { Argument } from './abi.js';
 import { arrayTypeAndSize, isArrayType } from './abiutils.js';
 import { byteStringToInt } from './fns/byteString.js';
-import { isBytes, ScryptType, SymbolType, TypeResolver } from './types/abi.js';
+import { isBytes, ScryptType, SymbolType, TypeResolver, Argument } from './types/abi.js';
 import { LibraryEntity, ParamEntity, StructEntity } from './types/artifact.js';
-import { ByteString, SigHashType, StructObject, SupportedParamType } from './types/primitives.js';
+import { ByteString, StructObject, SupportedParamType } from './types/primitives.js';
 import { Script } from './types/script.js';
 
 
@@ -22,9 +21,6 @@ export function hex2int(hex: string): bigint {
     return byteStringToInt(chuck.buf.toString('hex'));
   }
 }
-
-console.log(Script.fromASM('8f8f').toHex(), hex2int(Script.fromASM('OP_2').toHex()))
-
 
 export function hex2bool(hex: string): boolean {
   if (hex === '51') {
@@ -53,7 +49,7 @@ export function hex2bytes(hex: string): ByteString {
 }
 
 
-export function deserializer(type: string, hex: string): SupportedParamType {
+function deserializer(type: string, hex: string): SupportedParamType {
   switch (type) {
     case ScryptType.BOOL:
       return hex2bool(hex)
@@ -72,7 +68,7 @@ export function deserializer(type: string, hex: string): SupportedParamType {
 
 
 
-export function createStruct(resolver: TypeResolver, param: ParamEntity, opcodesMap: Map<string, string>): StructObject {
+function createStruct(resolver: TypeResolver, param: ParamEntity, opcodesMap: Map<string, string>): StructObject {
 
   const structTypeInfo = resolver(param.type);
   const entity = structTypeInfo.info as StructEntity;
@@ -103,7 +99,7 @@ export function createStruct(resolver: TypeResolver, param: ParamEntity, opcodes
 
 
 
-export function createLibrary(resolver: TypeResolver, param: ParamEntity, opcodesMap: Map<string, string>): Array<SupportedParamType> | Record<string, SupportedParamType> {
+function createLibrary(resolver: TypeResolver, param: ParamEntity, opcodesMap: Map<string, string>): Array<SupportedParamType> | Record<string, SupportedParamType> {
   const libraryTypeInfo = resolver(param.type);
   const entity = libraryTypeInfo.info as LibraryEntity;
 
@@ -130,7 +126,7 @@ export function createLibrary(resolver: TypeResolver, param: ParamEntity, opcode
 }
 
 
-export function createArray(resolver: TypeResolver, type: string, name: string, opcodesMap: Map<string, string>): SupportedParamType {
+function createArray(resolver: TypeResolver, type: string, name: string, opcodesMap: Map<string, string>): SupportedParamType {
 
   const arrays: SupportedParamType[] = [];
   const [elemTypeName, sizes] = arrayTypeAndSize(type);

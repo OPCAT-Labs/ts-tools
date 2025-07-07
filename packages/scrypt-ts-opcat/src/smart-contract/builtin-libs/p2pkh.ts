@@ -4,6 +4,16 @@ import { Addr, PubKey, Sig } from "../types/primitives.js"
 import { SmartContract } from "../smartContract.js"
 import { pubKey2Addr } from "../fns/pubKey2Addr.js"
 
+/**
+ * A Pay-to-Public-Key-Hash (P2PKH) smart contract that allows spending 
+ * by providing a signature matching the specified public key hash.
+ * 
+ * @property addr - The address derived from the public key hash that can unlock this contract
+ * @method unlock - Verifies the provided signature matches the contract's public key hash
+ * @param sig - The signature to verify
+ * @param pubkey - The public key corresponding to the address
+ * @throws If public key hash doesn't match or signature verification fails
+ */
 export class P2PKH extends SmartContract {
     @prop()
     readonly addr: Addr

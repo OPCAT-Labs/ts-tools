@@ -6,8 +6,13 @@ import { OpcatState, Sig } from '../smart-contract/types/primitives.js';
 import { Psbt } from './psbt.js';
 import { Transaction } from '@opcat-labs/opcat';
 import { BacktraceInfo } from '../smart-contract/types/structs.js';
+
 /**
- * A options used to determine how to unlock the covenant.
+ * Type definition for a contract call function.
+ * @template Contract - The contract instance being called.
+ * @param contract - The contract instance to interact with.
+ * @param psbt - The PSBT (Partially Signed Bitcoin Transaction).
+ * @param backtraceInfo - Optional backtrace information for calling B2G contract.
  */
 export type ContractCall<Contract> = (
   contract: Contract,
@@ -15,6 +20,52 @@ export type ContractCall<Contract> = (
   backtraceInfo?: BacktraceInfo,
 ) => void;
 
+/**
+ * Extended PSBT (Partially Signed Bitcoin Transaction) interface with contract handling capabilities.
+ * Provides methods to add contract inputs/outputs, manage change, estimate transaction size/fees,
+ * and handle signatures. Extends standard Psbt with additional context and contract-specific operations.
+ * 
+ * Key features:
+ * - Contract input/output management
+ * - Change address handling
+ * - Transaction size and fee estimation
+ * - Schnorr signature retrieval
+ * - Signing support
+ */
+/**
+ * Extended PSBT (Partially Signed Bitcoin Transaction) interface with additional contract-related functionality.
+ * 
+ * This interface extends the standard Psbt with methods for:
+ * - Adding contract inputs/outputs
+ * - Managing change outputs
+ * - Estimating transaction size and fees
+ * - Handling signatures
+ * 
+ * It provides a higher-level abstraction for working with smart contracts in Bitcoin transactions.
+ */
+/**
+ * Extended PSBT (Partially Signed Bitcoin Transaction) interface with additional contract-related methods.
+ * Provides functionality for adding contract inputs/outputs, estimating fees/sizes, and handling signatures.
+ * Inherits from standard Psbt and Contextual interfaces.
+ * 
+ * Key features:
+ * - Contract input/output management
+ * - Change output handling
+ * - Transaction size and fee estimation
+ * - Schnorr signature retrieval
+ * - Signing capability
+ */
+/**
+ * Extended PSBT (Partially Signed Bitcoin Transaction) interface with additional contract-related functionality.
+ * 
+ * This interface extends the standard Psbt with methods for:
+ * - Adding contract inputs/outputs
+ * - Handling change outputs
+ * - Estimating transaction size and fees
+ * - Managing signatures
+ * 
+ * It provides a higher-level abstraction for working with smart contracts in Bitcoin transactions.
+ */
 export interface IExtPsbt extends Psbt, Contextual {
   /**
    * Add an input to spend the contract.
@@ -57,14 +108,17 @@ export interface IExtPsbt extends Psbt, Contextual {
   unsignedTx: Transaction;
 
   /**
-   * Get schnorr signature from signed psbt by inputIndex
+   * Get signature from signed psbt by inputIndex
    * @param inputIndex index of the input
    * @param options options to find signatures
    * @returns the signature, if no signature found, return a dummy signature.
    */
   getSig(inputIndex: InputIndex, options: Omit<ToSignInput, 'index'>): Sig;
 
-
-
-  sign(singer: Signer): Promise<void>;
+  /**
+   * Signs the PSBT with the provided signer and finalizes all inputs.
+   * @param signer - The signer instance used to sign the PSBT.
+   * @returns A promise that resolves when signing and finalization are complete.
+   */
+  signAndFinalize(singer: Signer): Promise<void>;
 }

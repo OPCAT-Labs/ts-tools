@@ -5,17 +5,19 @@ import { Outpoint, SpentAmounts, SpentDataHashes } from '../types/structs.js';
 import { assert, hash256, intToByteString, slice } from '../fns/index.js';
 import { InputIndex } from '../../globalTypes.js';
 
+
 /**
+ * Validates the transaction context against the provided preimage data.
  * @ignore
- * @param self
- * @param shPreimage
- * @param inputIndex
- * @param prevouts
- * @param prevout
- * @param spentScriptHashes
- * @param spentAmounts
- * @param stateHashes
- * @returns
+ * @param self - The contract instance
+ * @param shPreimage - The preimage data containing hash commitments
+ * @param inputIndex - Index of the current input
+ * @param prevouts - Serialized previous outputs
+ * @param prevout - Current output being spent
+ * @param spentScriptHashes - Hashes of spent script hashes
+ * @param spentAmounts - Hashes of spent amounts
+ * @param stateHashes - Hashes of spent data
+ * @returns true if all validations pass, otherwise throws assertion errors
  */
 export function checkCtxImpl(
   self: AbstractContract,

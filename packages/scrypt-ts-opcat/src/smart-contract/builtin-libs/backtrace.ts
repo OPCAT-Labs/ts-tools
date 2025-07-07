@@ -9,6 +9,11 @@ import { slice } from '../fns/byteString.js';
 import { StdUtils } from './stdUtils.js';
 import { TxHashPreimageUtils } from './txHashPreimageUtils.js';
 
+
+/**
+ * Represents the response data for verifying a transaction in the chain.
+ * Contains the previous script and outpoint information needed for verification.
+ */
 export type ChainTxVerifyResponse = {
   prevPrevScript: ByteString;
   prevPrevOutpoint: ByteString;

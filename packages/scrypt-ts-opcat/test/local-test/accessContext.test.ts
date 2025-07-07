@@ -1,9 +1,7 @@
-console.log("模块格式:", typeof module !== 'undefined' ? 'CommonJS' : 'ES Module');
 import {
   ExtPsbt,
   bvmVerify,
   DefaultSigner,
-  IExtPsbt,
 } from '@opcat-labs/scrypt-ts-opcat';
 import { PrivateKey } from '@opcat-labs/opcat';
 

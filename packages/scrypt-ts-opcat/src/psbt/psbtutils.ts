@@ -18,14 +18,12 @@ export function pubkeyPositionInScript(
 
   const decompiled = Script.fromBuffer(Buffer.from(script));
 
-  // return decompiled.chunks.findIndex(chunk => {
-  //   return (
-  //     tools.compare(pubkey, chunk.buf) === 0 ||
-  //     tools.compare(pubkeyHash, chunk.buf) === 0
-  //   );
-  // });
-
-  return 1;
+  return decompiled.chunks.findIndex(chunk => {
+    return (
+      tools.compare(pubkey, chunk.buf) === 0 ||
+      tools.compare(pubkeyHash, chunk.buf) === 0
+    );
+  });
 }
 
 /**

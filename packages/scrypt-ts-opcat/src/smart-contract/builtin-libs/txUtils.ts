@@ -2,12 +2,9 @@ import { assert } from '../fns/assert.js';
 import {
   TX_INPUT_PREV_TX_HASH_BYTE_LEN,
   TX_INPUT_SCRIPT_HASH_BYTE_LEN,
-  TX_VERSION_BYTE_LEN,
-  TX_INPUT_BYTE_LEN,
-  TX_OUTPUT_BYTE_LEN,
 } from '../consts.js';
 import { prop, method } from '../decorators.js';
-import { toByteString, len, intToByteString, sha256, hash256 } from '../fns/index.js';
+import { toByteString, len, intToByteString, sha256 } from '../fns/index.js';
 import { OpCode } from '../types/opCode.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import {
@@ -16,7 +13,6 @@ import {
   TxIn,
   Addr,
   UInt64,
-  TxHashPreimage,
 } from '../types/index.js';
 import { StdUtils } from './stdUtils.js';
 

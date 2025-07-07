@@ -45,6 +45,11 @@ export class SmartContractLib {
     });
   }
 
+  /**
+   * @ignore
+   * Checks if the current instance is a SmartContractLib.
+   * @returns {boolean} Always returns true since this is a SmartContractLib class.
+   */
   isSmartContractLib() {
     return true
   }

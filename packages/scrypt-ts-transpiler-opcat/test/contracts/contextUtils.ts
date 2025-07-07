@@ -188,9 +188,9 @@ export class ContextUtils extends SmartContractLib {
   @method()
   static checkSpentAmounts(
     spentAmounts: SpentAmounts,
-    t_hashSpentAmounts: ByteString,
+    hashSpentAmounts: ByteString,
   ): Int32 {
-    assert(hash256(spentAmounts) == t_hashSpentAmounts, 'hashSpentAmounts mismatch');
+    assert(hash256(spentAmounts) == hashSpentAmounts, 'hashSpentAmounts mismatch');
     return StdUtils.checkLenDivisibleBy(spentAmounts, 8n);
   }
 

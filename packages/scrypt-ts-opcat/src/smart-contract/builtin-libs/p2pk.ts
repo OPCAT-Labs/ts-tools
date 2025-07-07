@@ -3,6 +3,15 @@ import { assert } from "../fns/assert.js"
 import { PubKey, Sig } from "../types/primitives.js"
 import { SmartContract } from "../smartContract.js"
 
+/**
+ * A Pay-to-Public-Key (P2PK) smart contract that allows spending 
+ * when a valid signature matching the stored public key is provided.
+ * 
+ * @class P2PK
+ * @extends SmartContract
+ * @property {PubKey} pubKey - The public key that can unlock this contract
+ * @method unlock - Verifies the provided signature matches the stored public key
+ */
 export class P2PK extends SmartContract {
     @prop()
     readonly pubKey: PubKey

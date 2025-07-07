@@ -28,5 +28,10 @@ export interface ChainProvider {
    */
   getFeeRate(): Promise<number>;
 
+  /**
+   * Get the current network the provider is connected to.
+   * @returns A promise which resolves to the current network identifier.
+   */
+
   getNetwork(): Promise<SupportedNetwork>;
 }

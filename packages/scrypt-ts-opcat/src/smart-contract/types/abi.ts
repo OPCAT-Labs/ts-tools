@@ -1,3 +1,5 @@
+import { SupportedParamType } from "./primitives.js";
+
 /**
  * @ignore
  */
@@ -78,3 +80,20 @@ export function isSubBytes(type: string): boolean {
 export function isBytes(type: string): boolean {
   return type === ScryptType.BYTES || isSubBytes(type);
 }
+
+
+
+
+/**
+ * @ignore
+ */
+export interface Argument {
+  name: string;
+  type: string;
+  value: SupportedParamType;
+}
+
+/**
+ * @ignore
+ */
+export type Arguments = Argument[];

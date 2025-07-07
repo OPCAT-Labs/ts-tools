@@ -1,7 +1,7 @@
 import { OpCodeType } from './primitives.js';
 /**
  * This is a list of all Script words, also known as opcodes, commands, or functions.
- * Opcodes used in [BTC Script]{@link https://en.bitcoin.it/wiki/Script}
+ * Opcodes used in [Script]{@link https://en.bitcoin.it/wiki/Script}
  * @category Library
  * @onchain
  */

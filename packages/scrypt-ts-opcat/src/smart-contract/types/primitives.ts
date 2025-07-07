@@ -15,10 +15,29 @@ export type ByteString = Flavor<string, 'bytes'>;
  */
 export type Int32 = Flavor<bigint, 'int'>;
 
+/**
+ * Represents a 32-bit unsigned integer type.
+ * This is a branded type to distinguish it from regular bigint values.
+ */
 export type UInt32 = Flavor<bigint, 'int'>;
+/**
+ * Represents a 64-bit unsigned integer value.
+ * 
+ * This is a branded type to distinguish it from regular bigint values.
+ */
 export type UInt64 = Flavor<bigint, 'int'>;
 
-export type SigHashPreimage = ByteString & {__type: 'SigHashPreimage'};
+/**
+ * A branded type representing a signature hash preimage in script.
+ * The `__type` branding ensures type safety when working with different ByteString types.
+ */
+export type SigHashPreimage = ByteString & { __type: 'SigHashPreimage' };
+
+/**
+ * Converts a ByteString to a validated SigHashPreimage.
+ * @param b - The ByteString to convert
+ * @returns The validated SigHashPreimage
+ */
 export function SigHashPreimage(b: ByteString): SigHashPreimage {
   return getValidatedHexString(b, false) as SigHashPreimage;
 }
@@ -258,4 +277,7 @@ export type SupportedParamType = PrimitiveTypes | StructObject | SupportedParamT
 
 
 
+/**
+ * Represents the state of an OP_CAT operation, which can be either a structured object or undefined.
+ */
 export type OpcatState = StructObject | undefined

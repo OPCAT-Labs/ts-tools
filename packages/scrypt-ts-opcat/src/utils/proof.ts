@@ -14,16 +14,25 @@ import { StdUtils } from '../smart-contract/builtin-libs/stdUtils.js';
 import { BufferReader } from '../psbt/bufferutils.js';
 import { toHex } from 'uint8array-tools';
 import { UTXO } from '../globalTypes.js';
+import { hexToUint8Array, uint8ArrayToHex } from './common.js';
 
 
 
+/**
+ * Converts a UTXO to its genesis outpoint format.
+ * The genesis outpoint is constructed by reversing the txId bytes and appending
+ * the output index as a 4-byte little-endian string.
+ * 
+ * @param utxo - The UTXO to convert
+ * @returns The genesis outpoint as a hex-encoded ByteString
+ */
 export const toGenesisOutpoint = function (utxo: UTXO): ByteString {
-  return Buffer.from(utxo.txId, 'hex').reverse().toString('hex') + intToByteString(BigInt(utxo.outputIndex), 4n);
+  return uint8ArrayToHex(hexToUint8Array(utxo.txId).reverse()) + intToByteString(BigInt(utxo.outputIndex), 4n);
 }
 
 /**
- * convert raw transaction buffer to TxHashPreimage
- * @param txBuf
+ * convert raw txHash preimage buffer to TxHashPreimage struct
+ * @param txHashPreimageBuf
  * @returns
  */
 export const toTxHashPreimage = function (txHashPreimageBuf: Uint8Array): TxHashPreimage {

@@ -38,7 +38,7 @@ describe('Test stateMethods in a stateless contract', () => {
       .change(address, 1)
       .seal();
 
-    await deployPsbt.sign(signer);
+    await deployPsbt.signAndFinalize(signer);
 
     const nextCounter = counter.next({ count: 2n });
 
@@ -59,7 +59,7 @@ describe('Test stateMethods in a stateless contract', () => {
       .seal()
 
 
-    await spendPsbt.sign(signer);
+    await spendPsbt.signAndFinalize(signer);
 
     expect(spendPsbt.isFinalized).to.be.true;
     expect(bvmVerify(spendPsbt, 0)).to.be.true;

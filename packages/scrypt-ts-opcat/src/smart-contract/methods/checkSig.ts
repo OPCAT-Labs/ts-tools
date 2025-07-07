@@ -4,12 +4,16 @@ import { hash256, toByteString } from '../fns/index.js';
 import { AbstractContract } from '../abstractContract.js';
 import { encodeSHPreimage } from '../../utils/preimage.js';
 
-
 /**
-   * @ignore
-   * @param signature 
-   * @returns true signature valid.
-   */
+ * Checks if a signature has valid DER encoding and meets additional verification flags.
+ * 
+ * @param signature - The signature to validate
+ * @returns true if signature is empty or passes all required checks (DER encoding, low-S, strict encoding)
+ * @remarks 
+ * - Empty signatures are allowed for compact invalid signatures in CHECK(MULTI)SIG
+ * - Checks DER encoding by default
+ * - Additional checks for low-S and strict encoding depend on Interpreter flags
+ */
 function checkSignatureEncoding(signature: Sig): boolean {
 
   const buf = Buffer.from(toByteString(signature), 'hex');
@@ -40,10 +44,12 @@ function checkSignatureEncoding(signature: Sig): boolean {
 }
 
 
+
 /**
- * @ignore
- * @param publickey 
- * @returns true publickey valid.
+ * Checks if the provided public key has valid encoding.
+ * @param publickey - The public key to validate
+ * @returns true if the public key encoding is valid, false otherwise
+ * @remarks Only performs strict validation when SCRIPT_VERIFY_STRICTENC flag is set
  */
 function checkPubkeyEncoding(publickey: PubKey) {
   if ((Interpreter.DEFAULT_FLAGS & Interpreter.SCRIPT_VERIFY_STRICTENC) !== 0 && !PublicKey.isValid(toByteString(publickey))) {
@@ -52,12 +58,15 @@ function checkPubkeyEncoding(publickey: PubKey) {
   return true
 }
 
+
 /**
+ * Verifies a signature against a public key for the current contract context.
  * @ignore
- * @param self
- * @param signature
- * @param publickey
- * @returns
+ * @param self - The contract instance containing the context to verify against
+ * @param signature - The signature to verify in hex format
+ * @param publickey - The public key in hex format to verify the signature against
+ * @returns true if the signature is valid for the given public key and contract context,
+ *          false if invalid or if encoding checks fail
  */
 export function checkSigImpl(self: AbstractContract, signature: Sig, publickey: PubKey): boolean {
 
@@ -92,15 +101,21 @@ export function checkSigImpl(self: AbstractContract, signature: Sig, publickey: 
 }
 
 
+
 /**
+ * Verifies a multi-signature against a set of public keys.
  * @ignore
- * @param self 
- * @param signatures 
- * @param publickeys 
- * @returns 
+ * @param self - The contract instance containing the signing context
+ * @param signatures - Array of signatures to verify
+ * @param publickeys - Array of public keys to check against
+ * @returns true if all signatures are valid and match the public keys, false otherwise
+ * 
+ * @remarks
+ * - Validates signature and public key encoding before verification
+ * - Ensures each signature matches at least one unique public key
+ * - Uses the contract's context (shPreimage) as the signed message
  */
 export function checkMultiSigImpl(self: AbstractContract, signatures: Sig[], publickeys: PubKey[]): boolean {
-
 
   for (let i = 0; i < signatures.length; i++) {
     if (!checkSignatureEncoding(signatures[i])) {

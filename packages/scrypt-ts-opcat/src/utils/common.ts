@@ -217,8 +217,8 @@ export function toHex(val: Buffer | string | Uint8Array): string {
 }
 
 /**
- * Converts a Bitcoin address to its public key hash (PKH) in hex format.
- * @param address - The Bitcoin address to convert.
+ * Converts a Opcat address to its public key hash (PKH) in hex format.
+ * @param address - The Opcat address to convert.
  * @returns The public key hash as a hex string.
  */
 export function addrToPkh(address: string) {

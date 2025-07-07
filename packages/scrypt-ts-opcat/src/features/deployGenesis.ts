@@ -6,14 +6,22 @@ import { Signer } from '../signer.js';
 import { SmartContract } from '../smart-contract/smartContract.js';
 import { ByteString, OpcatState } from '../smart-contract/types/primitives.js';
 import { toGenesisOutpoint } from '../utils/proof.js';
+
 /**
- * Deploy a genesis contract
- * @category Feature
- * @param signer a signer, such as {@link DefaultSigner}  or {@link UnisatSigner}
- * @param provider a  {@link UtxoProvider} and {@link ChainProvider}
- * @param createContract a function to create the contract with genesisOutpoint
- * @param satoshis the satoshis to deploy the contract
- * @returns the deployed psbt
+ * Deploys a smart contract, which can be traced back to genesis, to the blockchain
+ * 
+ * @param signer - The signer used to sign the transaction
+ * @param provider - The provider for chain and UTXO data
+ * @param createContract - Factory function to create the contract instance with genesis outpoint
+ * @param satoshis - Amount of satoshis to lock in the contract (default: 1)
+ * @returns Promise resolving to the PSBT and deployed contract instance
+ * 
+ * @remarks
+ * This function:
+ * 1. Creates a genesis transaction from the first available UTXO
+ * 2. Builds and signs the contract deployment PSBT
+ * 3. Broadcasts the transaction and updates UTXO state
+ * 4. Returns the finalized PSBT and contract instance
  */
 export async function deployGenesis<Contract extends SmartContract<OpcatState>>(
   signer: Signer,

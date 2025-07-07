@@ -35,6 +35,11 @@ export function reverseBuffer(buffer: Uint8Array): Uint8Array {
   return buffer;
 }
 
+/**
+ * Creates a deep clone of a given Uint8Array or Buffer.
+ * @param buffer - The buffer to clone
+ * @returns A new Uint8Array containing the same data as the input buffer
+ */
 export function cloneBuffer(buffer: Uint8Array | Buffer): Uint8Array {
   const clone = new Uint8Array(buffer.length);
   clone.set(buffer);
@@ -51,7 +56,7 @@ export function cloneBuffer(buffer: Uint8Array | Buffer): Uint8Array {
 );
 
 /**
- * Helper class for serialization of bitcoin data types into a pre-allocated buffer.
+ * Helper class for serialization of opcat data types into a pre-allocated buffer.
  */
 export class BufferWriter {
   static withCapacity(size: number): BufferWriter {
@@ -120,7 +125,7 @@ export class BufferWriter {
 }
 
 /**
- * Helper class for reading of bitcoin data types from a buffer.
+ * Helper class for reading of opcat data types from a buffer.
  */
 export class BufferReader {
   constructor(

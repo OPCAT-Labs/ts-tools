@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SmartContractLib } from '../smartContractLib.js';
-import { ByteString, OpcatState, StructObject } from '../types/primitives.js';
+import { ByteString, OpcatState } from '../types/primitives.js';
 import { ABICoder } from '../abi.js';
 import { deserializeState, serializeState } from '../stateSerializer.js';
 import { getUnRenamedSymbol } from '../abiutils.js';
@@ -43,8 +44,17 @@ export class StateLib<ST extends OpcatState> extends SmartContractLib {
     return serializeState(artifact, libraryClazz.stateType, state);
   }
 
+  /**
+   * Deserializes a state object from its ByteString representation.
+   * 
+   * @template T - Type of the state object extending OpcatState
+   * @param this - Reference to the StateLib class constructor
+   * @param serializedState - ByteString containing the serialized state data
+   * @returns The deserialized state object of type T
+   * @throws Error if artifact is not loaded, library is not found, or state type is undefined
+   */
   static deserializeState<T extends OpcatState>(
-    this: { new (...args: any[]): StateLib<T> },
+    this: { new(...args: any[]): StateLib<T> },
     serializedState: ByteString,
   ): T {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,8 +78,14 @@ export class StateLib<ST extends OpcatState> extends SmartContractLib {
     return deserializeState(artifact, libraryClazz.stateType, serializedState);
   }
 
+  /**
+   * Computes the SHA-256 hash of a serialized state object.
+   * @template T - Type extending OpcatState
+   * @param state - The state object to hash
+   * @returns The hash as a ByteString
+   */
   static stateHash<T extends OpcatState>(
-    this: { new (...args: any[]): StateLib<T> },
+    this: { new(...args: any[]): StateLib<T> },
     state: T,
   ): ByteString {
     return sha256((this as any).serializeState(state));

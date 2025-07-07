@@ -42,7 +42,7 @@ export function isDefinedHashType(hashType: number): boolean {
  * @param x - The buffer to be converted.
  * @returns The DER-encoded buffer.
  */
-function toDER(x: Uint8Array): Uint8Array {
+export function toDER(x: Uint8Array): Uint8Array {
   let i = 0;
   while (x[i] === 0) ++i;
   if (i === x.length) return ZERO;
@@ -58,7 +58,7 @@ function toDER(x: Uint8Array): Uint8Array {
  * @param x - The DER-encoded signature.
  * @returns The converted buffer.
  */
-function fromDER(x: Uint8Array): Uint8Array {
+export function fromDER(x: Uint8Array): Uint8Array {
   if (x[0] === 0x00) x = x.slice(1);
   const buffer = new Uint8Array(32);
   const bstart = Math.max(0, 32 - x.length);
@@ -66,17 +66,16 @@ function fromDER(x: Uint8Array): Uint8Array {
   return buffer;
 }
 
+/**
+ * Represents a script signature consisting of a signature and hash type.
+ * @property signature - The signature bytes
+ * @property hashType - The hash type used for signing
+ */
 export interface ScriptSignature {
   signature: Uint8Array;
   hashType: number;
 }
 
-export enum SignatureVersion {
-  BASE = 0,
-  WITNESS_V0 = 1,
-  TAPROOT = 2,
-  TAPSCRIPT = 3,
-}
 
 // BIP62: 1 byte hashType flag (only 0x01, 0x02, 0x03, 0x81, 0x82 and 0x83 are allowed)
 /**

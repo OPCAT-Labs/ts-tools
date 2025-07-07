@@ -17,26 +17,12 @@ import {
   StaticEntity,
   StructEntity,
 } from './types/artifact.js';
-import { toScriptHex } from './serializer.js';
-import { SymbolType, TypeInfo, TypeResolver, isScryptType } from './types/abi.js';
+import { serializeArgToHex } from './serializer.js';
+import { Argument, Arguments, SymbolType, TypeInfo, TypeResolver, isScryptType } from './types/abi.js';
 import { PrimitiveTypes, StructObject, SupportedParamType } from './types/primitives.js';
 import { Script } from './types/script.js';
 import { uint8ArrayToHex } from '../utils/common.js';
 import { deserializeArgfromHex, hex2int } from './deserializer.js';
-
-/**
- * @ignore
- */
-export interface Argument {
-  name: string;
-  type: string;
-  value: SupportedParamType;
-}
-
-/**
- * @ignore
- */
-export type Arguments = Argument[];
 
 /**
  * @ignore
@@ -124,8 +110,19 @@ export function buildTypeResolver(
   return resolver;
 }
 
+
 /**
+ * ABI encoding and decoding utility for smart contracts.
  * @ignore
+ * This class provides methods to:
+ * - Encode constructor calls and public function calls into scripts
+ * - Decode public function calls from unlocking scripts
+ * - Check if a method is a public function
+ * - Handle various parameter types including arrays, structs, and libraries
+ * - Validate arguments against contract ABI definitions
+ * 
+ * The coder uses the contract's artifact which contains the ABI and hex template
+ * to properly encode and decode contract interactions.
  */
 export class ABICoder {
   readonly artifact: Artifact;
@@ -134,6 +131,14 @@ export class ABICoder {
     this.artifact = artifact;
   }
 
+  /**
+   * Encodes constructor arguments into a script using the contract's ABI.
+   * Validates that all required parameters are present in the ASM template.
+   * 
+   * @param ctorArgs - Array of constructor arguments to encode
+   * @returns Script containing the encoded constructor call
+   * @throws Error if any required parameter is missing from the ASM template
+   */
   encodeConstructorCall(ctorArgs: SupportedParamType[]): Script {
     const constructorABI = this.artifact.abi.filter(
       (entity) => entity.type === ABIEntityType.CONSTRUCTOR,
@@ -163,13 +168,18 @@ export class ABICoder {
           `abi constructor params mismatch with args provided: missing ${arg.name} in ASM tempalte`,
         );
       }
-      hexTemplateArgs.set(`<${arg.name}>`, toScriptHex(arg.value as PrimitiveTypes));
+      hexTemplateArgs.set(`<${arg.name}>`, serializeArgToHex(arg.value as PrimitiveTypes));
     });
 
     const lockingScriptHex = buildScriptHex(hexTemplateArgs, new Map(), this.artifact.hex);
     return Script.fromHex(lockingScriptHex);
   }
 
+  /**
+   * Checks if the given method name is a public function in the contract's ABI.
+   * @param method - The name of the method to check.
+   * @returns True if the method exists as a public function in the ABI, false otherwise.
+   */
   isPubFunction(method: string): boolean {
     return (
       this.artifact.abi.findIndex(
@@ -178,6 +188,14 @@ export class ABICoder {
     );
   }
 
+  /**
+   * Encodes a public function call into a script by flattening and serializing the arguments.
+   * 
+   * @param method - The name of the public function to call.
+   * @param args - The arguments to pass to the function.
+   * @returns A script containing the encoded function call.
+   * @throws Error if the specified public function is not found in the contract ABI.
+   */
   encodePubFunctionCall(method: string, args: SupportedParamType[]): Script {
     const resolver = buildTypeResolverFromArtifact(this.artifact);
     const methodABI = this.artifact.abi.find(
@@ -202,19 +220,30 @@ export class ABICoder {
       return flatternArg(a, resolver, { state: false, ignoreValue: false });
     });
 
-    let unlockingScriptHex = flatteredArgs.map((a) => toScriptHex(a.value as PrimitiveTypes)).join('');
+    let unlockingScriptHex = flatteredArgs.map((a) => serializeArgToHex(a.value as PrimitiveTypes)).join('');
 
     const fns = this.artifact.abi.filter((entity) => entity.type === ABIEntityType.FUNCTION);
 
     if (fns.length >= 2 && methodABI.index !== undefined) {
       // selector when there are multiple public functions
       const pubFuncIndex = methodABI.index;
-      unlockingScriptHex += `${toScriptHex(BigInt(pubFuncIndex))}`;
+      unlockingScriptHex += `${serializeArgToHex(BigInt(pubFuncIndex))}`;
     }
 
     return Script.fromHex(unlockingScriptHex);
   }
 
+  /**
+   * Decodes a public function call from an unlocking script.
+   * 
+   * @param unlockingScript - The unlocking script to decode, which can be provided as a Script object, Uint8Array, or hex string.
+   * @returns An object containing the decoded method name and arguments.
+   * @throws {Error} If no public function is found in the contract, or if the unlocking script doesn't match the contract's ABI.
+   * 
+   * The function handles both single-function contracts and contracts with multiple public functions.
+   * For multi-function contracts, it extracts the function index from the unlocking script ASM.
+   * Validates argument count and decodes each argument using the contract's type resolver.
+   */
   decodePubFunctionCall(unlockingScript: Script | Uint8Array | string) {
     let unlockingScriptHex: string;
     if (typeof unlockingScript === 'string') {
@@ -290,6 +319,13 @@ export class ABICoder {
     }
   }
 
+  /**
+   * Flattens a struct object into Arguments format using the contract's ABI type resolver.
+   * @param arg - The struct object to flatten
+   * @param type - The type definition of the struct
+   * @param ignoreValue - Whether to ignore the actual values (default: false)
+   * @returns The flattened arguments representation of the struct
+   */
   flattenStruct(arg: StructObject, type: string, ignoreValue: boolean = false): Arguments {
     const resolver = buildTypeResolverFromArtifact(this.artifact);
     return flatternStruct(
@@ -303,10 +339,24 @@ export class ABICoder {
     );
   }
 
+  /**
+   * Transforms input arguments according to parameter definitions.
+   * @param args - Input arguments to transform
+   * @param params - Parameter definitions to use for transformation
+   * @returns Array of transformed arguments
+   */
   private transformerArgs(args: SupportedParamType, params: ParamEntity[]): SupportedParamType[] {
     return params.map((p, index) => this.transformerArg(args[index], p));
   }
 
+  /**
+   * Transforms a contract argument based on its parameter type definition.
+   * Handles array, library, struct, and numeric type conversions recursively.
+   * 
+   * @param arg - The input argument to transform
+   * @param param - The parameter type definition from the ABI
+   * @returns The transformed argument matching the expected parameter type
+   */
   private transformerArg(arg: SupportedParamType, param: ParamEntity): SupportedParamType {
     const resolver = buildTypeResolverFromArtifact(this.artifact);
 

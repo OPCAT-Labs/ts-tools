@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Psbt as PsbtBase } from '@opcat-labs/bip174';
 import {
   Bip32Derivation,
   KeyValue,
@@ -13,6 +12,7 @@ import {
   TransactionFromBuffer,
   checkForInput, 
   checkForOutput,
+  Psbt as PsbtBase
 } from '@opcat-labs/bip174';
 import { Transaction, Address, Script, crypto, Networks } from '@opcat-labs/opcat'
 import * as signatureutils from './signatureutils.js';
@@ -667,7 +667,6 @@ export class Psbt {
     const { hash, sighashType } = getHashAndSighashType(
       this.data.inputs,
       inputIndex,
-      keyPair.publicKey,
       this.__CACHE,
       sighashTypes,
     );
@@ -705,7 +704,6 @@ export class Psbt {
     const { hash, sighashType } = getHashAndSighashType(
       this.data.inputs,
       inputIndex,
-      keyPair.publicKey,
       this.__CACHE,
       sighashTypes,
     );
@@ -1170,7 +1168,6 @@ function prepareFinalScripts(
 function getHashAndSighashType(
   inputs: PsbtInput[],
   inputIndex: number,
-  pubkey: Uint8Array,
   cache: PsbtCache,
   sighashTypes: number[],
 ): {
@@ -1178,7 +1175,7 @@ function getHashAndSighashType(
   sighashType: number;
 } {
   const input = checkForInput(inputs, inputIndex);
-  const { hash, sighashType, script } = getHashForSig(
+  const { hash, sighashType } = getHashForSig(
     inputIndex,
     input,
     cache,
@@ -1444,12 +1441,11 @@ function pubkeyInOutput(
   outputIndex: number,
   cache: PsbtCache,
 ): boolean {
-  // const script = cache.__TX.outputs[outputIndex].script;
-  // const { meaningfulScript } = getMeaningfulScript(
-  //   script.toBuffer(),
-  // );
-  // return pubkeyInScript(pubkey, meaningfulScript);
-  return true
+  const script = cache.__TX.outputs[outputIndex].script;
+  const { meaningfulScript } = getMeaningfulScript(
+    script.toBuffer(),
+  );
+  return pubkeyInScript(pubkey, meaningfulScript);
 }
 
 function compressPubkey(pubkey: Uint8Array): Uint8Array {

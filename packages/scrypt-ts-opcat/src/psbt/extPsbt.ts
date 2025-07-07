@@ -13,7 +13,6 @@ import { Script } from '../smart-contract/types/script.js';
 import { ContextProvider } from './contextProvider.js';
 import {
   hexToUint8Array,
-  satoshiToHex,
   uint8ArrayToHex,
 } from '../utils/common.js';
 import { InputContext } from '../smart-contract/types/context.js';
@@ -45,6 +44,14 @@ type Finalizer = (
 ) => Script;
 
 
+/**
+ * Extended PSBT input interface that combines standard PsbtInput and TransactionInput
+ * with additional OP_CAT-specific fields.
+ * 
+ * @property opcatUtxo - The OP_CAT-specific UTXO data associated with this input
+ * @property finalizer - Optional finalizer for this input
+ * @property sigRequests - Array of signature requests for this input
+ */
 export interface PsbtInputExtended extends PsbtInput, TransactionInput {
   opcatUtxo: OpcatUtxo;
   finalizer?: Finalizer;
@@ -54,29 +61,38 @@ export interface PsbtInputExtended extends PsbtInput, TransactionInput {
   }[];
 }
 
+/**
+ * Extended PSBT options interface that inherits from PsbtOptsOptional, excluding 'network'.
+ * 
+ * @remarks
+ * The `network` property is optional and used by `spendUTXO()` and `change()` methods.
+ * It is recommended to set the `network` when working with opcat Signet to avoid address conversion issues,
+ * as opcat Signet uses a different address format.
+ */
 export interface ExtPsbtOpts extends Omit<PsbtOptsOptional, 'network'> {
-  /**
-   * force add state root hash output to the psbt
-   *
-   * @default false
-   *
-   * if set true, the psbt will add a state root hash output to the psbt even you did not call addCovenantOutput
-   * if set false, the psbt will not add a state root hash output to the psbt if you did not call addCovenantOutput, once you call addCovenantOutput, the psbt will add a state root hash output to the psbt
-   */
-  forceAddStateRootHashOutput?: boolean;
   /**
    * network config, used by spendUTXO() and change()
    *
-   * if you are create a psbt on btc-signet, you should set `network` to avoid address convertion issues, because btc-signet has a different address format.
+   * if you are create a psbt on opcat-signet, you should set `network` to avoid address convertion issues, because opcat-signet has a different address format.
    *
-   * make sure you have set the network if you are working on btc-signet
+   * make sure you have set the network if you are working on opcat-signet
    */
   network?: Networks.Network | SupportedNetwork;
 }
 
+
 /**
- * Extended [Psbt]{@link https://docs.scrypt.io/btc-docs/references/bitcoinjs-lib/classes/Psbt } class.
- * Used to construct transactions to unlock smart contracts.
+ * Extends the standard Psbt class with additional functionality for OP_CAT transactions.
+ * Provides methods for:
+ * - Managing contract inputs/outputs
+ * - Handling UTXO spending
+ * - Calculating transaction fees and sizes
+ * - Finalizing and sealing transactions
+ * - Backtrace information for contract inputs
+ * - Change output management
+ * 
+ * Supports serialization to/from hex, base64 and buffer formats.
+ * Includes network-aware operations and signature handling.
  */
 export class ExtPsbt extends Psbt implements IExtPsbt {
   constructor(opts: ExtPsbtOpts = {}, data?: PsbtBase) {
@@ -88,28 +104,61 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     this._ctxProvider = new ContextProvider(this);
   }
 
-  async sign(signer: Signer): Promise<void> {
+
+  /**
+   * Signs the PSBT with the provided signer and finalizes all inputs.
+   * @param signer - The signer instance used to sign the PSBT.
+   * @returns A promise that resolves when signing and finalization are complete.
+   */
+  async signAndFinalize(signer: Signer): Promise<void> {
     const signedPsbtHex = await signer.signPsbt(this.toHex(), this.psbtOptions());
     this.combine(ExtPsbt.fromHex(signedPsbtHex)).finalizeAllInputs();
   }
 
+  /**
+   * Gets the sequence number for the specified input index.
+   * @param inputIndex - The index of the input in the transaction.
+   * @returns The sequence number of the input.
+   */
   getSequence(inputIndex: InputIndex): number {
     return this.unsignedTx.inputs[inputIndex].sequenceNumber;
   }
+  /**
+   * Gets the lock time (nLockTime) value from the unsigned transaction.
+   * @returns The lock time value as a number.
+   */
   getlockTime(): number {
     return this.unsignedTx.nLockTime;
   }
 
+  /**
+   * Creates an ExtPsbt instance from a base64-encoded string.
+   * @param data - The base64-encoded PSBT data
+   * @param opts - Optional configuration options for the ExtPsbt
+   * @returns A new ExtPsbt instance
+   */
   static fromBase64(data: string, opts: ExtPsbtOpts = {}): ExtPsbt {
     const buffer = tools.fromBase64(data);
     return this.fromBuffer(buffer, opts);
   }
 
+  /**
+   * Creates an ExtPsbt instance from a hex string.
+   * @param data - Hex string representation of the PSBT data
+   * @param opts - Optional configuration options for the ExtPsbt
+   * @returns A new ExtPsbt instance
+   */
   static fromHex(data: string, opts: ExtPsbtOpts = {}): ExtPsbt {
     const buffer = tools.fromHex(data);
     return this.fromBuffer(buffer, opts);
   }
 
+  /**
+   * Creates an ExtPsbt instance from a buffer containing PSBT data.
+   * @param buffer - The buffer containing the PSBT data.
+   * @param opts - Optional parameters including network configuration.
+   * @returns A new ExtPsbt instance initialized with the PSBT data.
+   */
   static fromBuffer(buffer: Uint8Array, opts: ExtPsbtOpts = {}): ExtPsbt {
     if (typeof opts.network === 'string') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -123,6 +172,13 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   private _sigHashTypes: Map<number, SigHashType> = new Map();
 
+  /**
+   * Sets the sighash type for a specific input index.
+   * Throws an error if attempting to set a different sighash type for the same input index.
+   * @param inputIndex - The index of the input to set the sighash type for.
+   * @param sigHashType - The sighash type to set.
+   * @throws {Error} If the sighash type differs from the previously set type for the same input index.
+   */
   setSighashType(inputIndex: number, sigHashType: SigHashType): void {
     if (this._sigHashTypes.has(inputIndex)) {
       // cannot set another sigHashType for the same inputIndex
@@ -135,14 +191,29 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }
   }
 
+  /**
+   * Gets the signature hash type for the specified input index.
+   * @param inputIndex - The index of the input to get the signature hash type for.
+   * @returns The signature hash type for the specified input index.
+   */
   getSigHashType(inputIndex: number): SigHashType {
     return this._sigHashTypes.get(inputIndex) as SigHashType;
   }
 
+  /**
+   * Gets the input context for the specified input index.
+   * @param inputIndex - The index of the input to retrieve context for
+   * @returns The InputContext object associated with the specified input index
+   */
   getInputCtx(inputIndex: InputIndex): InputContext {
     return this._ctxProvider.getInputCtx(inputIndex);
   }
 
+  /**
+   * Calculates and returns the concatenated SHA-256 hashes of all input OP_CAT UTXO data.
+   * Each input's data is hashed individually and the results are concatenated.
+   * @returns {SpentDataHashes} The combined hashes of all input data as a ByteString.
+   */
   getSpentDataHashes(): SpentDataHashes {
 
     let spentDataHashes: SpentDataHashes = toByteString('');
@@ -153,6 +224,11 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return spentDataHashes;
   }
 
+  /**
+   * Computes the hash of all spent data hashes in the PSBT.
+   * Concatenates all non-empty spent data hashes and returns their double SHA-256 hash.
+   * @returns {ByteString} The hash256 of all spent data hashes concatenated together.
+   */
   get hashSpentDatas(): ByteString {
 
     const spentDataHashes = this.getSpentDataHashes();
@@ -184,6 +260,15 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   private _changeFeeRate: number;
 
+  /**
+   * Adds an extended PSBT input with optional finalizer and signature requests.
+   * - Calls parent class's `addInput` method
+   * - Validates PSBT isn't sealed
+   * - If input has a finalizer, caches the unlock script and sets the finalizer callback
+   * - Processes any signature requests for the input
+   * @param inputData - Extended PSBT input data containing optional finalizer and sigRequests
+   * @returns PSBT instance for chaining
+   */
   override addInput(inputData: PsbtInputExtended): this {
     super.addInput(inputData);
     this._checkSealed("can't add more input");
@@ -248,27 +333,60 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
+  /**
+   * Adds an extended output to the PSBT.
+   * @param outputData - The extended output data to add
+   * @returns The PSBT instance for chaining
+   * @throws Error if the PSBT is already sealed
+   */
   override addOutput(outputData: PsbtOutputExtended): this {
     super.addOutput(outputData);
     this._checkSealed("can't add more output");
     return this;
   }
 
+  /**
+   * Sets the version number of the PSBT.
+   * @param version - The version number to set.
+   * @returns The PSBT instance for chaining.
+   * @throws Error if the PSBT is sealed.
+   */
   override setVersion(version: number): this {
     this._checkSealed("can't setVersion");
     return super.setVersion(version);
   }
 
+  /**
+   * Sets the locktime for the PSBT (Partially Signed Opcat Transaction).
+   * @param locktime - The locktime value to set (in blocks or timestamp)
+   * @returns The PSBT instance for chaining
+   * @throws Error if the PSBT is already sealed
+   */
   override setLocktime(locktime: number): this {
     this._checkSealed("can't setLocktime");
     return super.setLocktime(locktime);
   }
 
+  /**
+   * Sets the sequence number for the specified input.
+   * @param inputIndex - The index of the input to modify
+   * @param sequence - The sequence number to set
+   * @returns The PSBT instance for method chaining
+   * @throws If the PSBT is sealed (immutable)
+   */
   override setInputSequence(inputIndex: number, sequence: number): this {
     this._checkSealed("can't setInputSequence");
     return super.setInputSequence(inputIndex, sequence);
   }
 
+  /**
+   * Adds a contract input to the PSBT (Partially Signed Bitcoin Transaction).
+   * 
+   * @param contract - The smart contract instance to add as input.
+   * @param contractCall - The contract call containing the method and arguments.
+   * @returns The PSBT instance for method chaining.
+   * @throws Error if the contract does not have a bound UTXO.
+   */
   addContractInput<Contract extends SmartContract<OpcatState>>(
     contract: Contract,
     contractCall: ContractCall<Contract>,
@@ -303,6 +421,13 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
+  /**
+   * Removes an input from the PSBT at the specified index.
+   * This updates the unsigned transaction, input data, and clears related contract,
+   * UTXO, finalizer, and signature request mappings for the removed input.
+   * @param inputIndex - The index of the input to remove
+   * @returns The PSBT instance for method chaining
+   */
   removeInput(inputIndex: number): this {
     this.unsignedTx.inputs.splice(inputIndex, 1);
     this.data.inputs.splice(inputIndex, 1);
@@ -313,6 +438,11 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
+  /**
+   * Removes the last input from the PSBT.
+   * @throws {Error} If there are no inputs to remove.
+   * @returns {this} The modified PSBT instance for chaining.
+   */
   removeLastInput(): this {
     const inputIndex = this.data.inputs.length - 1;
     if (inputIndex < 0) {
@@ -322,6 +452,14 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
+  /**
+   * Updates a contract input with the provided contract call and sets up a finalizer.
+   * Equivalent to setting the unlock of contract input.
+   * @param inputIndex - The index of the input to update.
+   * @param contractCall - The contract call to be executed during finalization.
+   * @returns The current instance for method chaining.
+   * @throws {Error} If no contract is found for the specified input index.
+   */
   private updateContractInput<Contract extends SmartContract<OpcatState>>(
     inputIndex: number,
     contractCall: ContractCall<Contract>,
@@ -350,6 +488,14 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
+  /**
+   * Adds a contract output to the PSBT (Partially Signed Opcat Transaction).
+   * 
+   * @param contract - The smart contract instance to add as output
+   * @param satoshis - The amount in satoshis to lock in this output
+   * @returns The PSBT instance for method chaining
+   * @template Contract - Type parameter extending SmartContract<OpcatState>
+   */
   addContractOutput<Contract extends SmartContract<OpcatState>>(contract: Contract, satoshis: number): this {
 
 
@@ -368,18 +514,33 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
+  /**
+   * Gets the total input amount in satoshis as a bigint.
+   * @returns The sum of all input values in the PSBT.
+   */
   get inputAmount(): bigint {
-    // should use bigint here, because the input amount is too large
+  // should use bigint here, because the input amount is too large
     // 2100e16 + 1 = 21000000000000000000
     // BigInt(2100e16) + 1n = 21000000000000000001n
     return this.data.inputs.reduce((total, input) => total + input.opcatUtxo!.value, 0n);
   }
 
+  /**
+   * Gets the total output amount of the PSBT transaction by summing up all output values.
+   * @returns The sum of all output values as a bigint.
+   */
   get outputAmount(): bigint {
     return this.txOutputs.reduce((total, output) => total + output.value, 0n);
   }
 
 
+  /**
+   * Adds or updates a change output to the PSBT.
+   * @param toAddr - The address to receive the change.
+   * @param feeRate - The fee rate to use for the change output.
+   * @param data - Optional data to include in the output (hex string or Uint8Array).
+   * @returns The PSBT instance for chaining.
+   */
   change(toAddr: string, feeRate: number, data?: Uint8Array | string): this {
     const changeScript = Script.fromAddress(toAddr);
     if (typeof data === 'string') {
@@ -425,6 +586,12 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
+  /**
+   * Gets the change output information from the PSBT transaction.
+   * @returns {TxOut} An object containing the script hash, satoshis value, and data hash of the change output.
+   * If no change output exists, returns an empty TxOut with default values (empty script/data hash and 0 satoshis).
+   * @throws {Error} If the change output index is set but the output is not found at that index.
+   */
   getChangeInfo(): TxOut {
     if (this._changeOutputIndex !== null) {
       const changeOutput = this.txOutputs[this._changeOutputIndex];
@@ -445,23 +612,43 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }
   }
 
+  /**
+   * Gets the unsigned transaction from the PSBT's internal cache.
+   * @returns The raw unsigned transaction object.
+   */
   get unsignedTx(): Transaction {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const c = (this as any).__CACHE;
     return c.__TX;
   }
 
+  /**
+   * Gets the network associated with this PSBT instance.
+   * @private
+   * @returns {Networks.Network} The network object (defaults to livenet if not specified in options).
+   * @remarks This is intentionally kept private to avoid confusion between network strings passed to constructor and the Network object returned here.
+   */
   private get network(): Networks.Network {
-    // make this get function private to avoid user to call it privately
+  // make this get function private to avoid user to call it privately
     // it makes confuse if user pass in a network string to the constructor, but here returns a network object
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (this as any).opts.network || Networks.livenet;
   }
 
+  /**
+   * Estimates the total size of the PSBT by summing the unsigned transaction size
+   * and the size of unfinalized call arguments.
+   * @returns The estimated size in bytes.
+   */
   estimateSize(): number {
     return this.unsignedTx.getEstimateSize() + this._unfinalizedCallArgsSize();
   }
 
+  /**
+   * Estimates the transaction fee by multiplying the estimated size (in vbytes) by the given fee rate.
+   * @param feeRate - Fee rate in satoshis per virtual byte (sat/vbyte).
+   * @returns The estimated fee amount in satoshis.
+   */
   estimateFee(feeRate: number): number {
     return this.estimateSize() * feeRate;
   }
@@ -475,14 +662,30 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   private _isSealed = false;
 
+  /**
+   * Indicates whether the PSBT is currently in the process of being finalized.
+   * @returns {boolean} True if the PSBT is being finalized, false otherwise.
+   */
   get isFinalizing(): boolean {
     return this._finalizing;
   }
 
+  /**
+   * Indicates whether the PSBT (Partially Signed Bitcoin Transaction) is sealed.
+   * A sealed PSBT cannot be modified further.
+   */
   get isSealed(): boolean {
     return this._isSealed;
   }
 
+  /**
+   * Finalizes all inputs in the PSBT by applying their respective finalizers.
+   * For each input, if a finalizer is present, it generates the unlocking script
+   * and creates a finalization function. After finalizing all inputs, it binds
+   * the contract UTXOs. Throws an error if any input fails to finalize.
+   * 
+   * @returns The current PSBT instance for chaining.
+   */
   override finalizeAllInputs(): this {
     this._finalizing = true;
     this.data.inputs.forEach((input, idx) => {
@@ -526,6 +729,10 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     });
   }
 
+  /**
+   * Checks if all inputs in the PSBT are finalized.
+   * @returns {boolean} True if all inputs are finalized, false otherwise.
+   */
   get isFinalized(): boolean {
     return this.data.inputs.reduce((finalized, input) => {
       return finalized && isFinalized(input);
@@ -596,6 +803,12 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     this._sigRequests.set(inputIndex, sigRequests);
   }
 
+  /**
+   * Generates PSBT signing options based on signature requests.
+   * 
+   * @param autoFinalized - Whether to automatically finalize the PSBT after signing (default: false)
+   * @returns SignOptions object containing signing inputs, or undefined if no signatures are required
+   */
   psbtOptions(autoFinalized = false): SignOptions | undefined {
     const toSignInputs: ToSignInput[] = [];
     this._sigRequests.forEach((sigReqs, index) => {
@@ -614,6 +827,14 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       };
   }
 
+  /**
+   * Retrieves a signature for a specific input in the PSBT.
+   * 
+   * @param inputIndex - The index of the input to sign.
+   * @param options - Signing options including address or public key.
+   * @returns The signature as a `Sig` object. If no signature is found, returns a default zero-filled signature.
+   * @throws May throw if the input index is invalid or if there are issues with public key conversion.
+   */
   getSig(inputIndex: InputIndex, options: Omit<ToSignInput, 'index'>): Sig {
     const input = this.data.inputs[inputIndex];
     let signature: Uint8Array = Uint8Array.from(new Array(P2PKH_SIG_LEN).fill(0));
@@ -633,14 +854,30 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return Sig(tools.toHex(signature));
   }
 
+  /**
+   * Gets the smart contract associated with a specific input index.
+   * 
+   * @param inputIndex - The index of the input to retrieve the contract for
+   * @returns The smart contract for the specified input, or undefined if not found
+   */
   getInputContract(inputIndex: number): SmartContract<OpcatState> | undefined {
     return this._inputContracts.get(inputIndex);
   }
 
+  /**
+   * Retrieves the B2G UTXO (Unspent Transaction Output) for a specific input index.
+   * @param inputIndex - The index of the input to retrieve the UTXO for.
+   * @returns The B2G UTXO if found, otherwise undefined.
+   */
   getB2GInputUtxo(inputIndex: number): B2GUTXO | undefined {
     return this._B2GUtxos.get(inputIndex);
   }
 
+  /**
+   * Gets the change UTXO (Unspent Transaction Output) if it exists.
+   * @returns The change UTXO if found, otherwise null.
+   * @throws {Error} If the change output index is defined but no output is found at that index.
+   */
   getChangeUTXO(): UTXO | null {
     if (this._changeOutputIndex !== undefined) {
       const changeOutput = this.txOutputs[this._changeOutputIndex];
@@ -653,6 +890,13 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }
   }
 
+  /**
+   * Retrieves the UTXO (Unspent Transaction Output) at the specified output index.
+   * 
+   * @param outputIndex - The index of the output to retrieve
+   * @returns An ExtUtxo object containing the UTXO details
+   * @throws Error if the output at the specified index is not found
+   */
   getUtxo(outputIndex: number): ExtUtxo {
     if (!this.txOutputs[outputIndex]) {
       throw new Error(`Output at index ${outputIndex} is not found`);
@@ -671,6 +915,17 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     };
   }
 
+  /**
+   * Retrieves backtrace information for a PSBT input by fetching and analyzing previous transactions.
+   * 
+   * @param provider - Provider interface for fetching UTXO and chain data
+   * @param inputIndex - Index of the input to trace back from
+   * @param prevPrevTxFinder - Async function to locate the transaction before the previous transaction
+   * @returns Promise resolving to backtrace information including:
+   *          - Previous transaction input details
+   *          - Input index in current transaction
+   *          - Preimage of the transaction before previous transaction
+   */
   async getBacktraceInfo(provider: UtxoProvider & ChainProvider, inputIndex: InputIndex, prevPrevTxFinder: (prevTx: Transaction, provider: UtxoProvider & ChainProvider, inputIndex: InputIndex) => Promise<string>): Promise<BacktraceInfo> {
     const input = this.txInputs[inputIndex];
     const prevTxId = uint8ArrayToHex(Uint8Array.prototype.slice.call(input.hash).reverse());
@@ -692,10 +947,20 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }
   }
 
+  /**
+   * Calculates backtrace information for contract inputs in the PSBT.
+   * 
+   * Iterates through all inputs and collects backtrace info for contract inputs.
+   * Uses the provided provider to fetch previous transaction data when needed.
+   * 
+   * @param provider - Provider interface for fetching UTXO and chain data
+   * @param prevPrevTxFinder - Optional function to find previous transactions
+   * @returns Promise that resolves when all backtrace info is calculated
+   */
   async calculateBacktraceInfo(provider: UtxoProvider & ChainProvider, prevPrevTxFinder?: (prevTx: Transaction, provider: UtxoProvider & ChainProvider, inputIndex: InputIndex) => Promise<string>): Promise<void> {
     for (let i = 0; i < this.txInputs.length; i++) {
       if (this.isContractInput(i)) {
-        const info = await this.getBacktraceInfo(provider, i, prevPrevTxFinder || (async (prevTx: Transaction, provider: UtxoProvider & ChainProvider, inputIndex: InputIndex) => {
+        const info = await this.getBacktraceInfo(provider, i, prevPrevTxFinder || (async (prevTx: Transaction, provider: UtxoProvider & ChainProvider, _inputIndex: InputIndex) => {
           const prevTxId = uint8ArrayToHex(prevTx.inputs[0].prevTxId);
           const prevTxHex = await provider.getRawTransaction(prevTxId);
           return prevTxHex;
@@ -705,6 +970,13 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }
   }
 
+  /**
+   * Checks if a given UTXO is a B2G (Back to Genesis) UTXO.
+   * A B2G UTXO is identified by the presence of a 'txHashPreimage' property in the object.
+   * 
+   * @param utxo - The UTXO object to check
+   * @returns boolean indicating if the UTXO is a B2G UTXO
+   */
   isB2GUtxo(utxo: object): boolean {
     return (
       typeof utxo === 'object' &&
@@ -713,6 +985,11 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     );
   }
 
+  /**
+   * Generates the transaction hash preimage for the PSBT.
+   * @returns The transaction hash preimage as a hexadecimal string.
+   * @throws {Error} If the PSBT is not sealed (must call `seal()` first).
+   */
   txHashPreimage(): string {
     if (!this._isSealed) {
       // if call .change() but not call .seal(), it will cause the change satoshis is 0
@@ -722,12 +999,15 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return uint8ArrayToHex(this.extractTransaction().toTxHashPreimage());
   }
 
-  getOutputSatoshisList(): string[] {
-    return this.txOutputs.map((output) => satoshiToHex(output.value));
-  }
 
+  /**
+   * Finalizes the PSBT by calculating and caching input unlocking scripts,
+   * finalizing the change output if specified, and marking the transaction as sealed.
+   * Also calculates input contexts after sealing.
+   * @returns The sealed PSBT instance for method chaining.
+   */
   seal(): this {
-    // calculate and cache the input unlockingScripts to calculate the tx size
+  // calculate and cache the input unlockingScripts to calculate the tx size
     for (const [inputIndex, finalizer] of this._finalizers) {
       const unlockingScript = finalizer(this, inputIndex, this.data.inputs[inputIndex]);
       this._cacheInputUnlockScript(inputIndex, unlockingScript);
@@ -741,6 +1021,11 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return this;
   }
 
+  /**
+   * Converts the PSBT to a Uint8Array buffer.
+   * @throws {Error} If the PSBT is not sealed (must call seal() first).
+   * @returns {Uint8Array} The serialized PSBT buffer.
+   */
   toBuffer(): Uint8Array {
     if (!this._isSealed) {
       // if call .change() but not call .seal(), it will cause the change satoshis is 0
@@ -750,6 +1035,11 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return super.toBuffer();
   }
 
+  /**
+   * Converts the PSBT to a hexadecimal string representation.
+   * @throws {Error} If the PSBT is not sealed (must call seal() first).
+   * @returns {string} The hexadecimal string representation of the PSBT.
+   */
   toHex(): string {
     if (!this._isSealed) {
       throw new Error('should call seal() before toHex()');
@@ -757,6 +1047,11 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return super.toHex();
   }
 
+  /**
+   * Converts the PSBT to Base64 string representation.
+   * @throws {Error} If the PSBT is not sealed (must call seal() first)
+   * @returns {string} Base64 encoded PSBT data
+   */
   toBase64(): string {
     if (!this._isSealed) {
       throw new Error('should call seal() before toBase64()');
