@@ -494,7 +494,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @param contract - The smart contract instance to add as output
    * @param satoshis - The amount in satoshis to lock in this output
    * @returns The PSBT instance for method chaining
-   * @template Contract - Type parameter extending SmartContract<OpcatState>
+   * @template Contract - Type parameter extending `SmartContract<OpcatState>`
    */
   addContractOutput<Contract extends SmartContract<OpcatState>>(contract: Contract, satoshis: number): this {
 

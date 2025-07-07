@@ -4,7 +4,7 @@ import { FixedArray } from '../types/index.js';
 /**
  * Returns an `FixedArray` with all `size` elements set to `value`, where `value` can be any type.
  * Note that `length` must be a numeric literal or a compiled-time constant
- * @category Global Function
+ * @category Global Functions
  * @onchain
  * @param value - the value of each element to set
  * @param length - the length of FixedArray

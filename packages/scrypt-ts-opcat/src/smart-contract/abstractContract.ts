@@ -44,7 +44,7 @@ export abstract class AbstractContract {
    * @returns If `true` is returned, nlockTime and sequence in `this.ctx` are valid, otherwise they are invalid.
    * @onchain
    * @category Time Lock
-   * @see https://docs.scrypt.io/tutorials/timeLock
+   * @see https://docs.opcatlabs.io/tutorials/timeLock
    */
   abstract timeLock(locktime: bigint): boolean;
 

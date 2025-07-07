@@ -20,8 +20,8 @@ function pow2(n: bigint): bigint {
 
 /**
 * Arithmetic left shift, returns `x * 2^n`. 
-* More detail about [Bitwise Operator]{@link https://docs.scrypt.io/how-to-write-a-contract/built-ins#bitwise-operator} 
-* @category Bitwise Operator
+* More detail about [Bitwise Operations]{@link https://docs.opcatlabs.io/how-to-write-a-contract/built-ins#bitwise-operator} 
+* @category Bitwise Operations
 */
 export function lshift(x: bigint, n: bigint): bigint {
   assert(n >= 0, 'n < 0');
@@ -30,8 +30,8 @@ export function lshift(x: bigint, n: bigint): bigint {
 
 /**
 * Arithmetic right shift, returns `x / 2^n`.
-* More detail about [Bitwise Operator]{@link https://docs.scrypt.io/how-to-write-a-contract/built-ins#bitwise-operator} 
-* @category Bitwise Operator
+* More detail about [Bitwise Operations]{@link https://docs.opcatlabs.io/how-to-write-a-contract/built-ins#bitwise-operator} 
+* @category Bitwise Operations
 */
 export function rshift(x: bigint, n: bigint): bigint {
   assert(n >= 0, 'n < 0');

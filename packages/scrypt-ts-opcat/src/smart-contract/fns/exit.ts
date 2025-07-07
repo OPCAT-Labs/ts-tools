@@ -2,7 +2,7 @@ import { assert } from "console";
 
 /**
  * `exit(bool status)`; statement terminates contract execution.
- * @category Global Function
+ * @category Global Functions
  * @onchain
  * @param status - If status is true, contract succeeds; otherwise, it fails.
  *

@@ -58,7 +58,7 @@ export type PrivKey = Int32 & { __type: 'PrivKey' };
 
 /**
  * Creates a `PrivKey` instance from a `Int32`.
- * @category Global Function
+ * @category Global Functions
  * @onchain
  * @param key - Input Int32.
  * @returns - A domain specific private key representation.
@@ -75,7 +75,7 @@ export function PrivKey(n: Int32): PrivKey {
 export type PubKey = ByteString & { __type: 'PubKey' };
 /**
  * Creates a `PubKey` instance from a `ByteString`.
- * @category Global Function
+ * @category Global Functions
  * @onchain
  * @param b - Input ByteString.
  * @returns - A domain specific public key representation.
@@ -96,7 +96,7 @@ export type Sig = ByteString & { __type: 'Sig' };
 
 /**
  * Creates a `Sig` instance from a `ByteString`.
- * @category Global Function
+ * @category Global Functions
  * @onchain
  * @param b - Input ByteString.
  * @returns - A domain specific digital signature representation.
@@ -113,7 +113,7 @@ export function Sig(b: ByteString): Sig {
 export type Ripemd160 = ByteString & { __type: 'Ripemd160' };
 /**
  * Creates a `Ripemd160` instance from a `ByteString`.
- * @category Global Function
+ * @category Global Functions
  * @onchain
  * @param b - Input ByteString.
  * @returns - A domain specific RIPEMD-160 hash representation.
@@ -130,7 +130,7 @@ export function Ripemd160(b: ByteString): Ripemd160 {
 export type PubKeyHash = Ripemd160;
 /**
  * Creates a `PubKeyHash` instance from a `ByteString`.
- * @category Global Function
+ * @category Global Functions
  * @onchain
  * @param b - Input ByteString.
  * @returns - A domain specific address representation.
@@ -147,7 +147,7 @@ export function PubKeyHash(b: ByteString): PubKeyHash {
 export type Addr = PubKeyHash;
 /**
  * Creates an `Addr` instance from a `ByteString`.
- * @category Global Function
+ * @category Global Functions
  * @onchain
  * @param b - Input ByteString.
  * @returns - A domain specific address representation.
@@ -164,7 +164,7 @@ export function Addr(b: ByteString): Addr {
 export type Sha1 = ByteString & { __type: 'Sha1' };
 /**
  * Creates a `Sha1` instance from a `ByteString`.
- * @category Global Function
+ * @category Global Functions
  * @onchain
  * @param b - Input ByteString.
  * @returns - A domain specific SHA-1 hash representation.
@@ -182,7 +182,7 @@ export type Sha256 = ByteString & { __type: 'Sha256' };
 
 /**
  * Creates a `Sha256` instance from a `ByteString`.
- * @category Global Function
+ * @category Global Functions
  * @onchain
  * @param b - Input ByteString.
  * @returns - A domain specific SHA-256 hash representation.
@@ -207,11 +207,17 @@ export function Sha256(b: ByteString): Sha256 {
  */
 export type FixedArray<T, N extends number> = Array<T> & { length: N };
 
+
 /**
- * A domain specific subtype of `ByteString`, representing a signature hash type.
+ * Enum representing the different signature hash types used in Bitcoin script.
+ * These flags determine which parts of the transaction are signed.
  * @category Types
- * @onchain
- * ref https://github.com/bitcoin/bitcoin/blob/c288c790cd9abe91e53164aba5d975ef1e26ee3f/src/script/interpreter.h#L30-L33
+ * @remarks
+ * The values correspond to standard Bitcoin signature hash flags:
+ * - ALL: Signs all inputs/outputs (default)
+ * - NONE: Signs only inputs (outputs can be changed)
+ * - SINGLE: Signs inputs and corresponding output
+ * - ANYONECANPAY variants allow additional inputs to be added later
  */
 export const enum SigHashType {
   ALL = 0x01,
@@ -232,7 +238,7 @@ export type OpCodeType = ByteString & { __type: 'OpCodeType' };
 
 /**
  * Creates a `OpCodeType` from a `ByteString`.
- * @category Global Function
+ * @category Global Functions
  * @onchain
  * @param b - Input ByteString.
  * @returns - A domain specific OpCodeType representation.

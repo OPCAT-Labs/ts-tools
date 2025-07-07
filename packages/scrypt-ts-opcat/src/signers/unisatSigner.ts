@@ -22,7 +22,7 @@ export interface UnisatAPI {
 }
 
 /**
- * a [signer]{@link https://docs.scrypt.io/btc-docs/how-to-deploy-and-call-a-contract/#signer } which implemented the protocol with the [Unisat wallet]{@link https://unisat.io},
+ * a [signer]{@link https://docs.opcatlabs.io/how-to-deploy-and-call-a-contract/#signer } which implemented the protocol with the [Unisat wallet]{@link https://unisat.io},
  * and dapps can use to interact with the Unisat wallet
  * @category Signer
  */

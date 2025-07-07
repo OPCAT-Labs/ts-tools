@@ -1,7 +1,7 @@
 /**
  * Comparing two struct/FixedArray
  * @returns {boolean} returns true if equal; otherwise returns false
- * @category Global Function
+ * @category Global Functions
  * @onchain
  */
 export function equals<T>(a: T, b: T): boolean {
