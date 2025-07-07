@@ -1,6 +1,5 @@
-import { byteStringToBigInt } from '../utils/common.js';
 import { ABICoder } from './abi.js';
-import { assert, hash160, intToByteString, len, slice, toByteString } from './fns/index.js';
+import { assert, hash160, intToByteString, len, slice, toByteString, byteStringToInt } from './fns/index.js';
 import { OpcatState, ByteString } from './types/primitives.js';
 import { Artifact } from './types/artifact.js';
 import { MAX_FLAT_FIELDS_IN_STATE } from './consts.js';
@@ -114,11 +113,11 @@ export function deserializeState<T>(
     let val: any;
     switch (field.type) {
       case 'number':
-        val = Number(byteStringToBigInt(valueByteString));
+        val = Number(byteStringToInt(valueByteString));
         break;
       case 'bigint':
       case 'int':
-        val = byteStringToBigInt(valueByteString);
+        val = byteStringToInt(valueByteString);
         break;
       case 'boolean':
       case 'bool':
@@ -174,7 +173,7 @@ export function deserializeState<T>(
   let readIndex = 0n;
   let fieldHashes = toByteString('');
   for (const field of fields) {
-    const valLen = byteStringToBigInt(slice(serializedState, readIndex, readIndex + FIELD_LEN_BYTES))
+    const valLen = byteStringToInt(slice(serializedState, readIndex, readIndex + FIELD_LEN_BYTES))
     const value = slice(serializedState, readIndex + FIELD_LEN_BYTES, readIndex + FIELD_LEN_BYTES + valLen);
 
     fieldHashes += hash160(value);

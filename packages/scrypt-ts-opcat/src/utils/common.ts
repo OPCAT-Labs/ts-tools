@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Address, crypto, Transaction } from '@opcat-labs/opcat';
+import { Address, Transaction } from '@opcat-labs/opcat';
 import {
-  ByteString,
   FixedArray,
 } from '../smart-contract/types/index.js';
 import * as tools from 'uint8array-tools';
@@ -41,14 +40,6 @@ export function fillFixedArray<T, Length extends number>(
   const array = new Array<T>(len as number);
   array.fill(value);
   return array as FixedArray<T, Length>;
-}
-
-/**
- * create a empty ByteString
- * @returns a empty ByteString
- */
-export function emptyByteString(): ByteString {
-  return '';
 }
 
 
@@ -151,25 +142,6 @@ export function cloneDeep<T>(obj: T, hash = new WeakMap()): T {
   });
 
   return copy;
-}
-
-/**
- * convert a ByteString to bigint.
- * @param a
- * @returns
- */
-export function byteStringToBigInt(a: ByteString): bigint {
-
-  const bytes = hexToUint8Array(a);
-  const lastByte = bytes[bytes.length - 1];
-  const n = lastByte & 0x7F;
-  bytes[bytes.length - 1] = n; // set the last byte to n
-  //Support negative number
-  let bn = crypto.BN.fromHex(uint8ArrayToHex(bytes), { endian: 'little' });
-  if (lastByte >> 7) {
-    bn = bn.neg();
-  }
-  return BigInt(bn.toString());
 }
 
 /**
