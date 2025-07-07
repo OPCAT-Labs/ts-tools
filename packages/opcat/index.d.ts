@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/ban-types */
 // Type definitions for bsv 1.5.6
 // Project: https://github.com/moneybutton/bsv
 // Forked From: https://github.com/bitpay/bitcore-lib
@@ -843,7 +842,7 @@ declare module '@opcat-labs/opcat' {
             isValidSignature(tx: Transaction, sig: any): boolean;
             setScript(script: Script): this;
             getSignatures(tx: Transaction, privateKey: PrivateKey, inputIndex: number, sigtype?: number): any;
-            getPreimage(tx: Transaction, inputIndex: number, sigtype?: number, isLowS?: boolean, csIdx?: number): Buffer;
+            getPreimage(tx: Transaction, inputIndex: number, sigtype?: number, isLowS?: boolean): Buffer;
         }
 
         class Signature {
@@ -862,39 +861,23 @@ declare module '@opcat-labs/opcat' {
                 transaction: Transaction,
                 sighashType: number,
                 inputNumber: number,
-                subscript: Script,
-                satoshisBN: crypto.BN,
-                flags?: number,
-                hashCache?: HashCache
             ): Buffer;
             function sighash(
                 transaction: Transaction,
                 sighashType: number,
                 inputNumber: number,
-                subscript: Script,
-                satoshisBN: crypto.BN,
-                flags?: number,
-                hashCache?: HashCache
             ): Buffer;
             function sign(
                 transaction: Transaction,
                 privateKey: PrivateKey,
                 sighashType: number,
                 inputIndex: number,
-                subscript: Script,
-                satoshisBN: crypto.BN,
-                flags?: number,
-                hashCache?: HashCache
             ): crypto.Signature;
             function verify(
                 transaction: Transaction,
                 signature: Signature,
                 publicKey: PublicKey,
                 inputIndex: number,
-                subscript: Script,
-                satoshisBN: crypto.BN,
-                flags?: number,
-                hashCache?: HashCache
             ): boolean;
         }
     }
@@ -951,7 +934,6 @@ declare module '@opcat-labs/opcat' {
 
         toTxHashPreimage(): Buffer;
 
-        hasWitnesses(): boolean;
         getFee(): number;
         getChangeOutput(): Transaction.Output | null;
         getChangeAddress(): Address | null;
@@ -960,9 +942,6 @@ declare module '@opcat-labs/opcat' {
 
         verify(): string | true;
         isCoinbase(): boolean;
-
-        enableRBF(): this;
-        isRBF(): boolean;
 
         inspect(): string;
         serialize(opts?: object): string;
@@ -998,7 +977,7 @@ declare module '@opcat-labs/opcat' {
         checkFeeRate(feePerKb?: number): boolean;
         prevouts(): string;
         getSignature(inputIndex: number, privateKey?: PrivateKey | Array<PrivateKey>, sigtype?: number): string | Array<string>;
-        getPreimage(inputIndex: number, sigtype?: number, isLowS?: boolean, csIdx?: number): string;
+        getPreimage(inputIndex: number, sigtype?: number, isLowS?: boolean): string;
         addInputFromPrevTx(prevTx: Transaction, outputIndex?: number): this;
         addDummyInput(script: Script, satoshis: number): this;
         dummyChange(): this;
@@ -1024,14 +1003,6 @@ declare module '@opcat-labs/opcat' {
         toHex(): string;
     }
 
-    export class ECIES {
-        constructor(opts?: any, algorithm?: string);
-
-        privateKey(privateKey: PrivateKey): ECIES;
-        publicKey(publicKey: PublicKey): ECIES;
-        encrypt(message: string | Buffer): Buffer;
-        decrypt(encbuf: Buffer): Buffer;
-    }
     export class Block {
         hash: string;
         height: number;
@@ -1091,8 +1062,8 @@ declare module '@opcat-labs/opcat' {
         static fromPrivateKey(privateKey: PrivateKey): PublicKey;
         static fromBuffer(buf: Buffer, strict?: boolean): PublicKey;
         static fromDER(buf: Buffer, strict?: boolean): PublicKey;
-        //static fromPoint(point: Point, compressed: boolean): PublicKey;
-        //static fromX(odd: boolean, x: Point): PublicKey;
+        static fromPoint(point: Point, compressed: boolean): PublicKey;
+        static fromX(odd: boolean, x: Point): PublicKey;
         static fromString(str: string): PublicKey;
         static fromHex(hex: string): PublicKey;
         static getValidationError(data: string): any | null;
@@ -1310,9 +1281,6 @@ declare module '@opcat-labs/opcat' {
         isPublicKeyIn(): boolean;
 
         isScriptHashOut(): boolean;
-        isWitnessScriptHashOut(): boolean;
-        isWitnessPublicKeyHashOut(): boolean;
-        isWitnessProgram(): boolean;
         isScriptHashIn(): boolean;
         isMultisigOut(): boolean;
         isMultisigIn(): boolean;
@@ -1451,18 +1419,15 @@ declare module '@opcat-labs/opcat' {
         static fromString(address: string, network?: Networks.Type): Address;
         static fromHex(hex: string, network?: Networks.Type): Address;
         static fromPublicKey(data: PublicKey, network?: Networks.Type): Address;
-        static fromPrivateKey(
-            privateKey: PrivateKey,
-            network?: Networks.Type
-        ): Address;
         static fromPublicKeyHash(
             hash: Buffer | Uint8Array,
             network?: Networks.Type
         ): Address;
-        static fromScript(
-            script: Script,
-            network?: Networks.Type
-        ): Address;
+        static fromObject(obj: {
+            hash: string;
+            type?: string;
+            network?: Networks.Type | string;
+        }): Address;
         isValid(
             data: Buffer | Uint8Array | string | object,
             network?: Networks.Type | string,
@@ -1476,20 +1441,6 @@ declare module '@opcat-labs/opcat' {
             type: string;
             network: string;
         };
-    }
-
-    export class Unit {
-        static fromBTC(amount: number): Unit;
-        static fromMilis(amount: number): Unit;
-        static fromBits(amount: number): Unit;
-        static fromSatoshis(amount: number): Unit;
-
-        constructor(amount: number, unitPreference: string);
-
-        toBTC(): number;
-        toMilis(): number;
-        toBits(): number;
-        toSatoshis(): number;
     }
 
     export class BlockHeader {
