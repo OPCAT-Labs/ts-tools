@@ -30,7 +30,7 @@ export async function deployGenesis<Contract extends SmartContract<OpcatState>>(
   satoshis: number = 1,
 ): Promise<{
   psbt: ExtPsbt;
-  contract: SmartContract<OpcatState>;
+  contract: Contract;
 }> {
   const address = await signer.getAddress();
   const utxos = await provider.getUtxos(address);

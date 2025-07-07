@@ -2,17 +2,15 @@ import {
   ExtPsbt,
   DefaultSigner,
   Ripemd160,
-  bvmVerify,
   sha256,
-  MempoolProvider,
   markSpent,
-} from '../../src/index.js';
+} from '@opcat-labs/scrypt-ts-opcat';
 import { Counter, CounterStateLib } from '../contracts/counter.js';
 import { StateMethods } from '../contracts/stateMethods.js';
 
 import counterArtifact from '../fixtures/counter.json' with { type: 'json' };
 import stateMethodsArtifact from '../fixtures/stateMethods.json' with { type: 'json' };
-import { createLogger, getDummyUtxo, getDefaultProvider } from '../utils/index.js';
+import { createLogger, getDefaultProvider } from '../utils/index.js';
 import { use, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { getTestKeyPair, network } from '../utils/privateKey.js';
@@ -48,7 +46,7 @@ describe('Test stateMethods in a stateless contract', () => {
       .change(address, 1)
       .seal();
 
-    await deployPsbt.sign(signer);
+    await deployPsbt.signAndFinalize(signer);
     const deployTx = deployPsbt.extractTransaction();
     const deployTxId = await provider.broadcast(deployTx.toHex());
     logger.info('deployed successfully, txid: ', deployTxId);
@@ -71,7 +69,7 @@ describe('Test stateMethods in a stateless contract', () => {
       .change(address, 10)
       .seal()
 
-    await spendPsbt.sign(signer);
+    await spendPsbt.signAndFinalize(signer);
 
     const callTx = spendPsbt.extractTransaction();
     const callTxId = await provider.broadcast(callTx.toHex());

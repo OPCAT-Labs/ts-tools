@@ -8,8 +8,7 @@ import {
   ChainProvider,
   UtxoProvider,
   call,
-  RPCProvider,
-} from '../../src/index.js';
+} from '@opcat-labs/scrypt-ts-opcat';
 import { getTestKeyPair, network } from '../utils/privateKey.js';
 import { createLogger, getDefaultProvider } from '../utils/index.js';
 import artifact from '../fixtures/accessContext.json' with { type: 'json' };

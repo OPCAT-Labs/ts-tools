@@ -46,7 +46,7 @@ describe('Test P2PKH', () => {
       .seal();
 
     expect(async () => {
-      await psbt.sign(testSigner)
+      await psbt.signAndFinalize(testSigner)
       expect(bvmVerify(psbt, 0)).to.eq(true);
     }).not.throw();
   });

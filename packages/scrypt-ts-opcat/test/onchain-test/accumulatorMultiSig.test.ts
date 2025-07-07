@@ -1,21 +1,18 @@
-import chaiAsPromised from 'chai-as-promised';
-
 import { AccumulatorMultiSig } from '../contracts/accumulatorMultiSig.js';
-import { createLogger, getDefaultProvider, readArtifact } from '../utils/index.js';
-import { hash160 } from '../../src/smart-contract/fns/index.js';
+
 import {
   ChainProvider,
   DefaultSigner,
   IExtPsbt,
-  MempoolProvider,
   PubKey,
-  Sig,
   Signer,
   UtxoProvider,
   call,
   deploy,
-} from '../../src/index.js';
+  hash160,
+} from '@opcat-labs/scrypt-ts-opcat';
 import { getTestKeyPair, network } from '../utils/privateKey.js';
+import { createLogger, getDefaultProvider, readArtifact } from '../utils/index.js';
 
 describe('Test SmartContract `AccumulatorMultiSig`', () => {
   let signer: Signer;

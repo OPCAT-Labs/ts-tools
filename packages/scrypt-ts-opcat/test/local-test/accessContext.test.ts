@@ -40,7 +40,7 @@ describe('Test Contract with verifyContext', () => {
       .seal();
 
     expect(async () => {
-      await psbt.sign(testSigner)
+      await psbt.signAndFinalize(testSigner)
       expect(bvmVerify(psbt, 0)).to.eq(true);
       expect(bvmVerify(psbt, 1)).to.eq(true);
     }).not.throw();

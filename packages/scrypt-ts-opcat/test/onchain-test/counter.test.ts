@@ -1,16 +1,14 @@
 import { Counter, CounterStateLib } from '../contracts/counter.js';
 import counterArtifact from '../fixtures/counter.json' with { type: 'json' };
-import { getTestKeyPair, network } from '../utils/privateKey.js';
+import { network } from '../utils/privateKey.js';
 import {
-  RPCProvider,
-  DefaultSigner,
   Signer,
   deploy,
   call,
   ChainProvider,
   UtxoProvider,
-} from '../../src/index.js';
-import { createLogger, delay, getDefaultProvider } from '../utils/index.js';
+} from '@opcat-labs/scrypt-ts-opcat';
+import { createLogger, getDefaultProvider, getDefaultSigner } from '../utils/index.js';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 use(chaiAsPromised);
@@ -24,7 +22,7 @@ describe('Test Counter onchain', () => {
   before(async () => {
     Counter.loadArtifact(counterArtifact);
     CounterStateLib.loadArtifact(counterArtifact);
-    signer = new DefaultSigner(getTestKeyPair());
+    signer = getDefaultSigner()
     provider = getDefaultProvider(network)
   });
 

@@ -9,6 +9,18 @@ import { OpcatState } from '../smart-contract/types/primitives.js';
 import { InputIndex } from '../globalTypes.js';
 
 
+/**
+ * Options for calling a smart contract method.
+ * @property contract - The smart contract instance to call.
+ * @property satoshis - Amount of satoshis to send with the call.
+ * @property lockTime - Lock time for the transaction.
+ * @property sequence - Sequence number for the transaction.
+ * @property changeAddress - Address to receive change.
+ * @property feeRate - Fee rate in satoshis per byte.
+ * @property withBackTraceInfo - Whether to include backtrace info.
+ * @property unfinalize - Whether to keep transaction unfinalized.
+ * @property prevPrevTxFinder - Function to find previous transaction for an input.
+ */
 export type CallOptions = {
   contract?: SmartContract<OpcatState>; 
   satoshis?: number, 

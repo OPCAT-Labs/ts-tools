@@ -1,21 +1,15 @@
 import { use, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import {
-  DefaultSigner,
-  MempoolProvider,
-  UTXO,
   Signer,
-  hash160,
   deploy,
   ExtPsbt,
   ChainProvider,
   UtxoProvider,
   call,
-  RPCProvider,
-  PubKey,
-} from '../../src/index.js';
-import { getTestKeyPair, network } from '../utils/privateKey.js';
-import { createLogger, getDefaultProvider } from '../utils/index.js';
+} from '@opcat-labs/scrypt-ts-opcat';
+import { network } from '../utils/privateKey.js';
+import { createLogger, getDefaultProvider, getDefaultSigner } from '../utils/index.js';
 import { Demo } from '../contracts/demo.js';
 
 import artifact from '../fixtures/demo.json' with { type: 'json' };
@@ -31,7 +25,7 @@ describe('Test Demo onchain', () => {
 
   before(async () => {
     Demo.loadArtifact(artifact);
-    signer = new DefaultSigner(getTestKeyPair());
+    signer = getDefaultSigner()
     pubKey = await signer.getPublicKey();
     provider = getDefaultProvider(network)
   });

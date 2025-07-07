@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "name": "bitcoinjs-lib",
+  "name": "scrypt-ts-opcat",
   "entryPoints": ["./src"],
   "out": "docs",
   "searchCategoryBoosts": {

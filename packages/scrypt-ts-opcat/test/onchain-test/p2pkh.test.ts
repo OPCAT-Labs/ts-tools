@@ -1,9 +1,6 @@
 import { use, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import {
-  DefaultSigner,
-  MempoolProvider,
-  UTXO,
   Signer,
   hash160,
   deploy,
@@ -11,11 +8,10 @@ import {
   ChainProvider,
   UtxoProvider,
   call,
-  RPCProvider,
   PubKey,
-} from '../../src/index.js';
+} from '@opcat-labs/scrypt-ts-opcat';
 import { getTestKeyPair, network } from '../utils/privateKey.js';
-import { createLogger, getDefaultProvider } from '../utils/index.js';
+import { createLogger, getDefaultProvider, getDefaultSigner } from '../utils/index.js';
 import { P2PKH } from '../contracts/p2pkh.js';
 
 import artifact from '../fixtures/p2pkh.json' with { type: 'json' };
@@ -31,7 +27,7 @@ describe('Test P2PKH onchain', () => {
 
   before(async () => {
     P2PKH.loadArtifact(artifact);
-    signer = new DefaultSigner(getTestKeyPair());
+    signer = getDefaultSigner();
     pubKey = await signer.getPublicKey();
     provider = getDefaultProvider(network)
   });
