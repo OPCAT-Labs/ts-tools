@@ -22,10 +22,6 @@
       "path": "smart-contract/builtin-libs/txUtils.scrypt.tpl"
     },
     {
-      "symbol": "ByteStringWriter",
-      "path": "smart-contract/builtin-libs/byteStringWriter.scrypt.tpl"
-    },
-    {
       "symbol": "TxHashPreimage",
       "path": "smart-contract/types/structs.scrypt.tpl"
     },
@@ -48,6 +44,10 @@
     {
       "symbol": "ByteStringReader",
       "path": "smart-contract/builtin-libs/byteStringReader.scrypt.tpl"
+    },
+    {
+      "symbol": "ByteStringWriter",
+      "path": "smart-contract/builtin-libs/byteStringWriter.scrypt.tpl"
     },
     {
       "symbol": "SHPreimage",

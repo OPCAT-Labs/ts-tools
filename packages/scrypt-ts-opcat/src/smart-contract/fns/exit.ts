@@ -1,4 +1,4 @@
-import { assert } from "console";
+import { assert } from "./assert.js";
 
 /**
  * `exit(bool status)`; statement terminates contract execution.
