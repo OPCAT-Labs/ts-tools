@@ -4,9 +4,9 @@ import {
     DummyProvider,
     DefaultSigner,
     fromSupportedNetwork,
+    PrivateKey,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { getTestKeyPair } from './privateKey'
-import { PrivateKey } from '@opcat-labs/opcat'
 
 export const sleep = async (seconds: number) => {
     return new Promise((resolve) => {

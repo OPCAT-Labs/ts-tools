@@ -1,11 +1,11 @@
 import {
   fromSupportedNetwork,
   SupportedNetwork,
+  PrivateKey,
 } from '@opcat-labs/scrypt-ts-opcat';
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import { pathToFileURL } from 'url';
-import { PrivateKey } from '@opcat-labs/opcat';
 
 // apply .env file
 dotenv.config();

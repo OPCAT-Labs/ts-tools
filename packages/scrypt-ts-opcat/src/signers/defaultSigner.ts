@@ -1,9 +1,7 @@
 
 import {  hexToUint8Array } from '../utils/common.js';
 import { SignOptions, Signer } from '../signer.js';
-import { DEFAULT_NETWORK } from '../utils/constants.js';
-import { PrivateKey, crypto, Network} from '@opcat-labs/opcat';
-import { fromSupportedNetwork } from '../networks.js';
+import { PrivateKey, crypto, Network, Networks} from '@opcat-labs/opcat';
 import { Psbt, Signer as PSigner } from '../psbt/psbt.js';
 
 export class PsbtSigner implements PSigner {
@@ -37,7 +35,7 @@ export class DefaultSigner implements Signer {
   private readonly keyPair: PsbtSigner;
   public readonly network: Network;
   constructor(
-    private readonly privateKey: PrivateKey = PrivateKey.fromRandom(fromSupportedNetwork(DEFAULT_NETWORK)),
+    private readonly privateKey: PrivateKey = PrivateKey.fromRandom(Networks.testnet),
 
   ) {
     this.keyPair = new PsbtSigner(privateKey);

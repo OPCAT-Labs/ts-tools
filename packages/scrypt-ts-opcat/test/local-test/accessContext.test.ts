@@ -2,8 +2,8 @@ import {
   ExtPsbt,
   bvmVerify,
   DefaultSigner,
+  PrivateKey,
 } from '@opcat-labs/scrypt-ts-opcat';
-import { PrivateKey } from '@opcat-labs/opcat';
 
 import { AccessContext } from '../contracts/accessContext.js';
 

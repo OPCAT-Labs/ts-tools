@@ -3,7 +3,7 @@ import {
   DefaultSigner,
   hash160,
   ExtPsbt,
-  IExtPsbt,
+  PrivateKey,
   PubKey,
   bvmVerify,
 } from '@opcat-labs/scrypt-ts-opcat';
@@ -12,7 +12,6 @@ import { readArtifact } from '../utils/index.js';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { P2PKH } from '../contracts/p2pkh.js';
-import { PrivateKey } from '@opcat-labs/opcat';
 
 dotenv.config();
 
