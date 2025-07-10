@@ -29,6 +29,18 @@ function TransactionSignature(arg) {
 }
 inherits(TransactionSignature, Signature);
 
+/**
+ * Initializes the TransactionSignature instance from a plain object.
+ * Validates and converts object properties into appropriate types.
+ * @param {Object} arg - The source object containing signature data
+ * @param {Buffer|string} arg.prevTxId - Previous transaction ID (buffer or hex string)
+ * @param {number} arg.outputIndex - Output index
+ * @param {number} arg.inputIndex - Input index
+ * @param {Signature|Buffer|string} arg.signature - Signature in various formats
+ * @param {number} arg.sigtype - Signature type
+ * @returns {TransactionSignature} Returns the instance for chaining
+ * @private
+ */
 TransactionSignature.prototype._fromObject = function (arg) {
   this._checkObjectArgs(arg);
   this.publicKey = new PublicKey(arg.publicKey);
@@ -45,6 +57,18 @@ TransactionSignature.prototype._fromObject = function (arg) {
   return this;
 };
 
+/**
+ * Validates the arguments for a transaction signature object.
+ * @private
+ * @param {Object} arg - The signature object to validate
+ * @param {PublicKey} arg.publicKey - The public key
+ * @param {number} arg.inputIndex - The input index (must be a number)
+ * @param {number} arg.outputIndex - The output index (must be a number)
+ * @param {Buffer|string|Signature} arg.signature - The signature (must be Buffer, hex string, or Signature)
+ * @param {Buffer|string} arg.prevTxId - Previous transaction ID (must be Buffer or hex string)
+ * @param {number} arg.sigtype - Signature type (must be a number)
+ * @throws {Error} If any argument fails validation
+ */
 TransactionSignature.prototype._checkObjectArgs = function (arg) {
   $.checkArgument(PublicKey(arg.publicKey), 'publicKey');
   $.checkArgument(!_.isUndefined(arg.inputIndex), 'inputIndex');
@@ -94,7 +118,3 @@ TransactionSignature.fromObject = function (object) {
 };
 
 export default TransactionSignature;
-
-export const {
-  fromObject
-} = TransactionSignature;

@@ -110,7 +110,3 @@ UnspentOutput.prototype.toObject = UnspentOutput.prototype.toJSON = function toO
 };
 
 export default UnspentOutput;
-
-export const {
-  fromObject
-} = UnspentOutput;

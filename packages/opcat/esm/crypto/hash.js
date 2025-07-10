@@ -3,8 +3,15 @@
 import crypto from 'crypto';
 import $ from '../util/preconditions.js';
 
-var Hash = function Hash() {
-};
+/**
+ * Represents a hash utility class.
+ * @constructor
+ */
+function Hash() {
+  if (!(this instanceof Hash)) {
+    return new Hash();
+  }
+}
 
 /**
  * A SHA or SHA1 hash, which is always 160 bits or 20 bytes long.
@@ -173,15 +180,3 @@ Hash.sha512hmac = function (data, key) {
 
 
 export default Hash;
-
-export const {
-  sha1,
-  sha256,
-  sha256sha256,
-  ripemd160,
-  sha256ripemd160,
-  sha512,
-  hmac,
-  sha256hmac,
-  sha512hmac
-} = Hash;

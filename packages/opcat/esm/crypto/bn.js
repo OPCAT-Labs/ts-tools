@@ -276,17 +276,3 @@ BN.fromHex = function (hex, ...args) {
 };
 
 export default BN;
-
-export const {
-  Zero,
-  One,
-  Minus1,
-  fromNumber,
-  fromString,
-  fromBuffer,
-  fromSM,
-  fromScriptNumBuffer,
-  trim,
-  pad,
-  fromHex
-} = BN;

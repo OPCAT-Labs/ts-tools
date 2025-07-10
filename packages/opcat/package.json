@@ -4,17 +4,19 @@
   "description": "opcat base SDK",
   "main": "./cjs/index.cjs",
   "module": "./esm/index.js",
-  "types": "./index.d.ts",
+  "types": "./types/index.d.cts",
   "type": "module",
   "exports": {
     ".": {
       "require": "./cjs/index.cjs",
       "import": "./esm/index.js",
-      "types": "./index.d.ts"
+      "types": "./types/index.d.cts"
     }
   },
   "scripts": {
-    "cjs2esm": "cjs2esm",
+    "gen:esm": "cjs2esm",
+    "fixup": "node fixup.cjs",
+    "gen:types": "tsc",
     "test": "mocha"
   },
   "dependencies": {

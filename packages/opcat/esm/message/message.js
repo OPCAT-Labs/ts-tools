@@ -7,17 +7,19 @@ import Address from '../address.js';
 import BufferWriter from '../encoding/bufferwriter.js';
 import ECDSA from '../crypto/ecdsa.js';
 import Signature from '../crypto/signature.js';
-import { sha256sha256 } from '../crypto/hash.js';
+import Hash from '../crypto/hash.js';
 import JSUtil from '../util/js.js';
 import $ from '../util/preconditions.js';
 
+
 /**
- * constructs a new message to sign and verify.
- *
- * @param {String} message
- * @returns {Message}
+ * Creates a Message instance from a string or Buffer.
+ * @constructor
+ * @param {string|Buffer} message - The message content as either a string or Buffer
+ * @throws {Error} Will throw if message is not a string or Buffer
+ * @returns {Message} A new Message instance containing the message buffer
  */
-var Message = function Message(message) {
+function Message(message) {
   if (!(this instanceof Message)) {
     return new Message(message);
   }
@@ -35,8 +37,14 @@ var Message = function Message(message) {
     this.messageBuffer = message;
   }
   return this;
-};
+}
 
+/**
+ * Signs a message with the given private key.
+ * @param {string|Buffer} message - The message to sign.
+ * @param {PrivateKey} privateKey - The private key used for signing.
+ * @returns {Message} The signed message instance.
+ */
 Message.sign = function (message, privateKey) {
   return new Message(message).sign(privateKey);
 };
@@ -47,14 +55,26 @@ Message.verify = function (message, address, signature) {
 
 Message.MAGIC_BYTES = Buffer.from('Bitcoin Signed Message:\n');
 
+/**
+ * Calculates the magic hash for the message by concatenating magic bytes prefixes
+ * with the message buffer and computing a double SHA-256 hash.
+ * @returns {Buffer} The resulting 32-byte hash.
+ */
 Message.prototype.magicHash = function magicHash() {
   var prefix1 = BufferWriter.varintBufNum(Message.MAGIC_BYTES.length);
   var prefix2 = BufferWriter.varintBufNum(this.messageBuffer.length);
   var buf = Buffer.concat([prefix1, Message.MAGIC_BYTES, prefix2, this.messageBuffer]);
-  var hash = sha256sha256(buf);
+  var hash = Hash.sha256sha256(buf);
   return hash;
 };
 
+/**
+ * Signs the message with the provided private key.
+ * @private
+ * @param {PrivateKey} privateKey - The private key instance to sign with.
+ * @returns {Buffer} The signature generated using ECDSA.
+ * @throws {Error} If the first argument is not a PrivateKey instance.
+ */
 Message.prototype._sign = function _sign(privateKey) {
   $.checkArgument(
     privateKey instanceof PrivateKey,
@@ -75,6 +95,13 @@ Message.prototype.sign = function sign(privateKey) {
   return signature.toCompact().toString('base64');
 };
 
+/**
+ * Verifies the message signature using the provided public key.
+ * @param {PublicKey} publicKey - The public key to verify against
+ * @param {Signature} signature - The signature to verify
+ * @returns {boolean} True if signature is valid, false otherwise
+ * @throws {Error} If arguments are not valid PublicKey/Signature instances
+ */
 Message.prototype._verify = function _verify(publicKey, signature) {
   $.checkArgument(
     publicKey instanceof PublicKey,
@@ -149,8 +176,10 @@ Message.fromJSON = function fromJSON(json) {
   return Message.fromObject(json);
 };
 
+
 /**
- * @returns {Object} A plain object with the message information
+ * Converts the message to a plain object with hex representation.
+ * @returns {Object} An object containing the hex string of the message buffer.
  */
 Message.prototype.toObject = function toObject() {
   return {
@@ -158,43 +187,42 @@ Message.prototype.toObject = function toObject() {
   };
 };
 
+/**
+ * Creates a Message instance from an object containing a hex-encoded message.
+ * @param {Object} obj - The source object containing the message data.
+ * @param {string} obj.messageHex - Hex-encoded message string.
+ * @returns {Message} A new Message instance created from the decoded buffer.
+ */
 Message.fromObject = function (obj) {
   let messageBuffer = Buffer.from(obj.messageHex, 'hex');
   return new Message(messageBuffer);
 };
 
+
 /**
- * @returns {String} A JSON representation of the message information
+ * Converts the Message instance to a JSON string representation.
+ * @returns {string} The JSON string representation of the Message object.
  */
 Message.prototype.toJSON = function toJSON() {
   return JSON.stringify(this.toObject());
 };
 
+
 /**
- * Will return a the string representation of the message
- *
- * @returns {String} Message
+ * Converts the message buffer to a string representation.
+ * @returns {string} The string representation of the message buffer.
  */
 Message.prototype.toString = function () {
   return this.messageBuffer.toString();
 };
 
+
 /**
- * Will return a string formatted for the console
- *
- * @returns {String} Message
+ * Custom inspect method for Message instances.
+ * @returns {string} String representation in format '<Message: [content]>'.
  */
 Message.prototype.inspect = function () {
   return '<Message: ' + this.toString() + '>';
 };
 
 export default Message;
-
-export const {
-  sign,
-  verify,
-  MAGIC_BYTES,
-  fromString,
-  fromJSON,
-  fromObject
-} = Message;

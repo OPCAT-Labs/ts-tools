@@ -4,7 +4,7 @@ import BN from './crypto/bn.js';
 import Point from './crypto/point.js';
 import Hash from './crypto/hash.js';
 import JSUtil from './util/js.js';
-import Network from './networks.js';
+import Networks from './networks.js';
 import _ from './util/_.js';
 import $ from './util/preconditions.js';
 import Address from './address.js';
@@ -28,7 +28,7 @@ import Address from './address.js';
  *
  * @param {string} data - The encoded data in various formats
  * @param {Object} extra - additional options
- * @param {Network=} extra.network - Which network should the address for this public key be for
+ * @param {Network} extra.network - Which network should the address for this public key be for
  * @param {String=} extra.compressed - If the public key is compressed
  * @returns {PublicKey} A new valid instance of an PublicKey
  * @constructor
@@ -54,7 +54,7 @@ function PublicKey(data, extra) {
   JSUtil.defineImmutable(this, {
     point: info.point,
     compressed: info.compressed,
-    network: info.network || Network.defaultNetwork,
+    network: info.network || Networks.defaultNetwork,
   });
 
   return this;
@@ -85,7 +85,7 @@ PublicKey.prototype._classifyArgs = function (data, extra) {
     throw new TypeError('First argument is an unrecognized data format.');
   }
   if (!info.network) {
-    info.network = _.isUndefined(extra.network) ? undefined : Network.get(extra.network);
+    info.network = _.isUndefined(extra.network) ? undefined : Networks.get(extra.network);
   }
   return info;
 };
@@ -356,7 +356,7 @@ PublicKey.prototype._getID = function _getID() {
 /**
  * Will return an address for the public key
  *
- * @param {String|Network=} network - Which network should the address be for
+ * @param {string|Network} [network] - Which network should the address be for
  * @returns {Address} An address generated from the public key
  */
 PublicKey.prototype.toAddress = function (network) {
@@ -382,19 +382,3 @@ PublicKey.prototype.inspect = function () {
 };
 
 export default PublicKey;
-
-export const {
-  _isPrivateKey,
-  _isBuffer,
-  _transformPrivateKey,
-  _transformDER,
-  _transformX,
-  _transformObject,
-  fromPrivateKey,
-  fromDER,
-  fromPoint,
-  fromHex,
-  fromX,
-  getValidationError,
-  isValid
-} = PublicKey;

@@ -1,9 +1,15 @@
 'use strict';
 
-var Stack = function Stack(rawstack, varStack) {
+/**
+ * Represents a stack structure with optional variable stack support.
+ * @constructor
+ * @param {Array} rawstack - The initial stack array
+ * @param {Array} [varStack] - Optional variable stack array
+ */
+function Stack(rawstack, varStack) {
   this.stack = rawstack;
   this.varStack = varStack || [];
-};
+}
 
 
 Stack.prototype.pushVar = function (varName) {

@@ -59,3 +59,33 @@ module.exports = {
 }
 
 
+
+
+module.exports.Address = Address;
+module.exports.Block = Block;
+module.exports.MerkleBlock = MerkleBlock;
+module.exports.BlockHeader = BlockHeader;
+module.exports.HDPrivateKey = HDPrivateKey;
+module.exports.HDPublicKey = HDPublicKey;
+module.exports.Networks = Networks; 
+module.exports.Network = Network; 
+module.exports.Opcode = Opcode;
+module.exports.PrivateKey = PrivateKey;
+module.exports.PublicKey = PublicKey;
+module.exports.Script = Script;
+module.exports.Interpreter = Interpreter;
+module.exports.Transaction = Transaction;
+module.exports.Input = Input;
+module.exports.PublicKeyInput = Input.PublicKey;
+module.exports.PublicKeyHashInput = Input.PublicKeyHash;
+module.exports.MultiSigInput = Input.MultiSig;
+module.exports.HashCache = HashCache;
+module.exports.Message = Message;
+module.exports.Mnemonic = Mnemonic;
+module.exports.errors = errors;
+module.exports.util = util;
+module.exports.encoding = encoding;
+module.exports.crypto = crypto;
+
+
+

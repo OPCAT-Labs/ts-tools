@@ -12,10 +12,6 @@ var Signature = require('../../crypto/signature.cjs');
 var TransactionSignature = require('../signature.cjs');
 var Hash = require('../../crypto/hash.cjs');
 var PrivateKey = require('../../privatekey.cjs');
-var PublicKeyInput = require('./publickey.cjs');
-var PublicKeyHashInput = require('./publickeyhash.cjs');
-var MultiSigInput = require('./multisig.cjs');
-
 
 var MAXINT = 0xffffffff; // Math.pow(2, 32) - 1;
 var DEFAULT_RBF_SEQNUMBER = MAXINT - 2;
@@ -25,7 +21,12 @@ var DEFAULT_LOCKTIME_SEQNUMBER = MAXINT - 1;
 /**
  * Creates an Input instance from parameters.
  * @constructor
- * @param {Object} [params] - Optional parameters to initialize the Input.
+ * @param {Object} params - Input parameters object
+ * @param {string|Buffer} params.prevTxId - Previous transaction ID (hex string or Buffer)
+ * @param {number} params.outputIndex - Output index in previous transaction
+ * @param {Output} [params.output] - Output instance or output parameters
+ * @param {number} [params.sequenceNumber] - Sequence number (defaults to DEFAULT_SEQNUMBER)
+ * @param {Script|Buffer|string} [params.script] - Script instance, buffer or hex string
  * @returns {Input} New Input instance or initialized instance if params provided.
  */
 function Input(params) {
@@ -44,6 +45,12 @@ Input.DEFAULT_RBF_SEQNUMBER = DEFAULT_RBF_SEQNUMBER;
 // txid + output index + sequence number
 Input.BASE_SIZE = 32 + 4 + 4;
 
+/**
+ * Gets or sets the script associated with this input.
+ * @memberof Input.prototype
+ * @name script
+ * @return {Script}
+ */
 Object.defineProperty(Input.prototype, 'script', {
   configurable: false,
   enumerable: true,
@@ -61,14 +68,19 @@ Object.defineProperty(Input.prototype, 'script', {
 
 /**
  * Creates an Input instance from a plain JavaScript object.
- * @param {Object} obj - The object to convert to an Input.
- * @returns {Input} The new Input instance.
- * @throws {Error} If the argument is not an object.
+ * @param {Object} params - Input parameters object
+ * @param {string|Buffer} params.prevTxId - Previous transaction ID (hex string or Buffer)
+ * @param {number} params.outputIndex - Output index in previous transaction
+ * @param {Output} [params.output] - Output instance or output parameters
+ * @param {number} [params.sequenceNumber] - Sequence number (defaults to DEFAULT_SEQNUMBER)
+ * @param {Script|Buffer|string} [params.script] - Script instance, buffer or hex string
+ * @returns {Input} The created Input instance.
+ * @throws {Error} Will throw if the argument is not an object.
  */
-Input.fromObject = function (obj) {
-  $.checkArgument(_.isObject(obj));
+Input.fromObject = function (params) {
+  $.checkArgument(_.isObject(params));
   var input = new Input();
-  return input._fromObject(obj);
+  return input._fromObject(params);
 };
 
 /**
@@ -76,9 +88,9 @@ Input.fromObject = function (obj) {
  * Validates required fields (prevTxId, outputIndex) and converts hex strings to Buffers.
  * Handles optional parameters with defaults (sequenceNumber, script).
  * @param {Object} params - Input parameters object
- * @param {(string|Buffer)} params.prevTxId - Previous transaction ID (hex string or Buffer)
+ * @param {string|Buffer} params.prevTxId - Previous transaction ID (hex string or Buffer)
  * @param {number} params.outputIndex - Output index in previous transaction
- * @param {Output|Object} [params.output] - Output instance or output parameters
+ * @param {Output} [params.output] - Output instance or output parameters
  * @param {number} [params.sequenceNumber] - Sequence number (defaults to DEFAULT_SEQNUMBER)
  * @param {Script|Buffer|string} [params.script] - Script instance, buffer or hex string
  * @throws {errors.Transaction.Input.InvalidParams} If required params are missing
@@ -129,8 +141,8 @@ Input.prototype.toObject = Input.prototype.toJSON = function toObject() {
     script: this._scriptBuffer.toString('hex'),
   };
   // add human readable form if input contains valid script
-  if (this.script) {
-    obj.scriptString = this.script.toString();
+  if (this._script) {
+    obj.scriptString = this._script.toString();
   }
   if (this.output) {
     obj.output = this.output.toObject();
@@ -380,29 +392,5 @@ Input.prototype._estimateSize = function () {
   return this.toBufferWriter(false).toBuffer().length;
 };
 
-
-/**
- * Attaches the PublicKeyInput class to the Input namespace.
- * @memberof Input
- * @name PublicKey
- * @alias PublicKeyInput
- */
-Input.PublicKey = PublicKeyInput;
-
-
-/**
- * Attaches the PublicKeyHashInput class to the Input namespace.
- * @memberof Input
- * @name PublicKeyHash
- * @alias PublicKeyHashInput
- */
-Input.PublicKeyHash = PublicKeyHashInput;
-/**
- * Attaches the PublicKeyHashInput class to the Input namespace.
- * @memberof Input
- * @name MultiSig
- * @alias MultiSigInput
- */
-Input.MultiSig = MultiSigInput;
 
 module.exports = Input;

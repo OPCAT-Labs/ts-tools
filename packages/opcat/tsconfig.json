@@ -8,5 +8,6 @@
     "outDir": "types",
     "strict": false
   },
-  "include": ["cjs/**/*.cjs"]
+  "include": ["cjs/**/*.cjs"],
+  "exclude": ["node_modules/**/*"]
 }

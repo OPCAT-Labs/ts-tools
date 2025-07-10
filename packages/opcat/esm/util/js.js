@@ -3,7 +3,11 @@
 import _ from './_.js';
 import $ from './preconditions.js';
 
-var JSUtil = function JSUtil() {
+/**
+ * Utility functions for JavaScript operations.
+ * @constructor
+ */
+function JSUtil() {
 }
 
 /**
@@ -89,12 +93,3 @@ JSUtil.defineImmutable = function defineImmutable(target, values) {
 }
 
 export default JSUtil;
-
-export const {
-  isHexa,
-  isHexaString,
-  isNaturalNumber,
-  integerAsBuffer,
-  isValidJSON,
-  defineImmutable
-} = JSUtil;

@@ -4,6 +4,13 @@ import _ from './util/_.js';
 import $ from './util/preconditions.js';
 import JSUtil from './util/js.js';
 
+/**
+ * Creates an Opcode instance from a number or string representation.
+ * @constructor
+ * @param {number|string} num - The numeric value or string name of the opcode
+ * @throws {TypeError} If the input type is not recognized
+ * @returns {Opcode} A new Opcode instance
+ */
 function Opcode(num) {
   if (!(this instanceof Opcode)) {
     return new Opcode(num);
@@ -26,16 +33,34 @@ function Opcode(num) {
   return this;
 }
 
+/**
+ * Creates an Opcode instance from a Buffer.
+ * @param {Buffer} buf - The buffer containing the opcode data.
+ * @returns {Opcode} The constructed Opcode instance.
+ * @throws {Error} If the input is not a Buffer.
+ */
 Opcode.fromBuffer = function (buf) {
   $.checkArgument(Buffer.isBuffer(buf));
   return new Opcode(Number('0x' + buf.toString('hex')));
 };
 
+/**
+ * Creates an Opcode instance from a number.
+ * @param {number} num - The numeric value to convert to an Opcode.
+ * @returns {Opcode} A new Opcode instance.
+ * @throws {Error} If the input is not a number.
+ */
 Opcode.fromNumber = function (num) {
   $.checkArgument(_.isNumber(num));
   return new Opcode(num);
 };
 
+/**
+ * Creates an Opcode instance from a string representation.
+ * @param {string} str - The string representation of the opcode.
+ * @returns {Opcode} A new Opcode instance corresponding to the input string.
+ * @throws {TypeError} If the input string is not a valid opcode representation.
+ */
 Opcode.fromString = function (str) {
   $.checkArgument(_.isString(str));
   var value = Opcode.map[str];
@@ -45,18 +70,35 @@ Opcode.fromString = function (str) {
   return new Opcode(value);
 };
 
+/**
+ * Converts the opcode number to its hexadecimal string representation.
+ * @returns {string} Hexadecimal string of the opcode number.
+ */
 Opcode.prototype.toHex = function () {
   return this.num.toString(16);
 };
 
+/**
+ * Converts the opcode to a Buffer by first converting it to a hex string.
+ * @returns {Buffer} The opcode represented as a Buffer.
+ */
 Opcode.prototype.toBuffer = function () {
   return Buffer.from(this.toHex(), 'hex');
 };
 
+/**
+ * Gets the numeric value of the opcode.
+ * @returns {number} The numeric representation of the opcode.
+ */
 Opcode.prototype.toNumber = function () {
   return this.num;
 };
 
+/**
+ * Converts the opcode number to its string representation.
+ * @throws {Error} If the opcode number has no corresponding string mapping.
+ * @returns {string} The string representation of the opcode.
+ */
 Opcode.prototype.toString = function () {
   var str = Opcode.reverseMap[this.num];
   if (typeof str === 'undefined') {
@@ -65,6 +107,12 @@ Opcode.prototype.toString = function () {
   return str;
 };
 
+/**
+ * Converts the opcode to a human-readable string representation.
+ * If the opcode has a known mnemonic, returns that string.
+ * Otherwise, returns the hexadecimal representation of the opcode.
+ * @returns {string} The safe string representation of the opcode.
+ */
 Opcode.prototype.toSafeString = function () {
   var str = Opcode.reverseMap[this.num];
   if (typeof str === 'undefined') {
@@ -73,6 +121,12 @@ Opcode.prototype.toSafeString = function () {
   return str;
 };
 
+/**
+ * Converts a small integer (0-16) to its corresponding opcode.
+ * @param {number} n - The integer to convert (must be between 0 and 16)
+ * @returns {Opcode} The corresponding opcode (OP_0 for 0, OP_1+n-1 for 1-16)
+ * @throws {Error} If n is not a number or outside valid range
+ */
 Opcode.smallInt = function (n) {
   $.checkArgument(_.isNumber(n), 'Invalid Argument: n should be number');
   $.checkArgument(n >= 0 && n <= 16, 'Invalid Argument: n must be between 0 and 16');
@@ -82,8 +136,12 @@ Opcode.smallInt = function (n) {
   return new Opcode(Opcode.map.OP_1 + n - 1);
 };
 
+/**
+ * A map of opcode names to their corresponding numeric values.
+ * @type {Object.<string, number>}
+ */
 Opcode.map = {
-  // push value
+// push value
   OP_FALSE: 0,
   OP_0: 0,
   OP_PUSHDATA1: 76,
@@ -224,6 +282,9 @@ Opcode.map = {
   OP_INVALIDOPCODE: 255,
 };
 
+/**
+ * Reverse mapping array for opcode lookup.
+ */
 Opcode.reverseMap = [];
 
 for (var k in Opcode.map) {
@@ -233,8 +294,11 @@ for (var k in Opcode.map) {
 // Easier access to opcodes
 _.extend(Opcode, Opcode.map);
 
+
 /**
- * @returns true if opcode is one of OP_0, OP_1, ..., OP_16
+ * Checks if the given opcode is a small integer opcode (OP_0 to OP_16).
+ * @param {number|Opcode} opcode - The opcode to check, either as a number or Opcode instance.
+ * @returns {boolean} True if the opcode is a small integer opcode, false otherwise.
  */
 Opcode.isSmallIntOp = function (opcode) {
   if (opcode instanceof Opcode) {
@@ -253,13 +317,3 @@ Opcode.prototype.inspect = function () {
 };
 
 export default Opcode;
-
-export const {
-  fromBuffer,
-  fromNumber,
-  fromString,
-  smallInt,
-  map,
-  reverseMap,
-  isSmallIntOp
-} = Opcode;

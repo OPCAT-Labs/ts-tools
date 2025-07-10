@@ -6,7 +6,7 @@ import BN from './crypto/bn.js';
 import Base58 from './encoding/base58.js';
 import Base58Check from './encoding/base58check.js';
 import Hash from './crypto/hash.js';
-import Network from './networks.js';
+import Networks from './networks.js';
 import Point from './crypto/point.js';
 import PublicKey from './publickey.js';
 import Derivation from './util/derivation.js';
@@ -53,15 +53,22 @@ function HDPublicKey(arg) {
   }
 }
 
+/**
+ * Converts an HDPrivateKey to an HDPublicKey.
+ * @param {HDPrivateKey} hdPrivateKey - The HD private key to convert.
+ * @returns {HDPublicKey} The corresponding HD public key.
+ */
 HDPublicKey.fromHDPrivateKey = function (hdPrivateKey) {
   return hdPrivateKey.toHDPublicKey()
 };
 
+
 /**
- * Verifies that a given path is valid.
- *
- * @param {string|number} arg
- * @return {boolean}
+ * Checks if a given argument is a valid HD public key derivation path.
+ * @param {string|number} arg - The path to validate (either as string like "m/0/1" or as a single index number).
+ * @returns {boolean} True if the path is valid, false otherwise.
+ * @description Validates both string paths (e.g., "m/0/1") and individual derivation indexes.
+ * String paths must contain valid indexes separated by '/', and each index must be a non-negative number less than HDPublicKey.Hardened.
  */
 HDPublicKey.isValidPath = function (arg) {
   if (_.isString(arg)) {
@@ -76,36 +83,6 @@ HDPublicKey.isValidPath = function (arg) {
   return false;
 };
 
-/**
- * WARNING: This method is deprecated. Use deriveChild instead.
- *
- *
- * Get a derivated child based on a string or number.
- *
- * If the first argument is a string, it's parsed as the full path of
- * derivation. Valid values for this argument include "m" (which returns the
- * same public key), "m/0/1/40/2/1000".
- *
- * Note that hardened keys can't be derived from a public extended key.
- *
- * If the first argument is a number, the child with that index will be
- * derived. See the example usage for clarification.
- *
- * @example
- * ```javascript
- * var parent = new HDPublicKey('xpub...');
- * var child_0_1_2 = parent.derive(0).derive(1).derive(2);
- * var copy_of_child_0_1_2 = parent.derive("m/0/1/2");
- * assert(child_0_1_2.xprivkey === copy_of_child_0_1_2);
- * ```
- *
- * @param {string|number} arg
- */
-HDPublicKey.prototype.derive = function () {
-  throw new Error(
-    'derive has been deprecated. use deriveChild or, for the old way, deriveNonCompliantChild.',
-  );
-};
 
 /**
  * WARNING: This method will not be officially supported until v1.0.0.
@@ -130,7 +107,9 @@ HDPublicKey.prototype.derive = function () {
  * assert(child_0_1_2.xprivkey === copy_of_child_0_1_2);
  * ```
  *
- * @param {string|number} arg
+ * @param {string|number} arg - The index or path to derive
+ * @param {boolean} [hardened=false] - Whether to use hardened derivation
+ * @returns {HDPublicKey} The derived child public key
  */
 HDPublicKey.prototype.deriveChild = function (arg, hardened) {
   if (_.isNumber(arg)) {
@@ -142,6 +121,15 @@ HDPublicKey.prototype.deriveChild = function (arg, hardened) {
   }
 };
 
+/**
+ * Derives a child public key from the current HD public key using the specified index.
+ * @param {number} index - The child index to derive (must be less than HDPublicKey.Hardened)
+ * @param {boolean} hardened - Whether to derive a hardened key (not supported for public keys)
+ * @returns {HDPublicKey} The derived child public key
+ * @throws {hdErrors.InvalidIndexCantDeriveHardened} If attempting to derive a hardened key
+ * @throws {hdErrors.InvalidPath} If index is negative
+ * @private
+ */
 HDPublicKey.prototype._deriveWithNumber = function (index, hardened) {
   if (index >= HDPublicKey.Hardened || hardened) {
     throw new hdErrors.InvalidIndexCantDeriveHardened();
@@ -175,6 +163,14 @@ HDPublicKey.prototype._deriveWithNumber = function (index, hardened) {
   return derived;
 };
 
+/**
+ * Derives a child public key from the current HD public key using the specified path.
+ * @param {string} path - The derivation path (must not contain hardened derivation markers)
+ * @returns {HDPublicKey} The derived public key
+ * @throws {hdErrors.InvalidIndexCantDeriveHardened} If path contains hardened derivation markers
+ * @throws {hdErrors.InvalidPath} If path is not a valid derivation path
+ * @private
+ */
 HDPublicKey.prototype._deriveFromString = function (path) {
   if (_.includes(path, "'")) {
     throw new hdErrors.InvalidIndexCantDeriveHardened();
@@ -195,7 +191,7 @@ HDPublicKey.prototype._deriveFromString = function (path) {
  * is valid.
  *
  * @param {string|Buffer} data - the serialized public key
- * @param {string|Network=} network - optional, if present, checks that the
+ * @param {string|Network} [network]  - optional, if present, checks that the
  *     network provided matches the network serialized.
  * @return {boolean}
  */
@@ -208,9 +204,9 @@ HDPublicKey.isValidSerialized = function (data, network) {
  * in base58 with checksum to fail.
  *
  * @param {string|Buffer} data - the serialized public key
- * @param {string|Network=} network - optional, if present, checks that the
+ * @param {string|Network} [network] - optional, if present, checks that the
  *     network provided matches the network serialized.
- * @return {errors|null}
+ * @return {Error|null}
  */
 HDPublicKey.getSerializedError = function (data, network) {
   if (!(_.isString(data) || Buffer.isBuffer(data))) {
@@ -234,14 +230,21 @@ HDPublicKey.getSerializedError = function (data, network) {
     }
   }
   var version = data.readUInt32BE(0);
-  if (version === Network.livenet.xprivkey || version === Network.testnet.xprivkey) {
+  if (version === Networks.livenet.xprivkey || version === Networks.testnet.xprivkey) {
     throw new hdErrors.ArgumentIsPrivateExtended();
   }
   return null;
 };
 
+/**
+ * Validates if the provided data matches the expected network version.
+ * @param {Buffer} data - The data containing the version to validate.
+ * @param {string|Network} networkArg - The network or network identifier to validate against.
+ * @returns {InvalidNetworkArgument|InvalidNetwork|null} Returns an error if validation fails, otherwise null.
+ * @private
+ */
 HDPublicKey._validateNetwork = function (data, networkArg) {
-  var network = Network.get(networkArg);
+  var network = Networks.get(networkArg);
   if (!network) {
     return new errors.InvalidNetworkArgument(networkArg);
   }
@@ -252,10 +255,17 @@ HDPublicKey._validateNetwork = function (data, networkArg) {
   return null;
 };
 
+/**
+ * Builds an HDPublicKey instance from an object containing key components.
+ * Handles type conversion for various input formats (numbers, strings, buffers).
+ * @param {Object} arg - Object containing key components (version, depth, parentFingerPrint, etc.)
+ * @returns {HDPublicKey} The constructed public key instance
+ * @private
+ */
 HDPublicKey.prototype._buildFromObject = function (arg) {
-  // TODO: Type validation
+// TODO: Type validation
   var buffers = {
-    version: arg.network ? JSUtil.integerAsBuffer(Network.get(arg.network).xpubkey) : arg.version,
+    version: arg.network ? JSUtil.integerAsBuffer(Networks.get(arg.network).xpubkey) : arg.version,
     depth: _.isNumber(arg.depth) ? Buffer.from([arg.depth & 0xff]) : arg.depth,
     parentFingerPrint: _.isNumber(arg.parentFingerPrint)
       ? JSUtil.integerAsBuffer(arg.parentFingerPrint)
@@ -274,6 +284,15 @@ HDPublicKey.prototype._buildFromObject = function (arg) {
   return this._buildFromBuffers(buffers);
 };
 
+/**
+ * Builds an HDPublicKey instance from a serialized Base58Check encoded string.
+ * @private
+ * @param {string} arg - The Base58Check encoded extended public key (xpub)
+ * @returns {HDPublicKey} The constructed HDPublicKey instance
+ * @description
+ * Decodes the input string into buffers for version, depth, parent fingerprint,
+ * child index, chain code, public key, and checksum, then builds the key from buffers.
+ */
 HDPublicKey.prototype._buildFromSerialized = function (arg) {
   var decoded = Base58Check.decode(arg);
   var buffers = {
@@ -307,6 +326,7 @@ HDPublicKey.prototype._buildFromSerialized = function (arg) {
  * @param {string=} arg.xpubkey - if set, don't recalculate the base58
  *      representation
  * @return {HDPublicKey} this
+ * @private
  */
 HDPublicKey.prototype._buildFromBuffers = function (arg) {
   HDPublicKey._validateBufferArguments(arg);
@@ -332,7 +352,7 @@ HDPublicKey.prototype._buildFromBuffers = function (arg) {
       throw new errors.InvalidB58Checksum(concat, checksum);
     }
   }
-  var network = Network.get(arg.version.readUInt32BE(0));
+  var network = Networks.get(arg.version.readUInt32BE(0));
 
   var xpubkey;
   xpubkey = Base58Check.encode(Buffer.concat(sequence));
@@ -353,6 +373,19 @@ HDPublicKey.prototype._buildFromBuffers = function (arg) {
   return this;
 };
 
+/**
+ * Validates buffer arguments for HDPublicKey.
+ * @private
+ * @param {Object} arg - The argument object containing buffer fields to validate
+ * @param {Buffer} arg.version - Version buffer (must be HDPublicKey.VersionSize bytes)
+ * @param {Buffer} arg.depth - Depth buffer (must be HDPublicKey.DepthSize bytes)
+ * @param {Buffer} arg.parentFingerPrint - Parent fingerprint buffer (must be HDPublicKey.ParentFingerPrintSize bytes)
+ * @param {Buffer} arg.childIndex - Child index buffer (must be HDPublicKey.ChildIndexSize bytes)
+ * @param {Buffer} arg.chainCode - Chain code buffer (must be HDPublicKey.ChainCodeSize bytes)
+ * @param {Buffer} arg.publicKey - Public key buffer (must be HDPublicKey.PublicKeySize bytes)
+ * @param {Buffer} [arg.checksum] - Optional checksum buffer (must be HDPublicKey.CheckSumSize bytes if provided)
+ * @throws {Error} If any buffer is invalid or has incorrect size
+ */
 HDPublicKey._validateBufferArguments = function (arg) {
   var checkBuffer = function (name, size) {
     var buff = arg[name];
@@ -373,11 +406,23 @@ HDPublicKey._validateBufferArguments = function (arg) {
   }
 };
 
+/**
+ * Creates an HDPublicKey instance from a string representation.
+ * @param {string} arg - The string to convert to an HDPublicKey.
+ * @returns {HDPublicKey} A new HDPublicKey instance.
+ * @throws {Error} Throws if the input is not a valid string.
+ */
 HDPublicKey.fromString = function (arg) {
   $.checkArgument(_.isString(arg), 'No valid string was provided');
   return new HDPublicKey(arg);
 };
 
+/**
+ * Creates an HDPublicKey instance from an object.
+ * @param {Object} arg - The object containing public key data
+ * @returns {HDPublicKey} A new HDPublicKey instance
+ * @throws {Error} Will throw if no valid object argument is provided
+ */
 HDPublicKey.fromObject = function (arg) {
   $.checkArgument(_.isObject(arg), 'No valid argument was provided');
   return new HDPublicKey(arg);
@@ -402,23 +447,23 @@ HDPublicKey.prototype.inspect = function () {
 /**
  * Returns a plain JavaScript object with information to reconstruct a key.
  *
- * Fields are: <ul>
- *  <li> network: 'livenet' or 'testnet'
- *  <li> depth: a number from 0 to 255, the depth to the master extended key
- *  <li> fingerPrint: a number of 32 bits taken from the hash of the public key
- *  <li> fingerPrint: a number of 32 bits taken from the hash of this key's
- *  <li>     parent's public key
- *  <li> childIndex: index with which this key was derived
- *  <li> chainCode: string in hexa encoding used for derivation
- *  <li> publicKey: string, hexa encoded, in compressed key format
- *  <li> checksum: this._buffers.checksum.readUInt32BE(0),
- *  <li> xpubkey: the string with the base58 representation of this extended key
- *  <li> checksum: the base58 checksum of xpubkey
+ * Fields are: 
+ * <ul>
+ *  <li> network: 'livenet' or 'testnet' </li>
+ *  <li> depth: a number from 0 to 255, the depth to the master extended key </li>
+ *  <li> fingerPrint: a number of 32 bits taken from the hash of the public key </li>
+ *  <li> fingerPrint: a number of 32 bits taken from the hash of this key's parent's public key </li>
+ *  <li> childIndex: index with which this key was derived </li>
+ *  <li> chainCode: string in hexa encoding used for derivation </li>
+ *  <li> publicKey: string, hexa encoded, in compressed key format </li>
+ *  <li> checksum: this._buffers.checksum.readUInt32BE(0) </li>
+ *  <li> xpubkey: the string with the base58 representation of this extended key </li>
+ *  <li> checksum: the base58 checksum of xpubkey </li>
  * </ul>
  */
 HDPublicKey.prototype.toObject = HDPublicKey.prototype.toJSON = function toObject() {
   return {
-    network: Network.get(this._buffers.version.readUInt32BE(0)).name,
+    network: Networks.get(this._buffers.version.readUInt32BE(0)).name,
     depth: this._buffers.depth[0],
     fingerPrint: this.fingerPrint.readUInt32BE(0),
     parentFingerPrint: this._buffers.parentFingerPrint.readUInt32BE(0),
@@ -502,41 +547,3 @@ assert(HDPublicKey.PublicKeyEnd === HDPublicKey.DataSize);
 assert(HDPublicKey.ChecksumEnd === HDPublicKey.SerializedByteSize);
 
 export default HDPublicKey;
-
-export const {
-  fromHDPrivateKey,
-  isValidPath,
-  isValidSerialized,
-  getSerializedError,
-  _validateNetwork,
-  _validateBufferArguments,
-  fromString,
-  fromObject,
-  fromBuffer,
-  fromHex,
-  Hardened,
-  RootElementAlias,
-  VersionSize,
-  DepthSize,
-  ParentFingerPrintSize,
-  ChildIndexSize,
-  ChainCodeSize,
-  PublicKeySize,
-  CheckSumSize,
-  DataSize,
-  SerializedByteSize,
-  VersionStart,
-  VersionEnd,
-  DepthStart,
-  DepthEnd,
-  ParentFingerPrintStart,
-  ParentFingerPrintEnd,
-  ChildIndexStart,
-  ChildIndexEnd,
-  ChainCodeStart,
-  ChainCodeEnd,
-  PublicKeyStart,
-  PublicKeyEnd,
-  ChecksumStart,
-  ChecksumEnd
-} = HDPublicKey;

@@ -49,10 +49,6 @@ traverseRoot(OpcatError, data);
 
 export default OpcatError;
 
-export const {
-  prototype
-} = OpcatError;
-
 export const extend = function (spec) {
   return traverseNode(OpcatError, spec);
 };

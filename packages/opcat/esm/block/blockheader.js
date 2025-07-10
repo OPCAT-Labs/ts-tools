@@ -17,7 +17,7 @@ var GENESIS_BITS = 0x1d00ffff;
  * @returns {BlockHeader} - An instance of block header
  * @constructor
  */
-var BlockHeader = function BlockHeader(arg) {
+function BlockHeader(arg) {
   if (!(this instanceof BlockHeader)) {
     return new BlockHeader(arg);
   }
@@ -38,7 +38,7 @@ var BlockHeader = function BlockHeader(arg) {
   }
 
   return this;
-};
+}
 
 /**
  * @param {*} - A Buffer, JSON string or Object
@@ -232,6 +232,7 @@ BlockHeader.prototype.getDifficulty = function getDifficulty() {
 
 /**
  * @returns {Buffer} - The little endian hash buffer of the header
+ * @private
  */
 BlockHeader.prototype._getHash = function hash() {
   var buf = this.toBuffer();
@@ -293,15 +294,3 @@ BlockHeader.Constants = {
 };
 
 export default BlockHeader;
-
-export const {
-  _from,
-  _fromObject,
-  fromObject,
-  fromRawBlock,
-  fromBuffer,
-  fromString,
-  _fromBufferReader,
-  fromBufferReader,
-  Constants
-} = BlockHeader;

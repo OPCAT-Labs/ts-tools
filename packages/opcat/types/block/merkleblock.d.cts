@@ -55,10 +55,10 @@ declare class MerkleBlock {
     private _calcTreeWidth;
     private _calcTreeHeight;
     /**
-     * @param {Transaction|String} - Transaction or Transaction ID Hash
+     * @param {Transaction|String} tx - Transaction or Transaction ID Hash
      * @returns {Boolean} - return true/false if this MerkleBlock has the TX or not
      */
-    hasTransaction(tx: any): boolean;
+    hasTransaction(tx: Transaction | string): boolean;
 }
 declare namespace MerkleBlock {
     /**
@@ -91,4 +91,5 @@ declare namespace MerkleBlock {
     function fromObject(obj: any): MerkleBlock;
 }
 import BufferWriter = require("../encoding/bufferwriter.cjs");
+import Transaction = require("../transaction/transaction.cjs");
 import BufferReader = require("../encoding/bufferreader.cjs");

@@ -88,7 +88,7 @@ MerkleBlock.prototype.toBuffer = function toBuffer() {
 };
 
 /**
- * @param {BufferWriter} - An existing instance of BufferWriter
+ * @param {BufferWriter} [bw] - An existing instance of BufferWriter
  * @returns {BufferWriter} - An instance of BufferWriter representation of the MerkleBlock
  */
 MerkleBlock.prototype.toBufferWriter = function toBufferWriter(bw) {
@@ -266,9 +266,8 @@ MerkleBlock.prototype._calcTreeHeight = function calcTreeHeight() {
 };
 
 /**
- * @param {Transaction|String} - Transaction or Transaction ID Hash
+ * @param {Transaction|String} tx - Transaction or Transaction ID Hash
  * @returns {Boolean} - return true/false if this MerkleBlock has the TX or not
- * @private
  */
 MerkleBlock.prototype.hasTransaction = function hasTransaction(tx) {
   $.checkArgument(!_.isUndefined(tx), 'tx cannot be undefined');
@@ -289,10 +288,17 @@ MerkleBlock.prototype.hasTransaction = function hasTransaction(tx) {
   return txs.indexOf(hash) !== -1;
 };
 
+
 /**
- * @param {Buffer} - MerkleBlock data
- * @returns {Object} - An Object representing merkleblock data
+ * Parses a MerkleBlock from a buffer reader.
  * @private
+ * @param {BufferReader} br - The buffer reader containing the MerkleBlock data
+ * @returns {Object} An object containing:
+ *   - header {BlockHeader} - The block header
+ *   - numTransactions {number} - Number of transactions in the block
+ *   - hashes {string[]} - Array of transaction hashes as hex strings
+ *   - flags {number[]} - Array of flag bytes
+ * @throws {Error} If no merkleblock data is received
  */
 MerkleBlock._fromBufferReader = function _fromBufferReader(br) {
   $.checkState(!br.finished(), 'No merkleblock data received');
@@ -312,19 +318,14 @@ MerkleBlock._fromBufferReader = function _fromBufferReader(br) {
   return info;
 };
 
+
 /**
- * @param {Object} - A plain JavaScript object
- * @returns {Block} - An instance of block
+ * Creates a MerkleBlock instance from a plain object.
+ * @param {Object} obj - The plain object containing MerkleBlock data.
+ * @returns {MerkleBlock} A new MerkleBlock instance.
  */
 MerkleBlock.fromObject = function fromObject(obj) {
   return new MerkleBlock(obj);
 };
 
 export default MerkleBlock;
-
-export const {
-  fromBuffer,
-  fromBufferReader,
-  _fromBufferReader,
-  fromObject
-} = MerkleBlock;

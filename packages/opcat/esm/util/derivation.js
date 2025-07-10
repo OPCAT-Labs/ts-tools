@@ -1,7 +1,11 @@
 
 import _ from './_.js';
 
-var Derivation = function Derivation() {
+/**
+ * Represents a derivation function or class (purpose to be determined based on implementation).
+ * @constructor
+ */
+function Derivation() {
 }
 
 Derivation.RootElementAlias = ['m', 'M', "m'", "M'"]
@@ -47,9 +51,3 @@ var steps = path.split('/');
 }
 
 export default Derivation;
-
-export const {
-  RootElementAlias,
-  Hardened,
-  getDerivationIndexes
-} = Derivation;

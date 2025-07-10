@@ -13,6 +13,6 @@ module.exports = {
   filesWithShebang: [],
   codemod: {
     path: '',
-    files: ['cjs', 'exports', 'named-export-generation'],
+    files: ['cjs', 'exports'],
   },
 };

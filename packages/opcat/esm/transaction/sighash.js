@@ -11,9 +11,13 @@ import _ from '../util/_.js';
 
 var SIGHASH_SINGLE_BUG = Buffer.from('0000000000000000000000000000000000000000000000000000000000000001', 'hex')
 
-var Sighash = function Sighash() {
+/**
+ * Represents a Sighash utility for cryptographic signature operations.
+ * @constructor
+ */
+function Sighash() {
 
-};
+}
 
 /**
  * Returns a buffer with the which is hashed with sighash that needs to be signed
@@ -181,11 +185,3 @@ Sighash.verify = function (transaction, signature, publicKey, inputIndex) {
  * @namespace Signing
  */
 export default Sighash;
-
-export const {
-  sighashPreimage,
-  getLowSSighashPreimage,
-  sighash,
-  sign,
-  verify
-} = Sighash;

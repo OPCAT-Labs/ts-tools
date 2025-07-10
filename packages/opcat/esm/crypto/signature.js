@@ -5,7 +5,13 @@ import _ from '../util/_.js';
 import $ from '../util/preconditions.js';
 import JSUtil from '../util/js.js';
 
-var Signature = function Signature(r, s) {
+/**
+ * Creates a new Signature instance from BN values or an object.
+ * @constructor
+ * @param {BN|Object} r - Either a BN instance for the r value or an object containing r and s properties.
+ * @param {BN} [s] - The s value (required if r is a BN instance).
+ */
+function Signature(r, s) {
   if (!(this instanceof Signature)) {
     return new Signature(r, s);
   }
@@ -18,8 +24,18 @@ var Signature = function Signature(r, s) {
     var obj = r;
     this.set(obj);
   }
-};
+}
 
+/**
+ * Sets signature properties from an object.
+ * @param {Object} obj - Object containing signature properties
+ * @param {Buffer} [obj.r] - r value
+ * @param {Buffer} [obj.s] - s value
+ * @param {number} [obj.i] - Public key recovery parameter (0-3)
+ * @param {boolean} [obj.compressed] - Whether recovered pubkey is compressed
+ * @param {number} [obj.nhashtype] - Hash type
+ * @returns {Signature} Returns the signature instance for chaining
+ */
 Signature.prototype.set = function (obj) {
   this.r = obj.r || this.r || undefined;
   this.s = obj.s || this.s || undefined;
@@ -30,6 +46,13 @@ Signature.prototype.set = function (obj) {
   return this;
 };
 
+/**
+ * Creates a Signature instance from a compact ECDSA signature buffer.
+ * @param {Buffer} buf - The compact signature buffer (65 bytes).
+ * @returns {Signature} The parsed signature object.
+ * @throws {Error} If the input is invalid (not a Buffer, wrong length, or invalid recovery param).
+ * @static
+ */
 Signature.fromCompact = function (buf) {
   $.checkArgument(Buffer.isBuffer(buf), 'Argument is expected to be a Buffer');
 
@@ -57,6 +80,13 @@ Signature.fromCompact = function (buf) {
   return sig;
 };
 
+/**
+ * Creates a Signature instance from a DER-encoded or raw buffer.
+ * @param {Buffer} buf - The input buffer containing DER-encoded or raw signature data
+ * @param {boolean} [strict] - Whether to enforce strict DER parsing rules
+ * @returns {Signature} A new Signature instance with parsed r and s values
+ * @static
+ */
 Signature.fromDER = Signature.fromBuffer = function (buf, strict) {
   var obj = Signature.parseDER(buf, strict);
   var sig = new Signature();
@@ -68,6 +98,12 @@ Signature.fromDER = Signature.fromBuffer = function (buf, strict) {
 };
 
 // The format used in a tx
+/**
+ * Converts a transaction-format signature buffer to a Signature object.
+ * @param {Buffer} buf - The signature buffer in transaction format (DER + hash type byte)
+ * @returns {Signature} The parsed Signature object with nhashtype property set
+ * @static
+ */
 Signature.fromTxFormat = function (buf) {
   var nhashtype = buf.readUInt8(buf.length - 1);
   var derbuf = buf.slice(0, buf.length - 1);
@@ -76,13 +112,38 @@ Signature.fromTxFormat = function (buf) {
   return sig;
 };
 
+/**
+ * Creates a Signature instance from a hex-encoded string.
+ * @param {string} str - Hex-encoded signature string
+ * @returns {Signature} Signature instance parsed from DER format
+ * @static
+ */
 Signature.fromString = function (str) {
   var buf = Buffer.from(str, 'hex');
   return Signature.fromDER(buf);
 };
 
+
 /**
+ * Parses a DER formatted signature buffer into its components.
  * In order to mimic the non-strict DER encoding of OpenSSL, set strict = false.
+ * @param {Buffer} buf - The DER formatted signature buffer to parse
+ * @param {boolean} [strict=true] - Whether to perform strict length validation
+ * @returns {Object} An object containing the parsed signature components:
+ *   - header: The DER header byte (0x30)
+ *   - length: The total length of the signature components
+ *   - rheader: The R component header byte (0x02)
+ *   - rlength: The length of the R component
+ *   - rneg: Whether R is negative
+ *   - rbuf: The R component buffer
+ *   - r: The R component as a BN
+ *   - sheader: The S component header byte (0x02)
+ *   - slength: The length of the S component
+ *   - sneg: Whether S is negative
+ *   - sbuf: The S component buffer
+ *   - s: The S component as a BN
+ * @throws {Error} If the buffer is not valid DER format or length checks fail
+ * @static
  */
 Signature.parseDER = function (buf, strict) {
   $.checkArgument(Buffer.isBuffer(buf), new Error('DER formatted signature should be a buffer'));
@@ -141,6 +202,13 @@ Signature.parseDER = function (buf, strict) {
   return obj;
 };
 
+/**
+ * Converts the signature to a compact format.
+ * @param {number} [i] - The recovery ID (0, 1, 2, or 3). Defaults to the instance's `i` value.
+ * @param {boolean} [compressed] - Whether the signature is compressed. Defaults to the instance's `compressed` value.
+ * @returns {Buffer} - The compact signature as a Buffer (1 byte recovery ID + 32 bytes r + 32 bytes s).
+ * @throws {Error} - If `i` is not 0, 1, 2, or 3.
+ */
 Signature.prototype.toCompact = function (i, compressed) {
   i = typeof i === 'number' ? i : this.i;
   compressed = typeof compressed === 'boolean' ? compressed : this.compressed;
@@ -163,6 +231,12 @@ Signature.prototype.toCompact = function (i, compressed) {
   return Buffer.concat([b1, b2, b3]);
 };
 
+/**
+ * Converts the signature to DER format.
+ * Handles negative values by prepending a zero byte if necessary.
+ * 
+ * @returns {Buffer} The DER-encoded signature.
+ */
 Signature.prototype.toBuffer = Signature.prototype.toDER = function () {
   var rnbuf = this.r.toBuffer();
   var snbuf = this.s.toBuffer();
@@ -189,6 +263,10 @@ Signature.prototype.toBuffer = Signature.prototype.toDER = function () {
   return der;
 };
 
+/**
+ * Converts the signature to a hexadecimal string representation.
+ * @returns {string} The DER-encoded signature in hexadecimal format.
+ */
 Signature.prototype.toString = function () {
   var buf = this.toDER();
   return buf.toString('hex');
@@ -205,6 +283,10 @@ Signature.prototype.toString = function () {
  * in which case a single 0 byte is necessary and even required).
  *
  * See https://bitcointalk.org/index.php?topic=8392.msg127623#msg127623
+ * 
+ * @param {Buffer} buf - The buffer containing the signature to verify
+ * @returns {boolean} True if the signature is valid DER-encoded, false otherwise
+ * @static
  */
 Signature.isTxDER = function (buf) {
   if (buf.length < 9) {
@@ -272,10 +354,12 @@ Signature.isTxDER = function (buf) {
   return true;
 };
 
+
 /**
- * Compares to bitcoind's IsLowDERSignature
+ * Checks if the signature's S value is within the valid range (low-S).
  * See also ECDSA signature algorithm which enforces this.
  * See also BIP 62, "low S values in signatures"
+ * @returns {boolean} True if S is between 1 and the upper bound (0x7F...A0), false otherwise.
  */
 Signature.prototype.hasLowS = function () {
   if (
@@ -287,9 +371,13 @@ Signature.prototype.hasLowS = function () {
   return true;
 };
 
+
 /**
- * @returns true if the nhashtype is exactly equal to one of the standard options or combinations thereof.
- * Translated from bitcoind's IsDefinedHashtypeSignature
+ * Checks if the signature has a defined hashtype.
+ * - Validates that nhashtype is a natural number
+ * - Accepts with or without Signature.SIGHASH_ANYONECANPAY by ignoring the bit
+ * - Verifies the hashtype is between SIGHASH_ALL and SIGHASH_SINGLE
+ * @returns {boolean} True if the hashtype is valid, false otherwise
  */
 Signature.prototype.hasDefinedHashtype = function () {
   if (!JSUtil.isNaturalNumber(this.nhashtype)) {
@@ -303,6 +391,11 @@ Signature.prototype.hasDefinedHashtype = function () {
   return true;
 };
 
+/**
+ * Converts the signature to transaction format by concatenating the DER-encoded signature
+ * with the hash type byte.
+ * @returns {Buffer} The signature in transaction format (DER + hash type byte).
+ */
 Signature.prototype.toTxFormat = function () {
   var derbuf = this.toDER();
   var buf = Buffer.alloc(1);
@@ -310,35 +403,73 @@ Signature.prototype.toTxFormat = function () {
   return Buffer.concat([derbuf, buf]);
 };
 
+/**
+ * Signature hash type for signing all inputs/outputs (default).
+ * @constant {number}
+ * @default 0x01
+ */
 Signature.SIGHASH_ALL = 0x01;
+/**
+ * Flag indicating that no outputs are signed (only inputs are signed).
+ * Used in signature hashing to specify which parts of the transaction are included in the hash.
+ * @constant {number}
+ * @default 0x02
+ */
 Signature.SIGHASH_NONE = 0x02;
+/**
+ * Signature hash type for single input signing (0x03).
+ * @constant {number}
+ * @default 0x03
+ */
 Signature.SIGHASH_SINGLE = 0x03;
+/**
+ * Bit flag indicating that only the current input is signed (others can be modified).
+ * Used in Bitcoin signature hashing (SIGHASH type).
+ * @constant {number}
+ * @default 0x80
+ */
 Signature.SIGHASH_ANYONECANPAY = 0x80;
 
+/**
+ * Signature hash type for signing all inputs/outputs (default).
+ * @constant {number}
+ * @default 0x01
+ */
 Signature.ALL = Signature.SIGHASH_ALL
+/**
+ * Flag indicating that no outputs are signed (only inputs are signed).
+ * Used in signature hashing to specify which parts of the transaction are included in the hash.
+ * @constant {number}
+ * @default 0x02
+ */
 Signature.NONE = Signature.SIGHASH_NONE
+/**
+ * Signature hash type for single input signing (0x03).
+ * @constant {number}
+ * @default 0x03
+ */
 Signature.SINGLE = Signature.SIGHASH_SINGLE
+/**
+ * Bitwise flag combination for signature hash types: 
+ * SIGHASH_ALL (default) with ANYONECANPAY modifier.
+ * Allows anyone to add inputs to the transaction.
+ * @constant {number}
+ * @default 0x81
+ */
 Signature.ANYONECANPAY_ALL = Signature.SIGHASH_ALL | Signature.SIGHASH_ANYONECANPAY
+/**
+ * Bitwise flag combination for a signature that allows anyone to pay (no output locking)
+ * and doesn't commit to any outputs (SIGHASH_NONE).
+ * @constant {number}
+ * @default 0x82
+ */
 Signature.ANYONECANPAY_NONE = Signature.SIGHASH_NONE | Signature.SIGHASH_ANYONECANPAY
+/**
+ * Bitwise flag combination for signature allowing anyone to pay (SIGHASH_ANYONECANPAY) 
+ * with single output mode (SIGHASH_SINGLE).
+ * @constant {number}
+ * @default 0x83
+ */
 Signature.ANYONECANPAY_SINGLE = Signature.SIGHASH_SINGLE | Signature.SIGHASH_ANYONECANPAY
 
 export default Signature;
-
-export const {
-  fromCompact,
-  fromDER,
-  fromTxFormat,
-  fromString,
-  parseDER,
-  isTxDER,
-  SIGHASH_ALL,
-  SIGHASH_NONE,
-  SIGHASH_SINGLE,
-  SIGHASH_ANYONECANPAY,
-  ALL,
-  NONE,
-  SINGLE,
-  ANYONECANPAY_ALL,
-  ANYONECANPAY_NONE,
-  ANYONECANPAY_SINGLE
-} = Signature;

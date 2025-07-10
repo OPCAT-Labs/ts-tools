@@ -2,18 +2,40 @@ export = Input;
 /**
  * Creates an Input instance from parameters.
  * @constructor
- * @param {Object} [params] - Optional parameters to initialize the Input.
+ * @param {Object} params - Input parameters object
+ * @param {string|Buffer} params.prevTxId - Previous transaction ID (hex string or Buffer)
+ * @param {number} params.outputIndex - Output index in previous transaction
+ * @param {Output} [params.output] - Output instance or output parameters
+ * @param {number} [params.sequenceNumber] - Sequence number (defaults to DEFAULT_SEQNUMBER)
+ * @param {Script|Buffer|string} [params.script] - Script instance, buffer or hex string
  * @returns {Input} New Input instance or initialized instance if params provided.
  */
-declare function Input(params?: any): Input;
+declare function Input(params: {
+    prevTxId: string | Buffer;
+    outputIndex: number;
+    output?: Output;
+    sequenceNumber?: number;
+    script?: Script | Buffer | string;
+}): Input;
 declare class Input {
     /**
      * Creates an Input instance from parameters.
      * @constructor
-     * @param {Object} [params] - Optional parameters to initialize the Input.
+     * @param {Object} params - Input parameters object
+     * @param {string|Buffer} params.prevTxId - Previous transaction ID (hex string or Buffer)
+     * @param {number} params.outputIndex - Output index in previous transaction
+     * @param {Output} [params.output] - Output instance or output parameters
+     * @param {number} [params.sequenceNumber] - Sequence number (defaults to DEFAULT_SEQNUMBER)
+     * @param {Script|Buffer|string} [params.script] - Script instance, buffer or hex string
      * @returns {Input} New Input instance or initialized instance if params provided.
      */
-    constructor(params?: any);
+    constructor(params: {
+        prevTxId: string | Buffer;
+        outputIndex: number;
+        output?: Output;
+        sequenceNumber?: number;
+        script?: Script | Buffer | string;
+    });
     get script(): any;
     private _fromObject;
     output: Output;
@@ -116,11 +138,22 @@ declare namespace Input {
     export let BASE_SIZE: number;
     /**
      * Creates an Input instance from a plain JavaScript object.
-     * @param {Object} obj - The object to convert to an Input.
-     * @returns {Input} The new Input instance.
-     * @throws {Error} If the argument is not an object.
+     * @param {Object} params - Input parameters object
+     * @param {string|Buffer} params.prevTxId - Previous transaction ID (hex string or Buffer)
+     * @param {number} params.outputIndex - Output index in previous transaction
+     * @param {Output} [params.output] - Output instance or output parameters
+     * @param {number} [params.sequenceNumber] - Sequence number (defaults to DEFAULT_SEQNUMBER)
+     * @param {Script|Buffer|string} [params.script] - Script instance, buffer or hex string
+     * @returns {Input} The created Input instance.
+     * @throws {Error} Will throw if the argument is not an object.
      */
-    export function fromObject(obj: any): Input;
+    export function fromObject(params: {
+        prevTxId: string | Buffer;
+        outputIndex: number;
+        output?: Output;
+        sequenceNumber?: number;
+        script?: string | Buffer | Script;
+    }): Input;
     /**
      * Creates an Input instance from a BufferReader.
      * @param {BufferReader} br - The buffer reader containing input data.
@@ -133,19 +166,13 @@ declare namespace Input {
      * @static
      */
     export function fromBufferReader(br: BufferReader): Input;
-    export { PublicKeyInput as PublicKey };
-    export { PublicKeyHashInput as PublicKeyHash };
-    export { MultiSigInput as MultiSig };
 }
 import Output = require("../output.cjs");
-import BufferWriter = require("../../encoding/bufferwriter.cjs");
 import Script = require("../../script/script.cjs");
+import BufferWriter = require("../../encoding/bufferwriter.cjs");
 import PrivateKey = require("../../privatekey.cjs");
 import TransactionSignature = require("../signature.cjs");
 declare var MAXINT: number;
 declare var DEFAULT_SEQNUMBER: number;
 declare var DEFAULT_LOCKTIME_SEQNUMBER: number;
 declare var DEFAULT_RBF_SEQNUMBER: number;
-import PublicKeyInput = require("./publickey.cjs");
-import PublicKeyHashInput = require("./publickeyhash.cjs");
-import MultiSigInput = require("./multisig.cjs");

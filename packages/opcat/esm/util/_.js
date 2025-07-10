@@ -45,32 +45,3 @@ _.range = (n) => [...Array(n).keys()];
 _.isPositiveNumber = (n) => n < 0x7e;
 
 export default _;
-
-export const {
-  isArray,
-  isNumber,
-  isObject,
-  isString,
-  isUndefined,
-  isFunction,
-  isNull,
-  isDate,
-  extend,
-  noop,
-  every,
-  map,
-  includes,
-  each,
-  clone,
-  pick,
-  values,
-  filter,
-  reduce,
-  without,
-  shuffle,
-  difference,
-  findIndex,
-  some,
-  range,
-  isPositiveNumber
-} = _;
