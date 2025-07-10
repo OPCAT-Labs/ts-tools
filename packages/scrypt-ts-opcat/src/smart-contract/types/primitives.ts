@@ -247,6 +247,10 @@ export function OpCodeType(b: ByteString): OpCodeType {
   return getValidatedHexString(b, false) as OpCodeType;
 }
 
+OpCodeType.prototype.toNumber = function () {
+  return parseInt(this, 16);
+}
+
 /**
  * @ignore
  */

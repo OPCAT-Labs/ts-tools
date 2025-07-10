@@ -2,8 +2,8 @@
 import {  hexToUint8Array } from '../utils/common.js';
 import { SignOptions, Signer } from '../signer.js';
 import { DEFAULT_NETWORK } from '../utils/constants.js';
-import { PrivateKey, crypto} from '@opcat-labs/opcat';
-import { fromSupportedNetwork, Network } from '../networks.js';
+import { PrivateKey, crypto, Network} from '@opcat-labs/opcat';
+import { fromSupportedNetwork } from '../networks.js';
 import { Psbt, Signer as PSigner } from '../psbt/psbt.js';
 
 export class PsbtSigner implements PSigner {
@@ -16,7 +16,7 @@ export class PsbtSigner implements PSigner {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  get network(): any {
+  get network(): Network {
     return this.privateKey.network;
   }
 

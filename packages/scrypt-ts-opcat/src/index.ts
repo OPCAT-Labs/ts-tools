@@ -5,6 +5,33 @@ export { type IExtPsbt, type ContractCall } from './psbt/types.js';
 export { SmartContract } from './smart-contract/smartContract.js';
 export { SmartContractLib } from './smart-contract/smartContractLib.js';
 export { method, prop, type MethodDecoratorOptions } from './smart-contract/decorators.js';
+export {
+  Address,
+  Block,
+  MerkleBlock,
+  BlockHeader,
+  HDPrivateKey,
+  HDPublicKey,
+  Sighash,
+  TransactionSignature,
+  Output,
+  Input,
+  Networks,
+  Network,
+  Opcode,
+  PrivateKey,
+  PublicKey,
+  Script,
+  Interpreter,
+  Transaction,
+  HashCache,
+  Message,
+  Mnemonic,
+  errors,
+  util,
+  encoding,
+  crypto,
+} from '@opcat-labs/opcat';
 
 import * as opcat from '@opcat-labs/opcat';
 
@@ -57,8 +84,8 @@ export * from './utils/index.js';
 // basic built-in features
 export * from './features/index.js';
 
-export { type Network, toSupportedNetwork, fromSupportedNetwork } from './networks.js';
+export { toSupportedNetwork, fromSupportedNetwork } from './networks.js';
 
-export { type SupportedNetwork, type UTXO, type  ExtUtxo, type B2GUTXO } from './globalTypes.js';
+export { type SupportedNetwork, type UTXO, type ExtUtxo, type B2GUTXO } from './globalTypes.js';
 
 export { opcat };

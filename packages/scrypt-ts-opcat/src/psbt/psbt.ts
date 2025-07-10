@@ -14,7 +14,7 @@ import {
   checkForOutput,
   Psbt as PsbtBase
 } from '@opcat-labs/bip174';
-import { Transaction, Address, Script, crypto, Networks } from '@opcat-labs/opcat'
+import { Transaction, Address, Script, crypto, Networks, Network } from '@opcat-labs/opcat'
 import * as signatureutils from './signatureutils.js';
 import { cloneBuffer, reverseBuffer } from './bufferutils.js';
 
@@ -781,12 +781,12 @@ interface PsbtCache {
 }
 
 export interface PsbtOptsOptional {
-  network?: Networks.Network;
+  network?: Network;
   maximumFeeRate?: number;
 }
 
 export interface PsbtOpts {
-  network: Networks.Network;
+  network: Network;
   maximumFeeRate: number;
 }
 

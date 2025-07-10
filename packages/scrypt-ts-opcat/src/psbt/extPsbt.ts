@@ -23,7 +23,7 @@ import { hash256, sha256 } from '../smart-contract/fns/index.js';
 
 import { FinalScriptsFunc, isFinalized, Psbt, PsbtOptsOptional, PsbtOutputExtended, TransactionInput } from './psbt.js';
 import { fromSupportedNetwork } from '../networks.js';
-import { Transaction, PublicKey, Networks, encoding } from '@opcat-labs/opcat';
+import { Transaction, PublicKey, Networks, Network, encoding } from '@opcat-labs/opcat';
 import { SmartContract } from '../smart-contract/smartContract.js';
 import { OpcatState } from '../smart-contract/types/primitives.js';
 import { BacktraceInfo, SpentDataHashes } from '../smart-contract/types/structs.js';
@@ -77,7 +77,7 @@ export interface ExtPsbtOpts extends Omit<PsbtOptsOptional, 'network'> {
    *
    * make sure you have set the network if you are working on opcat-signet
    */
-  network?: Networks.Network | SupportedNetwork;
+  network?: Network | SupportedNetwork;
 }
 
 
@@ -98,7 +98,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   constructor(opts: ExtPsbtOpts = {}, data?: PsbtBase) {
     if (typeof opts.network === 'string') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (opts as any as PsbtOptsOptional).network = fromSupportedNetwork(opts.network);
+      (opts as any as PsbtOptsOptional).network = fromSupportedNetwork(opts.network as SupportedNetwork);
     }
     super(opts as PsbtOptsOptional, data);
     this._ctxProvider = new ContextProvider(this);
@@ -162,7 +162,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   static fromBuffer(buffer: Uint8Array, opts: ExtPsbtOpts = {}): ExtPsbt {
     if (typeof opts.network === 'string') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (opts as any as PsbtOptsOptional).network = fromSupportedNetwork(opts.network);
+      (opts as any as PsbtOptsOptional).network = fromSupportedNetwork(opts.network as SupportedNetwork);
     }
     const psbt = Psbt.fromBuffer(buffer, opts as PsbtOptsOptional);
     return new ExtPsbt(opts as PsbtOptsOptional, psbt.data);
@@ -625,10 +625,10 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   /**
    * Gets the network associated with this PSBT instance.
    * @private
-   * @returns {Networks.Network} The network object (defaults to livenet if not specified in options).
+   * @returns {Network} The network object (defaults to livenet if not specified in options).
    * @remarks This is intentionally kept private to avoid confusion between network strings passed to constructor and the Network object returned here.
    */
-  private get network(): Networks.Network {
+  private get network(): Network {
   // make this get function private to avoid user to call it privately
     // it makes confuse if user pass in a network string to the constructor, but here returns a network object
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
