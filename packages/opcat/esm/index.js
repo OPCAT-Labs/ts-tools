@@ -60,7 +60,7 @@ export default {
 export const PublicKeyInput = Input.PublicKey;
 export const PublicKeyHashInput = Input.PublicKeyHash;
 export const MultiSigInput = Input.MultiSig;
-export { Address, Block, MerkleBlock, BlockHeader, HDPrivateKey, HDPublicKey, Networks, Network, Opcode, PrivateKey, PublicKey, Script, Interpreter, Transaction, Input, HashCache, Message, Mnemonic, errors, util, encoding, crypto };
+export { Address, Block, MerkleBlock, BlockHeader, HDPrivateKey, HDPublicKey, Networks, Network, Opcode, PrivateKey, PublicKey, Script, Interpreter, Transaction, Input, Sighash, TransactionSignature, Output, HashCache, Message, Mnemonic, errors, util, encoding, crypto };
 
 
 

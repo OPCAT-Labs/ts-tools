@@ -15,6 +15,7 @@
   },
   "scripts": {
     "gen:esm": "cjs2esm",
+    "postgen:esm": "npm run fixup",
     "fixup": "node fixup.cjs",
     "gen:types": "tsc",
     "test": "mocha"
