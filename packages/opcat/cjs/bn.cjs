@@ -2,9 +2,15 @@
 var assert = require('assert');
 var inherits = require('inherits');
 
-// BN
-
-var BN = function BN(number, base, endian) {
+/**
+ * BN (Big Number) constructor.
+ * Creates a new BN instance or returns the existing one if input is already a BN.
+ * @param {number|BN} number - The number to initialize with (or existing BN instance)
+ * @param {number|string} [base=10] - Numeric base (10, 16, etc) or endianness ('le', 'be')
+ * @param {string} [endian='be'] - Endianness ('le' for little-endian, 'be' for big-endian)
+ * @constructor
+ */
+function BN(number, base, endian) {
   if (BN.isBN(number)) {
     return number;
   }

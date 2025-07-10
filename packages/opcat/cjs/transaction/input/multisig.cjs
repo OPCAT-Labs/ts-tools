@@ -13,8 +13,15 @@ var TransactionSignature = require('../signature.cjs');
 var PublicKey = require('../../publickey.cjs');
 var Varint = require('../../encoding/varint.cjs');
 
+
 /**
+ * Represents a MultiSigInput for a transaction.
  * @constructor
+ * @param {Object} input - The input object containing publicKeys, threshold, and signatures.
+ * @param {Array} pubkeys - Array of public keys (optional, defaults to input.publicKeys).
+ * @param {number} threshold - Required number of signatures (optional, defaults to input.threshold).
+ * @param {Array} signatures - Array of signatures (optional, defaults to input.signatures).
+ * @description Validates that provided public keys match the output script and initializes signatures.
  */
 function MultiSigInput(input, pubkeys, threshold, signatures) {
   Input.apply(this, arguments);
@@ -42,6 +49,11 @@ function MultiSigInput(input, pubkeys, threshold, signatures) {
 }
 inherits(MultiSigInput, Input);
 
+/**
+ * Converts the MultiSigInput instance to a plain object representation.
+ * Includes threshold, publicKeys (converted to strings), and serialized signatures.
+ * @returns {Object} The plain object representation of the MultiSigInput.
+ */
 MultiSigInput.prototype.toObject = function () {
   var obj = Input.prototype.toObject.apply(this, arguments);
   obj.threshold = this.threshold;
@@ -52,6 +64,12 @@ MultiSigInput.prototype.toObject = function () {
   return obj;
 };
 
+/**
+ * Deserializes an array of signature strings into TransactionSignature objects.
+ * @private
+ * @param {Array<string>} signatures - Array of signature strings to deserialize
+ * @returns {Array<TransactionSignature|undefined>} Array of TransactionSignature objects (undefined for null/empty signatures)
+ */
 MultiSigInput.prototype._deserializeSignatures = function (signatures) {
   return _.map(signatures, function (signature) {
     if (!signature) {
@@ -61,6 +79,11 @@ MultiSigInput.prototype._deserializeSignatures = function (signatures) {
   });
 };
 
+/**
+ * Serializes the signatures array by converting each signature to a plain object.
+ * @returns {Array<Object|undefined>} An array of signature objects or undefined values.
+ * @private
+ */
 MultiSigInput.prototype._serializeSignatures = function () {
   return _.map(this.signatures, function (signature) {
     if (!signature) {
@@ -70,6 +93,16 @@ MultiSigInput.prototype._serializeSignatures = function () {
   });
 };
 
+/**
+ * Gets signatures for a MultiSigInput by signing the transaction with the provided private key.
+ * Only signs for public keys that match the private key's public key.
+ * 
+ * @param {Transaction} transaction - The transaction to sign
+ * @param {PrivateKey} privateKey - The private key used for signing
+ * @param {number} index - The input index
+ * @param {number} [sigtype=Signature.SIGHASH_ALL] - The signature type
+ * @returns {TransactionSignature[]} Array of transaction signatures
+ */
 MultiSigInput.prototype.getSignatures = function (transaction, privateKey, index, sigtype) {
   $.checkState(this.output instanceof Output);
   sigtype = sigtype || Signature.SIGHASH_ALL;
@@ -99,6 +132,13 @@ MultiSigInput.prototype.getSignatures = function (transaction, privateKey, index
   return results;
 };
 
+/**
+ * Adds a signature to the MultiSigInput if valid and not already fully signed.
+ * @param {Object} transaction - The transaction to validate the signature against.
+ * @param {Object} signature - The signature object containing publicKey and signature data.
+ * @throws {Error} If already fully signed, no matching public key, or invalid signature.
+ * @returns {MultiSigInput} Returns the instance for chaining.
+ */
 MultiSigInput.prototype.addSignature = function (transaction, signature) {
   $.checkState(!this.isFullySigned(), 'All needed signatures have already been added');
   $.checkArgument(
@@ -111,11 +151,21 @@ MultiSigInput.prototype.addSignature = function (transaction, signature) {
   return this;
 };
 
+/**
+ * Updates the multisig input script by rebuilding it with current public keys, threshold, and signatures.
+ * @returns {MultiSigInput} Returns the instance for chaining.
+ */
 MultiSigInput.prototype._updateScript = function () {
   this.setScript(Script.buildMultisigIn(this.publicKeys, this.threshold, this._createSignatures()));
   return this;
 };
 
+/**
+ * Creates DER-encoded signatures from the input's signature data.
+ * Filters out undefined signatures and converts each valid signature to a Buffer
+ * containing the DER-encoded signature followed by its sigtype byte.
+ * @returns {Buffer[]} Array of signature Buffers
+ */
 MultiSigInput.prototype._createSignatures = function () {
   return _.map(
     _.filter(this.signatures, function (signature) {
@@ -127,19 +177,36 @@ MultiSigInput.prototype._createSignatures = function () {
   );
 };
 
+/**
+ * Clears all signatures from the MultiSigInput by resetting the signatures array
+ * and updating the script. The signatures array length matches the publicKeys array.
+ */
 MultiSigInput.prototype.clearSignatures = function () {
   this.signatures = new Array(this.publicKeys.length);
   this._updateScript();
 };
 
+/**
+ * Checks if the MultiSigInput is fully signed by comparing the number of signatures
+ * with the required threshold.
+ * @returns {boolean} True if the input has enough signatures, false otherwise.
+ */
 MultiSigInput.prototype.isFullySigned = function () {
   return this.countSignatures() === this.threshold;
 };
 
+/**
+ * Returns the number of missing signatures required to meet the threshold.
+ * @returns {number} The count of missing signatures.
+ */
 MultiSigInput.prototype.countMissingSignatures = function () {
   return this.threshold - this.countSignatures();
 };
 
+/**
+ * Counts the number of valid signatures in the MultiSigInput.
+ * @returns {number} The count of non-null/undefined signatures.
+ */
 MultiSigInput.prototype.countSignatures = function () {
   return _.reduce(
     this.signatures,
@@ -150,6 +217,10 @@ MultiSigInput.prototype.countSignatures = function () {
   );
 };
 
+/**
+ * Returns an array of public keys that haven't been signed yet in this MultiSigInput.
+ * @returns {Array} Array of unsigned public keys
+ */
 MultiSigInput.prototype.publicKeysWithoutSignature = function () {
   var self = this;
   return _.filter(this.publicKeys, function (publicKey) {
@@ -157,8 +228,19 @@ MultiSigInput.prototype.publicKeysWithoutSignature = function () {
   });
 };
 
+/**
+ * Verifies a signature for a MultiSigInput transaction.
+ * 
+ * @param {Object} transaction - The transaction to verify.
+ * @param {Object} signature - The signature object containing signature data.
+ * @param {Buffer} signature.signature - The signature to verify.
+ * @param {Buffer} signature.publicKey - The public key corresponding to the signature.
+ * @param {number} signature.inputIndex - The index of the input being signed.
+ * @param {number} signature.sigtype - The signature type (assigned to nhashtype as a workaround).
+ * @returns {boolean} True if the signature is valid, false otherwise.
+ */
 MultiSigInput.prototype.isValidSignature = function (transaction, signature) {
-  // FIXME: Refactor signature so this is not necessary
+// FIXME: Refactor signature so this is not necessary
   signature.signature.nhashtype = signature.sigtype;
   return Sighash.verify(
     transaction,
@@ -171,13 +253,15 @@ MultiSigInput.prototype.isValidSignature = function (transaction, signature) {
 };
 
 /**
- *
- * @param {Buffer[]} signatures
- * @param {PublicKey[]} publicKeys
- * @param {Transaction} transaction
- * @param {Integer} inputIndex
- * @param {Input} input
- * @returns {TransactionSignature[]}
+ * Normalizes signatures for a MultiSigInput by matching each public key with its corresponding signature.
+ * Filters and validates signatures against the provided public keys and transaction.
+ * 
+ * @param {Object} transaction - The transaction to verify against.
+ * @param {Object} input - The input containing prevTxId and outputIndex.
+ * @param {number} inputIndex - The index of the input in the transaction.
+ * @param {Array<Buffer>} signatures - Array of signature buffers to normalize.
+ * @param {Array<PublicKey>} publicKeys - Array of public keys to match signatures against.
+ * @returns {Array<TransactionSignature|null>} Array of matched signatures or null for unmatched keys.
  */
 MultiSigInput.normalizeSignatures = function (
   transaction,
@@ -232,8 +316,18 @@ MultiSigInput.normalizeSignatures = function (
 //      <=72    signature (DER + SIGHASH type)
 //
 // 4    sequence number
+/**
+ * The byte size of a single signature in a MultiSig input.
+ * @constant
+ */
 MultiSigInput.SIGNATURE_SIZE = 73;
 
+/**
+ * Estimates the byte size of a MultiSigInput, including the base input size,
+ * script size (with threshold-based signature count), and varint overhead.
+ * @returns {number} The estimated size in bytes.
+ * @private
+ */
 MultiSigInput.prototype._estimateSize = function () {
   var scriptSize = 1 + this.threshold * MultiSigInput.SIGNATURE_SIZE;
   return Input.BASE_SIZE + Varint(scriptSize).toBuffer().length + scriptSize;

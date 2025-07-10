@@ -20,10 +20,10 @@ var ecPointFromX = ec.curve.pointFromX.bind(ec.curve);
  * @returns {Point} An instance of Point
  * @constructor
  */
-var Point = function Point(x, y, isRed) {
+function Point(x, y, isRed) {
   try {
     var point = ecPoint(x, y, isRed);
-  } catch (e) {
+  } catch (_) {
     throw new Error('Invalid Point');
   }
   point.validate();
@@ -41,6 +41,7 @@ Point.prototype = Object.getPrototypeOf(ec.curve.point());
  * @param {BN|String} x - The X coordinate
  * @throws {Error} A validation error if exists
  * @returns {Point} An instance of Point
+ * @static
  */
 Point.fromX = function fromX(odd, x) {
   try {
@@ -58,6 +59,7 @@ Point.fromX = function fromX(odd, x) {
  *
  * @link https://en.bitcoin.it/wiki/Secp256k1
  * @returns {Point} An instance of the base point.
+ * @static
  */
 Point.getG = function getG() {
   return ec.curve.g;
@@ -70,6 +72,7 @@ Point.getG = function getG() {
  *
  * @link https://en.bitcoin.it/wiki/Private_key#Range_of_valid_ECDSA_private_keys
  * @returns {BN} A BN instance of the number of points on the curve
+ * @static
  */
 Point.getN = function getN() {
   return new BN(ec.curve.n.toArray());
@@ -116,7 +119,7 @@ Point.prototype.validate = function validate() {
   var p2;
   try {
     p2 = ecPointFromX(this.getX(), this.getY().isOdd());
-  } catch (e) {
+  } catch (_) {
     throw new Error('Point does not lie on the curve');
   }
 
@@ -140,6 +143,7 @@ Point.prototype.validate = function validate() {
  *
  * @param {Point} point An instance of Point.
  * @returns {Buffer} A compressed point in the form of a buffer.
+ * @static
  */
 Point.pointToCompressed = function pointToCompressed(point) {
   var xbuf = point.getX().toBuffer({ size: 32 });
@@ -160,6 +164,7 @@ Point.pointToCompressed = function pointToCompressed(point) {
  *
  * @param {Buffer} buf A compressed point.
  * @returns {Point} A Point.
+ * @static
  */
 Point.pointFromCompressed = function (buf) {
   if (buf.length !== 33) {
@@ -203,6 +208,7 @@ Point.prototype.toHex = function () {
  *
  * @param {Buffer} buf A compressed point.
  * @returns {Point} A Point.
+ * @static
  */
 Point.fromBuffer = function (buf) {
   return Point.pointFromCompressed(buf);
@@ -213,6 +219,7 @@ Point.fromBuffer = function (buf) {
  *
  * @param {Buffer} hex A compressed point as a hex string.
  * @returns {Point} A Point.
+ * @static
  */
 Point.fromHex = function (hex) {
   return Point.fromBuffer(Buffer.from(hex, 'hex'));

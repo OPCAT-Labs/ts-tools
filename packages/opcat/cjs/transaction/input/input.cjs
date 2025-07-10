@@ -12,13 +12,23 @@ var Signature = require('../../crypto/signature.cjs');
 var TransactionSignature = require('../signature.cjs');
 var Hash = require('../../crypto/hash.cjs');
 var PrivateKey = require('../../privatekey.cjs');
+var PublicKeyInput = require('./publickey.cjs');
+var PublicKeyHashInput = require('./publickeyhash.cjs');
+var MultiSigInput = require('./multisig.cjs');
+
 
 var MAXINT = 0xffffffff; // Math.pow(2, 32) - 1;
 var DEFAULT_RBF_SEQNUMBER = MAXINT - 2;
 var DEFAULT_SEQNUMBER = MAXINT;
 var DEFAULT_LOCKTIME_SEQNUMBER = MAXINT - 1;
 
-var Input = function Input(params) {
+/**
+ * Creates an Input instance from parameters.
+ * @constructor
+ * @param {Object} [params] - Optional parameters to initialize the Input.
+ * @returns {Input} New Input instance or initialized instance if params provided.
+ */
+function Input(params) {
   if (!(this instanceof Input)) {
     return new Input(params);
   }
@@ -49,15 +59,35 @@ Object.defineProperty(Input.prototype, 'script', {
   },
 });
 
+/**
+ * Creates an Input instance from a plain JavaScript object.
+ * @param {Object} obj - The object to convert to an Input.
+ * @returns {Input} The new Input instance.
+ * @throws {Error} If the argument is not an object.
+ */
 Input.fromObject = function (obj) {
   $.checkArgument(_.isObject(obj));
   var input = new Input();
   return input._fromObject(obj);
 };
 
+/**
+ * Creates an Input instance from an object containing transaction input parameters.
+ * Validates required fields (prevTxId, outputIndex) and converts hex strings to Buffers.
+ * Handles optional parameters with defaults (sequenceNumber, script).
+ * @param {Object} params - Input parameters object
+ * @param {(string|Buffer)} params.prevTxId - Previous transaction ID (hex string or Buffer)
+ * @param {number} params.outputIndex - Output index in previous transaction
+ * @param {Output|Object} [params.output] - Output instance or output parameters
+ * @param {number} [params.sequenceNumber] - Sequence number (defaults to DEFAULT_SEQNUMBER)
+ * @param {Script|Buffer|string} [params.script] - Script instance, buffer or hex string
+ * @throws {errors.Transaction.Input.InvalidParams} If required params are missing
+ * @returns {Input} Returns the Input instance for chaining
+ * @private
+ */
 Input.prototype._fromObject = function (params) {
 
-  if(_.isUndefined(params.prevTxId) 
+  if(_.isUndefined(params.prevTxId)
     || _.isUndefined(params.outputIndex)) {
      throw new errors.Transaction.Input.InvalidParams('require prevTxId and outputIndex');
   }
@@ -83,6 +113,14 @@ Input.prototype._fromObject = function (params) {
   return this;
 };
 
+
+/**
+ * Converts the Input instance to a plain object for JSON serialization.
+ * Includes prevTxId, outputIndex, sequenceNumber, and script as hex strings.
+ * Optionally adds human-readable scriptString if script is valid,
+ * and includes the output object if present.
+ * @returns {Object} A plain object representation of the Input.
+ */
 Input.prototype.toObject = Input.prototype.toJSON = function toObject() {
   var obj = {
     prevTxId: this.prevTxId.toString('hex'),
@@ -100,6 +138,17 @@ Input.prototype.toObject = Input.prototype.toJSON = function toObject() {
   return obj;
 };
 
+/**
+ * Creates an Input instance from a BufferReader.
+ * @param {BufferReader} br - The buffer reader containing input data.
+ * @returns {Input} The parsed Input object with properties:
+ *   - prevTxId: Reversed 32-byte previous transaction ID.
+ *   - outputIndex: LE uint32 output index.
+ *   - _scriptBuffer: Var-length script buffer.
+ *   - sequenceNumber: LE uint32 sequence number.
+ * @note TODO: Return specialized input types (CoinbaseInput, PublicKeyHashInput, etc.).
+ * @static
+ */
 Input.fromBufferReader = function (br) {
   var input = new Input();
   input.prevTxId = br.readReverse(32);
@@ -111,6 +160,12 @@ Input.fromBufferReader = function (br) {
   return input;
 };
 
+/**
+ * Serializes the input to a BufferWriter.
+ * @param {boolean} hashScriptSig - Whether to hash the script (true) or include it directly (false).
+ * @param {BufferWriter} [writer] - Optional BufferWriter instance to write to.
+ * @returns {BufferWriter} The BufferWriter containing the serialized input.
+ */
 Input.prototype.toBufferWriter = function (hashScriptSig, writer) {
   $.checkArgument(typeof hashScriptSig === 'boolean', 'hashScriptSig should be boolean')
   if (!writer) {
@@ -130,6 +185,10 @@ Input.prototype.toBufferWriter = function (hashScriptSig, writer) {
 }
 
 
+/**
+ * Converts the input to a prevout format (txid + output index) as a buffer.
+ * @returns {Buffer} The serialized prevout data.
+ */
 Input.prototype.toPrevout = function () {
   let writer = new BufferWriter()
   writer.writeReverse(this.prevTxId)
@@ -138,6 +197,12 @@ Input.prototype.toPrevout = function () {
 }
 
 
+/**
+ * Sets the script for this input.
+ * @param {Script|string|Buffer|null} script - Can be a Script object, hex string, human-readable string, Buffer, or null (for empty script)
+ * @returns {Input} Returns the Input instance for chaining
+ * @throws {TypeError} If script is of invalid type
+ */
 Input.prototype.setScript = function (script) {
   this._script = null;
   if (script instanceof Script) {
@@ -172,7 +237,6 @@ Input.prototype.setScript = function (script) {
  * @param {PrivateKey | Array} privateKeys - the private key to use when signing
  * @param {number} inputIndex - the index of this input in the provided transaction
  * @param {number} sigType - defaults to Signature.SIGHASH_ALL
- * @abstract
  */
 Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, sigtype) {
   $.checkState(this.output instanceof Output);
@@ -229,7 +293,6 @@ Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, 
  * @param {number} inputIndex - the index of this input in the provided transaction
  * @param {number} sigType - defaults to Signature.SIGHASH_ALL
  * @param {boolean} isLowS - true if the sig hash is safe for low s.
- * @abstract
  */
 Input.prototype.getPreimage = function (transaction, inputIndex, sigtype, isLowS) {
   $.checkState(this.output instanceof Output);
@@ -240,26 +303,52 @@ Input.prototype.getPreimage = function (transaction, inputIndex, sigtype, isLowS
     : Sighash.sighashPreimage(transaction, sigtype, inputIndex);
 };
 
+/**
+ * Abstract method that throws an error when invoked. Must be implemented by subclasses
+ * to determine if all required signatures are present on this input.
+ * @throws {AbstractMethodInvoked} Always throws to indicate abstract method usage
+ * @abstract
+ */
 Input.prototype.isFullySigned = function () {
   throw new errors.AbstractMethodInvoked('Input#isFullySigned');
 };
 
+/**
+ * Checks if the input is final (has maximum sequence number).
+ * @returns {boolean} True if the input is final, false otherwise.
+ */
 Input.prototype.isFinal = function () {
   return this.sequenceNumber === Input.MAXINT;
 };
 
-Input.prototype.addSignature = function (transaction, signature) {
-  const s = Script.buildPublicKeyIn(signature.signature.toDER(), signature.sigtype)
-  console.log("s:", s.toHex())
-  // throw new errors.AbstractMethodInvoked('Input#addSignature')
+/**
+ * Abstract method to add a signature to the transaction input.
+ * Must be implemented by concrete input types.
+ * @param {Object} transaction - The transaction to sign
+ * @param {Object} signature - The signature to add
+ * @abstract
+ */
+Input.prototype.addSignature = function (_transaction, _signature) {
 };
 
+/**
+ * Clears all signatures from the input.
+ * @abstract
+ */
 Input.prototype.clearSignatures = function () {
-  // throw new errors.AbstractMethodInvoked('Input#clearSignatures')
+
 };
 
+/**
+ * Verifies if a signature is valid for this input in the given transaction.
+ * Note: Temporarily modifies the signature object by setting nhashtype from sigtype.
+ * 
+ * @param {Object} transaction - The transaction to verify against
+ * @param {TransactionSignature} signature - Signature object containing signature, publicKey, etc.
+ * @returns {boolean} True if the signature is valid, false otherwise
+ */
 Input.prototype.isValidSignature = function (transaction, signature) {
-  // FIXME: Refactor signature so this is not necessary
+// FIXME: Refactor signature so this is not necessary
   signature.signature.nhashtype = signature.sigtype;
   return Sighash.verify(
     transaction,
@@ -282,8 +371,38 @@ Input.prototype.isNull = function () {
   );
 };
 
+/**
+ * Estimates the size of the input in bytes by converting it to a buffer.
+ * @returns {number} The length of the serialized buffer in bytes.
+ * @private
+ */
 Input.prototype._estimateSize = function () {
   return this.toBufferWriter(false).toBuffer().length;
 };
+
+
+/**
+ * Attaches the PublicKeyInput class to the Input namespace.
+ * @memberof Input
+ * @name PublicKey
+ * @alias PublicKeyInput
+ */
+Input.PublicKey = PublicKeyInput;
+
+
+/**
+ * Attaches the PublicKeyHashInput class to the Input namespace.
+ * @memberof Input
+ * @name PublicKeyHash
+ * @alias PublicKeyHashInput
+ */
+Input.PublicKeyHash = PublicKeyHashInput;
+/**
+ * Attaches the PublicKeyHashInput class to the Input namespace.
+ * @memberof Input
+ * @name MultiSig
+ * @alias MultiSigInput
+ */
+Input.MultiSig = MultiSigInput;
 
 module.exports = Input;

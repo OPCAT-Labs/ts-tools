@@ -11,7 +11,11 @@ var _ = require('../util/_.cjs')
 
 var SIGHASH_SINGLE_BUG = Buffer.from('0000000000000000000000000000000000000000000000000000000000000001', 'hex')
 
-var Sighash = function Sighash() {
+/**
+ * Represents a Sighash utility for cryptographic signature operations.
+ * @constructor
+ */
+function Sighash() {
 
 };
 

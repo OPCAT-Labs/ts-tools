@@ -3,7 +3,11 @@
 var _ = require('./_.cjs');
 var $ = require('./preconditions.cjs');
 
-var JSUtil = function JSUtil() {
+/**
+ * Utility functions for JavaScript operations.
+ * @constructor
+ */
+function JSUtil() {
 }
 
 /**

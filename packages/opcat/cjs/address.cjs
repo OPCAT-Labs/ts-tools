@@ -36,8 +36,8 @@ var JSUtil = require('./util/js.cjs');
  * ```
  *
  * @param {*} data - The encoded data in various formats
- * @param {Network|String|number=} network - The network: 'livenet' or 'testnet'
- * @param {string=} type - The type of address: 'pubkey'
+ * @param {Network|String|number} [network] - The network: 'livenet' or 'testnet'
+ * @param {string} [type] - The type of address: 'pubkey'
  * @returns {Address} A new valid and frozen instance of an Address
  * @constructor
  */
@@ -81,11 +81,54 @@ function Address(data, network, type) {
 }
 
 /**
+ * Gets the hash buffer of the Address instance.
+ * @memberof Address.prototype
+ * @type {Buffer}
+ * @readonly
+ */
+Object.defineProperty(Address.prototype, 'hashBuffer', {
+  enumerable: true,
+  configurable: false,
+  get: function () {
+    return this.hashBuffer;
+  },
+});
+
+/**
+ * Gets or sets the network associated with this Address instance.
+ * @memberof Address.prototype
+ * @type {Network}
+ * @readonly
+ */
+Object.defineProperty(Address.prototype, 'network', {
+  enumerable: true,
+  configurable: false,
+  get: function () {
+    return this.network;
+  },
+});
+
+/**
+ * Gets the address type (e.g. 'pubkeyhash').
+ * @memberof Address.prototype
+ * @type {string}
+ * @readonly
+ */
+Object.defineProperty(Address.prototype, 'type', {
+  enumerable: true,
+  configurable: false,
+  get: function () {
+    return this.type;
+  },
+});
+
+/**
  * Internal function used to split different kinds of arguments of the constructor
- * @param {*} data - The encoded data in various formats
- * @param {Network|String|number=} network - The network: 'livenet' or 'testnet'
- * @param {string=} type - The type of address: 'pubkey'
+ * @param {Buffer|Uint8Array|string|Object} data - The encoded data in various formats
+ * @param {Network|string} [network] - The network: 'livenet' or 'testnet'
+ * @param {string} [type] - The type of address: 'pubkey'
  * @returns {Object} An "info" object with "type", "network", and "hashBuffer"
+ * @private
  */
 Address.prototype._classifyArguments = function (data, network, type) {
   // transform and validate input data
@@ -104,7 +147,11 @@ Address.prototype._classifyArguments = function (data, network, type) {
   }
 };
 
-/** @static */
+/**
+ * PayToPublicKeyHash address type identifier.
+ * @type {string}
+ * @static
+ */
 Address.PayToPublicKeyHash = 'pubkeyhash';
 
 /**
@@ -131,6 +178,7 @@ Address._transformHash = function (hash) {
  * @param {string} data.type - either 'pubkeyhash' or 'scripthash'
  * @param {Network=} data.network - the name of the network associated
  * @return {Address}
+ * @private
  */
 Address._transformObject = function (data) {
   $.checkArgument(data.hash || data.hashBuffer, 'Must provide a `hash` or `hashBuffer` property');
@@ -274,7 +322,7 @@ Address.fromPublicKeyHash = function (hash, network) {
 
 
 /**
- * Instantiate an address from a buffer of the address
+ * Instantiate an address from a bitcoin address buffer
  *
  * @param {Buffer} buffer - An instance of buffer of the address
  * @param {String|Network=} network - either a Network instance, 'livenet', or 'testnet'
@@ -286,6 +334,13 @@ Address.fromBuffer = function (buffer, network, type) {
   return new Address(info.hashBuffer, info.network, info.type);
 };
 
+/**
+ * Creates an Address instance from a hex string.
+ * @param {string} hex - The hex string representation of the address.
+ * @param {Network} network - The network type (e.g., 'mainnet', 'testnet').
+ * @param {AddressType} [type] - Optional address type.
+ * @returns {Address} The Address instance created from the hex string.
+ */
 Address.fromHex = function (hex, network, type) {
   return Address.fromBuffer(Buffer.from(hex, 'hex'), network, type);
 };

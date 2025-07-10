@@ -1,7 +1,11 @@
 
 var _ = require('./_.cjs');
 
-var Derivation = function Derivation() {
+/**
+ * Represents a derivation function or class (purpose to be determined based on implementation).
+ * @constructor
+ */
+function Derivation() {
 }
 
 Derivation.RootElementAlias = ['m', 'M', "m'", "M'"]

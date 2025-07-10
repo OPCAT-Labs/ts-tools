@@ -9,27 +9,33 @@ var BN = require('./crypto/bn.cjs');
 var Base58 = require('./encoding/base58.cjs');
 var Base58Check = require('./encoding/base58check.cjs');
 var Hash = require('./crypto/hash.cjs');
-var Network = require('./networks.cjs');
+var Networks = require('./networks.cjs');
 var Point = require('./crypto/point.cjs');
 var PrivateKey = require('./privatekey.cjs');
 var Random = require('./crypto/random.cjs');
 var HDPublicKey = require('./hdpublickey.cjs');
+var JSUtil = require('./util/js.cjs');
 
 var errors = require('./errors/index.cjs');
+
 var hdErrors = errors.HDPrivateKey;
-var JSUtil = require('./util/js.cjs');
 
 var MINIMUM_ENTROPY_BITS = 128;
 var BITS_TO_BYTES = 1 / 8;
 var MAXIMUM_ENTROPY_BITS = 512;
 
 /**
- * Represents an instance of an hierarchically derived private key.
- *
+ * Creates a new HDPrivateKey instance from various input formats.
  * More info on https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
- *
  * @constructor
- * @param {string|Buffer|Object} arg
+ * @param {HDPrivateKey|string|Buffer|Object} arg - Input can be:
+ *   - Existing HDPrivateKey instance (returns same instance)
+ *   - Network name (generates random key for that network)
+ *   - Serialized string/Buffer (base58 encoded)
+ *   - JSON string
+ *   - Object with key properties
+ * @throws {hdErrors.UnrecognizedArgument} If input format is not recognized
+ * @throws {Error} If serialized input is invalid
  */
 function HDPrivateKey(arg) {
   if (arg instanceof HDPrivateKey) {
@@ -42,7 +48,7 @@ function HDPrivateKey(arg) {
     return this._generateRandomly();
   }
 
-  if (Network.get(arg)) {
+  if (Networks.get(arg)) {
     return this._generateRandomly(arg);
   } else if (_.isString(arg) || Buffer.isBuffer(arg)) {
     if (HDPrivateKey.isValidSerialized(arg)) {
@@ -61,6 +67,41 @@ function HDPrivateKey(arg) {
   }
 }
 
+/**
+ * Gets the hdPublicKey of the HDPrivateKey.
+ * @name HDPrivateKey.prototype.hdPublicKey
+ * @type {HDPublicKey}
+ * @memberof HDPrivateKey
+ */
+Object.defineProperty(HDPrivateKey.prototype, 'hdPublicKey', {
+  configurable: false,
+  enumerable: true,
+  get: function () {
+    this._calcHDPublicKey();
+    return this._hdPublicKey;
+  },
+});
+
+/**
+ * Gets the xpubkey of the HDPrivateKey.
+ * @name HDPrivateKey.prototype.xpubkey
+ * @type {string}
+ * @memberof HDPrivateKey
+ */
+Object.defineProperty(HDPrivateKey.prototype, 'xpubkey', {
+  configurable: false,
+  enumerable: true,
+  get: function () {
+    this._calcHDPublicKey();
+    return this._hdPublicKey.xpubkey;
+  },
+});
+
+
+/**
+ * Creates a new HDPrivateKey instance with random values.
+ * @returns {HDPrivateKey} A new HDPrivateKey object with randomly generated properties.
+ */
 HDPrivateKey.fromRandom = function () {
   return new HDPrivateKey();
 };
@@ -69,7 +110,7 @@ HDPrivateKey.fromRandom = function () {
  * Verifies that a given path is valid.
  *
  * @param {string|number} arg
- * @param {boolean?} hardened
+ * @param {boolean} [hardened]
  * @return {boolean}
  */
 HDPrivateKey.isValidPath = function (arg, hardened) {
@@ -89,37 +130,6 @@ HDPrivateKey.isValidPath = function (arg, hardened) {
 };
 
 
-/**
- * WARNING: This method is deprecated. Use deriveChild or deriveNonCompliantChild instead. This is not BIP32 compliant
- *
- *
- * Get a derived child based on a string or number.
- *
- * If the first argument is a string, it's parsed as the full path of
- * derivation. Valid values for this argument include "m" (which returns the
- * same private key), "m/0/1/40/2'/1000", where the ' quote means a hardened
- * derivation.
- *
- * If the first argument is a number, the child with that index will be
- * derived. If the second argument is truthy, the hardened version will be
- * derived. See the example usage for clarification.
- *
- * @example
- * ```javascript
- * var parent = new HDPrivateKey('xprv...');
- * var child_0_1_2h = parent.derive(0).derive(1).derive(2, true);
- * var copy_of_child_0_1_2h = parent.derive("m/0/1/2'");
- * assert(child_0_1_2h.xprivkey === copy_of_child_0_1_2h);
- * ```
- *
- * @param {string|number} arg
- * @param {boolean?} hardened
- */
-HDPrivateKey.prototype.derive = function () {
-  throw new Error(
-    'derive has been deprecated. use deriveChild or, for the old way, deriveNonCompliantChild.',
-  );
-};
 
 /**
  * WARNING: This method will not be officially supported until v1.0.0.
@@ -148,7 +158,7 @@ HDPrivateKey.prototype.derive = function () {
  * ```
  *
  * @param {string|number} arg
- * @param {boolean?} hardened
+ * @param {boolean} [hardened]
  */
 HDPrivateKey.prototype.deriveChild = function (arg, hardened) {
   if (_.isNumber(arg)) {
@@ -173,8 +183,10 @@ HDPrivateKey.prototype.deriveChild = function (arg, hardened) {
  * serialization of a private key, such that it's still possible to derive the privateKey
  * to recover those funds.
  *
- * @param {string|number} arg
- * @param {boolean?} hardened
+ * @param {number|string} arg - Either a child index number or derivation path string
+ * @param {boolean} [hardened] - Whether to create hardened derivation (only used with number arg)
+ * @returns {HDPrivateKey} The derived child private key
+ * @throws {hdErrors.InvalidDerivationArgument} If argument type is invalid
  */
 HDPrivateKey.prototype.deriveNonCompliantChild = function (arg, hardened) {
   if (_.isNumber(arg)) {
@@ -186,6 +198,17 @@ HDPrivateKey.prototype.deriveNonCompliantChild = function (arg, hardened) {
   }
 };
 
+/**
+ * Derives a child HDPrivateKey from the current key using the specified index.
+ * Handles both hardened and non-hardened derivation according to BIP32.
+ * 
+ * @param {number} index - The child index to derive
+ * @param {boolean} [hardened] - Whether to use hardened derivation
+ * @param {boolean} [nonCompliant=false] - If true, uses non-zero-padded private key serialization
+ * @returns {HDPrivateKey} The derived child private key
+ * @throws {hdErrors.InvalidPath} If the derivation path is invalid
+ * @private
+ */
 HDPrivateKey.prototype._deriveWithNumber = function (index, hardened, nonCompliant) {
   if (!HDPrivateKey.isValidPath(index, hardened)) {
     throw new hdErrors.InvalidPath(index);
@@ -241,6 +264,14 @@ HDPrivateKey.prototype._deriveWithNumber = function (index, hardened, nonComplia
   return derived;
 };
 
+/**
+ * Derives a child HDPrivateKey from a string path.
+ * @param {string} path - The derivation path (e.g. "m/44'/0'/0'")
+ * @param {boolean} [nonCompliant] - Whether to use non-compliant derivation
+ * @returns {HDPrivateKey} The derived private key
+ * @throws {hdErrors.InvalidPath} If the path is invalid
+ * @private
+ */
 HDPrivateKey.prototype._deriveFromString = function (path, nonCompliant) {
   if (!HDPrivateKey.isValidPath(path)) {
     throw new hdErrors.InvalidPath(path);
@@ -259,7 +290,7 @@ HDPrivateKey.prototype._deriveFromString = function (path, nonCompliant) {
  * is valid.
  *
  * @param {string|Buffer} data - the serialized private key
- * @param {string|Network=} network - optional, if present, checks that the
+ * @param {string|Network} network - optional, if present, checks that the
  *     network provided matches the network serialized.
  * @return {boolean}
  */
@@ -272,7 +303,7 @@ HDPrivateKey.isValidSerialized = function (data, network) {
  * in base58 with checksum to fail.
  *
  * @param {string|Buffer} data - the serialized private key
- * @param {string|Network=} network - optional, if present, checks that the
+ * @param {string|Network} network - optional, if present, checks that the
  *     network provided matches the network serialized.
  * @return {errors.InvalidArgument|null}
  */
@@ -300,8 +331,15 @@ HDPrivateKey.getSerializedError = function (data, network) {
   return null;
 };
 
+/**
+ * Validates if the provided data matches the expected network's extended private key version.
+ * @param {Buffer} data - The data buffer to validate (must include version bytes).
+ * @param {string|Network} networkArg - Network identifier or Network object to validate against.
+ * @returns {Error|null} Returns error if validation fails, otherwise null.
+ * @private
+ */
 HDPrivateKey._validateNetwork = function (data, networkArg) {
-  var network = Network.get(networkArg);
+  var network = Networks.get(networkArg);
   if (!network) {
     return new errors.InvalidNetworkArgument(networkArg);
   }
@@ -312,24 +350,49 @@ HDPrivateKey._validateNetwork = function (data, networkArg) {
   return null;
 };
 
+/**
+ * Creates an HDPrivateKey instance from a string representation.
+ * @param {string} arg - The string to convert to an HDPrivateKey
+ * @returns {HDPrivateKey} A new HDPrivateKey instance
+ * @throws {Error} If the input is not a valid string
+ */
 HDPrivateKey.fromString = function (arg) {
   $.checkArgument(_.isString(arg), 'No valid string was provided');
   return new HDPrivateKey(arg);
 };
 
+/**
+ * Creates an HDPrivateKey instance from a plain object.
+ * @param {Object} arg - The object containing HDPrivateKey properties.
+ * @throws {Error} Throws if argument is not a valid object.
+ * @returns {HDPrivateKey} A new HDPrivateKey instance.
+ */
 HDPrivateKey.fromObject = function (arg) {
   $.checkArgument(_.isObject(arg), 'No valid argument was provided');
   return new HDPrivateKey(arg);
 };
 
+/**
+ * Builds an HDPrivateKey instance from a JSON string.
+ * @private
+ * @param {string} arg - JSON string to parse and build from.
+ * @returns {HDPrivateKey} The constructed HDPrivateKey instance.
+ */
 HDPrivateKey.prototype._buildFromJSON = function (arg) {
   return this._buildFromObject(JSON.parse(arg));
 };
 
+/**
+ * Builds an HDPrivateKey from an object by converting its properties to buffers.
+ * Handles type conversion for version, depth, parentFingerPrint, childIndex, chainCode, privateKey, and checksum.
+ * @private
+ * @param {Object} arg - The source object containing key properties
+ * @returns {HDPrivateKey} The constructed HDPrivateKey instance
+ */
 HDPrivateKey.prototype._buildFromObject = function (arg) {
   // TODO: Type validation
   var buffers = {
-    version: arg.network ? JSUtil.integerAsBuffer(Network.get(arg.network).xprivkey) : arg.version,
+    version: arg.network ? JSUtil.integerAsBuffer(Networks.get(arg.network).xprivkey) : arg.version,
     depth: _.isNumber(arg.depth) ? Buffer.from([arg.depth & 0xff]) : arg.depth,
     parentFingerPrint: _.isNumber(arg.parentFingerPrint)
       ? JSUtil.integerAsBuffer(arg.parentFingerPrint)
@@ -351,6 +414,12 @@ HDPrivateKey.prototype._buildFromObject = function (arg) {
   return this._buildFromBuffers(buffers);
 };
 
+/**
+ * Builds an HDPrivateKey instance from a serialized Base58Check encoded string.
+ * @private
+ * @param {string} arg - The Base58Check encoded extended private key (xprivkey)
+ * @returns {HDPrivateKey} The instance built from the decoded buffers
+ */
 HDPrivateKey.prototype._buildFromSerialized = function (arg) {
   var decoded = Base58Check.decode(arg);
   var buffers = {
@@ -369,6 +438,12 @@ HDPrivateKey.prototype._buildFromSerialized = function (arg) {
   return this._buildFromBuffers(buffers);
 };
 
+/**
+ * Generates a new HDPrivateKey instance with a randomly generated seed.
+ * @param {Network} network - The network to use for the HDPrivateKey.
+ * @returns {HDPrivateKey} A new HDPrivateKey instance with random seed.
+ * @private
+ */
 HDPrivateKey.prototype._generateRandomly = function (network) {
   return HDPrivateKey.fromSeed(Random.getRandomBuffer(64), network);
 };
@@ -377,8 +452,9 @@ HDPrivateKey.prototype._generateRandomly = function (network) {
  * Generate a private key from a seed, as described in BIP32
  *
  * @param {string|Buffer} hexa
- * @param {*} network
+ * @param {Network} [network]
  * @return HDPrivateKey
+ * @static
  */
 HDPrivateKey.fromSeed = function (hexa, network) {
   if (JSUtil.isHexaString(hexa)) {
@@ -396,7 +472,7 @@ HDPrivateKey.fromSeed = function (hexa, network) {
   var hash = Hash.sha512hmac(hexa, Buffer.from('Bitcoin seed'));
 
   return new HDPrivateKey({
-    network: Network.get(network) || Network.defaultNetwork,
+    network: Networks.get(network) || Networks.defaultNetwork,
     depth: 0,
     parentFingerPrint: 0,
     childIndex: 0,
@@ -405,12 +481,18 @@ HDPrivateKey.fromSeed = function (hexa, network) {
   });
 };
 
+/**
+ * Calculates and caches the HD public key from the private key.
+ * This is an internal method that lazily computes the public key only when needed.
+ * The result is stored in `this._hdPublicKey` to avoid repeated calculations.
+ * @private
+ */
 HDPrivateKey.prototype._calcHDPublicKey = function () {
   if (!this._hdPublicKey) {
     var args = _.clone(this._buffers);
     var point = Point.getG().mul(BN.fromBuffer(args.privateKey));
     args.publicKey = Point.pointToCompressed(point);
-    args.version = JSUtil.integerAsBuffer(Network.get(args.version.readUInt32BE(0)).xpubkey);
+    args.version = JSUtil.integerAsBuffer(Networks.get(args.version.readUInt32BE(0)).xpubkey);
     args.privateKey = undefined;
     args.checksum = undefined;
     args.xprivkey = undefined;
@@ -418,10 +500,24 @@ HDPrivateKey.prototype._calcHDPublicKey = function () {
   }
 };
 
+/**
+ * Converts the HDPrivateKey instance to its corresponding HDPublicKey.
+ * @returns {HDPublicKey} The derived HD public key.
+ */
 HDPrivateKey.prototype.toHDPublicKey = function () {
   this._calcHDPublicKey();
   return this._hdPublicKey;
 };
+
+
+/**
+ * Returns the private key associated with this HD private key.
+ * @returns {PrivateKey} The private key instance.
+ */
+HDPrivateKey.prototype.toPrivateKey = function () {
+  return this.privateKey;
+};
+
 
 /**
  * Receives a object with buffers in all the properties and populates the
@@ -438,6 +534,7 @@ HDPrivateKey.prototype.toHDPublicKey = function () {
  * @param {string=} arg.xprivkey - if set, don't recalculate the base58
  *      representation
  * @return {HDPrivateKey} this
+ * @private
  */
 HDPrivateKey.prototype._buildFromBuffers = function (arg) {
   HDPrivateKey._validateBufferArguments(arg);
@@ -464,7 +561,7 @@ HDPrivateKey.prototype._buildFromBuffers = function (arg) {
     }
   }
 
-  var network = Network.get(arg.version.readUInt32BE(0));
+  var network = Networks.get(arg.version.readUInt32BE(0));
   var xprivkey;
   xprivkey = Base58Check.encode(Buffer.concat(sequence));
   arg.xprivkey = Buffer.from(xprivkey);
@@ -484,26 +581,22 @@ HDPrivateKey.prototype._buildFromBuffers = function (arg) {
   });
 
   this._hdPublicKey = null;
-
-  Object.defineProperty(this, 'hdPublicKey', {
-    configurable: false,
-    enumerable: true,
-    get: function () {
-      this._calcHDPublicKey();
-      return this._hdPublicKey;
-    },
-  });
-  Object.defineProperty(this, 'xpubkey', {
-    configurable: false,
-    enumerable: true,
-    get: function () {
-      this._calcHDPublicKey();
-      return this._hdPublicKey.xpubkey;
-    },
-  });
   return this;
 };
 
+/**
+ * Validates buffer arguments for HDPrivateKey.
+ * Checks that each required buffer field exists and has the correct size.
+ * @private
+ * @param {Object} arg - Object containing buffer fields to validate
+ * @param {Buffer} arg.version - Version buffer
+ * @param {Buffer} arg.depth - Depth buffer 
+ * @param {Buffer} arg.parentFingerPrint - Parent fingerprint buffer
+ * @param {Buffer} arg.childIndex - Child index buffer
+ * @param {Buffer} arg.chainCode - Chain code buffer
+ * @param {Buffer} arg.privateKey - Private key buffer
+ * @param {Buffer} [arg.checksum] - Optional checksum buffer
+ */
 HDPrivateKey._validateBufferArguments = function (arg) {
   var checkBuffer = function (name, size) {
     var buff = arg[name];
@@ -525,10 +618,9 @@ HDPrivateKey._validateBufferArguments = function (arg) {
 };
 
 /**
- * Returns the string representation of this private key (a string starting
- * with "xprv..."
- *
- * @return string
+ * Returns the extended private key string representation of this HDPrivateKey.
+ *  (a string starting with "xprv...")
+ * @returns {string} The extended private key in base58 string format.
  */
 HDPrivateKey.prototype.toString = function () {
   return this.xprivkey;
@@ -545,25 +637,23 @@ HDPrivateKey.prototype.inspect = function () {
 /**
  * Returns a plain object with a representation of this private key.
  *
- * Fields include:<ul>
- * <li> network: either 'livenet' or 'testnet'
- * <li> depth: a number ranging from 0 to 255
- * <li> fingerPrint: a number ranging from 0 to 2^32-1, taken from the hash of the
- * <li>     associated public key
- * <li> parentFingerPrint: a number ranging from 0 to 2^32-1, taken from the hash
- * <li>     of this parent's associated public key or zero.
- * <li> childIndex: the index from which this child was derived (or zero)
- * <li> chainCode: an hexa string representing a number used in the derivation
- * <li> privateKey: the private key associated, in hexa representation
- * <li> xprivkey: the representation of this extended private key in checksum
- * <li>     base58 format
- * <li> checksum: the base58 checksum of xprivkey
+ * Fields include:
+ * <ul>
+ * <li> network: either 'livenet' or 'testnet' </li>
+ * <li> depth: a number ranging from 0 to 255 </li>
+ * <li> fingerPrint: a number ranging from 0 to 2^32-1, taken from the hash of the associated public key </li>
+ * <li> parentFingerPrint: a number ranging from 0 to 2^32-1, taken from the hash of this parent's associated public key or zero. </li>
+ * <li> childIndex: the index from which this child was derived (or zero) </li>
+ * <li> chainCode: an hexa string representing a number used in the derivation </li>
+ * <li> privateKey: the private key associated, in hexa representation </li>
+ * <li> xprivkey: the representation of this extended private key in checksum base58 format </li>
+ * <li> checksum: the base58 checksum of xprivkey </li>
  * </ul>
  *  @return {Object}
  */
 HDPrivateKey.prototype.toObject = HDPrivateKey.prototype.toJSON = function toObject() {
   return {
-    network: Network.get(this._buffers.version.readUInt32BE(0), 'xprivkey').name,
+    network: Networks.get(this._buffers.version.readUInt32BE(0), 'xprivkey').name,
     depth: this._buffers.depth[0],
     fingerPrint: this.fingerPrint.readUInt32BE(0),
     parentFingerPrint: this._buffers.parentFingerPrint.readUInt32BE(0),
@@ -613,12 +703,39 @@ HDPrivateKey.prototype.toHex = function () {
   return this.toBuffer().toString('hex');
 };
 
+/**
+ * Sets the default depth for hierarchical deterministic (HD) private keys.
+ * @type {number}
+ * @default 0
+ */
 HDPrivateKey.DefaultDepth = 0;
+/**
+ * Sets the default fingerprint value for HDPrivateKey instances.
+ * @type {number}
+ * @default 0
+ */
 HDPrivateKey.DefaultFingerprint = 0;
+/**
+ * Default child index used for deriving child keys in the HD (Hierarchical Deterministic) key derivation path.
+ * @type {number}
+ * @default 0
+ */
 HDPrivateKey.DefaultChildIndex = 0;
+/**
+ * Sets the hardened derivation flag for HDPrivateKey (inherited from Derivation.Hardened).
+ * @type {number}
+ */
 HDPrivateKey.Hardened = Derivation.Hardened;
+/**
+ * Maximum index value for HD private keys (2 * Hardened value).
+ * @type {number}
+ */
 HDPrivateKey.MaxIndex = 2 * HDPrivateKey.Hardened;
 
+/**
+ * Sets the root element alias for HDPrivateKey to match Derivation's root element alias.
+ * @type {string}
+ */
 HDPrivateKey.RootElementAlias = Derivation.RootElementAlias;
 
 HDPrivateKey.VersionSize = 4;

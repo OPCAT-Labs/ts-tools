@@ -3,7 +3,14 @@
 var crypto = require('crypto');
 var $ = require('../util/preconditions.cjs');
 
-var Hash = function Hash() {
+/**
+ * Represents a hash utility class.
+ * @constructor
+ */
+function Hash() {
+  if (!(this instanceof Hash)) {
+    return new Hash();
+  }
 };
 
 /**

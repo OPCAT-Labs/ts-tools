@@ -10,7 +10,8 @@ var errors = require('../errors/index.cjs');
 
 var $ = require('../util/preconditions.cjs');
 var HDPrivateKey = require('../hdprivatekey.cjs');
-var words = require('./words/index.cjs');
+var Words = require('./words/index.cjs');
+
 
 /**
  * This is an immutable class that represents a BIP39 Mnemonic code.
@@ -28,12 +29,16 @@ var words = require('./words/index.cjs');
  * var mnemonic = new Mnemonic(Mnemonic.Words.SPANISH);
  * var xprivkey = mnemonic.toHDPrivateKey();
  *
- * @param {*=} data - a seed, phrase, or entropy to initialize (can be skipped)
- * @param {Array=} wordlist - the wordlist to generate mnemonics from
+ * @param {Buffer|string|number} [data] - Input data (Buffer for seed, string for phrase, or number for entropy bits)
+ * @param {Array} [wordlist] - Optional wordlist for phrase generation/validation
+ * @throws {InvalidArgument} If invalid data type provided
+ * @throws {Mnemonic.UnknownWordlist} If phrase language can't be detected
+ * @throws {Mnemonic.InvalidMnemonic} If phrase is invalid
+ * @throws {InvalidArgument} If invalid ENT value (must be >=128 and divisible by 32)
  * @returns {Mnemonic} A new instance of Mnemonic
  * @constructor
  */
-var Mnemonic = function (data, wordlist) {
+function Mnemonic (data, wordlist) {
   if (!(this instanceof Mnemonic)) {
     return new Mnemonic(data, wordlist);
   }
@@ -88,10 +93,21 @@ var Mnemonic = function (data, wordlist) {
   });
 };
 
+/**
+ * Creates a new Mnemonic instance with random entropy using the specified wordlist.
+ * @param {Array} [wordlist=Mnemonic.Words.ENGLISH] - The wordlist to use for mnemonic generation (defaults to English).
+ * @returns {Mnemonic} A new Mnemonic instance with random entropy.
+ */
 Mnemonic.fromRandom = function (wordlist = Mnemonic.Words.ENGLISH) {
   return new Mnemonic(wordlist);
 };
 
+/**
+ * Creates a Mnemonic instance from a mnemonic string.
+ * @param {string} mnemonic - The mnemonic phrase string.
+ * @param {string} [wordlist=Mnemonic.Words.ENGLISH] - Optional wordlist (defaults to English).
+ * @returns {Mnemonic} A new Mnemonic instance.
+ */
 Mnemonic.fromString = function (mnemonic, wordlist = Mnemonic.Words.ENGLISH) {
   return new Mnemonic(mnemonic, wordlist);
 };
@@ -141,6 +157,7 @@ Mnemonic.isValid = function (mnemonic, wordlist) {
  * @param {String} mnemonic - The mnemonic string
  * @param {String} wordlist - The wordlist
  * @returns {boolean}
+ * @private
  */
 Mnemonic._belongsToWordlist = function (mnemonic, wordlist) {
   var words = unorm.nfkd(mnemonic).split(' ');
@@ -156,6 +173,7 @@ Mnemonic._belongsToWordlist = function (mnemonic, wordlist) {
  *
  * @param {String} mnemonic - The mnemonic string
  * @returns {Array} the wordlist or null
+ * @private
  */
 Mnemonic._getDictionary = function (mnemonic) {
   if (!mnemonic) return null;
@@ -238,6 +256,7 @@ Mnemonic.prototype.inspect = function () {
  * @param {Number} ENT - Entropy size, defaults to 128
  * @param {Array} wordlist - Array of words to generate the mnemonic
  * @returns {String} Mnemonic string
+ * @private
  */
 Mnemonic._mnemonic = function (ENT, wordlist) {
   var buf = Random.getRandomBuffer(ENT / 8);
@@ -250,6 +269,7 @@ Mnemonic._mnemonic = function (ENT, wordlist) {
  * @param {Number} entropy - Entropy buffer
  * @param {Array} wordlist - Array of words to generate the mnemonic
  * @returns {String} Mnemonic string
+ * @private
  */
 Mnemonic._entropy2mnemonic = function (entropy, wordlist) {
   var bin = '';
@@ -298,9 +318,17 @@ Mnemonic._entropyChecksum = function (entropy) {
 
   return checksum;
 };
+/**
+ * The list of valid mnemonic words used by the Mnemonic class.
+ * @type {Words}
+ */
+Mnemonic.Words = Words;
 
-Mnemonic.Words = words;
+/**
+ * Assigns the pbkdf2 function to Mnemonic.pbkdf2 for key derivation.
+ * @type {Function}
+ */
+Mnemonic.pbkdf2 = pbkdf2;
 
 module.exports = Mnemonic;
 
-module.exports.Words = words;

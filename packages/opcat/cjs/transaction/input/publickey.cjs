@@ -24,7 +24,7 @@ inherits(PublicKeyInput, Input);
  * @param {Transaction} transaction - the transaction to be signed
  * @param {PrivateKey} privateKey - the private key with which to sign the transaction
  * @param {number} index - the index of the input in the transaction input vector
- * @param {number=} sigtype - the type of signature, defaults to Signature.SIGHASH_ALL
+ * @param {number} [sigtype] - the type of signature, defaults to Signature.SIGHASH_ALL
  * @return {Array} of objects that can be
  */
 PublicKeyInput.prototype.getSignatures = function (transaction, privateKey, index, sigtype) {
@@ -51,14 +51,13 @@ PublicKeyInput.prototype.getSignatures = function (transaction, privateKey, inde
   return [];
 };
 
+
 /**
- * Add the provided signature
- *
- * @param {Object} signature
- * @param {PublicKey} signature.publicKey
- * @param {Signature} signature.signature
- * @param {number=} signature.sigtype
- * @return {PublicKeyInput} this, for chaining
+ * Adds a signature to the public key input after validating it.
+ * @param {Object} transaction - The transaction to validate against.
+ * @param {TransactionSignature} signature - The signature object containing signature data and type.
+ * @returns {PublicKeyInput} Returns the instance for chaining.
+ * @throws {Error} Throws if the signature is invalid.
  */
 PublicKeyInput.prototype.addSignature = function (transaction, signature) {
   $.checkState(this.isValidSignature(transaction, signature), 'Signature is invalid');
@@ -66,18 +65,20 @@ PublicKeyInput.prototype.addSignature = function (transaction, signature) {
   return this;
 };
 
+
 /**
- * Clear the input's signature
- * @return {PublicKeyHashInput} this, for chaining
+ * Clears all signatures from this input by setting an empty script.
+ * @returns {PublicKeyInput} The instance for chaining.
  */
 PublicKeyInput.prototype.clearSignatures = function () {
   this.setScript(Script.empty());
   return this;
 };
 
+
 /**
- * Query whether the input is signed
- * @return {boolean}
+ * Checks if the public key input is fully signed by verifying the script contains a public key.
+ * @returns {boolean} True if the script contains a public key, false otherwise.
  */
 PublicKeyInput.prototype.isFullySigned = function () {
   return this.script.isPublicKeyIn();
@@ -91,8 +92,17 @@ PublicKeyInput.prototype.isFullySigned = function () {
 // <=72 signature (DER + SIGHASH type)
 // ---
 // 4    sequence number
+/**
+ * The maximum allowed size (in bytes) for a public key script in a transaction input.
+ * @constant {number}
+ */
 PublicKeyInput.SCRIPT_MAX_SIZE = 74;
 
+/**
+ * Estimates the byte size required for this public key input.
+ * @returns {number} The estimated size in bytes (base input size + max script size).
+ * @private
+ */
 PublicKeyInput.prototype._estimateSize = function () {
   return Input.BASE_SIZE + PublicKeyInput.SCRIPT_MAX_SIZE;
 };

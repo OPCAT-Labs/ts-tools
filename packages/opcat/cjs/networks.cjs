@@ -1,24 +1,15 @@
-'use strict';
 var _ = require('./util/_.cjs');
 
 var JSUtil = require('./util/js.cjs');
+var Network = require('./network.cjs');
 var networks = [];
 var networkMaps = {};
 
 /**
- * A network is merely a map containing values that correspond to version
- * numbers for each bitcoin network. Currently only supporting "livenet"
- * (a.k.a. "mainnet"), "testnet", "regtest" and "stn".
+ * A tool class for managing all supported networks
  * @constructor
  */
-var Network = function Network() {}
-
-Network.prototype.toString = function toString() {
-  return this.name;
-};
-
-
-var Networks = function Networks() {}
+var Networks = function Networks() { }
 
 /**
  * @function
@@ -102,6 +93,7 @@ function unindexNetworkBy(network, values) {
  * @return Network
  */
 Networks.add = function add(data) {
+
   var network = new Network();
 
   JSUtil.defineImmutable(network, {
@@ -303,26 +295,27 @@ Object.defineProperty(Networks.testnet, 'cashAddrPrefixArray', {
   },
 });
 
+
 /**
- * @function
+ * Enables regtest network mode for testing purposes.
  * @member Networks#enableRegtest
- * Will enable regtest features for testnet
+ * @function
  */
 Networks.enableRegtest = function enableRegtest() {
   testnet.regtestEnabled = true;
 }
 
+
 /**
  * @function
  * @member Networks#disableRegtest
- * Will disable regtest features for testnet
+ * Disables the regtest network configuration.
+ * This sets the `regtestEnabled` flag to false in the testnet configuration.
  */
 Networks.disableRegtest = function disableRegtest() {
   testnet.regtestEnabled = false;
 }
 
 
-/**
- * @namespace Networks
- */
+
 module.exports = Networks

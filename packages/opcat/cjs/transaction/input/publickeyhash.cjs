@@ -25,8 +25,8 @@ inherits(PublicKeyHashInput, Input);
  * @param {Transaction} transaction - the transaction to be signed
  * @param {PrivateKey} privateKey - the private key with which to sign the transaction
  * @param {number} index - the index of the input in the transaction input vector
- * @param {number=} sigtype - the type of signature, defaults to Signature.SIGHASH_ALL
- * @param {Buffer=} hashData - the precalculated hash of the public key associated with the privateKey provided
+ * @param {number} [sigtype] - the type of signature, defaults to Signature.SIGHASH_ALL
+ * @param {Buffer} [hashData] - the precalculated hash of the public key associated with the privateKey provided
  * @return {Array} of objects that can be
  */
 PublicKeyHashInput.prototype.getSignatures = function (
@@ -60,14 +60,13 @@ PublicKeyHashInput.prototype.getSignatures = function (
   return [];
 };
 
+
 /**
- * Add the provided signature
- *
- * @param {Object} signature
- * @param {PublicKey} signature.publicKey
- * @param {Signature} signature.signature
- * @param {number=} signature.sigtype
- * @return {PublicKeyHashInput} this, for chaining
+ * Adds a signature to the input and updates the script.
+ * @param {Transaction} transaction - The transaction to validate against.
+ * @param {TransactionSignature} signature - The signature object containing publicKey, signature (DER format), and sigtype.
+ * @returns {PublicKeyHashInput} Returns the instance for chaining.
+ * @throws {Error} Throws if the signature is invalid.
  */
 PublicKeyHashInput.prototype.addSignature = function (transaction, signature) {
   $.checkState(this.isValidSignature(transaction, signature), 'Signature is invalid');
@@ -109,8 +108,17 @@ PublicKeyHashInput.prototype.isFullySigned = function () {
 // 65   uncompressed public key
 //
 // 4    sequence number
+/**
+ * The maximum allowed size (in bytes) for a public key hash script.
+ * @constant
+ */
 PublicKeyHashInput.SCRIPT_MAX_SIZE = 140;
 
+/**
+ * Estimates the byte size of this public key hash input.
+ * @returns {number} The estimated size in bytes (base input size + max script size).
+ * @private
+ */
 PublicKeyHashInput.prototype._estimateSize = function () {
   return Input.BASE_SIZE + PublicKeyHashInput.SCRIPT_MAX_SIZE;
 };

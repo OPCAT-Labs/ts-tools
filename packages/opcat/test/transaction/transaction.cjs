@@ -258,8 +258,8 @@ describe('Transaction', function () {
         .from(simpleUtxoWith100000Satoshis)
         .addSafeData('genesis is coming')
         .change(changeAddress)
+        .feePerKb(50)
         .sign(privateKey);
-      // update if change default FEE_PER_KB
       transaction
         .serialize()
         .should.equal(

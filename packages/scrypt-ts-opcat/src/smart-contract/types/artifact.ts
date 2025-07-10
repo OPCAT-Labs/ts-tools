@@ -4,8 +4,10 @@ export const CURRENT_CONTRACT_ARTIFACT_VERSION = 10; // add state type
 export const SUPPORTED_MINIMUM_VERSION = 8;
 
 /**
- * Application Binary Interface.
+ * Represents the ABI (Application Binary Interface) of a smart contract.
  * @category Artifact
+ * @property contract - The name or identifier of the contract.
+ * @property abi - An array of ABI entities that define the contract's interface.
  */
 export interface ABI {
   contract: string;
@@ -47,16 +49,25 @@ export interface Artifact {
   file: string;
 }
 
+
 /**
- * @ignore
+ * Enum representing the types of ABI (Application Binary Interface) entities.
+ * @category Artifact
+ * @remarks
+ * Used to distinguish between different kinds of smart contract interfaces,
+ * such as functions and constructors.
  */
 export enum ABIEntityType {
   FUNCTION = 'function',
   CONSTRUCTOR = 'constructor',
 }
 
+
 /**
- * @ignore
+ * Represents a parameter entity in a smart contract artifact.
+ * @category Artifact
+ * @property name - The name of the parameter.
+ * @property type - The type of the parameter.
  */
 export type ParamEntity = {
   name: string;
@@ -64,9 +75,13 @@ export type ParamEntity = {
 };
 
 /**
- * Application Binary Interface. A JSON array defining how to interact with the contract (e.g., functions, events, parameters).
- * Used by clients (like dApps) to encode/decode transactions and calls.
+ * Represents an ABI (Application Binary Interface) entity in a smart contract. A JSON array defining how to interact with the contract (e.g., functions, events, parameters).
+ *  Used by clients (like dApps) to encode/decode transactions and calls.
  * @category Artifact
+ * @property {string} type - The type of the ABI entity (e.g., "function", "event").
+ * @property {string} [name] - Optional name of the ABI entity.
+ * @property {ParamEntity[]} params - Array of parameter entities for the ABI.
+ * @property {number} [index] - Optional index, typically used for event parameters.
  */
 export interface ABIEntity {
   type: string;

@@ -20,8 +20,11 @@ var Transaction = require('../transaction/index.cjs');
  *
  * The primary way to use this class is via the verify function.
  * e.g., Interpreter().verify( ... );
+ * @constructor
+ * @param {Object} [obj] - Optional object to initialize the interpreter with.
+ * @returns {Interpreter} A new Interpreter instance.
  */
-var Interpreter = function Interpreter(obj) {
+function Interpreter(obj) {
   if (!(this instanceof Interpreter)) {
     return new Interpreter(obj);
   }
@@ -115,7 +118,12 @@ Interpreter.prototype.verify = function (
 };
 
 
-Interpreter.prototype.initialize = function (obj) {
+/**
+ * Initializes the interpreter instance with default values.
+ * Sets up empty stacks, resets program counter and execution flags,
+ * and initializes state tracking variables for script execution.
+ */
+Interpreter.prototype.initialize = function () {
   this.stack = new Stack([]);
   this.altstack = new Stack([]);
   this.pc = 0;
@@ -131,6 +139,23 @@ Interpreter.prototype.initialize = function (obj) {
   this.returned = false;
 };
 
+/**
+ * Updates the interpreter's state with provided values.
+ * @param {Object} obj - Object containing properties to update
+ * @param {Buffer} [obj.script] - Script buffer
+ * @param {Object} [obj.tx] - Transaction object
+ * @param {boolean} [obj.nin] - Non-input flag
+ * @param {BN} [obj.satoshisBN] - Satoshis as BN.js instance
+ * @param {Array} [obj.stack] - Main stack
+ * @param {Array} [obj.altstack] - Alternate stack
+ * @param {number} [obj.pc] - Program counter
+ * @param {number} [obj.pbegincodehash] - Begin code hash position
+ * @param {number} [obj.nOpCount] - Operation count
+ * @param {Array} [obj.vfExec] - Execution flags
+ * @param {Array} [obj.vfElse] - Else flags
+ * @param {string} [obj.errstr] - Error string
+ * @param {number} [obj.flags] - Interpreter flags
+ */
 Interpreter.prototype.set = function (obj) {
   this.script = obj.script || this.script;
   this.tx = obj.tx || this.tx;
@@ -148,8 +173,12 @@ Interpreter.prototype.set = function (obj) {
   this.flags = typeof obj.flags !== 'undefined' ? obj.flags : this.flags;
 };
 
+/**
+ * Returns a subset of the script starting from the most recent OP_CODESEPARATOR.
+ * @returns {Script} A new Script instance containing the sliced chunks.
+ */
 Interpreter.prototype.subscript = function () {
-    // Subset of script starting at the most recent codeseparator
+// Subset of script starting at the most recent codeseparator
     // CScript scriptCode(pbegincodehash, pend);
     return Script.fromChunks(this.script.chunks.slice(this.pbegincodehash));
 };
@@ -157,79 +186,133 @@ Interpreter.prototype.subscript = function () {
 Interpreter.getTrue = () => Buffer.from([1]);
 Interpreter.getFalse = () => Buffer.from([]);
 
+/**
+ * Maximum allowed size for script elements in the interpreter.
+ * Set to the maximum safe integer value by default.
+ */
 Interpreter.MAX_SCRIPT_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
+/**
+ * The maximum allowed size for an element in the interpreter.
+ * @type {number}
+ */
 Interpreter.MAXIMUM_ELEMENT_SIZE = Number.MAX_SAFE_INTEGER;
 
+/**
+ * The threshold value used to distinguish between block height and timestamp in locktime.
+ * Values below this threshold are interpreted as block numbers, while values equal or above are treated as timestamps.
+ */
 Interpreter.LOCKTIME_THRESHOLD = 500000000;
+/**
+ * The locktime threshold value as a BN.js BigNumber instance.
+ * @type {BN}
+ */
 Interpreter.LOCKTIME_THRESHOLD_BN = new BN(Interpreter.LOCKTIME_THRESHOLD);
 
-// flags taken from bitcoind
-// bitcoind commit: b5d1b1092998bc95313856d535c632ea5a8f9104
+/**
+ * Flag indicating no script verification rules should be enforced.
+ * flags taken from bitcoind
+ * bitcoind commit: b5d1b1092998bc95313856d535c632ea5a8f9104
+ * @constant {number}
+ */
 Interpreter.SCRIPT_VERIFY_NONE = 0;
 
-// Passing a non-strict-DER signature or one with undefined hashtype to a checksig operation causes script failure.
-// Passing a pubkey that is not (0x04 + 64 bytes) or (0x02 or 0x03 + 32 bytes) to checksig causes that pubkey to be
-// skipped (not softfork safe: this flag can widen the validity of OP_CHECKSIG OP_NOT).
+/**
+ * Passing a non-strict-DER signature or one with undefined hashtype to a checksig operation causes script failure.
+ * Passing a pubkey that is not (0x04 + 64 bytes) or (0x02 or 0x03 + 32 bytes) to checksig causes that pubkey to be
+ * skipped (not softfork safe: this flag can widen the validity of OP_CHECKSIG OP_NOT).
+ */
 Interpreter.SCRIPT_VERIFY_STRICTENC = 1 << 1;
 
-// Passing a non-strict-DER signature to a checksig operation causes script failure (softfork safe, BIP62 rule 1)
+
+/**
+ * Passing a non-strict-DER signature to a checksig operation causes script failure (softfork safe, BIP62 rule 1)
+ */
 Interpreter.SCRIPT_VERIFY_DERSIG = 1 << 2;
 
-// Passing a non-strict-DER signature or one with S > order/2 to a checksig operation causes script failure
-// (softfork safe, BIP62 rule 5).
+/**
+ * Passing a non-strict-DER signature or one with S > order/2 to a checksig operation causes script failure
+ * (softfork safe, BIP62 rule 5).
+ */
 Interpreter.SCRIPT_VERIFY_LOW_S = 1 << 3;
 
-// verify dummy stack item consumed by CHECKMULTISIG is of zero-length (softfork safe, BIP62 rule 7).
+/**
+ * verify dummy stack item consumed by CHECKMULTISIG is of zero-length (softfork safe, BIP62 rule 7).
+ */
 Interpreter.SCRIPT_VERIFY_NULLDUMMY = 1 << 4;
 
-// Using a non-push operator in the scriptSig causes script failure (softfork safe, BIP62 rule 2).
+/**
+ * Using a non-push operator in the scriptSig causes script failure (softfork safe, BIP62 rule 2).
+ */
 Interpreter.SCRIPT_VERIFY_SIGPUSHONLY = 1 << 5;
 
-// Require minimal encodings for all push operations (OP_0... OP_16, OP_1NEGATE where possible, direct
-// pushes up to 75 bytes, OP_PUSHDATA up to 255 bytes, OP_PUSHDATA2 for anything larger). Evaluating
-// any other push causes the script to fail (BIP62 rule 3).
-// In addition, whenever a stack element is interpreted as a number, it must be of minimal length (BIP62 rule 4).
-// (softfork safe)
+/**
+ * Require minimal encodings for all push operations (OP_0... OP_16, OP_1NEGATE where possible, direct
+ * pushes up to 75 bytes, OP_PUSHDATA up to 255 bytes, OP_PUSHDATA2 for anything larger). Evaluating
+ * any other push causes the script to fail (BIP62 rule 3).
+ * In addition, whenever a stack element is interpreted as a number, it must be of minimal length (BIP62 rule 4).
+ * (softfork safe)
+ * 
+ */
 Interpreter.SCRIPT_VERIFY_MINIMALDATA = 1 << 6;
 
-// Discourage use of NOPs reserved for upgrades (NOP1-10)
-//
-// Provided so that nodes can avoid accepting or mining transactions
-// containing executed NOP's whose meaning may change after a soft-fork,
-// thus rendering the script invalid; with this flag set executing
-// discouraged NOPs fails the script. This verification flag will never be
-// a mandatory flag applied to scripts in a block. NOPs that are not
-// executed, e.g.  within an unexecuted IF ENDIF block, are *not* rejected.
+/**
+ * Discourage use of NOPs reserved for upgrades (NOP1-10)
+ * 
+ * Provided so that nodes can avoid accepting or mining transactions
+ * containing executed NOP's whose meaning may change after a soft-fork,
+ * thus rendering the script invalid; with this flag set executing
+ * discouraged NOPs fails the script. This verification flag will never be
+ * a mandatory flag applied to scripts in a block. NOPs that are not
+ * executed, e.g.  within an unexecuted IF ENDIF block, are *not* rejected.
+ */
 Interpreter.SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS = 1 << 7;
 
 
-// CLTV See BIP65 for details.
+
+/**
+ * CLTV See BIP65 for details.
+ */
 Interpreter.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY = 1 << 9;
 
-// support CHECKSEQUENCEVERIFY opcode
-//
-// See BIP112 for details
+/**
+ * support CHECKSEQUENCEVERIFY opcode
+ * See BIP112 for details
+ */
 Interpreter.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY = 1 << 10;
 
-// Signature(s) must be empty vector if an CHECK(MULTI)SIG operation failed
-//
+
+/**
+ * Flag indicating that script verification should fail if a null input is encountered.
+ * This is a bitmask value (1 << 14) used in script verification rules.
+ */
 Interpreter.SCRIPT_VERIFY_NULLFAIL = 1 << 14;
 
-// Public keys in scripts must be compressed
+/**
+ * Flag indicating that compressed public key type should be verified in scripts.
+ * This is a bit flag used in script verification (1 << 15).
+ * @type {number}
+ */
 Interpreter.SCRIPT_VERIFY_COMPRESSED_PUBKEYTYPE = 1 << 15;
 
-// Enable new opcodes.
-//
+
+/**
+ * Enable new opcodes.
+ * @type {number}
+ */
 Interpreter.SCRIPT_ENABLE_MONOLITH_OPCODES = 1 << 18;
 
-// Are the Magnetic upgrade opcodes enabled?
-//
+
+/**
+ * Are the Magnetic upgrade opcodes enabled?
+ * @type {number}
+ */
 Interpreter.SCRIPT_ENABLE_MAGNETIC_OPCODES = 1 << 19;
 
 /* Below flags apply in the context of BIP 68 */
 /**
  * If this flag set, CTxIn::nSequence is NOT interpreted as a relative
  * lock-time.
+ * @type {number}
  */
 Interpreter.SEQUENCE_LOCKTIME_DISABLE_FLAG = 1 << 31;
 
@@ -237,19 +320,34 @@ Interpreter.SEQUENCE_LOCKTIME_DISABLE_FLAG = 1 << 31;
  * If CTxIn::nSequence encodes a relative lock-time and this flag is set,
  * the relative lock-time has units of 512 seconds, otherwise it specifies
  * blocks with a granularity of 1.
+ * @type {number}
  */
 Interpreter.SEQUENCE_LOCKTIME_TYPE_FLAG = 1 << 22;
 
 /**
  * If CTxIn::nSequence encodes a relative lock-time, this mask is applied to
  * extract that lock-time from the sequence field.
+ * @type {number}
  */
 Interpreter.SEQUENCE_LOCKTIME_MASK = 0x0000ffff;
 
+/**
+ * Maximum allowed script size for the interpreter, set to the largest safe integer in JavaScript.
+ * @type {number}
+ */
 Interpreter.MAX_SCRIPT_SIZE = Number.MAX_SAFE_INTEGER;
 
+/**
+ * Maximum number of opcodes that can be executed before stopping the interpreter.
+ * Defaults to Number.MAX_SAFE_INTEGER (effectively unlimited).
+ * @type {number}
+ */
 Interpreter.MAX_OPCODE_COUNT = Number.MAX_SAFE_INTEGER;
 
+/**
+ * Default flags used by the interpreter.
+ * @type {number}
+ */
 Interpreter.DEFAULT_FLAGS =
   Interpreter.SCRIPT_ENABLE_MAGNETIC_OPCODES |
   Interpreter.SCRIPT_ENABLE_MONOLITH_OPCODES |
@@ -263,6 +361,14 @@ Interpreter.DEFAULT_FLAGS =
   Interpreter.SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY |
   Interpreter.SCRIPT_VERIFY_CHECKSEQUENCEVERIFY;
 
+
+/**
+ * Casts a buffer to a boolean value.
+ * Returns true if any byte in the buffer is non-zero (except for the special case of negative zero).
+ * Returns false if all bytes are zero or if the last byte is 0x80 (negative zero case).
+ * @param {Buffer} buf - The input buffer to check
+ * @returns {boolean} The boolean representation of the buffer
+ */
 Interpreter.castToBool = function (buf) {
   for (var i = 0; i < buf.length; i++) {
     if (buf[i] !== 0) {
@@ -276,8 +382,15 @@ Interpreter.castToBool = function (buf) {
   return false;
 };
 
+
 /**
- * Translated from bitcoind's CheckSignatureEncoding
+ * Checks if a signature encoding is valid according to the interpreter's flags.
+ * - For empty signatures: always valid (used for compact invalid signatures in CHECK(MULTI)SIG)
+ * - With DERSIG/STRICTENC flags: validates DER encoding and strict encoding rules
+ * - With LOW_S flag: ensures signature uses low S value
+ * - With STRICTENC flag: validates defined hash type
+ * @param {Buffer} buf - The signature buffer to validate
+ * @returns {boolean} True if valid, false otherwise (sets errstr on failure)
  */
 Interpreter.prototype.checkSignatureEncoding = function (buf) {
   var sig;
@@ -315,8 +428,12 @@ Interpreter.prototype.checkSignatureEncoding = function (buf) {
   return true;
 };
 
+
 /**
- * Translated from bitcoind's CheckPubKeyEncoding
+ * Checks if the provided public key buffer is valid according to strict encoding rules.
+ * Sets an error message if validation fails under SCRIPT_VERIFY_STRICTENC flag.
+ * @param {Buffer} buf - The public key buffer to validate.
+ * @returns {boolean} True if valid, false otherwise (with error string set).
  */
 Interpreter.prototype.checkPubkeyEncoding = function (buf) {
   if ((this.flags & Interpreter.SCRIPT_VERIFY_STRICTENC) !== 0 && !PublicKey.isValid(buf)) {
@@ -327,12 +444,12 @@ Interpreter.prototype.checkPubkeyEncoding = function (buf) {
 };
 
 /**
- *
- * Check the buffer is minimally encoded (see https://github.com/bitcoincashorg/spec/blob/master/may-2018-reenabled-opcodes.md#op_bin2num)
- *
- *
+ * Checks if a buffer is minimally encoded (see https://github.com/bitcoincashorg/spec/blob/master/may-2018-reenabled-opcodes.md#op_bin2num) as a number.
+ * @param {Buffer} buf - The buffer to check.
+ * @param {number} [nMaxNumSize=Interpreter.MAXIMUM_ELEMENT_SIZE] - Maximum allowed size for the buffer.
+ * @returns {boolean} True if the buffer is minimally encoded, false otherwise.
+ * @private
  */
-
 Interpreter._isMinimallyEncoded = function (buf, nMaxNumSize) {
   nMaxNumSize = nMaxNumSize || Interpreter.MAXIMUM_ELEMENT_SIZE;
   if (buf.length > nMaxNumSize) {
@@ -360,11 +477,18 @@ Interpreter._isMinimallyEncoded = function (buf, nMaxNumSize) {
   return true;
 };
 
+
 /**
- *
- * minimally encode the buffer content
- *
- * @param {number} nMaxNumSize (max allowed size)
+ * Minimally encodes a buffer by removing unnecessary trailing zeros.
+ * 
+ * This function implements minimal encoding rules for script numbers:
+ * - Empty buffer remains empty
+ * - Last byte must not be 0x00 or 0x80 unless necessary
+ * - Single zero byte encodes as empty buffer
+ * - Preserves sign bit when trimming
+ * 
+ * @param {Buffer} buf - The input buffer to encode
+ * @returns {Buffer} Minimally encoded buffer (may be empty)
  */
 Interpreter._minimallyEncode = function (buf) {
   if (buf.length === 0) {
@@ -409,13 +533,19 @@ Interpreter._minimallyEncode = function (buf) {
   return Buffer.from('');
 };
 
+
 /**
- * Based on bitcoind's EvalScript function, with the inner loop moved to
- * Interpreter.prototype.step()
+ * Evaluates a script by executing each opcode step-by-step.
+ * Performs size checks on the script and stacks before execution.
+ * 
+ * Based on bitcoind's EvalScript function, with the inner loop moved to `Interpreter.prototype.step()`
  * bitcoind commit: b5d1b1092998bc95313856d535c632ea5a8f9104
+ * @param {string} scriptType - The type of script being evaluated
+ * @returns {boolean} True if evaluation succeeds, false if any error occurs
+ * @throws {Error} If an unknown error occurs during evaluation
  */
 Interpreter.prototype.evaluate = function (scriptType) {
-  // TODO: script size should be configurable. no magic numbers
+// TODO: script size should be configurable. no magic numbers
   if (this.script.toBuffer().length > Interpreter.MAX_SCRIPT_SIZE) {
     this.errstr = 'SCRIPT_ERR_SCRIPT_SIZE';
     return false;
@@ -457,6 +587,12 @@ Interpreter.prototype.evaluate = function (scriptType) {
   return true;
 };
 
+/**
+ * Handles step callback execution for the interpreter.
+ * @private
+ * @param {Object} thisStep - The current step object to pass to the listener
+ * @throws {Error} Logs any errors that occur during callback execution
+ */
 Interpreter.prototype._callbackStep = function (thisStep) {
   if (typeof this.stepListener === 'function') {
     try {
@@ -467,9 +603,14 @@ Interpreter.prototype._callbackStep = function (thisStep) {
   }
 };
 
+
 /**
- * call to update stackvar
- * @param {*} stack
+ * Handles stack callbacks by invoking the registered stack listener function.
+ * If an error occurs during callback execution, logs the error along with PC and opcode details.
+ * @param {Stack} stack - The current execution stack
+ * @param {number} pc - Program counter value
+ * @param {string} scriptType - Type of script being executed
+ * @private
  */
 Interpreter.prototype._callbackStack = function (stack, pc, scriptType) {
   if (typeof this.stackListener === 'function') {
@@ -603,9 +744,19 @@ function padBufferToSize(buf, len) {
   return b;
 }
 
+
 /**
+ * Executes a single step in the script interpreter.
+ * 
+ * This method processes the current opcode in the script, performs the corresponding operation,
+ * and updates the stack or interpreter state accordingly. It handles various opcode types including
+ * stack operations, arithmetic, bitwise logic, cryptographic operations, and control flow.
+ * 
  * Based on the inner loop of bitcoind's EvalScript function
  * bitcoind commit: b5d1b1092998bc95313856d535c632ea5a8f9104
+ * @param {string} scriptType - The type of script being executed (e.g., scriptPubkey, scriptSig).
+ * @returns {boolean} Returns `true` if the step executed successfully, or `false` if an error occurred.
+ *                   Errors are stored in `this.errstr`.
  */
 Interpreter.prototype.step = function (scriptType) {
   var self = this;

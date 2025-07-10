@@ -14,8 +14,8 @@ var $ = require('./util/preconditions.cjs');
 /**
  * Instantiate a PrivateKey from a BN, Buffer or WIF string.
  *
- * @param {string} data - The encoded data in various formats
- * @param {Network|string=} network - a {@link Network} object, or a string with the network name
+ * @param {string|BN|Buffer|Object} data - The encoded data in various formats
+ * @param {Network|string} [network] - a {@link Network} object, or a string with the network name
  * @returns {PrivateKey} A new valid instance of an PrivateKey
  * @constructor
  */
@@ -46,22 +46,60 @@ function PrivateKey(data, network) {
     network: info.network,
   });
 
-  Object.defineProperty(this, 'publicKey', {
-    configurable: false,
-    enumerable: true,
-    get: this.toPublicKey.bind(this),
-  });
-
   return this;
 }
+
+/**
+ * Gets the public key associated with this private key.
+ * @memberof PrivateKey.prototype
+ * @type {PublicKey}
+ * @readonly
+ */
+Object.defineProperty(PrivateKey.prototype, 'publicKey', {
+  configurable: false,
+  enumerable: true,
+  get: function() {
+    return this.toPublicKey()
+  },
+});
+
+/**
+ * Gets the network associated with this private key.
+ * @memberof PrivateKey.prototype
+ * @type {Network}
+ * @readonly
+ */
+Object.defineProperty(PrivateKey.prototype, 'network', {
+  configurable: false,
+  enumerable: true,
+  get: function () {
+    return this.network;
+  }
+});
+
+
+/**
+ * Indicates whether the private key is in compressed format.
+ * @memberof PrivateKey.prototype
+ * @type {boolean}
+ * @readonly
+ */
+Object.defineProperty(PrivateKey.prototype, 'compressed', {
+  configurable: false,
+  enumerable: true,
+  get: function () {
+    return this.compressed;
+  }
+});
 
 /**
  * Internal helper to instantiate PrivateKey internal `info` object from
  * different kinds of arguments passed to the constructor.
  *
- * @param {*} data
- * @param {Network|string=} network - a {@link Network} object, or a string with the network name
+ * @param {string|BN|Buffer|Object} data
+ * @param {Network|string} [network] - a {@link Network} object, or a string with the network name
  * @return {Object}
+ * @private
  */
 PrivateKey.prototype._classifyArguments = function (data, network) {
   var info = {
@@ -114,7 +152,7 @@ PrivateKey._getRandomBN = function () {
  * Internal function to transform a WIF Buffer into a private key
  *
  * @param {Buffer} buf - An WIF string
- * @param {Network|string=} network - a {@link Network} object, or a string with the network name
+ * @param {Network|string} [network] - a {@link Network} object, or a string with the network name
  * @returns {Object} An object with keys: bn, network and compressed
  * @private
  */
@@ -186,6 +224,12 @@ PrivateKey.fromBuffer = function (buf, network) {
   return new PrivateKey(buf, network);
 };
 
+/**
+ * Creates a PrivateKey instance from a hexadecimal string.
+ * @param {string} hex - The hexadecimal string representation of the private key.
+ * @param {Network} network - The network associated with the private key.
+ * @returns {PrivateKey} A PrivateKey instance.
+ */
 PrivateKey.fromHex = function (hex, network) {
   return PrivateKey.fromBuffer(Buffer.from(hex, 'hex'), network);
 };
@@ -232,7 +276,7 @@ PrivateKey.fromObject = PrivateKey.fromJSON = function (obj) {
 /**
  * Instantiate a PrivateKey from random bytes
  *
- * @param {string=} network - Either "livenet" or "testnet"
+ * @param {string|Network} [network] - Either "livenet" or "testnet"
  * @returns {PrivateKey} A new valid instance of PrivateKey
  */
 PrivateKey.fromRandom = function (network) {
@@ -244,7 +288,7 @@ PrivateKey.fromRandom = function (network) {
  * Check if there would be any errors when initializing a PrivateKey
  *
  * @param {string} data - The encoded data in various formats
- * @param {string=} network - Either "livenet" or "testnet"
+ * @param {string|Network} [network] - Either "livenet" or "testnet"
  * @returns {null|Error} An error if exists
  */
 
@@ -262,7 +306,7 @@ PrivateKey.getValidationError = function (data, network) {
  * Check if the parameters are valid
  *
  * @param {string} data - The encoded data in various formats
- * @param {string=} network - Either "livenet" or "testnet"
+ * @param {string|Network} [network] - Either "livenet" or "testnet"
  * @returns {Boolean} If the private key is would be valid
  */
 PrivateKey.isValid = function (data, network) {
@@ -322,6 +366,10 @@ PrivateKey.prototype.toBuffer = function () {
   return this.bn.toBuffer({ size: 32 });
 };
 
+/**
+ * Converts the private key to a hexadecimal string representation.
+ * @returns {string} Hexadecimal string of the private key.
+ */
 PrivateKey.prototype.toHex = function () {
   return this.toBuffer().toString('hex');
 };
@@ -340,7 +388,7 @@ PrivateKey.prototype.toPublicKey = function () {
 
 /**
  * Will return an address for the private key
- * @param {Network=} network - optional parameter specifying
+ * @param {Network|string} [network] - optional parameter specifying
  * the desired network for the address
  *
  * @returns {Address} An address generated from the private key
