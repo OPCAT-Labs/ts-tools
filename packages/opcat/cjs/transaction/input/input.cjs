@@ -141,8 +141,8 @@ Input.prototype.toObject = Input.prototype.toJSON = function toObject() {
     script: this._scriptBuffer.toString('hex'),
   };
   // add human readable form if input contains valid script
-  if (this._script) {
-    obj.scriptString = this._script.toString();
+  if (this.script) {
+    obj.scriptString = this.script.toString();
   }
   if (this.output) {
     obj.output = this.output.toObject();
