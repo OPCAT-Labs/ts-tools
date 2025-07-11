@@ -231,7 +231,7 @@ export class ContextUtils extends SmartContractLib {
   }
 
   /**
-   * Check if the spent amounts array passed in matches the shaSpentAmounts
+   * Check if the spent amounts array passed in matches the hashSpentAmounts
    * @param spentAmounts array of spent amounts passed in that need to be verified
    * @param hashSpentAmounts the hash of the merged spent amounts, which comes from preimage and is trustable
 

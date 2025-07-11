@@ -13,14 +13,16 @@ import { sha256 } from '../fns/index.js';
  */
 export class StateLib<ST extends OpcatState> extends SmartContractLib {
   /**
-   * Calculate the hash of the state object
-   * @param state the state object
-   * @returns the hash byte string of the state object
-   * @onchain
+   * Serializes the given state object into a ByteString using the library's artifact.
+   * @template T - Type of the state object extending OpcatState
+   * @param this - Reference to the StateLib class constructor
+   * @param state - State object to be serialized
+   * @returns Serialized state as ByteString
+   * @throws Error if artifact is not loaded, library not found in artifact, or state type is undefined
    * @category State
    */
   static serializeState<T extends OpcatState>(
-    this: { new (...args: any[]): StateLib<T> },
+    this: { new(...args: any[]): StateLib<T> },
     state: T,
   ): ByteString  {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -25,7 +25,16 @@ export type ChainTxVerifyResponse = {
  * @onchain
  */
 export class Backtrace extends SmartContractLib {
-  
+
+  /**
+   * Verifies that the transaction hash preimage matches the previous transaction hash 
+   * at the specified input index in the prevouts.
+   * 
+   * @param txHashPreimage - The transaction hash preimage to verify
+   * @param t_prevouts - The previous outputs containing the expected transaction hash
+   * @param t_inputIndex - The index of the input to check against in prevouts
+   * @throws Will throw an error if the hashes don't match
+   */
   @method()
   static checkPrevTxHashPreimage(
     txHashPreimage: TxHashPreimage,

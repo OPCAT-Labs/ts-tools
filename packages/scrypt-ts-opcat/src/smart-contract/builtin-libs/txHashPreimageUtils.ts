@@ -13,6 +13,15 @@ import { StdUtils } from "./stdUtils.js";
  * - Extract individual input/output byte strings from preimage
  */
 export class TxHashPreimageUtils extends SmartContractLib {
+  /**
+   * Computes the transaction hash from a given transaction hash preimage.
+   * Validates the preimage structure and constructs the hash by concatenating
+   * version, input/output counts, input/output lists, and lock time.
+   * 
+   * @param txHashPreimage - The transaction hash preimage containing version,
+   *                        input/output lists, and lock time.
+   * @returns The computed transaction hash as a ByteString.
+   */
   @method()
   static getTxHashFromTxHashPreimage(txHashPreimage: TxHashPreimage): ByteString {
     assert(len(txHashPreimage.version) == TX_VERSION_BYTE_LEN);

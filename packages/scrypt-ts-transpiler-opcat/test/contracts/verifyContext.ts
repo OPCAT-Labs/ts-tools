@@ -40,12 +40,12 @@ export class VerifyContext extends SmartContract {
       this.ctx.inputCount,
     );
 
-    // verify this.ctx.shaSpentAmounts and SpentAmounts
+    // verify this.ctx.hashSpentAmounts and SpentAmounts
     {
-      assert(hash256(this.ctx.spentAmounts) === this.ctx.hashSpentAmounts, 'shaSpentAmounts is not correct');
+      assert(hash256(this.ctx.spentAmounts) === this.ctx.hashSpentAmounts, 'hashSpentAmounts is not correct');
     }
 
-    // verify this.ctx.shaSpentScripts and SpentScripts
+    // verify this.ctx.hashSpentDataHashes and SpentScripts
     ContextUtils.checkSpentScripts(this.ctx.spentScriptHashes, this.ctx.hashSpentDataHashes, inputCount);
     {
 
