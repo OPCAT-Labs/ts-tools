@@ -27,7 +27,7 @@ export function genPrivKey(network: SupportedNetwork): PrivateKey {
     }
 
     const address = keyPair.toAddress(fromSupportedNetwork(network))
-    const fundMessage = `You can fund its address '${address}' from the sCrypt faucet https://scrypt.io/faucet`
+    const fundMessage = `You can fund its address '${address}' from the faucet https://faucet.opcatlabs.io`
 
     console.log(fundMessage)
 
