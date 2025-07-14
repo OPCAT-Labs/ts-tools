@@ -1,5 +1,13 @@
 # @opcat-labs/cli-opcat
 
+## 1.0.3
+
+### Patch Changes
+
+- fix esm, fix change amount, add decodePubFunctionCall
+- Updated dependencies
+  - @opcat-labs/scrypt-ts-transpiler-opcat@1.0.2
+
 ## 1.0.2
 
 ### Patch Changes
