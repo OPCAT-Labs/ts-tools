@@ -2,7 +2,7 @@
 
 ## global functions
 
-| 当前 | BSV |
+| Current | BSV |
 | --- | --- | 
 | assert | assert |
 | toByteString | toByteString |
@@ -32,7 +32,7 @@
 
 ## libs
 
-| 当前 | BSV |
+| Current | BSV |
 | --- | --- | 
 | SHPreimage | SigHash | 
 | ByteStringReader | VarIntReader | 
