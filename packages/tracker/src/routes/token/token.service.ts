@@ -177,7 +177,7 @@ export class TokenService {
     const query = this.txOutRepository
       .createQueryBuilder('t1')
       .select('t2.token_id', 'tokenId')
-      .innerJoin(TokenInfoEntity, 't2', 't1.xonly_pubkey = t2.token_pubkey')
+      .innerJoin(TokenInfoEntity, 't2', 't1.locking_script_hash = t2.token_script_hash')
       .where('t1.spend_txid IS NULL')
       .andWhere('t1.owner_pkh = :ownerPkh', { ownerPkh: ownerPubKeyHash })
       .groupBy('t2.token_id');
@@ -187,7 +187,7 @@ export class TokenService {
       query.addSelect('COUNT(1)', 'confirmed').andWhere('t2.decimals < 0');
     }
     if (tokenInfo) {
-      query.andWhere('t1.xonly_pubkey = :tokenPubKey', {
+      query.andWhere('t1.locking_script_hash = :tokenPubKey', {
         tokenPubKey: tokenInfo.tokenScriptHash,
       });
     }
@@ -321,7 +321,7 @@ export class TokenService {
         .createQueryBuilder()
         .select('owner_pkh', 'ownerPubKeyHash')
         .where('spend_txid IS NULL')
-        .andWhere('xonly_pubkey = :xonlyPubkey', {
+        .andWhere('locking_script_hash = :xonlyPubkey', {
           xonlyPubkey: tokenInfo.tokenScriptHash,
         })
         .groupBy('owner_pkh')
