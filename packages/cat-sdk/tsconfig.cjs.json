@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist/cjs",
+    "declarationDir": "./dist/types",
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "rootDir": "./src",
+    "noImplicitAny": false,
+    "resolveJsonModule": true,
+    "downlevelIteration": true,
+    "strict": false /* Enable all strict type-checking options. */
+  },
+  "include": ["./src/**/*"]
+}
