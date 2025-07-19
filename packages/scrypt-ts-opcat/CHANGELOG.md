@@ -1,5 +1,11 @@
 # @opcat-labs/scrypt-ts-opcat
 
+## 1.0.3
+
+### Patch Changes
+
+- export psbt, fix exptsbt.getUtxo
+
 ## 1.0.2
 
 ### Patch Changes
