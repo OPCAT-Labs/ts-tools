@@ -902,14 +902,20 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       throw new Error(`Output at index ${outputIndex} is not found`);
     }
 
-    const address = Script.fromBuffer(Buffer.from(this.txOutputs[outputIndex].script)).toAddress(this.network);
+    let address: string;
+    try {
+      // nonstandard script cannot derive address
+      address = Script.fromBuffer(Buffer.from(this.txOutputs[outputIndex].script)).toAddress(this.network).toString();
+    } catch (error) {
+      address = '';
+    }
 
     return {
       txId: this.extractTransaction().id,
       outputIndex: outputIndex,
       script: uint8ArrayToHex(this.txOutputs[outputIndex].script),
       data: uint8ArrayToHex(this.txOutputs[outputIndex].data),
-      address: address.toString(),
+      address: address,
       satoshis: Number(this.txOutputs[outputIndex].value),
       txHashPreimage: this.txHashPreimage(),
     };

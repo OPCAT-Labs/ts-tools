@@ -1,4 +1,5 @@
 export { ExtPsbt } from './psbt/extPsbt.js';
+export { Psbt } from './psbt/psbt.js';
 export { type IExtPsbt, type ContractCall } from './psbt/types.js';
 
 // smart contract core classes & interfaces

@@ -1,0 +1,76 @@
+{
+  "name": "@opcat-labs/cat-sdk",
+  "version": "1.0.0",
+  "description": "A demo sCrypt smart contract.",
+  "author": "",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js",
+      "types": "./dist/types/index.d.ts"
+    },
+    "./dist/*": {
+      "require": "./dist/cjs/*.js",
+      "types": "./dist/types/*.d.ts",
+      "import": "./dist/esm/*.js"
+    }
+  },
+  "files": [
+    "dist",
+    "artifacts",
+    "scrypt.index.json"
+  ],
+  "scripts": {
+    "clean": "rimraf scrypt.index.json && rimraf dist && rimraf artifacts",
+    "build": "npm run compile && rimraf dist && npm run build:cjs && npm run build:esm && npx -y cpy-cli artifacts dist/ ",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "deploy": "npx ts-node ./deploy.ts",
+    "compile": "rimraf artifacts && npx -y @opcat-labs/cli-opcat@1.0.3 compile",
+    "test": "npm run test:local",
+    "test:local": "mocha",
+    "test:testnet": "cross-env NETWORK=opcat-testnet mocha --no-timeouts",
+    "genprivkey": "npx ts-node tests/utils/privateKey.ts",
+    "lint": "eslint ./src --fix && prettier --write --ignore-unknown \"**/*\"",
+    "lint-check": "eslint ./src && prettier --check --ignore-unknown \"**/*\"",
+    "prepublishOnly": "npm run build"
+  },
+  "lint-staged": {
+    "**/*": [
+      "prettier --write --ignore-unknown"
+    ],
+    "**/*.{ts,js}": [
+      "eslint --cache --fix"
+    ]
+  },
+  "dependencies": {
+    "@opcat-labs/opcat": "1.0.2",
+    "@opcat-labs/scrypt-ts-opcat": "1.0.2",
+    "dotenv": "^16.0.3",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.4",
+    "@types/chai-as-promised": "^7.1.5",
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^18.11.10",
+    "@typescript-eslint/eslint-plugin": "8.15.0",
+    "@typescript-eslint/parser": "8.15.0",
+    "chai": "^4.3.6",
+    "chai-as-promised": "^7.1.1",
+    "chokidar": "^4.0.3",
+    "cross-env": "^7.0.3",
+    "eslint": "9",
+    "eslint-config-prettier": "^8.6.0",
+    "lint-staged": "^13.1.0",
+    "mocha": "^10.1.0",
+    "prettier": "^2.8.2",
+    "rimraf": "^3.0.2",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.3.3"
+  },
+  "license": "MIT"
+}
