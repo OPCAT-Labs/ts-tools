@@ -22,9 +22,6 @@ export class MultiDimArray extends SmartContract<MultiDimArrayState> {
   public move(x: Int32, y: Int32, val: Int32) {
     this.state.board[Number(x)][Number(y)] = val;
 
-    // const nextOutput = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, MultiDimArrayStateLib.stateHash(this.state) )
-    // const nextOutput = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, sha256(MultiDimArrayStateLib.serializeState(this.state)));
-    // const nextOutput = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, MultiDimArray.stateHash(this.state) )
     const nextOutput = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, MultiDimArrayStateLib.stateHash(this.state))
     const outputs = nextOutput + this.buildChangeOutput();
 
