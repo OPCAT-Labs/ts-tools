@@ -37,10 +37,6 @@ export const TX_INPUT_BYTE_LEN = 72n;
 export const TX_OUTPUT_BYTE_LEN = 72n;
 /** @ignore */
 export const TX_INPUT_SCRIPT_HASH_BYTE_LEN = 32n;
-/** @ignore */
-export const TX_IO_INDEX_VAL_MIN = 0n;
-/** @ignore */
-export const TX_IO_INDEX_VAL_MAX = 5n;
 /** @ignore byte length of each part in tx */
 export const TX_VERSION_BYTE_LEN = 4n;
 /** @ignore */
