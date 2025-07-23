@@ -20,7 +20,7 @@ export class PsbtSigner implements PSigner {
 
 
   sign(hash: Uint8Array, _lowR?: boolean): Uint8Array {
-    return crypto.ECDSA.sign(Buffer.from(hash), this.privateKey, 'little').toBuffer();
+    return new Uint8Array(crypto.ECDSA.sign(Buffer.from(hash), this.privateKey, 'little').toBuffer());
   }
   getPublicKey?(): Uint8Array {
     return this.publicKey;

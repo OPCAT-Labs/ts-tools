@@ -24,8 +24,6 @@ export interface ToSignInput {
   tapLeafHashToSign?: string;
   /** sighashTypes */
   sighashTypes?: number[];
-  /** default value is false. Setting it true allows the use of the original private key when signing taproot inputs. */
-  disableTweakSigner?: boolean;
 }
 
 type HexString = string;
