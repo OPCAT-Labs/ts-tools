@@ -151,7 +151,7 @@ export class TokenService {
     const where = {
       ownerPubKeyHash,
       spendTxid: IsNull(),
-      blockHeight: LessThanOrEqual(lastProcessedHeight),
+      // blockHeight: LessThanOrEqual(lastProcessedHeight),
     };
     if (tokenInfo) {
       Object.assign(where, { lockingScriptHash: tokenInfo.tokenScriptHash });
