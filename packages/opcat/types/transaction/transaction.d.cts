@@ -596,7 +596,7 @@ declare class Transaction {
      * @param {boolean} [isLowS=false] - Whether to use low-S signatures.
      * @returns {*} The preimage for the specified input.
      */
-    getPreimage(inputIndex: number, sigtype?: number, isLowS?: boolean): any;
+    getPreimage(inputIndex: number, sigtype?: number, isLowS?: boolean): Buffer;
     /**
      * Gets the signature(s) for a transaction input.
      * @param {number} inputIndex - Index of the input to sign.
