@@ -18,6 +18,7 @@ import { byteString2Int, sha256, toHex } from 'scrypt-ts';
 import { ContractLib } from '../../common/contract';
 import { RpcService } from '../rpc/rpc.service';
 import { ZmqService } from '../zmq/zmq.service';
+import { uint8ArrayToHex } from '@cat-protocol/cat-sdk-v2';
 
 @Injectable()
 export class TxService {
@@ -48,11 +49,14 @@ export class TxService {
   ) {
     this.dataSource = this.txEntityRepository.manager.connection;
     this.zmqService.onRawTx(async (buff: Buffer) => {
+      this.logger.debug(`onRawTx ${uint8ArrayToHex(buff)}`);
+      this.logger.debug(`onRawTx ${buff.toString('hex')}`);
       const tx = Transaction.fromBuffer(buff);
       await this.processTx(tx, -1, null);
     });
     this.zmqService.onHashBlock((blockHash: Buffer) => {
-      this.logger.debug(`onHashBlock ${blockHash}`);
+      this.logger.debug(`onHashBlock ${uint8ArrayToHex(blockHash)}`);
+      this.logger.debug(`onHashBlock ${blockHash.toString('hex')}`);
     });
   }
 
