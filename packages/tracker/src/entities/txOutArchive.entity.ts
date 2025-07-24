@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, PrimaryColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('tx_out_archive')
 export class TxOutArchiveEntity {
@@ -8,23 +8,28 @@ export class TxOutArchiveEntity {
   @PrimaryColumn({ name: 'output_index' })
   outputIndex: number;
 
-  @Column({ name: 'block_height' })
+  @Column({ name: 'block_height', default: 2147483647 })
+  @Index()
   blockHeight: number;
 
   @Column({ type: 'bigint' })
   satoshis: bigint;
 
-  @Column({ name: 'locking_script' })
-  lockingScript: string;
+  @Column({ name: 'locking_script_hash' })
+  lockingScriptHash: string;
 
-  @Column({ name: 'xonly_pubkey', nullable: true })
-  xOnlyPubKey: string;
+  @Column({ name: 'is_from_mint' })
+  isFromMint: boolean;
 
   @Column({ name: 'owner_pkh', nullable: true })
+  @Index()
   ownerPubKeyHash: string;
 
   @Column({ name: 'token_amount', type: 'bigint', nullable: true })
   tokenAmount: bigint;
+
+  @Column({ name: 'data' })
+  data: string;
 
   @Column({ name: 'spend_txid', nullable: true })
   spendTxid: string;
@@ -34,4 +39,7 @@ export class TxOutArchiveEntity {
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
+
+  @UpdateDateColumn({ name: 'update_at' })
+  updatedAt: Date;
 }
