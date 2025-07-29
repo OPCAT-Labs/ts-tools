@@ -190,7 +190,10 @@ function resolveConstStatic(type: string): string {
 }
 
 export function getUnRenamedSymbol(symbol: string) {
-    const RENAME_SYMBOL_SEP = '__rs__';
-    const parts = symbol.split(RENAME_SYMBOL_SEP);
-    return parts[parts.length - 1];
-  }
+  const RENAME_SYMBOL_SEP = '__rs__';
+  const parts = symbol.split(RENAME_SYMBOL_SEP);
+  const unRenamedSymbol = parts[parts.length - 1];
+
+  // some bundler tools like vite may add leading or trailing _ which cause incorrect unrenamed symbol name, we need to remove them
+  return unRenamedSymbol.replace(/_+$/, '').replace(/^_+/, '');
+}

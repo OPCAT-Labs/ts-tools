@@ -113,7 +113,7 @@ export class ContextProvider {
     return this._curPsbt.unsignedTx.inputs.map((_, inputIndex) => {
       const rawSHPreimage = this._curPsbt.unsignedTx.getPreimage(inputIndex, crypto.Signature.SIGHASH_ALL);
 
-      return decodeSHPreimage(hexToUint8Array(rawSHPreimage))
+      return decodeSHPreimage(new Uint8Array(rawSHPreimage))
     })
   }
 }
