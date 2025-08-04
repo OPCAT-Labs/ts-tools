@@ -918,7 +918,6 @@ class PsbtTransaction implements ITransaction {
     buffer: Uint8Array = Uint8Array.from([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
   ) {
     this.tx = txFromBitcoinBuffer(Buffer.from(buffer));
-    // this.tx = Transaction.fromBitcoinBuffer(Buffer.from(buffer));
     checkTxEmpty(this.tx);
     Object.defineProperty(this, 'tx', {
       enumerable: false,
@@ -979,7 +978,6 @@ class PsbtTransaction implements ITransaction {
 
   toBuffer(): Uint8Array {
     return txToBitcoinBuffer(this.tx);
-    // return this.tx.toBitcoinBuffer()
   }
 }
 
@@ -1575,7 +1573,6 @@ function txFromBitcoinBuffer(buf: Buffer): Transaction {
   }
   const outputCount = reader.readVarintNum();
   for (let i = 0; i < outputCount; i++) {
-    // console.log('output', i, outputCount)
     tx.outputs.push(outputFromBufferReader(reader));
   }
   const nLockTime = reader.readUInt32LE();
