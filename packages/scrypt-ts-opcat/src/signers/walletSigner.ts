@@ -10,10 +10,11 @@ declare const window: Window & typeof globalThis;
 type HexString = string;
 
 /**
- * Unisat wallet api, see [unisat api docs]{@link https://docs.unisat.io/dev/unisat-developer-center/unisat-wallet#unisat-wallet-api}
+ * todo: change to opcat wallet api
+ * Unisat wallet api, see [opcat api docs]{@link https://docs.opcat.io/dev/opcat-developer-center/opcat-wallet#opcat-wallet-api}
  * @category Signer
  */
-export interface UnisatAPI {
+export interface OpcatAPI {
   getAccounts: () => Promise<string[]>;
   requestAccounts: () => Promise<string[]>;
   getPublicKey: () => Promise<string>;
@@ -22,29 +23,29 @@ export interface UnisatAPI {
 }
 
 /**
- * a [signer]{@link https://docs.opcatlabs.io/how-to-deploy-and-call-a-contract/#signer } which implemented the protocol with the [Unisat wallet]{@link https://unisat.io},
+ * a [signer]{@link https://docs.opcatlabs.io/how-to-deploy-and-call-a-contract/#signer } which implemented the protocol with the [Unisat wallet]{@link https://opcat.io},
  * and dapps can use to interact with the Unisat wallet
  * @category Signer
  */
-export class UnisatSigner implements Signer {
-  private _unisat: UnisatAPI;
+export class WalletSigner implements Signer {
+  private _opcat: OpcatAPI;
 
-  constructor(unisat: UnisatAPI) {
-    this._unisat = unisat;
+  constructor(opcat: OpcatAPI) {
+    this._opcat = opcat;
   }
 
   /**
    * Retrieves the Unisat API instance from either the cached property or global window object.
    * @throws {Error} If Unisat API is not available (not installed).
-   * @returns {UnisatAPI} The Unisat API instance.
+   * @returns {OpcatAPI} The Unisat API instance.
    */
-  getUnisatAPI(): UnisatAPI {
-    const unisat = this._unisat || window['unisat'];
-    if (typeof unisat === 'undefined') {
-      throw new Error('unisat not install!');
+  getOpcatAPI(): OpcatAPI {
+    const opcat = this._opcat || window['opcat'];
+    if (typeof opcat === 'undefined') {
+      throw new Error('opcat wallet not install!');
     }
 
-    return unisat;
+    return opcat;
   }
 
   /**
@@ -52,7 +53,7 @@ export class UnisatSigner implements Signer {
    * @returns A promise that resolves to the first account address string.
    */
   async getAddress(): Promise<string> {
-    const accounts = await this.getUnisatAPI().getAccounts();
+    const accounts = await this.getOpcatAPI().getAccounts();
     return accounts[0];
   }
 
@@ -61,7 +62,7 @@ export class UnisatSigner implements Signer {
    * @returns A promise that resolves to the public key as a string.
    */
   async getPublicKey(): Promise<string> {
-    return this.getUnisatAPI().getPublicKey();
+    return this.getOpcatAPI().getPublicKey();
   }
 
   /**
@@ -72,7 +73,7 @@ export class UnisatSigner implements Signer {
    * @returns A Promise resolving to the signed PSBT in hexadecimal format.
    */
   async signPsbt(psbtHex: string, options?: SignOptions): Promise<string> {
-    return this.getUnisatAPI().signPsbt(psbtHex, options);
+    return this.getOpcatAPI().signPsbt(psbtHex, options);
   }
 
   /**
@@ -85,7 +86,7 @@ export class UnisatSigner implements Signer {
     const options: SignOptions[] = reqs
       .filter((option) => typeof option === 'object')
       .map((req) => req.options as SignOptions);
-    return this.getUnisatAPI().signPsbts(
+    return this.getOpcatAPI().signPsbts(
       reqs.map((req) => req.psbtHex),
       options,
     );
