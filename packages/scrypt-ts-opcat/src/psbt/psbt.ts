@@ -24,7 +24,7 @@ import {
 } from './psbtutils.js';
 import * as tools from 'uint8array-tools';
 import { intToByteString } from '../smart-contract/fns/byteString.js';
-import { IOpcatUtxo, encode as encodeUtxo, parseInputOutputFromPsbt, OPCAT_KEY_BUF } from './utxoConverter.ts.js';
+import { OpcatUtxo, encode as encodeUtxo, parseInputOutputFromPsbt, OPCAT_KEY_BUF } from './utxoConverter.js';
 
 export interface TransactionInput {
   hash: string | Uint8Array;
@@ -225,7 +225,7 @@ export class Psbt {
    * @param inputIndex - The index of the input to get the output for.
    * @returns The previous output of the input.
    */
-  getInputOutput(inputIndex: number): IOpcatUtxo {
+  getInputOutput(inputIndex: number): OpcatUtxo {
     return parseInputOutputFromPsbt(this.data.inputs[inputIndex])
   }
 
@@ -731,7 +731,7 @@ export class Psbt {
 
   private _setOpcatKV(): void {
     // set global opcat tag
-    const findGlobalOpcatKV = (this.data.globalMap.unknownKeyVals || []).find(kv => (OPCAT_KEY_BUF).equals(kv.key));
+    const findGlobalOpcatKV = (this.data.globalMap.unknownKeyVals || []).find(kv => (OPCAT_KEY_BUF).equals(Buffer.from(kv.key)));
     if (!findGlobalOpcatKV) {
       this.data.addUnknownKeyValToGlobal({
         key: OPCAT_KEY_BUF,
@@ -741,7 +741,7 @@ export class Psbt {
 
     // add output data to output 
     this.data.outputs.forEach((output, outputIndex) => {
-      const opcatKV = (output.unknownKeyVals || []).find(kv => (OPCAT_KEY_BUF).equals(kv.key));
+      const opcatKV = (output.unknownKeyVals || []).find(kv => (OPCAT_KEY_BUF).equals(Buffer.from(kv.key)));
       if (opcatKV) {
         output.unknownKeyVals.splice(output.unknownKeyVals.indexOf(opcatKV), 1);
       }
@@ -754,7 +754,7 @@ export class Psbt {
 
   private _restoreTxOutputData(): void {
     this.data.outputs.forEach((output, outputIndex) => {
-      const opcatKV = (output.unknownKeyVals || []).find(kv => (OPCAT_KEY_BUF).equals(kv.key));
+      const opcatKV = (output.unknownKeyVals || []).find(kv => (OPCAT_KEY_BUF).equals(Buffer.from(kv.key)));
       if (!opcatKV) {
         throw new Error('Opcat PSBT is not valid, missing opcat data for output ' + outputIndex);
       }
@@ -763,7 +763,7 @@ export class Psbt {
   }
 
   private _assertOpcatPsbt(): void {
-    const findGlobalOpcatKV = (this.data.globalMap.unknownKeyVals || []).find(kv => (OPCAT_KEY_BUF).equals(kv.key));
+    const findGlobalOpcatKV = (this.data.globalMap.unknownKeyVals || []).find(kv => (OPCAT_KEY_BUF).equals(Buffer.from(kv.key)));
     if (!findGlobalOpcatKV) {
       throw new Error('Opcat PSBT is not valid');
     }
@@ -845,7 +845,7 @@ export interface PsbtOpts {
 
 
 export interface PsbtInputExtended extends PsbtInput, TransactionInput {
-  opcatUtxo: IOpcatUtxo;
+  opcatUtxo: OpcatUtxo;
 }
 
 export type PsbtOutputExtended =

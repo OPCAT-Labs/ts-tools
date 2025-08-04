@@ -7,14 +7,14 @@ import * as varuint from 'varuint-bitcoin';
 export const OPCAT_KEY = parseInt('0xfe' + Buffer.from('cat').toString('hex') + '01', 16);
 export const OPCAT_KEY_BUF = Buffer.from('fe' + Buffer.from('cat').toString('hex') + '01', 'hex');
 
-export interface IOpcatUtxo {
-    script: Uint8Array;
-    data: Uint8Array;
-    value: bigint;
+export interface OpcatUtxo {
+  script: Uint8Array;
+  data: Uint8Array;
+  value: bigint;
 }
 
-export function decode(keyVal: KeyValue): IOpcatUtxo {
-  if (!OPCAT_KEY_BUF.equals(keyVal.key)) {
+export function decode(keyVal: KeyValue): OpcatUtxo {
+  if (!OPCAT_KEY_BUF.equals(Buffer.from(keyVal.key))) {
     throw new Error(
       'Decode Error: could not decode opcatUtxo with key 0x' +
         tools.toHex(keyVal.key),
@@ -46,7 +46,7 @@ export function decode(keyVal: KeyValue): IOpcatUtxo {
   };
 }
 
-export function encode(data: IOpcatUtxo): KeyValue {
+export function encode(data: OpcatUtxo): KeyValue {
   const { script, data: opcatData, value } = data;
   const scriptLen = script.length;
   const dataLen = opcatData.length;
@@ -70,8 +70,8 @@ export function encode(data: IOpcatUtxo): KeyValue {
   };
 }
 
-export function parseInputOutputFromPsbt(input: PsbtInput): IOpcatUtxo {
-    const findKV = (input.unknownKeyVals || []).find(kv => OPCAT_KEY_BUF.equals(kv.key));
+export function parseInputOutputFromPsbt(input: PsbtInput): OpcatUtxo {
+    const findKV = (input.unknownKeyVals || []).find(kv => OPCAT_KEY_BUF.equals(Buffer.from(kv.key)));
     if (!findKV) {
         throw new Error('Decode Error: could not find opcatUtxo with key 0x' +
             tools.toHex(OPCAT_KEY_BUF));

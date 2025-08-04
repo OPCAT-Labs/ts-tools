@@ -31,7 +31,7 @@ import { BacktraceInfo, SpentDataHashes } from '../smart-contract/types/structs.
 import { UtxoProvider } from '../providers/utxoProvider.js';
 import { ChainProvider } from '../providers/chainProvider.js';
 import { toTxHashPreimage } from '../utils/proof.js';
-import { IOpcatUtxo } from './utxoConverter.ts.js';
+import { OpcatUtxo } from './utxoConverter.js';
 
 const { BufferWriter } = encoding;
 
@@ -55,7 +55,7 @@ type Finalizer = (
  * @property sigRequests - Array of signature requests for this input
  */
 export interface PsbtInputExtended extends PsbtInput, TransactionInput {
-  opcatUtxo: IOpcatUtxo;
+  opcatUtxo: OpcatUtxo;
   finalizer?: Finalizer;
   sigRequests?: {
     inputIndex: InputIndex;
