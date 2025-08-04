@@ -149,9 +149,9 @@ export async function contractSend(
   for (let index = 0; index < inputTokens.length; index++) {
     sendPsbt.addContractInput(inputTokens[index], (contract, tx) => {  
         const contractInputIndexVal = tx.data.inputs.findIndex(
-          (input) =>
+          (input, inputIndex) =>
             ContractPeripheral.scriptHash(
-              toHex(input.opcatUtxo!.script) as ByteString
+              toHex(tx.getInputOutput(inputIndex).script) as ByteString
             ) == inputTokenStates[index].ownerAddr
         )
         contract.unlock(

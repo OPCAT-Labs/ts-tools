@@ -55,8 +55,9 @@ export class ContextProvider {
     let spentAmounts: SpentAmounts = toByteString('')
     //let spentDatas: SpentDatas = toByteString('');
 
-    this._curPsbt.data.inputs.forEach((input) => {
-      const { script, data, value } = input.opcatUtxo!;
+    this._curPsbt.data.inputs.forEach((input, inputIndex) => {
+      const opcatUtxo = this._curPsbt.getInputOutput(inputIndex)
+      const { script, data, value } = opcatUtxo;
       if (script) {
         spentScriptHashes += sha256(uint8ArrayToHex(script));
         spentDataHashes += sha256(uint8ArrayToHex(data));

@@ -12,9 +12,8 @@ import {
   TransactionFromBuffer,
   checkForInput, 
   checkForOutput,
-  Psbt as PsbtBase,
-  OPCAT_KEY_BUF
-} from '@opcat-labs/bip174';
+  Psbt as PsbtBase
+} from 'bip174';
 import { Transaction, Address, Script, crypto, Networks, Network, encoding } from '@opcat-labs/opcat'
 import * as signatureutils from './signatureutils.js';
 import { cloneBuffer, reverseBuffer } from './bufferutils.js';
@@ -25,6 +24,7 @@ import {
 } from './psbtutils.js';
 import * as tools from 'uint8array-tools';
 import { intToByteString } from '../smart-contract/fns/byteString.js';
+import { IOpcatUtxo, encode as encodeUtxo, parseInputOutputFromPsbt, OPCAT_KEY_BUF } from './utxoConverter.ts.js';
 
 export interface TransactionInput {
   hash: string | Uint8Array;
@@ -154,13 +154,11 @@ export class Psbt {
 
     for (let i = 0; i < this.__CACHE.__TX.inputs.length; i++) {
       const input = this.__CACHE.__TX.inputs[i];
-      if(!this.data.inputs[i] || !this.data.inputs[i].opcatUtxo) {
-        throw new Error('invalid pbst input')
-      }
+      const opcatUtxo = parseInputOutputFromPsbt(this.data.inputs[i])
       input.output =  new Transaction.Output({
-        satoshis: Number(this.data.inputs[i].opcatUtxo.value),
-        script: new Script(Buffer.from(this.data.inputs[i].opcatUtxo.script)),
-        data: Buffer.from(this.data.inputs[i].opcatUtxo.data),
+        satoshis: Number(opcatUtxo.value),
+        script: new Script(Buffer.from(opcatUtxo.script)),
+        data: Buffer.from(opcatUtxo.data),
       })
     }
 
@@ -221,6 +219,14 @@ export class Psbt {
         address,
       };
     });
+  }
+
+  /**
+   * @param inputIndex - The index of the input to get the output for.
+   * @returns The previous output of the input.
+   */
+  getInputOutput(inputIndex: number): IOpcatUtxo {
+    return parseInputOutputFromPsbt(this.data.inputs[inputIndex])
   }
 
   combine(...those: Psbt[]): this {
@@ -290,7 +296,10 @@ export class Psbt {
     }
     checkInputsForPartialSig(this.data.inputs, 'addInput');
     const c = this.__CACHE;
-    this.data.addInput(inputData);
+
+    const inputIndex = this.data.inputs.length;
+    this.data.addInput(inputData)
+    this.data.addUnknownKeyValToInput(inputIndex, encodeUtxo(inputData.opcatUtxo));
     const txIn = c.__TX.inputs[c.__TX.inputs.length - 1];
     checkTxInputCache(c, txIn);
 
@@ -305,7 +314,7 @@ export class Psbt {
     return this;
   }
 
-  addOutput(outputData: PsbtOutputExtended): this {
+  addOutput(outputData: PsbtOutputExtended & {opcatOutputData?: Uint8Array}): this {
     if (
       arguments.length > 1 ||
       !outputData ||
@@ -406,8 +415,6 @@ export class Psbt {
 
     if (finalScriptSig) this.data.updateInput(inputIndex, { finalScriptSig });
     else throw new Error(`Unknown error finalizing input #${inputIndex}`);      
-
-    this.data.clearFinalizedInput(inputIndex);
     return this;
   }
 
@@ -835,7 +842,11 @@ export interface PsbtOpts {
   maximumFeeRate: number;
 }
 
-export interface PsbtInputExtended extends PsbtInput, TransactionInput {}
+
+
+export interface PsbtInputExtended extends PsbtInput, TransactionInput {
+  opcatUtxo: IOpcatUtxo;
+}
 
 export type PsbtOutputExtended =
   | PsbtOutputExtendedAddress
@@ -1341,7 +1352,7 @@ function getScriptFromInput(
     script: null,
   };
 
-  res.script = input.opcatUtxo.script
+  res.script = parseInputOutputFromPsbt(input).script
   return res;
 }
 
