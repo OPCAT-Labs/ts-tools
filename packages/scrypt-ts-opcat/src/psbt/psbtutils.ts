@@ -1,4 +1,4 @@
-import { PartialSig, PsbtInput } from '@opcat-labs/bip174';
+import { PartialSig, PsbtInput } from 'bip174';
 import * as tools from 'uint8array-tools';
 import { Script, crypto } from '@opcat-labs/opcat'
 import * as signatureutils from './signatureutils.js';

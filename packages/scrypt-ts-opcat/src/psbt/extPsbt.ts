@@ -1,5 +1,6 @@
 
-import { PsbtInput, Psbt as PsbtBase, OpcatUtxo } from '@opcat-labs/bip174';
+// import { PsbtInput, Psbt as PsbtBase, OpcatUtxo } from '@opcat-labs/bip174';
+import { PsbtInput, Psbt as PsbtBase } from 'bip174';
 import { ByteString, Sig, SigHashType, TxOut } from '../smart-contract/types/index.js';
 import {
   InputIndex, OutputIndex, SupportedNetwork,
@@ -30,6 +31,7 @@ import { BacktraceInfo, SpentDataHashes } from '../smart-contract/types/structs.
 import { UtxoProvider } from '../providers/utxoProvider.js';
 import { ChainProvider } from '../providers/chainProvider.js';
 import { toTxHashPreimage } from '../utils/proof.js';
+import { OpcatUtxo } from './utxoConverter.js';
 
 const { BufferWriter } = encoding;
 
@@ -218,7 +220,8 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
     let spentDataHashes: SpentDataHashes = toByteString('');
     for (let i = 0; i < this.data.inputs.length; i++) {
-      spentDataHashes += sha256(tools.toHex(this.data.inputs[i].opcatUtxo.data));
+      const opcatUtxo = this.getInputOutput(i)
+      spentDataHashes += sha256(tools.toHex(opcatUtxo.data));
     }
 
     return spentDataHashes;
@@ -522,7 +525,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   // should use bigint here, because the input amount is too large
     // 2100e16 + 1 = 21000000000000000000
     // BigInt(2100e16) + 1n = 21000000000000000001n
-    return this.data.inputs.reduce((total, input) => total + input.opcatUtxo!.value, 0n);
+    return this.data.inputs.reduce((total, _input, inputIndex) => total + this.getInputOutput(inputIndex).value, 0n);
   }
 
   /**

@@ -64,8 +64,8 @@
   },
   "dependencies": {
     "@noble/curves": "^1.8.1",
-    "@opcat-labs/bip174": "1.0.1",
     "@opcat-labs/opcat": "1.0.2",
+    "bip174": "^3.0.0-rc.1",
     "cross-fetch": "^4.1.0",
     "decimal.js": "^10.5.0",
     "md5": "^2.3.0",

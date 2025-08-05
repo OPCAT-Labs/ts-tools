@@ -13,8 +13,8 @@ import {
   checkForInput, 
   checkForOutput,
   Psbt as PsbtBase
-} from '@opcat-labs/bip174';
-import { Transaction, Address, Script, crypto, Networks, Network } from '@opcat-labs/opcat'
+} from 'bip174';
+import { Transaction, Address, Script, crypto, Networks, Network, encoding } from '@opcat-labs/opcat'
 import * as signatureutils from './signatureutils.js';
 import { cloneBuffer, reverseBuffer } from './bufferutils.js';
 
@@ -23,7 +23,8 @@ import {
   pubkeyInScript,
 } from './psbtutils.js';
 import * as tools from 'uint8array-tools';
-
+import { intToByteString } from '../smart-contract/fns/byteString.js';
+import { OpcatUtxo, encode as encodeUtxo, parseInputOutputFromPsbt, OPCAT_KEY_BUF } from './utxoConverter.js';
 
 export interface TransactionInput {
   hash: string | Uint8Array;
@@ -119,9 +120,8 @@ export class Psbt {
 
   static fromBuffer(buffer: Uint8Array, opts: PsbtOptsOptional = {}): Psbt {
     const psbtBase = PsbtBase.fromBuffer(buffer, transactionFromBuffer);
-
-
     const psbt = new Psbt(opts, psbtBase);
+    psbt._assertOpcatPsbt();
     checkTxForDupeIns(psbt.__CACHE.__TX, psbt.__CACHE);
     return psbt;
   }
@@ -148,17 +148,17 @@ export class Psbt {
       // because it is not BIP174 compliant.
       __UNSAFE_SIGN_NONSEGWIT: false,
     };
+    this._restoreTxOutputData();
+    
     //if (this.data.inputs.length === 0) this.setVersion(2);
 
     for (let i = 0; i < this.__CACHE.__TX.inputs.length; i++) {
       const input = this.__CACHE.__TX.inputs[i];
-      if(!this.data.inputs[i] || !this.data.inputs[i].opcatUtxo) {
-        throw new Error('invalid pbst input')
-      }
+      const opcatUtxo = parseInputOutputFromPsbt(this.data.inputs[i])
       input.output =  new Transaction.Output({
-        satoshis: Number(this.data.inputs[i].opcatUtxo.value),
-        script: new Script(Buffer.from(this.data.inputs[i].opcatUtxo.script)),
-        data: Buffer.from(this.data.inputs[i].opcatUtxo.data),
+        satoshis: Number(opcatUtxo.value),
+        script: new Script(Buffer.from(opcatUtxo.script)),
+        data: Buffer.from(opcatUtxo.data),
       })
     }
 
@@ -190,7 +190,7 @@ export class Psbt {
   }
 
   get locktime(): number {
-    return this.__CACHE.__TX.version;
+    return this.__CACHE.__TX.nLockTime;
   }
 
   set locktime(locktime: number) {
@@ -219,6 +219,14 @@ export class Psbt {
         address,
       };
     });
+  }
+
+  /**
+   * @param inputIndex - The index of the input to get the output for.
+   * @returns The previous output of the input.
+   */
+  getInputOutput(inputIndex: number): OpcatUtxo {
+    return parseInputOutputFromPsbt(this.data.inputs[inputIndex])
   }
 
   combine(...those: Psbt[]): this {
@@ -288,7 +296,10 @@ export class Psbt {
     }
     checkInputsForPartialSig(this.data.inputs, 'addInput');
     const c = this.__CACHE;
-    this.data.addInput(inputData);
+
+    const inputIndex = this.data.inputs.length;
+    this.data.addInput(inputData)
+    this.data.addUnknownKeyValToInput(inputIndex, encodeUtxo(inputData.opcatUtxo));
     const txIn = c.__TX.inputs[c.__TX.inputs.length - 1];
     checkTxInputCache(c, txIn);
 
@@ -303,7 +314,7 @@ export class Psbt {
     return this;
   }
 
-  addOutput(outputData: PsbtOutputExtended): this {
+  addOutput(outputData: PsbtOutputExtended & {opcatOutputData?: Uint8Array}): this {
     if (
       arguments.length > 1 ||
       !outputData ||
@@ -404,8 +415,6 @@ export class Psbt {
 
     if (finalScriptSig) this.data.updateInput(inputIndex, { finalScriptSig });
     else throw new Error(`Unknown error finalizing input #${inputIndex}`);      
-
-    this.data.clearFinalizedInput(inputIndex);
     return this;
   }
 
@@ -720,18 +729,61 @@ export class Psbt {
     });
   }
 
+  private _setOpcatKV(): void {
+    // set global opcat tag
+    const findGlobalOpcatKV = (this.data.globalMap.unknownKeyVals || []).find(kv => (OPCAT_KEY_BUF).equals(Buffer.from(kv.key)));
+    if (!findGlobalOpcatKV) {
+      this.data.addUnknownKeyValToGlobal({
+        key: OPCAT_KEY_BUF,
+        value: Buffer.from([1])
+      })
+    }
+
+    // add output data to output 
+    this.data.outputs.forEach((output, outputIndex) => {
+      const opcatKV = (output.unknownKeyVals || []).find(kv => (OPCAT_KEY_BUF).equals(Buffer.from(kv.key)));
+      if (opcatKV) {
+        output.unknownKeyVals.splice(output.unknownKeyVals.indexOf(opcatKV), 1);
+      }
+      output.unknownKeyVals.push({
+        key: OPCAT_KEY_BUF,
+        value: this.__CACHE.__TX.outputs[outputIndex].data || Buffer.from([])
+      })
+    })
+  }
+
+  private _restoreTxOutputData(): void {
+    this.data.outputs.forEach((output, outputIndex) => {
+      const opcatKV = (output.unknownKeyVals || []).find(kv => (OPCAT_KEY_BUF).equals(Buffer.from(kv.key)));
+      if (!opcatKV) {
+        throw new Error('Opcat PSBT is not valid, missing opcat data for output ' + outputIndex);
+      }
+      this.__CACHE.__TX.outputs[outputIndex].setData(Buffer.from(opcatKV.value));
+    })
+  }
+
+  private _assertOpcatPsbt(): void {
+    const findGlobalOpcatKV = (this.data.globalMap.unknownKeyVals || []).find(kv => (OPCAT_KEY_BUF).equals(Buffer.from(kv.key)));
+    if (!findGlobalOpcatKV) {
+      throw new Error('Opcat PSBT is not valid');
+    }
+  }
+
   toBuffer(): Uint8Array {
     checkCache(this.__CACHE);
+    this._setOpcatKV();
     return this.data.toBuffer();
   }
 
   toHex(): string {
     checkCache(this.__CACHE);
+    this._setOpcatKV();
     return this.data.toHex();
   }
 
   toBase64(): string {
     checkCache(this.__CACHE);
+    this._setOpcatKV();
     return this.data.toBase64();
   }
 
@@ -790,7 +842,11 @@ export interface PsbtOpts {
   maximumFeeRate: number;
 }
 
-export interface PsbtInputExtended extends PsbtInput, TransactionInput {}
+
+
+export interface PsbtInputExtended extends PsbtInput, TransactionInput {
+  opcatUtxo: OpcatUtxo;
+}
 
 export type PsbtOutputExtended =
   | PsbtOutputExtendedAddress
@@ -872,7 +928,7 @@ class PsbtTransaction implements ITransaction {
   constructor(
     buffer: Uint8Array = Uint8Array.from([1, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
   ) {
-    this.tx = Transaction.fromBuffer(Buffer.from(buffer));
+    this.tx = txFromBitcoinBuffer(Buffer.from(buffer));
     checkTxEmpty(this.tx);
     Object.defineProperty(this, 'tx', {
       enumerable: false,
@@ -932,7 +988,7 @@ class PsbtTransaction implements ITransaction {
   }
 
   toBuffer(): Uint8Array {
-    return this.tx.toBuffer();
+    return txToBitcoinBuffer(this.tx);
   }
 }
 
@@ -1296,7 +1352,7 @@ function getScriptFromInput(
     script: null,
   };
 
-  res.script = input.opcatUtxo.script
+  res.script = parseInputOutputFromPsbt(input).script
   return res;
 }
 
@@ -1491,4 +1547,69 @@ function classifyScript(script: Uint8Array): ScriptType {
 
 function range(n: number): number[] {
   return [...Array(n).keys()];
+}
+
+
+function txFromBitcoinBuffer(buf: Buffer): Transaction {
+  const inputFromBufferReader = (reader: encoding.BufferReader) => {
+    const prevTxId = reader.readReverse(32);
+    const outputIndex = reader.readUInt32LE();
+    const script = reader.readVarLengthBuffer();
+    const sequenceNumber = reader.readUInt32LE();
+    const input = new Transaction.Input({
+      prevTxId,
+      outputIndex,
+      script,
+      sequenceNumber
+    });
+    return input;
+  }
+  const outputFromBufferReader = (reader: encoding.BufferReader) => {
+    const satoshis = reader.readUInt64LEBN() as any;
+    const script = reader.readVarLengthBuffer();
+    const output = new Transaction.Output({
+      satoshis,
+      script,
+      data: Buffer.from([])
+    });
+    return output;
+  }
+
+  const tx = new Transaction();
+  const reader = new encoding.BufferReader(buf);
+  tx.version = reader.readUInt32LE();
+  const inputCount = reader.readVarintNum();
+  for (let i = 0; i < inputCount; i++) {
+    tx.inputs.push(inputFromBufferReader(reader));
+  }
+  const outputCount = reader.readVarintNum();
+  for (let i = 0; i < outputCount; i++) {
+    tx.outputs.push(outputFromBufferReader(reader));
+  }
+  const nLockTime = reader.readUInt32LE();
+  tx.nLockTime = nLockTime;
+  return tx;
+}
+
+function txToBitcoinBuffer(tx: Transaction): Buffer {
+  const writer = new encoding.BufferWriter();
+  writer.writeUInt32LE(tx.version);
+  writer.writeVarintNum(tx.inputs.length);
+  tx.inputs.forEach(input => {
+    writer.writeReverse(input.prevTxId)
+    writer.writeUInt32LE(input.outputIndex)
+    writer.writeVarintNum(input.script.toBuffer().length)
+    writer.write(input.script.toBuffer())
+    writer.writeUInt32LE(input.sequenceNumber)
+  })
+  writer.writeVarintNum(tx.outputs.length);
+  tx.outputs.forEach(output => {
+    writer.write(Buffer.from(intToByteString(output.satoshis, 8n), 'hex'));
+    writer.writeVarintNum(output.script.toBuffer().length)
+    writer.write(output.script.toBuffer())
+  })
+  writer.writeUInt32LE(tx.nLockTime);
+
+  const buf = writer.toBuffer()
+  return buf
 }

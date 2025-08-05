@@ -1939,14 +1939,6 @@
     consola "^2.15.0"
     node-fetch "^2.6.1"
 
-"@opcat-labs/bip174@1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@opcat-labs/bip174/-/bip174-1.0.1.tgz#cca068c7f5403233f18238e64b3404f09f6428fc"
-  integrity sha512-JLJ4yBLH4MIwUorlfyH6S9KkwrrUWd3wOdQRqKkGe0G7INYd1bm40FHuJbiRG1Q2qRiQNt2rCn3CXnugJ2CsOg==
-  dependencies:
-    uint8array-tools "^0.0.9"
-    varuint-bitcoin "^2.0.0"
-
 "@parcel/bundler-default@2.15.4":
   version "2.15.4"
   resolved "https://registry.yarnpkg.com/@parcel/bundler-default/-/bundler-default-2.15.4.tgz#33f1ee6d3be7d10864f1f4567d5b90ef448a4cee"
@@ -4261,6 +4253,14 @@ binary-extensions@^2.0.0:
   version "2.3.0"
   resolved "https://registry.yarnpkg.com/binary-extensions/-/binary-extensions-2.3.0.tgz#f6e14a97858d327252200242d4ccfe522c445522"
   integrity sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==
+
+bip174@^3.0.0-rc.1:
+  version "3.0.0-rc.1"
+  resolved "https://registry.yarnpkg.com/bip174/-/bip174-3.0.0-rc.1.tgz#08c41d5a4cbfa0790075335b64b9a16630fcd73f"
+  integrity sha512-+8P3BpSairVNF2Nee6Ksdc1etIjWjBOi/MH0MwKtq9YaYp+S2Hk2uvup0e8hCT4IKlS58nXJyyQVmW92zPoD4Q==
+  dependencies:
+    uint8array-tools "^0.0.9"
+    varuint-bitcoin "^2.0.0"
 
 bl@^4.1.0:
   version "4.1.0"
