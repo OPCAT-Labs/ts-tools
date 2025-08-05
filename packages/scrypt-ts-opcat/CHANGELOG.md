@@ -1,5 +1,13 @@
 # @opcat-labs/scrypt-ts-opcat
 
+## 1.0.4
+
+### Patch Changes
+
+- use standard psbt
+- Updated dependencies
+  - @opcat-labs/opcat@1.0.3
+
 ## 1.0.3
 
 ### Patch Changes

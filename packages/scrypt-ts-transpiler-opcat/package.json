@@ -1,6 +1,6 @@
 {
   "name": "@opcat-labs/scrypt-ts-transpiler-opcat",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "description": "scrypt transpiler",
@@ -22,7 +22,7 @@
     "gen:spec": "npx -y tsx ./test/scripts/generateSpec.ts"
   },
   "dependencies": {
-    "@opcat-labs/scrypt-ts-opcat": "1.0.3",
+    "@opcat-labs/scrypt-ts-opcat": "1.0.4",
     "@phenomnomnominal/tsquery": "^6.1.2",
     "chalk": "^4.1.2",
     "get-proxy-settings": "^0.1.13",

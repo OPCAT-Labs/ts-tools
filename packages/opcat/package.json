@@ -1,6 +1,6 @@
 {
   "name": "@opcat-labs/opcat",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "opcat base SDK",
   "main": "./cjs/index.cjs",
   "module": "./esm/index.js",
