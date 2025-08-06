@@ -1,10 +1,21 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
 import { TokenService } from './token.service';
 import { okResponse, errorResponse } from '../../common/utils';
-import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiTags, ApiOkResponse, ApiBadRequestResponse, ApiHeader } from '@nestjs/swagger';
 import { TokenTypeScope } from '../../common/types';
+import { ResponseHeaderInterceptor } from '../../common/interceptors/response-header.interceptor';
+import {
+  TokenInfoResponse,
+  TokenUtxosResponse,
+  TokenBalanceResponse,
+  TokenMintAmountResponse,
+  TokenCirculationResponse,
+  TokenHoldersResponse,
+  ErrorResponse,
+} from './dto/token-response.dto';
 
 @Controller('tokens')
+@UseInterceptors(ResponseHeaderInterceptor)
 export class TokenController {
   constructor(private readonly tokenService: TokenService) {}
 
@@ -16,6 +27,14 @@ export class TokenController {
     required: true,
     type: String,
     description: 'token id or token script hash',
+  })
+  @ApiOkResponse({
+    description: 'Token information retrieved successfully',
+    type: TokenInfoResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid token id or token script hash',
+    type: ErrorResponse,
   })
   async getTokenInfo(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
@@ -56,6 +75,14 @@ export class TokenController {
     type: Number,
     description: 'paging limit',
   })
+  @ApiOkResponse({
+    description: 'Token UTXOs retrieved successfully',
+    type: TokenUtxosResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid parameters',
+    type: ErrorResponse,
+  })
   async getTokenUtxosByOwnerAddress(
     @Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string,
     @Param('ownerAddrOrPkh') ownerAddrOrPkh: string,
@@ -91,6 +118,14 @@ export class TokenController {
     type: String,
     description: 'token owner address or public key hash',
   })
+  @ApiOkResponse({
+    description: 'Token balance retrieved successfully',
+    type: TokenBalanceResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid parameters',
+    type: ErrorResponse,
+  })
   async getTokenBalanceByOwnerAddress(
     @Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string,
     @Param('ownerAddrOrPkh') ownerAddrOrPkh: string,
@@ -118,6 +153,14 @@ export class TokenController {
     type: String,
     description: 'token id or token address',
   })
+  @ApiOkResponse({
+    description: 'Token mint amount retrieved successfully',
+    type: TokenMintAmountResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid token id or token address',
+    type: ErrorResponse,
+  })
   async getTokenMintAmount(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
       const mintCount = await this.tokenService.getTokenMintAmount(tokenIdOrTokenScriptHash, TokenTypeScope.Fungible);
@@ -137,6 +180,14 @@ export class TokenController {
     required: true,
     type: String,
     description: 'token id or token address',
+  })
+  @ApiOkResponse({
+    description: 'Token circulation retrieved successfully',
+    type: TokenCirculationResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid token id or token address',
+    type: ErrorResponse,
   })
   async getTokenCirculation(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
@@ -172,6 +223,14 @@ export class TokenController {
     required: false,
     type: Number,
     description: 'paging limit',
+  })
+  @ApiOkResponse({
+    description: 'Token holders retrieved successfully',
+    type: TokenHoldersResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid token id or token address',
+    type: ErrorResponse,
   })
   async getTokenHolders(
     @Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string,

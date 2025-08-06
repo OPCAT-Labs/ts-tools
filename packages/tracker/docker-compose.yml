@@ -12,14 +12,3 @@ services:
       - "5432:5432"
     volumes:
       - ./docker/pgdata:/var/lib/postgresql/data
-  bitcoind:
-    image: fractalbitcoin/fractal:v0.2.1
-    restart: always
-    entrypoint: ["bitcoind", "-datadir=/data/"]
-    healthcheck:
-      test: ["CMD", "bitcoin-cli", "-datadir=/data/", "getblockchaininfo"]
-    ports:
-      - "8332:8332"
-      - "8333:8333"
-    volumes:
-      - ./docker/data:/data

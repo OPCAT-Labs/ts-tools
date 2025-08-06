@@ -1,9 +1,16 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
 import { MinterService } from './minter.service';
 import { errorResponse, okResponse } from '../../common/utils';
-import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiTags, ApiOkResponse, ApiBadRequestResponse, ApiHeader } from '@nestjs/swagger';
+import { ResponseHeaderInterceptor } from '../../common/interceptors/response-header.interceptor';
+import {
+  MinterUtxosResponse,
+  MinterUtxoCountResponse,
+  ErrorResponse,
+} from './dto/minter-response.dto';
 
 @Controller('minters')
+@UseInterceptors(ResponseHeaderInterceptor)
 export class MinterController {
   constructor(private readonly minterService: MinterService) {}
 
@@ -28,6 +35,14 @@ export class MinterController {
     type: Number,
     description: 'paging limit',
   })
+  @ApiOkResponse({
+    description: 'Minter UTXOs retrieved successfully',
+    type: MinterUtxosResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid token id or token address',
+    type: ErrorResponse,
+  })
   async getMinterUtxos(
     @Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string,
     @Query('offset') offset?: number,
@@ -51,6 +66,14 @@ export class MinterController {
     required: true,
     type: String,
     description: 'token id or token address',
+  })
+  @ApiOkResponse({
+    description: 'Minter UTXO count retrieved successfully',
+    type: MinterUtxoCountResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid token id or token address',
+    type: ErrorResponse,
   })
   async getMinterUtxoCount(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {

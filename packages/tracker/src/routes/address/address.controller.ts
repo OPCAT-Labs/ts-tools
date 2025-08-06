@@ -1,9 +1,16 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseInterceptors } from '@nestjs/common';
 import { AddressService } from './address.service';
 import { errorResponse, okResponse } from '../../common/utils';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiTags, ApiOkResponse, ApiBadRequestResponse, ApiHeader } from '@nestjs/swagger';
+import { ResponseHeaderInterceptor } from '../../common/interceptors/response-header.interceptor';
+import {
+  TokenBalancesResponse,
+  CollectionBalancesResponse,
+  ErrorResponse,
+} from './dto/address-response.dto';
 
 @Controller('addresses')
+@UseInterceptors(ResponseHeaderInterceptor)
 export class AddressController {
   constructor(private readonly addressService: AddressService) {}
 
@@ -15,6 +22,14 @@ export class AddressController {
     required: true,
     type: String,
     description: 'token owner address or public key hash',
+  })
+  @ApiOkResponse({
+    description: 'Token balances retrieved successfully',
+    type: TokenBalancesResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid owner address or public key hash',
+    type: ErrorResponse,
   })
   async getTokenBalances(@Param('ownerAddrOrPkh') ownerAddrOrPkh: string) {
     try {
@@ -33,6 +48,14 @@ export class AddressController {
     required: true,
     type: String,
     description: 'collection owner address or public key hash',
+  })
+  @ApiOkResponse({
+    description: 'Collection balances retrieved successfully',
+    type: CollectionBalancesResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid owner address or public key hash',
+    type: ErrorResponse,
   })
   async getCollectionBalances(@Param('ownerAddrOrPkh') ownerAddrOrPkh: string) {
     try {

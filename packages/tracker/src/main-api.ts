@@ -4,6 +4,8 @@ import * as ecc from '@bitcoin-js/tiny-secp256k1-asmjs';
 import { initEccLib } from 'bitcoinjs-lib';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { LoggingInterceptor } from './logging.interceptor';
+import * as fs from 'fs';
+import * as yaml from 'js-yaml';
 
 async function bootstrap() {
   initEccLib(ecc);
@@ -26,6 +28,11 @@ async function bootstrap() {
       'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.0.0/swagger-ui-standalone-preset.js',
     ],
   });
+
+  // Export the Swagger document to a YAML file
+  const yamlString = yaml.dump(swaggerDocument);
+  fs.writeFileSync('./api-spec.yaml', yamlString);
+  console.log('API documentation exported to api-spec.yaml');
 
   app.setGlobalPrefix('api');
   app.enableCors();
