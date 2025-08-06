@@ -211,16 +211,8 @@ declare namespace PublicKey {
         compressed?: boolean;
         network?: string | Network;
     };
-    function fromDER(buf: Buffer, strict?: boolean): {
-        point: Point;
-        compressed?: boolean;
-        network?: string | Network;
-    };
-    function fromBuffer(buf: Buffer, strict?: boolean): {
-        point: Point;
-        compressed?: boolean;
-        network?: string | Network;
-    };
+    function fromDER(buf: Buffer, strict?: boolean): PublicKey;
+    function fromBuffer(buf: Buffer, strict?: boolean): PublicKey;
     /**
      * Instantiate a PublicKey from a Point
      *

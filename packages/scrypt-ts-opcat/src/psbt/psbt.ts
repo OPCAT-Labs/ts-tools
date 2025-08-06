@@ -1604,7 +1604,7 @@ function txToBitcoinBuffer(tx: Transaction): Buffer {
   })
   writer.writeVarintNum(tx.outputs.length);
   tx.outputs.forEach(output => {
-    writer.write(Buffer.from(intToByteString(output.satoshis, 8n), 'hex'));
+    writer.write(Buffer.from(intToByteString(BigInt(output.satoshis), 8n), 'hex'));
     writer.writeVarintNum(output.script.toBuffer().length)
     writer.write(output.script.toBuffer())
   })

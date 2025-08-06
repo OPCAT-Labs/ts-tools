@@ -255,7 +255,7 @@ PublicKey.fromPrivateKey = function (privkey) {
  * Instantiate a PublicKey from a Buffer
  * @param {Buffer} buf - A DER buffer
  * @param {boolean=} strict - if set to false, will loosen some conditions
- * @returns {{point: Point, compressed?: boolean, network?: string|Network}} A new valid instance of PublicKey
+ * @returns {PublicKey} A new valid instance of PublicKey
  */
 PublicKey.fromDER = PublicKey.fromBuffer = function (buf, strict) {
   $.checkArgument(PublicKey._isBuffer(buf), 'Must be a buffer of DER encoded public key');
