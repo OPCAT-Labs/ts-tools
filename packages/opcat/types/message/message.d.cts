@@ -44,16 +44,18 @@ declare class Message {
      * Will return a boolean of the signature is valid for a given bitcoin address.
      * If it isn't the specific reason is accessible via the "error" member.
      *
-     * @param {Address|String} bitcoinAddress - A bitcoin address
-     * @param {String} signatureString - A base64 encoded compact signature
+     * @param {Address|string} bitcoinAddress - A bitcoin address
+     * @param {string} signatureString - A base64 encoded compact signature
      * @returns {Boolean}
      */
     verify(bitcoinAddress: Address | string, signatureString: string): boolean;
     /**
      * Converts the message to a plain object with hex representation.
-     * @returns {Object} An object containing the hex string of the message buffer.
+     * @returns {{messageHex: string}} An object containing the hex string of the message buffer.
      */
-    toObject(): any;
+    toObject(): {
+        messageHex: string;
+    };
     /**
      * Converts the Message instance to a JSON string representation.
      * @returns {string} The JSON string representation of the Message object.
@@ -78,7 +80,14 @@ declare namespace Message {
      * @returns {Message} The signed message instance.
      */
     function sign(message: string | Buffer, privateKey: PrivateKey): Message;
-    function verify(message: any, address: any, signature: any): boolean;
+    /**
+     * Verifies a message signature against a given address.
+     * @param {string} message - The message to verify.
+     * @param {string|Address} address - The address associated with the signature.
+     * @param {string} signature - The signature to verify.
+     * @returns {boolean} True if the signature is valid for the message and address, otherwise false.
+     */
+    function verify(message: string, address: string | Address, signature: string): boolean;
     let MAGIC_BYTES: Buffer;
     /**
      * Instantiate a message from a message string

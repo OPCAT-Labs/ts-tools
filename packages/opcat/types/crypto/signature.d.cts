@@ -2,40 +2,57 @@ export = Signature;
 /**
  * Creates a new Signature instance from BN values or an object.
  * @constructor
- * @param {BN|Object} r - Either a BN instance for the r value or an object containing r and s properties.
+ * @param {BN|{r:BN, s: BN, i: number, compressed: boolean, nhashtype: number}} r - Either a BN instance for the r value or an object containing r and s properties.
  * @param {BN} [s] - The s value (required if r is a BN instance).
  */
-declare function Signature(r: BN | any, s?: BN): Signature;
+declare function Signature(r: BN | {
+    r: BN;
+    s: BN;
+    i: number;
+    compressed: boolean;
+    nhashtype: number;
+}, s?: BN): Signature;
 declare class Signature {
     /**
      * Creates a new Signature instance from BN values or an object.
      * @constructor
-     * @param {BN|Object} r - Either a BN instance for the r value or an object containing r and s properties.
+     * @param {BN|{r:BN, s: BN, i: number, compressed: boolean, nhashtype: number}} r - Either a BN instance for the r value or an object containing r and s properties.
      * @param {BN} [s] - The s value (required if r is a BN instance).
      */
-    constructor(r: BN | any, s?: BN);
+    constructor(r: BN | {
+        r: BN;
+        s: BN;
+        i: number;
+        compressed: boolean;
+        nhashtype: number;
+    }, s?: BN);
     /**
      * Sets signature properties from an object.
      * @param {Object} obj - Object containing signature properties
-     * @param {Buffer} [obj.r] - r value
-     * @param {Buffer} [obj.s] - s value
+     * @param {BN} [obj.r] - r value
+     * @param {BN} [obj.s] - s value
      * @param {number} [obj.i] - Public key recovery parameter (0-3)
      * @param {boolean} [obj.compressed] - Whether recovered pubkey is compressed
      * @param {number} [obj.nhashtype] - Hash type
      * @returns {Signature} Returns the signature instance for chaining
      */
     set(obj: {
-        r?: Buffer;
-        s?: Buffer;
+        r?: BN;
+        s?: BN;
         i?: number;
         compressed?: boolean;
         nhashtype?: number;
     }): Signature;
-    r: any;
-    s: any;
-    i: any;
-    compressed: any;
-    nhashtype: any;
+    /** @type {BN}*/
+    r: BN;
+    /** @type {BN}*/
+    s: BN;
+    /** @type {number}*/
+    i: number;
+    /** @type {boolean}*/
+    compressed: boolean;
+    /** @type {number}*/
+    nhashtype: number;
     /**
      * Converts the signature to a compact format.
      * @param {number} [i] - The recovery ID (0, 1, 2, or 3). Defaults to the instance's `i` value.
@@ -109,7 +126,7 @@ declare namespace Signature {
      * In order to mimic the non-strict DER encoding of OpenSSL, set strict = false.
      * @param {Buffer} buf - The DER formatted signature buffer to parse
      * @param {boolean} [strict=true] - Whether to perform strict length validation
-     * @returns {Object} An object containing the parsed signature components:
+     * @returns {{header: number, length: number, rheader: number, rlength: number, rneg: boolean, rbuf: Buffer, r: BN, sheader: number, slength: number, sneg: boolean, sbuf: Buffer, s: BN}} An object containing the parsed signature components:
      *   - header: The DER header byte (0x30)
      *   - length: The total length of the signature components
      *   - rheader: The R component header byte (0x02)
@@ -125,7 +142,20 @@ declare namespace Signature {
      * @throws {Error} If the buffer is not valid DER format or length checks fail
      * @static
      */
-    export function parseDER(buf: Buffer, strict?: boolean): any;
+    export function parseDER(buf: Buffer, strict?: boolean): {
+        header: number;
+        length: number;
+        rheader: number;
+        rlength: number;
+        rneg: boolean;
+        rbuf: Buffer;
+        r: BN;
+        sheader: number;
+        slength: number;
+        sneg: boolean;
+        sbuf: Buffer;
+        s: BN;
+    };
     /**
      * This function is translated from bitcoind's IsDERSignature and is used in
      * the script interpreter.  This "DER" format actually includes an extra byte,

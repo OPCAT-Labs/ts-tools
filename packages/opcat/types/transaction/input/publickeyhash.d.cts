@@ -16,9 +16,9 @@ declare class PublicKeyHashInput {
      * @param {number} index - the index of the input in the transaction input vector
      * @param {number} [sigtype] - the type of signature, defaults to Signature.SIGHASH_ALL
      * @param {Buffer} [hashData] - the precalculated hash of the public key associated with the privateKey provided
-     * @return {Array} of objects that can be
+     * @return {Array.<TransactionSignature>} the signatures of the public key hash input, if any
      */
-    getSignatures(transaction: Transaction, privateKey: PrivateKey, index: number, sigtype?: number, hashData?: Buffer): any[];
+    getSignatures(transaction: Transaction, privateKey: PrivateKey, index: number, sigtype?: number, hashData?: Buffer): Array<TransactionSignature>;
     /**
      * Adds a signature to the input and updates the script.
      * @param {Transaction} transaction - The transaction to validate against.

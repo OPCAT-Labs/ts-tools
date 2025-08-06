@@ -16,7 +16,7 @@ export = Mnemonic;
  * var xprivkey = mnemonic.toHDPrivateKey();
  *
  * @param {Buffer|string|number} [data] - Input data (Buffer for seed, string for phrase, or number for entropy bits)
- * @param {Array} [wordlist] - Optional wordlist for phrase generation/validation
+ * @param {Array.<string} [wordlist] - Optional wordlist for phrase generation/validation
  * @throws {InvalidArgument} If invalid data type provided
  * @throws {Mnemonic.UnknownWordlist} If phrase language can't be detected
  * @throws {Mnemonic.InvalidMnemonic} If phrase is invalid
@@ -24,7 +24,7 @@ export = Mnemonic;
  * @returns {Mnemonic} A new instance of Mnemonic
  * @constructor
  */
-declare function Mnemonic(data?: Buffer | string | number, wordlist?: any[]): Mnemonic;
+declare function Mnemonic(data?: Buffer | string | number, wordlist?: Array<string>): Mnemonic;
 declare class Mnemonic {
     /**
      * This is an immutable class that represents a BIP39 Mnemonic code.
@@ -43,7 +43,7 @@ declare class Mnemonic {
      * var xprivkey = mnemonic.toHDPrivateKey();
      *
      * @param {Buffer|string|number} [data] - Input data (Buffer for seed, string for phrase, or number for entropy bits)
-     * @param {Array} [wordlist] - Optional wordlist for phrase generation/validation
+     * @param {Array.<string} [wordlist] - Optional wordlist for phrase generation/validation
      * @throws {InvalidArgument} If invalid data type provided
      * @throws {Mnemonic.UnknownWordlist} If phrase language can't be detected
      * @throws {Mnemonic.InvalidMnemonic} If phrase is invalid
@@ -51,7 +51,7 @@ declare class Mnemonic {
      * @returns {Mnemonic} A new instance of Mnemonic
      * @constructor
      */
-    constructor(data?: Buffer | string | number, wordlist?: any[]);
+    constructor(data?: Buffer | string | number, wordlist?: Array<string>);
     /**
      * Will generate a seed based on the mnemonic and optional passphrase. Note that
      * this seed is absolutely NOT the seed that is output by .toSeed(). These are
@@ -67,15 +67,15 @@ declare class Mnemonic {
      * Generates a HD Private Key from a Mnemonic.
      * Optionally receive a passphrase and bitcoin network.
      *
-     * @param {String=} [passphrase]
-     * @param {Network|String|number=} [network] - The network: 'livenet' or 'testnet'
+     * @param {string} [passphrase] - Optional passphrase for additional security
+     * @param {Network|String|number} [network] - The network: 'livenet' or 'testnet'
      * @returns {HDPrivateKey}
      */
-    toHDPrivateKey(passphrase?: string | undefined, network?: (Network | string | number) | undefined): HDPrivateKey;
+    toHDPrivateKey(passphrase?: string, network?: Network | string | number): HDPrivateKey;
     /**
      * Will return a the string representation of the mnemonic
      *
-     * @returns {String} Mnemonic
+     * @returns {string} Mnemonic
      */
     toString(): string;
     /**
@@ -88,17 +88,17 @@ declare class Mnemonic {
 declare namespace Mnemonic {
     /**
      * Creates a new Mnemonic instance with random entropy using the specified wordlist.
-     * @param {Array} [wordlist=Mnemonic.Words.ENGLISH] - The wordlist to use for mnemonic generation (defaults to English).
+     * @param {Array.<string>} [wordlist=Mnemonic.Words.ENGLISH] - The wordlist to use for mnemonic generation (defaults to English).
      * @returns {Mnemonic} A new Mnemonic instance with random entropy.
      */
-    export function fromRandom(wordlist?: any[]): Mnemonic;
+    export function fromRandom(wordlist?: string[]): Mnemonic;
     /**
      * Creates a Mnemonic instance from a mnemonic string.
      * @param {string} mnemonic - The mnemonic phrase string.
-     * @param {string} [wordlist=Mnemonic.Words.ENGLISH] - Optional wordlist (defaults to English).
+     * @param {Array.<string>} [wordlist=Mnemonic.Words.ENGLISH] - Optional wordlist (defaults to English).
      * @returns {Mnemonic} A new Mnemonic instance.
      */
-    export function fromString(mnemonic: string, wordlist?: string): Mnemonic;
+    export function fromString(mnemonic: string, wordlist?: string[]): Mnemonic;
     /**
      * Will return a boolean if the mnemonic is valid
      *
@@ -108,10 +108,10 @@ declare namespace Mnemonic {
      * // true
      *
      * @param {String} mnemonic - The mnemonic string
-     * @param {String} [wordlist] - The wordlist used
+     * @param {Array.<string>} [wordlist] - The wordlist used
      * @returns {boolean}
      */
-    export function isValid(mnemonic: string, wordlist?: string): boolean;
+    export function isValid(mnemonic: string, wordlist?: string[]): boolean;
     /**
      * Internal function to check if a mnemonic belongs to a wordlist.
      *
@@ -125,44 +125,45 @@ declare namespace Mnemonic {
      * Internal function to detect the wordlist used to generate the mnemonic.
      *
      * @param {String} mnemonic - The mnemonic string
-     * @returns {Array} the wordlist or null
+     * @returns {Array.<string>|null} the wordlist or null
      * @private
      */
-    export function _getDictionary(mnemonic: string): any[];
+    export function _getDictionary(mnemonic: string): string[];
     /**
      * Will generate a Mnemonic object based on a seed.
      *
-     * @param {Buffer} [seed]
+     * @param {Buffer} [seed] - The 256-bits entropy seed to be used for generating the mnemonic.
+     * @param {Array.<string>} [wordlist=Mnemonic.Words.ENGLISH] - the wordlist to use (defaults to english)
      * @param {string} [wordlist]
      * @returns {Mnemonic}
      */
-    export function fromSeed(seed?: Buffer, wordlist?: string): Mnemonic;
+    export function fromSeed(seed?: Buffer, wordlist?: string[]): Mnemonic;
     /**
      * Internal function to generate a random mnemonic
      *
      * @param {Number} ENT - Entropy size, defaults to 128
-     * @param {Array} wordlist - Array of words to generate the mnemonic
-     * @returns {String} Mnemonic string
+     * @param {Array.<string>} wordlist - Array of words to generate the mnemonic
+     * @returns {string} Mnemonic string
      * @private
      */
-    export function _mnemonic(ENT: number, wordlist: any[]): string;
+    export function _mnemonic(ENT: number, wordlist: string[]): string;
     /**
      * Internal function to generate mnemonic based on entropy
      *
      * @param {Number} entropy - Entropy buffer
-     * @param {Array} wordlist - Array of words to generate the mnemonic
-     * @returns {String} Mnemonic string
+     * @param {Array.<string>} wordlist - Array of words to generate the mnemonic
+     * @returns {string} Mnemonic string
      * @private
      */
-    export function _entropy2mnemonic(entropy: number, wordlist: any[]): string;
+    export function _entropy2mnemonic(entropy: number, wordlist: string[]): string;
     /**
      * Internal function to create checksum of entropy
      *
-     * @param entropy
+     * @param {Buffer} entropy - Entropy buffer
      * @returns {string} Checksum of entropy length / 32
      * @private
      */
-    export function _entropyChecksum(entropy: any): string;
+    export function _entropyChecksum(entropy: Buffer): string;
     export { Words };
     export { pbkdf2 };
 }

@@ -15,17 +15,17 @@ declare class PublicKeyInput {
      * @param {PrivateKey} privateKey - the private key with which to sign the transaction
      * @param {number} index - the index of the input in the transaction input vector
      * @param {number} [sigtype] - the type of signature, defaults to Signature.SIGHASH_ALL
-     * @return {Array} of objects that can be
+     * @return {Array.<TransactionSignature>} the signatures of the public key input, if any
      */
-    getSignatures(transaction: Transaction, privateKey: PrivateKey, index: number, sigtype?: number): any[];
+    getSignatures(transaction: Transaction, privateKey: PrivateKey, index: number, sigtype?: number): Array<TransactionSignature>;
     /**
      * Adds a signature to the public key input after validating it.
-     * @param {Object} transaction - The transaction to validate against.
+     * @param {Transaction} transaction - The transaction to validate against.
      * @param {TransactionSignature} signature - The signature object containing signature data and type.
      * @returns {PublicKeyInput} Returns the instance for chaining.
      * @throws {Error} Throws if the signature is invalid.
      */
-    addSignature(transaction: any, signature: TransactionSignature): PublicKeyInput;
+    addSignature(transaction: Transaction, signature: TransactionSignature): PublicKeyInput;
     /**
      * Clears all signatures from this input by setting an empty script.
      * @returns {PublicKeyInput} The instance for chaining.

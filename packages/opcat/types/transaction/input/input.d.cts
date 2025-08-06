@@ -39,18 +39,43 @@ declare class Input {
     get script(): any;
     private _fromObject;
     output: Output;
-    prevTxId: any;
-    outputIndex: any;
-    sequenceNumber: any;
+    /** @type {Buffer}*/
+    prevTxId: Buffer;
+    /** @type {number}*/
+    outputIndex: number;
+    /** @type {number}*/
+    sequenceNumber: number;
     /**
      * Converts the Input instance to a plain object for JSON serialization.
      * Includes prevTxId, outputIndex, sequenceNumber, and script as hex strings.
      * Optionally adds human-readable scriptString if script is valid,
      * and includes the output object if present.
-     * @returns {Object} A plain object representation of the Input.
+     * @returns {{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}} A plain object representation of the Input.
      */
-    toObject: () => any;
-    toJSON(): any;
+    toObject: () => {
+        prevTxId: string;
+        outputIndex: number;
+        sequenceNumber: number;
+        script: string;
+        scriptString?: string;
+        output?: {
+            satoshis: number;
+            script: string;
+            data: string;
+        };
+    };
+    toJSON(): {
+        prevTxId: string;
+        outputIndex: number;
+        sequenceNumber: number;
+        script: string;
+        scriptString?: string;
+        output?: {
+            satoshis: number;
+            script: string;
+            data: string;
+        };
+    };
     /**
      * Serializes the input to a BufferWriter.
      * @param {boolean} hashScriptSig - Whether to hash the script (true) or include it directly (false).
@@ -76,27 +101,30 @@ declare class Input {
      * Retrieve signatures for the provided PrivateKey.
      *
      * @param {Transaction} transaction - the transaction to be signed
-     * @param {PrivateKey | Array} privateKeys - the private key to use when signing
+     * @param {PrivateKey | Array.<PrivateKey>} privateKeys - the private key to use when signing
      * @param {number} inputIndex - the index of this input in the provided transaction
-     * @param {number} sigType - defaults to Signature.SIGHASH_ALL
+     * @param {number} sigtype - defaults to Signature.SIGHASH_ALL
+     * @returns {TransactionSignature[]} - an array of {@link TransactionSignature} objects
      */
-    getSignatures(transaction: Transaction, privateKeys: PrivateKey | any[], inputIndex: number, sigtype: any): TransactionSignature[];
+    getSignatures(transaction: Transaction, privateKeys: PrivateKey | Array<PrivateKey>, inputIndex: number, sigtype: number): TransactionSignature[];
     /**
      * Retrieve preimage for the Input.
      *
      * @param {Transaction} transaction - the transaction to be signed
      * @param {number} inputIndex - the index of this input in the provided transaction
-     * @param {number} sigType - defaults to Signature.SIGHASH_ALL
+     * @param {number} sigtype - defaults to Signature.SIGHASH_ALL
      * @param {boolean} isLowS - true if the sig hash is safe for low s.
+     * @returns {Buffer} the sighash preimage buffer
      */
-    getPreimage(transaction: Transaction, inputIndex: number, sigtype: any, isLowS: boolean): Buffer;
+    getPreimage(transaction: Transaction, inputIndex: number, sigtype: number, isLowS: boolean): Buffer;
     /**
      * Abstract method that throws an error when invoked. Must be implemented by subclasses
      * to determine if all required signatures are present on this input.
      * @throws {AbstractMethodInvoked} Always throws to indicate abstract method usage
      * @abstract
+     * @returns {boolean} - Returns true if all signatures are present, false otherwise
      */
-    isFullySigned(): never;
+    isFullySigned(): boolean;
     /**
      * Checks if the input is final (has maximum sequence number).
      * @returns {boolean} True if the input is final, false otherwise.
@@ -105,11 +133,11 @@ declare class Input {
     /**
      * Abstract method to add a signature to the transaction input.
      * Must be implemented by concrete input types.
-     * @param {Object} transaction - The transaction to sign
-     * @param {Object} signature - The signature to add
+     * @param {Transaction} transaction - The transaction to sign
+     * @param {Signature} signature - The signature to add
      * @abstract
      */
-    addSignature(_transaction: any, _signature: any): void;
+    addSignature(transaction: Transaction, signature: Signature): void;
     /**
      * Clears all signatures from the input.
      * @abstract
@@ -119,13 +147,13 @@ declare class Input {
      * Verifies if a signature is valid for this input in the given transaction.
      * Note: Temporarily modifies the signature object by setting nhashtype from sigtype.
      *
-     * @param {Object} transaction - The transaction to verify against
+     * @param {Transaction} transaction - The transaction to verify against
      * @param {TransactionSignature} signature - Signature object containing signature, publicKey, etc.
      * @returns {boolean} True if the signature is valid, false otherwise
      */
-    isValidSignature(transaction: any, signature: TransactionSignature): boolean;
+    isValidSignature(transaction: Transaction, signature: TransactionSignature): boolean;
     /**
-     * @returns true if this is a coinbase input (represents no input)
+     * @returns {boolean} true if this is a coinbase input (represents no input)
      */
     isNull(): boolean;
     private _estimateSize;
@@ -172,6 +200,7 @@ import Script = require("../../script/script.cjs");
 import BufferWriter = require("../../encoding/bufferwriter.cjs");
 import PrivateKey = require("../../privatekey.cjs");
 import TransactionSignature = require("../signature.cjs");
+import Signature = require("../../crypto/signature.cjs");
 declare var MAXINT: number;
 declare var DEFAULT_SEQNUMBER: number;
 declare var DEFAULT_LOCKTIME_SEQNUMBER: number;

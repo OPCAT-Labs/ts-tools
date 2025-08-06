@@ -2,24 +2,32 @@ export = MultiSigInput;
 /**
  * Represents a MultiSigInput for a transaction.
  * @constructor
- * @param {Object} input - The input object containing publicKeys, threshold, and signatures.
- * @param {Array} pubkeys - Array of public keys (optional, defaults to input.publicKeys).
- * @param {number} threshold - Required number of signatures (optional, defaults to input.threshold).
- * @param {Array} signatures - Array of signatures (optional, defaults to input.signatures).
+ * @param {{publicKeys: Array.<Buffer>, threshold: number, signatures: Array.<TransactionSignature>}} input - The input object containing publicKeys, threshold, and signatures.
+ * @param {Array.<Buffer>} [pubkeys] - Array of public keys (optional, defaults to input.publicKeys).
+ * @param {number} [threshold] - Required number of signatures (optional, defaults to input.threshold).
+ * @param {Array.<TransactionSignature>} [signatures] - Array of signatures (optional, defaults to input.signatures).
  * @description Validates that provided public keys match the output script and initializes signatures.
  */
-declare function MultiSigInput(input: any, pubkeys: any[], threshold: number, signatures: any[], ...args: any[]): void;
+declare function MultiSigInput(input: {
+    publicKeys: Array<Buffer>;
+    threshold: number;
+    signatures: Array<TransactionSignature>;
+}, pubkeys?: Array<Buffer>, threshold?: number, signatures?: Array<TransactionSignature>, ...args: any[]): void;
 declare class MultiSigInput {
     /**
      * Represents a MultiSigInput for a transaction.
      * @constructor
-     * @param {Object} input - The input object containing publicKeys, threshold, and signatures.
-     * @param {Array} pubkeys - Array of public keys (optional, defaults to input.publicKeys).
-     * @param {number} threshold - Required number of signatures (optional, defaults to input.threshold).
-     * @param {Array} signatures - Array of signatures (optional, defaults to input.signatures).
+     * @param {{publicKeys: Array.<Buffer>, threshold: number, signatures: Array.<TransactionSignature>}} input - The input object containing publicKeys, threshold, and signatures.
+     * @param {Array.<Buffer>} [pubkeys] - Array of public keys (optional, defaults to input.publicKeys).
+     * @param {number} [threshold] - Required number of signatures (optional, defaults to input.threshold).
+     * @param {Array.<TransactionSignature>} [signatures] - Array of signatures (optional, defaults to input.signatures).
      * @description Validates that provided public keys match the output script and initializes signatures.
      */
-    constructor(input: any, pubkeys: any[], threshold: number, signatures: any[], ...args: any[]);
+    constructor(input: {
+        publicKeys: Array<Buffer>;
+        threshold: number;
+        signatures: Array<TransactionSignature>;
+    }, pubkeys?: Array<Buffer>, threshold?: number, signatures?: Array<TransactionSignature>, ...args: any[]);
     publicKeys: PublicKey[];
     publicKeyIndex: {};
     threshold: number;
@@ -27,9 +35,23 @@ declare class MultiSigInput {
     /**
      * Converts the MultiSigInput instance to a plain object representation.
      * Includes threshold, publicKeys (converted to strings), and serialized signatures.
-     * @returns {Object} The plain object representation of the MultiSigInput.
+     * @returns {{threshold: number, publicKeys: Array.<string>, signatures: any, prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}} The plain object representation of the MultiSigInput.
      */
-    toObject(...args: any[]): any;
+    toObject(): {
+        threshold: number;
+        publicKeys: Array<string>;
+        signatures: any;
+        prevTxId: string;
+        outputIndex: number;
+        sequenceNumber: number;
+        script: string;
+        scriptString?: string;
+        output?: {
+            satoshis: number;
+            script: string;
+            data: string;
+        };
+    };
     private _deserializeSignatures;
     private _serializeSignatures;
     /**
@@ -45,12 +67,12 @@ declare class MultiSigInput {
     getSignatures(transaction: Transaction, privateKey: PrivateKey, index: number, sigtype?: number): TransactionSignature[];
     /**
      * Adds a signature to the MultiSigInput if valid and not already fully signed.
-     * @param {Object} transaction - The transaction to validate the signature against.
-     * @param {Object} signature - The signature object containing publicKey and signature data.
+     * @param {Transaction} transaction - The transaction to validate the signature against.
+     * @param {TransactionSignature} signature - The signature object containing publicKey and signature data.
      * @throws {Error} If already fully signed, no matching public key, or invalid signature.
      * @returns {MultiSigInput} Returns the instance for chaining.
      */
-    addSignature(transaction: any, signature: any): MultiSigInput;
+    addSignature(transaction: Transaction, signature: TransactionSignature): MultiSigInput;
     /**
      * Updates the multisig input script by rebuilding it with current public keys, threshold, and signatures.
      * @returns {MultiSigInput} Returns the instance for chaining.
@@ -86,26 +108,17 @@ declare class MultiSigInput {
     countSignatures(): number;
     /**
      * Returns an array of public keys that haven't been signed yet in this MultiSigInput.
-     * @returns {Array} Array of unsigned public keys
+     * @returns {Array.<PublicKey>} Array of unsigned public keys
      */
-    publicKeysWithoutSignature(): any[];
+    publicKeysWithoutSignature(): Array<PublicKey>;
     /**
      * Verifies a signature for a MultiSigInput transaction.
      *
-     * @param {Object} transaction - The transaction to verify.
-     * @param {Object} signature - The signature object containing signature data.
-     * @param {Buffer} signature.signature - The signature to verify.
-     * @param {Buffer} signature.publicKey - The public key corresponding to the signature.
-     * @param {number} signature.inputIndex - The index of the input being signed.
-     * @param {number} signature.sigtype - The signature type (assigned to nhashtype as a workaround).
+     * @param {Transaction} transaction - The transaction to verify.
+     * @param {TransactionSignature} signature - The signature to verify.bject containing signature data.
      * @returns {boolean} True if the signature is valid, false otherwise.
      */
-    isValidSignature(transaction: any, signature: {
-        signature: Buffer;
-        publicKey: Buffer;
-        inputIndex: number;
-        sigtype: number;
-    }): boolean;
+    isValidSignature(transaction: Transaction, signature: TransactionSignature): boolean;
     private _estimateSize;
 }
 declare namespace MultiSigInput {
@@ -113,15 +126,16 @@ declare namespace MultiSigInput {
      * Normalizes signatures for a MultiSigInput by matching each public key with its corresponding signature.
      * Filters and validates signatures against the provided public keys and transaction.
      *
-     * @param {Object} transaction - The transaction to verify against.
-     * @param {Object} input - The input containing prevTxId and outputIndex.
+     * @param {Transaction} transaction - The transaction to verify against.
+     * @param {Input} input - The input containing prevTxId and outputIndex.
      * @param {number} inputIndex - The index of the input in the transaction.
-     * @param {Array<Buffer>} signatures - Array of signature buffers to normalize.
-     * @param {Array<PublicKey>} publicKeys - Array of public keys to match signatures against.
-     * @returns {Array<TransactionSignature|null>} Array of matched signatures or null for unmatched keys.
+     * @param {Array.<Buffer>} signatures - Array of signature buffers to normalize.
+     * @param {Array.<PublicKey>} publicKeys - Array of public keys to match signatures against.
+     * @returns {Array.<TransactionSignature|null>} Array of matched signatures or null for unmatched keys.
      */
-    function normalizeSignatures(transaction: any, input: any, inputIndex: number, signatures: Buffer[], publicKeys: PublicKey[]): TransactionSignature[];
+    function normalizeSignatures(transaction: Transaction, input: Input, inputIndex: number, signatures: Buffer[], publicKeys: PublicKey[]): TransactionSignature[];
     let SIGNATURE_SIZE: number;
 }
-import PublicKey = require("../../publickey.cjs");
 import TransactionSignature = require("../signature.cjs");
+import PublicKey = require("../../publickey.cjs");
+import Input = require("./input.cjs");

@@ -7,7 +7,7 @@ var BN = require('../crypto/bn.cjs');
 /**
  * Creates a BufferReader instance to read from various input types.
  * @constructor
- * @param {Buffer|string|Object} buf - Input source (Buffer, hex string, or object with buffer properties)
+ * @param {Buffer|string|{buf: Buffer, pos: number}} buf - Input source (Buffer, hex string, or object with buffer properties)
  * @throws {TypeError} If input is invalid hex string or unrecognized type
  * @example
  * new BufferReader(Buffer.from('abc')) // from Buffer
@@ -47,10 +47,12 @@ function BufferReader(buf) {
  * @param {Object} obj - The object containing buffer and position to set.
  * @param {Buffer} [obj.buf] - The buffer to set (optional, keeps current if not provided).
  * @param {number} [obj.pos] - The position to set (optional, keeps current if not provided).
- * @returns {BufferReader} Returns the instance for chaining.
+ * @returns {this} Returns the instance for chaining.
  */
 BufferReader.prototype.set = function (obj) {
+  /** @type {Buffer}  */
   this.buf = obj.buf || this.buf || undefined;
+  /** @type {number}  */
   this.pos = obj.pos || this.pos || 0;
   return this;
 };
@@ -67,6 +69,7 @@ BufferReader.prototype.eof = function () {
  * Alias for `eof` method - checks if the buffer reader has reached the end of data.
  * @name BufferReader.prototype.finished
  * @memberof BufferReader
+ * @type {boolean}
  * @instance
  */
 BufferReader.prototype.finished = BufferReader.prototype.eof;

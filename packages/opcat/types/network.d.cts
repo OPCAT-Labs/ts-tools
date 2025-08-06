@@ -7,5 +7,9 @@ export = Network;
  */
 declare function Network(): void;
 declare class Network {
-    toString(): any;
+    /**
+     * Returns the name of the network as a string.
+     * @returns {string} The name of the network.
+     */
+    toString(): string;
 }

@@ -6,9 +6,17 @@ export = Script;
  * See https://en.bitcoin.it/wiki/Script
  *
  * @constructor
- * @param {Object|string|Buffer} [from] optional data to populate script
+ * @param {{chunks: Array.<{opcodenum:number, len:number, buf?: Buffer}>}| {buffer:Buffer} |string|Buffer|Address|Script} [from] optional data to populate script
  */
-declare function Script(from?: any | string | Buffer): Script;
+declare function Script(from?: {
+    chunks: Array<{
+        opcodenum: number;
+        len: number;
+        buf?: Buffer;
+    }>;
+} | {
+    buffer: Buffer;
+} | string | Buffer | Address | Script): Script;
 declare class Script {
     /**
      * A bitcoin transaction script. Each transaction's inputs and outputs
@@ -17,20 +25,32 @@ declare class Script {
      * See https://en.bitcoin.it/wiki/Script
      *
      * @constructor
-     * @param {Object|string|Buffer} [from] optional data to populate script
+     * @param {{chunks: Array.<{opcodenum:number, len:number, buf?: Buffer}>}| {buffer:Buffer} |string|Buffer|Address|Script} [from] optional data to populate script
      */
-    constructor(from?: any | string | Buffer);
+    constructor(from?: {
+        chunks: Array<{
+            opcodenum: number;
+            len: number;
+            buf?: Buffer;
+        }>;
+    } | {
+        buffer: Buffer;
+    } | string | Buffer | Address | Script);
     buffer: Buffer;
     /**
      * Sets the script content from an object.
      * @param {Object} obj - The source object containing either chunks array or buffer.
-     * @param {Array} [obj.chunks] - Optional array of chunks to create script from.
+     * @param {Array.<{opcodenum:number, len:number, buf?: Buffer}>} [obj.chunks] - Optional array of chunks to create script from.
      * @param {Buffer} [obj.buffer] - Optional buffer containing script data.
      * @returns {Script} Returns the script instance for chaining.
      * @throws Will throw if argument is invalid (not object or missing required buffer).
      */
     set(obj: {
-        chunks?: any[];
+        chunks?: Array<{
+            opcodenum: number;
+            len: number;
+            buf?: Buffer;
+        }>;
         buffer?: Buffer;
     }): Script;
     /**
@@ -125,12 +145,18 @@ declare class Script {
     isMultisigOut(): boolean;
     /**
      * Decodes a multisig output script into its components.
-     * @returns {Object} An object containing:
-     *   - m {number} The required number of signatures (m-of-n)
-     *   - n {number} The total number of public keys
-     *   - pubkeys {Buffer[]} Array of public keys involved in the multisig
+     *
+     * @returns {{m: number, n: number, pubkeys: Array.<Buffer>}} An object containing:
+     *   - m: The number of required signatures (threshold).
+     *   - n: The total number of public keys in the multisig script.
+     *   - pubkeys: An array of public keys involved in the multisig script.
+     * @throws {Error} Throws an error if the script is not a valid multisig output script.
      */
-    decodeMultisigOut(): any;
+    decodeMultisigOut(): {
+        m: number;
+        n: number;
+        pubkeys: Array<Buffer>;
+    };
     /**
      * Checks if the script is a multisig input script.
      * @returns {boolean} True if the script is a valid multisig input (starts with OP_0 and has valid DER signatures).
@@ -181,10 +207,14 @@ declare class Script {
     isStandard(): boolean;
     /**
      * Adds a script element at the start of the script.
-     * @param {*} obj a string, number, Opcode, Buffer, or object to add
+     * @param {string|number|Opcode|Buffer|Script|{opcodenum:number, len:number, buf?: Buffer}} obj - a string, number, Opcode, Buffer, or object to add
      * @returns {Script} this script instance
      */
-    prepend(obj: any): Script;
+    prepend(obj: string | number | Opcode | Buffer | Script | {
+        opcodenum: number;
+        len: number;
+        buf?: Buffer;
+    }): Script;
     /**
      * Compares this script with another script for equality.
      * @param {Script} script - The script to compare with.
@@ -194,10 +224,14 @@ declare class Script {
     equals(script: Script): boolean;
     /**
      * Adds a script element to the end of the script.
-     * @param {Object} obj - The object to add.
+     * @param {string|number|Opcode|Buffer|Script|{opcodenum:number, len:number, buf?: Buffer}} obj - The object to add.
      * @returns {Script} Returns the script instance for chaining.
      */
-    add(obj: any): Script;
+    add(obj: string | number | Opcode | Buffer | Script | {
+        opcodenum: number;
+        len: number;
+        buf?: Buffer;
+    }): Script;
     private _addByType;
     private _insertAtPosition;
     /**
@@ -231,26 +265,23 @@ declare class Script {
     /**
      * If the script does not contain any OP_CODESEPARATOR, Return all scripts
      * If the script contains any OP_CODESEPARATOR, the scriptCode is the script but removing everything up to and including the last executed OP_CODESEPARATOR before the signature checking opcode being executed
-     * @param {n} The {n}th codeseparator in the script
+     * @param {number} n - The {n}th codeseparator in the script
      *
      * @returns {Script} Subset of script starting at the {n}th codeseparator
      */
-    subScript(n: any): Script;
+    subScript(n: number): Script;
     /**
      * Gets address information for the script.
      * For input scripts, returns input address info.
      * For output scripts, returns output address info.
      * For general scripts, tries output address info first, falls back to input if not available.
-     * @returns {Object} Address information object
+     * @returns {{hashBuffer: Buffer, type: string}|boolean} Address information object
      */
-    getAddressInfo(): any;
-    /**
-     * Gets the output address information from the script.
-     * @returns {Object|boolean} An object containing the hash buffer and address type if the script is a public key hash output, otherwise false.
-     * @property {Buffer} info.hashBuffer - The hash buffer of the address.
-     * @property {number} info.type - The type of the address (Address.PayToPublicKeyHash).
-     */
-    _getOutputAddressInfo(): any | boolean;
+    getAddressInfo(): {
+        hashBuffer: Buffer;
+        type: string;
+    } | boolean;
+    private _getOutputAddressInfo;
     private _getInputAddressInfo;
     /**
      * Converts the script to an Address object for the specified network.
@@ -306,10 +337,14 @@ declare namespace Script {
      * Creates a Script instance from an array of opcode chunks.
      * Handles different pushdata opcodes (OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4)
      * by writing appropriate length prefixes before the buffer data.
-     * @param {Array} chunks - Array of opcode chunks containing opcodenum and optional buf/len
+     * @param {Array.<{opcodenum:number, len:number, buf?: Buffer}>} chunks - Array of opcode chunks containing opcodenum and optional buf/len
      * @returns {Script} A new Script instance with compiled buffer
      */
-    function fromChunks(chunks: any[]): Script;
+    function fromChunks(chunks: {
+        opcodenum: number;
+        len: number;
+        buf?: Buffer;
+    }[]): Script;
     /**
      * Creates a Script instance from ASM (Assembly) formatted string.
      * @param {string} str - ASM formatted string to decode
@@ -346,34 +381,34 @@ declare namespace Script {
         let SAFE_DATA_OUT: string;
     }
     namespace outputIdentifiers {
-        let PUBKEY_OUT_1: any;
+        let PUBKEY_OUT_1: () => boolean;
         export { PUBKEY_OUT_1 as PUBKEY_OUT };
-        let PUBKEYHASH_OUT_1: any;
+        let PUBKEYHASH_OUT_1: () => boolean;
         export { PUBKEYHASH_OUT_1 as PUBKEYHASH_OUT };
-        let MULTISIG_OUT_1: any;
+        let MULTISIG_OUT_1: () => boolean;
         export { MULTISIG_OUT_1 as MULTISIG_OUT };
-        let DATA_OUT_1: any;
+        let DATA_OUT_1: () => boolean;
         export { DATA_OUT_1 as DATA_OUT };
-        let SAFE_DATA_OUT_1: any;
+        let SAFE_DATA_OUT_1: () => boolean;
         export { SAFE_DATA_OUT_1 as SAFE_DATA_OUT };
     }
     namespace inputIdentifiers {
-        let PUBKEY_IN_1: any;
+        let PUBKEY_IN_1: () => boolean;
         export { PUBKEY_IN_1 as PUBKEY_IN };
-        let PUBKEYHASH_IN_1: any;
+        let PUBKEYHASH_IN_1: () => boolean;
         export { PUBKEYHASH_IN_1 as PUBKEYHASH_IN };
-        let MULTISIG_IN_1: any;
+        let MULTISIG_IN_1: () => boolean;
         export { MULTISIG_IN_1 as MULTISIG_IN };
     }
     /**
      * Builds a multisig output script from given public keys and threshold.
-     * @param {Array} publicKeys - Array of public keys to include in the multisig
+     * @param {Array.<PublicKey>} publicKeys - Array of public keys to include in the multisig
      * @param {number} threshold - Minimum number of signatures required
      * @param {Object} [opts] - Optional parameters
      * @param {boolean} [opts.noSorting] - If true, skips sorting of public keys
      * @returns {Script} The constructed multisig script
      */
-    function buildMultisigOut(publicKeys: any[], threshold: number, opts?: {
+    function buildMultisigOut(publicKeys: PublicKey[], threshold: number, opts?: {
         noSorting?: boolean;
     }): Script;
     /**
@@ -381,18 +416,15 @@ declare namespace Script {
      *
      * @param {PublicKey[]} pubkeys list of all public keys controlling the output
      * @param {number} threshold amount of required signatures to spend the output
-     * @param {Array} signatures and array of signature buffers to append to the script
-     * @param {Object=} opts
-     * @param {boolean=} opts.noSorting don't sort the given public keys before creating the script (false by default)
-     * @param {Script=} opts.cachedMultisig don't recalculate the redeemScript
+     * @param {Signature[]} signatures and array of signature buffers to append to the script
      *
      * @returns {Script}
      */
-    function buildMultisigIn(pubkeys: PublicKey[], threshold: number, signatures: any[], opts?: any): Script;
+    function buildMultisigIn(pubkeys: PublicKey[], threshold: number, signatures: Signature[]): Script;
     /**
      * Builds a standard P2PKH (Pay-to-Public-Key-Hash) script for a given recipient.
      * @param {PublicKey|Address|string} to - Recipient's public key, address, or address string
-     * @returns {Script} A P2PKH script with the format: OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
+     * @returns {Script} A P2PKH script with the format: `OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG`
      * @throws {Error} If 'to' argument is undefined or invalid type
      */
     function buildPublicKeyHashOut(to: string | Address | PublicKey): Script;
@@ -403,17 +435,23 @@ declare namespace Script {
      */
     function buildPublicKeyOut(pubkey: PublicKey): Script;
     /**
-     * @returns {Script} a new OP_RETURN script with data
-     * @param {string|Buffer|Array} data - the data to embed in the output - it is a string, buffer, or array of strings or buffers
-     * @param {string} encoding - the type of encoding of the string(s)
+     * Builds a script with OP_RETURN and optional data outputs.
+     *
+     * @param {string|Buffer|Array.<string|Buffer>} [data] - The data to include in the script. Can be a string, array of strings/Buffers, or a Buffer.
+     * @param {string} [encoding] - The encoding to use when converting string data to Buffer (defaults to UTF-8).
+     * @returns {Script} A new Script instance with OP_RETURN and the provided data.
+     * @throws {Error} If the data is not a string, array, Buffer, or undefined.
      */
-    function buildDataOut(data: string | any[] | Buffer, encoding: string): Script;
+    function buildDataOut(data?: string | Buffer | (string | Buffer)[], encoding?: string): Script;
     /**
-     * @returns {Script} a new OP_RETURN script with data
-     * @param {string|Buffer|Array} data - the data to embed in the output - it is a string, buffer, or array of strings or buffers
-     * @param {string} encoding - the type of encoding of the string(s)
+     * Builds a safe data output script by wrapping the provided data in a script with an OP_FALSE opcode.
+     * This is typically used to ensure data is pushed to the stack in a secure manner.
+     *
+     * @param {Buffer|string|Array.<string|Buffer>} data - The data to be included in the script.
+     * @param {string} [encoding] - Optional encoding for the data if it is a string.
+     * @returns {Script} A new script instance containing the wrapped data.
      */
-    function buildSafeDataOut(data: string | any[] | Buffer, encoding: string): Script;
+    function buildSafeDataOut(data: string | Buffer | (string | Buffer)[], encoding?: string): Script;
     /**
      * Builds a scriptSig (a script for an input) that signs a public key output script.
      *
@@ -443,7 +481,7 @@ declare namespace Script {
      */
     function fromAddress(address: string | Address): Script;
 }
-import Opcode = require("../opcode.cjs");
 import Address = require("../address.cjs");
+import Opcode = require("../opcode.cjs");
 import PublicKey = require("../publickey.cjs");
 import Signature = require("../crypto/signature.cjs");

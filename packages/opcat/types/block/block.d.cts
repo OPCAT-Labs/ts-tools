@@ -3,27 +3,177 @@ export = Block;
  * Instantiate a Block from a Buffer, JSON object, or Object with
  * the properties of the Block
  *
- * @param {*} - A Buffer, JSON string, or Object
+ * @param {Buffer|{transactions: Array.<Transaction|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}>, header: {prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}}} arg - A Buffer, JSON string, or Object
  * @returns {Block}
  * @constructor
  */
-declare function Block(arg: any): Block;
+declare function Block(arg: Buffer | {
+    transactions: Array<Transaction | {
+        outputs: Array<{
+            satoshis: number;
+            script: string;
+            data: string;
+        }>;
+        inputs: Array<{
+            prevTxId: string;
+            outputIndex: number;
+            sequenceNumber: number;
+            script: string;
+            scriptString?: string;
+            output?: {
+                satoshis: number;
+                script: string;
+                data: string;
+            };
+        }>;
+        hash: string;
+        version: number;
+        nLockTime: number;
+        changeScript?: string;
+        changeAddress?: string;
+        changeIndex?: number;
+        fee?: number;
+    }>;
+    header: {
+        prevHash: string | Buffer;
+        merkleRoot: string | Buffer;
+        hash: string;
+        version: number;
+        time: number;
+        bits: number;
+        nonce: number;
+    };
+}): Block;
 declare class Block {
     /**
      * Instantiate a Block from a Buffer, JSON object, or Object with
      * the properties of the Block
      *
-     * @param {*} - A Buffer, JSON string, or Object
+     * @param {Buffer|{transactions: Array.<Transaction|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}>, header: {prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}}} arg - A Buffer, JSON string, or Object
      * @returns {Block}
      * @constructor
      */
-    constructor(arg: any);
+    constructor(arg: Buffer | {
+        transactions: Array<Transaction | {
+            outputs: Array<{
+                satoshis: number;
+                script: string;
+                data: string;
+            }>;
+            inputs: Array<{
+                prevTxId: string;
+                outputIndex: number;
+                sequenceNumber: number;
+                script: string;
+                scriptString?: string;
+                output?: {
+                    satoshis: number;
+                    script: string;
+                    data: string;
+                };
+            }>;
+            hash: string;
+            version: number;
+            nLockTime: number;
+            changeScript?: string;
+            changeAddress?: string;
+            changeIndex?: number;
+            fee?: number;
+        }>;
+        header: {
+            prevHash: string | Buffer;
+            merkleRoot: string | Buffer;
+            hash: string;
+            version: number;
+            time: number;
+            bits: number;
+            nonce: number;
+        };
+    });
+    /** @type {Array.<Transaction>} - The block transactions */
+    transactions: Array<Transaction>;
+    /** @type {BlockHeader} - The block header */
+    header: BlockHeader;
     /**
      * Converts the Block instance to a plain object (also aliased as toJSON).
-     * @returns {Object} The plain object representation of the Block.
+     * @returns {{transactions: Array.<{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}>, header: {version: number, prevHash: string, merkleRoot: string, hash: string, nTime: number, bits: number, nonce: number, time: number}}} The plain object representation of the Block.
      */
-    toObject: () => any;
-    toJSON(): any;
+    toObject: () => {
+        transactions: Array<{
+            outputs: Array<{
+                satoshis: number;
+                script: string;
+                data: string;
+            }>;
+            inputs: Array<{
+                prevTxId: string;
+                outputIndex: number;
+                sequenceNumber: number;
+                script: string;
+                scriptString?: string;
+                output?: {
+                    satoshis: number;
+                    script: string;
+                    data: string;
+                };
+            }>;
+            hash: string;
+            version: number;
+            nLockTime: number;
+            changeScript?: string;
+            changeAddress?: string;
+            changeIndex?: number;
+            fee?: number;
+        }>;
+        header: {
+            version: number;
+            prevHash: string;
+            merkleRoot: string;
+            hash: string;
+            nTime: number;
+            bits: number;
+            nonce: number;
+            time: number;
+        };
+    };
+    toJSON(): {
+        transactions: Array<{
+            outputs: Array<{
+                satoshis: number;
+                script: string;
+                data: string;
+            }>;
+            inputs: Array<{
+                prevTxId: string;
+                outputIndex: number;
+                sequenceNumber: number;
+                script: string;
+                scriptString?: string;
+                output?: {
+                    satoshis: number;
+                    script: string;
+                    data: string;
+                };
+            }>;
+            hash: string;
+            version: number;
+            nLockTime: number;
+            changeScript?: string;
+            changeAddress?: string;
+            changeIndex?: number;
+            fee?: number;
+        }>;
+        header: {
+            version: number;
+            prevHash: string;
+            merkleRoot: string;
+            hash: string;
+            nTime: number;
+            bits: number;
+            nonce: number;
+            time: number;
+        };
+    };
     /**
      * Converts the block to a buffer representation.
      * @returns {Buffer} The buffer containing the block data.
@@ -35,22 +185,22 @@ declare class Block {
      */
     toString(): string;
     /**
-     * @param {BufferWriter} - An existing instance of BufferWriter
+     * @param {BufferWriter} [bw] - An existing instance of BufferWriter
      * @returns {BufferWriter} - An instance of BufferWriter representation of the Block
      */
-    toBufferWriter(bw: any): BufferWriter;
+    toBufferWriter(bw?: BufferWriter): BufferWriter;
     /**
      * Will iterate through each transaction and return an array of hashes
-     * @returns {Array} - An array with transaction hashes
+     * @returns {Array.<Buffer>} - An array with transaction hashes
      */
-    getTransactionHashes(): any[];
+    getTransactionHashes(): Array<Buffer>;
     /**
      * Will build a merkle tree of all the transactions, ultimately arriving at
      * a single point, the merkle root.
      * @link https://en.bitcoin.it/wiki/Protocol_specification#Merkle_Trees
-     * @returns {Array} - An array with each level of the tree after the other.
+     * @returns {Array.<Buffer>} - An array with each level of the tree after the other.
      */
-    getMerkleTree(): any[];
+    getMerkleTree(): Array<Buffer>;
     /**
      * Calculates the merkleRoot from the transactions.
      * @returns {Buffer} - A buffer of the merkle root hash
@@ -76,25 +226,133 @@ declare namespace Block {
     export let MAX_BLOCK_SIZE: number;
     /**
      * Creates a Block instance from the given argument.
-     * @param {*} arg - The input to convert into a Block.
+     * @param {Buffer|{transactions: Array.<Transaction|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}>, header: {prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}}} arg - The input to convert into a Block.
      * @returns {Block} A new Block instance.
      * @throws {TypeError} - If the argument was not recognized
      * @private
      */
-    export function _from(arg: any): Block;
+    export function _from(arg: Buffer | {
+        transactions: (Transaction | {
+            outputs: {
+                satoshis: number;
+                script: string;
+                data: string;
+            }[];
+            inputs: {
+                prevTxId: string;
+                outputIndex: number;
+                sequenceNumber: number;
+                script: string;
+                scriptString?: string;
+                output?: {
+                    satoshis: number;
+                    script: string;
+                    data: string;
+                };
+            }[];
+            hash: string;
+            version: number;
+            nLockTime: number;
+            changeScript?: string;
+            changeAddress?: string;
+            changeIndex?: number;
+            fee?: number;
+        })[];
+        header: {
+            prevHash: string | Buffer;
+            merkleRoot: string | Buffer;
+            hash: string;
+            version: number;
+            time: number;
+            bits: number;
+            nonce: number;
+        };
+    }): Block;
     /**
      * Creates a Block instance from a plain object.
-     * @param {Object} data - The plain object containing block data.
+     * @param {{transactions: Array.<Transaction|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}>, header: {prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}}} data - The plain object containing block data.
      * @returns {Block} The created Block instance.
      * @private
      */
-    export function _fromObject(data: any): Block;
+    export function _fromObject(data: {
+        transactions: (Transaction | {
+            outputs: {
+                satoshis: number;
+                script: string;
+                data: string;
+            }[];
+            inputs: {
+                prevTxId: string;
+                outputIndex: number;
+                sequenceNumber: number;
+                script: string;
+                scriptString?: string;
+                output?: {
+                    satoshis: number;
+                    script: string;
+                    data: string;
+                };
+            }[];
+            hash: string;
+            version: number;
+            nLockTime: number;
+            changeScript?: string;
+            changeAddress?: string;
+            changeIndex?: number;
+            fee?: number;
+        })[];
+        header: {
+            prevHash: string | Buffer;
+            merkleRoot: string | Buffer;
+            hash: string;
+            version: number;
+            time: number;
+            bits: number;
+            nonce: number;
+        };
+    }): Block;
     /**
      * Creates a Block instance from a plain JavaScript object.
-     * @param {Object} obj - The source object to convert to a Block.
+     * @param {{transactions: Array.<Transaction|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}>, header: {prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}}} obj - The source object to convert to a Block.
      * @returns {Block} A new Block instance.
      */
-    export function fromObject(obj: any): Block;
+    export function fromObject(obj: {
+        transactions: (Transaction | {
+            outputs: {
+                satoshis: number;
+                script: string;
+                data: string;
+            }[];
+            inputs: {
+                prevTxId: string;
+                outputIndex: number;
+                sequenceNumber: number;
+                script: string;
+                scriptString?: string;
+                output?: {
+                    satoshis: number;
+                    script: string;
+                    data: string;
+                };
+            }[];
+            hash: string;
+            version: number;
+            nLockTime: number;
+            changeScript?: string;
+            changeAddress?: string;
+            changeIndex?: number;
+            fee?: number;
+        })[];
+        header: {
+            prevHash: string | Buffer;
+            merkleRoot: string | Buffer;
+            hash: string;
+            version: number;
+            time: number;
+            bits: number;
+            nonce: number;
+        };
+    }): Block;
     /**
      * Creates a Block instance from a BufferReader.
      * @private
@@ -122,10 +380,10 @@ declare namespace Block {
     export function fromString(str: string): Block;
     /**
      * Creates a Block instance from raw block data.
-     * @param {Object} data - The raw block data to convert.
+     * @param {Buffer|string} data - The raw block data to convert.
      * @returns {Block} A new Block instance.
      */
-    export function fromRawBlock(data: any): Block;
+    export function fromRawBlock(data: string | Buffer): Block;
     export namespace Values {
         let START_OF_BLOCK: number;
         let NULL_HASH: Buffer;
@@ -133,7 +391,8 @@ declare namespace Block {
     export { BlockHeader };
     export { MerkleBlock };
 }
+import Transaction = require("../transaction/transaction.cjs");
+import BlockHeader = require("./blockheader.cjs");
 import BufferWriter = require("../encoding/bufferwriter.cjs");
 import BufferReader = require("../encoding/bufferreader.cjs");
-import BlockHeader = require("./blockheader.cjs");
 import MerkleBlock = require("./merkleblock.cjs");

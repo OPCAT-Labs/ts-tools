@@ -3,7 +3,7 @@ export = HDPrivateKey;
  * Creates a new HDPrivateKey instance from various input formats.
  * More info on https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
  * @constructor
- * @param {HDPrivateKey|string|Buffer|Object} arg - Input can be:
+ * @param {HDPrivateKey|string|Buffer|{network: string, depth: number, fingerPrint: number, parentFingerPrint: number, childIndex: number, chainCode: string, privateKey: string, checksum: number, xprivkey: string}} [arg] - Input can be:
  *   - Existing HDPrivateKey instance (returns same instance)
  *   - Network name (generates random key for that network)
  *   - Serialized string/Buffer (base58 encoded)
@@ -12,13 +12,23 @@ export = HDPrivateKey;
  * @throws {hdErrors.UnrecognizedArgument} If input format is not recognized
  * @throws {Error} If serialized input is invalid
  */
-declare function HDPrivateKey(arg: HDPrivateKey | string | Buffer | any): HDPrivateKey;
+declare function HDPrivateKey(arg?: HDPrivateKey | string | Buffer | {
+    network: string;
+    depth: number;
+    fingerPrint: number;
+    parentFingerPrint: number;
+    childIndex: number;
+    chainCode: string;
+    privateKey: string;
+    checksum: number;
+    xprivkey: string;
+}): HDPrivateKey;
 declare class HDPrivateKey {
     /**
      * Creates a new HDPrivateKey instance from various input formats.
      * More info on https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
      * @constructor
-     * @param {HDPrivateKey|string|Buffer|Object} arg - Input can be:
+     * @param {HDPrivateKey|string|Buffer|{network: string, depth: number, fingerPrint: number, parentFingerPrint: number, childIndex: number, chainCode: string, privateKey: string, checksum: number, xprivkey: string}} [arg] - Input can be:
      *   - Existing HDPrivateKey instance (returns same instance)
      *   - Network name (generates random key for that network)
      *   - Serialized string/Buffer (base58 encoded)
@@ -27,7 +37,17 @@ declare class HDPrivateKey {
      * @throws {hdErrors.UnrecognizedArgument} If input format is not recognized
      * @throws {Error} If serialized input is invalid
      */
-    constructor(arg: HDPrivateKey | string | Buffer | any);
+    constructor(arg?: HDPrivateKey | string | Buffer | {
+        network: string;
+        depth: number;
+        fingerPrint: number;
+        parentFingerPrint: number;
+        childIndex: number;
+        chainCode: string;
+        privateKey: string;
+        checksum: number;
+        xprivkey: string;
+    });
     get hdPublicKey(): HDPublicKey;
     get xpubkey(): any;
     /**
@@ -110,24 +130,42 @@ declare class HDPrivateKey {
      */
     inspect(): string;
     /**
-     * Returns a plain object with a representation of this private key.
+     * Converts the HDPrivateKey instance into a plain JavaScript object.
+     * This method is also aliased as `toJSON` for JSON serialization compatibility.
      *
-     * Fields include:
-     * <ul>
-     * <li> network: either 'livenet' or 'testnet' </li>
-     * <li> depth: a number ranging from 0 to 255 </li>
-     * <li> fingerPrint: a number ranging from 0 to 2^32-1, taken from the hash of the associated public key </li>
-     * <li> parentFingerPrint: a number ranging from 0 to 2^32-1, taken from the hash of this parent's associated public key or zero. </li>
-     * <li> childIndex: the index from which this child was derived (or zero) </li>
-     * <li> chainCode: an hexa string representing a number used in the derivation </li>
-     * <li> privateKey: the private key associated, in hexa representation </li>
-     * <li> xprivkey: the representation of this extended private key in checksum base58 format </li>
-     * <li> checksum: the base58 checksum of xprivkey </li>
-     * </ul>
-     *  @return {Object}
+     * @returns {{network: string, depth: number, fingerPrint: number, parentFingerPrint: number, childIndex: number, chainCode: string, privateKey: string, checksum: number, xprivkey: string}} An object representing the HD private key with the following properties:
+     *   - network: The network name associated with the key.
+     *   - depth: The depth of the key in the hierarchy.
+     *   - fingerPrint: The fingerprint of the key.
+     *   - parentFingerPrint: The fingerprint of the parent key.
+     *   - childIndex: The index of the child key.
+     *   - chainCode: The chain code as a hexadecimal string.
+     *   - privateKey: The private key as a hexadecimal string.
+     *   - checksum: The checksum of the key.
+     *   - xprivkey: The extended private key string.
      */
-    toObject: () => any;
-    toJSON(): any;
+    toObject: () => {
+        network: string;
+        depth: number;
+        fingerPrint: number;
+        parentFingerPrint: number;
+        childIndex: number;
+        chainCode: string;
+        privateKey: string;
+        checksum: number;
+        xprivkey: string;
+    };
+    toJSON(): {
+        network: string;
+        depth: number;
+        fingerPrint: number;
+        parentFingerPrint: number;
+        childIndex: number;
+        chainCode: string;
+        privateKey: string;
+        checksum: number;
+        xprivkey: string;
+    };
     /**
      * Returns a buffer representation of the HDPrivateKey
      *
@@ -160,21 +198,21 @@ declare namespace HDPrivateKey {
      * is valid.
      *
      * @param {string|Buffer} data - the serialized private key
-     * @param {string|Network} network - optional, if present, checks that the
+     * @param {string|Network} [network] - optional, if present, checks that the
      *     network provided matches the network serialized.
      * @return {boolean}
      */
-    export function isValidSerialized(data: string | Buffer, network: any): boolean;
+    export function isValidSerialized(data: string | Buffer, network?: string | Network): boolean;
     /**
      * Checks what's the error that causes the validation of a serialized private key
      * in base58 with checksum to fail.
      *
      * @param {string|Buffer} data - the serialized private key
-     * @param {string|Network} network - optional, if present, checks that the
+     * @param {string|Network} [network] - optional, if present, checks that the
      *     network provided matches the network serialized.
-     * @return {errors.InvalidArgument|null}
+     * @return {Error|null} Returns the validation error, if any, otherwise null.
      */
-    export function getSerializedError(data: string | Buffer, network: any): any;
+    export function getSerializedError(data: string | Buffer, network?: string | Network): Error;
     /**
      * Validates if the provided data matches the expected network's extended private key version.
      * @param {Buffer} data - The data buffer to validate (must include version bytes).
@@ -182,7 +220,7 @@ declare namespace HDPrivateKey {
      * @returns {Error|null} Returns error if validation fails, otherwise null.
      * @private
      */
-    export function _validateNetwork(data: Buffer, networkArg: any): Error;
+    export function _validateNetwork(data: Buffer, networkArg: string | Network): Error;
     /**
      * Creates an HDPrivateKey instance from a string representation.
      * @param {string} arg - The string to convert to an HDPrivateKey
@@ -193,15 +231,30 @@ declare namespace HDPrivateKey {
     /**
      * Creates an HDPrivateKey instance from a plain object.
      * @param {Object} arg - The object containing HDPrivateKey properties.
+     * @param {Network} arg.network - Network used when the key was created.The object containing HDPrivateKey properties.
+     * @param {number} arg.depth - The depth of the key in the hierarchy.
+     * @param {number} arg.parentFingerPrint - The fingerprint of the parent key.
+     * @param {number} arg.childIndex - The index of the key in the hierarchy.
+     * @param {Buffer|string} arg.chainCode - The key's chainCode.
+     * @param {Buffer|string} arg.privateKey - The private key.
+     * @param {Buffer|string} [arg.checksum] - The checksum of the key.
      * @throws {Error} Throws if argument is not a valid object.
      * @returns {HDPrivateKey} A new HDPrivateKey instance.
      */
-    export function fromObject(arg: any): HDPrivateKey;
+    export function fromObject(arg: {
+        network: Network;
+        depth: number;
+        parentFingerPrint: number;
+        childIndex: number;
+        chainCode: string | Buffer;
+        privateKey: string | Buffer;
+        checksum?: string | Buffer;
+    }): HDPrivateKey;
     /**
      * Generate a private key from a seed, as described in BIP32
      *
-     * @param {string|Buffer} hexa
-     * @param {Network} [network]
+     * @param {string|Buffer} hexa - The entropy hex encoded or buffer of the seed.
+     * @param {Network} [network] - optional network name.
      * @return HDPrivateKey
      * @static
      */
@@ -231,10 +284,11 @@ declare namespace HDPrivateKey {
     /**
      * Build a HDPrivateKey from a buffer
      *
-     * @param {Buffer} arg
-     * @return {HDPrivateKey}
+     * @param {Buffer} buf - Buffer for the xprivkey.
+     * @return {HDPrivateKey} A new HDPrivateKey instance created from the buffer.
+     * @throws {Error} If the buffer is not a valid serialized HDPrivateKey.
      */
-    export function fromBuffer(buf: any): HDPrivateKey;
+    export function fromBuffer(buf: Buffer): HDPrivateKey;
     /**
      * Build a HDPrivateKey from a hex string
      *
@@ -279,3 +333,4 @@ declare namespace HDPrivateKey {
 }
 import HDPublicKey = require("./hdpublickey.cjs");
 import PrivateKey = require("./privatekey.cjs");
+import Network = require("./network.cjs");

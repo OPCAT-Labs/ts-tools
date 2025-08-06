@@ -6,13 +6,14 @@ export = Point;
  *
  * @param {BN|String} x - The X coordinate
  * @param {BN|String} y - The Y coordinate
+ * @param {boolean} [isRed] - Whether the Y coordinate is red or not
  * @link https://github.com/indutny/elliptic
  * @augments elliptic.curve.point
  * @throws {Error} A validation error if exists
  * @returns {Point} An instance of Point
  * @constructor
  */
-declare function Point(x: BN | string, y: BN | string, isRed: any): Point;
+declare function Point(x: BN | string, y: BN | string, isRed?: boolean): Point;
 declare class Point {
     /**
      * Instantiate a valid secp256k1 Point from the X and Y coordinates. This class
@@ -21,21 +22,24 @@ declare class Point {
      *
      * @param {BN|String} x - The X coordinate
      * @param {BN|String} y - The Y coordinate
+     * @param {boolean} [isRed] - Whether the Y coordinate is red or not
      * @link https://github.com/indutny/elliptic
      * @augments elliptic.curve.point
      * @throws {Error} A validation error if exists
      * @returns {Point} An instance of Point
      * @constructor
      */
-    constructor(x: BN | string, y: BN | string, isRed: any);
-    _getX: any;
+    constructor(x: BN | string, y: BN | string, isRed?: boolean);
+    /** @private */
+    private _getX;
     /**
      * Will return the X coordinate of the Point.
      *
      * @returns {BN} A BN instance of the X coordinate
      */
     getX(): BN;
-    _getY: any;
+    /** @private */
+    private _getY;
     /**
      * Will return the Y coordinate of the Point.
      *

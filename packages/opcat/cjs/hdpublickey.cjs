@@ -8,6 +8,7 @@ var Base58 = require('./encoding/base58.cjs');
 var Base58Check = require('./encoding/base58check.cjs');
 var Hash = require('./crypto/hash.cjs');
 var Networks = require('./networks.cjs');
+var Network = require('./network.cjs');
 var Point = require('./crypto/point.cjs');
 var PublicKey = require('./publickey.cjs');
 var Derivation = require('./util/derivation.cjs');
@@ -25,7 +26,7 @@ var JSUtil = require('./util/js.cjs');
  * See https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
  *
  * @constructor
- * @param {Object|string|Buffer} arg
+ * @param {{ network: Network, depth: number, fingerPrint: number, parentFingerPrint: number, childIndex: number, chainCode: string, publicKey: string, checksum: number, xpubkey: string }|string|Buffer} arg
  */
 function HDPublicKey(arg) {
   if (arg instanceof HDPublicKey) {
@@ -243,7 +244,7 @@ HDPublicKey.getSerializedError = function (data, network) {
  * Validates if the provided data matches the expected network version.
  * @param {Buffer} data - The data containing the version to validate.
  * @param {string|Network} networkArg - The network or network identifier to validate against.
- * @returns {InvalidNetworkArgument|InvalidNetwork|null} Returns an error if validation fails, otherwise null.
+ * @returns {Error|null} Returns an error if validation fails, otherwise null.
  * @private
  */
 HDPublicKey._validateNetwork = function (data, networkArg) {
@@ -357,8 +358,8 @@ HDPublicKey.prototype._buildFromBuffers = function (arg) {
   }
   var network = Networks.get(arg.version.readUInt32BE(0));
 
-  var xpubkey;
-  xpubkey = Base58Check.encode(Buffer.concat(sequence));
+
+  var xpubkey = Base58Check.encode(Buffer.concat(sequence));
   arg.xpubkey = Buffer.from(xpubkey);
 
   var publicKey = new PublicKey(arg.publicKey, { network: network });
@@ -422,7 +423,7 @@ HDPublicKey.fromString = function (arg) {
 
 /**
  * Creates an HDPublicKey instance from an object.
- * @param {Object} arg - The object containing public key data
+ * @param {{ network: Network, depth: number, fingerPrint: number, parentFingerPrint: number, childIndex: number, chainCode: string, publicKey: string, checksum: number, xpubkey: string }} arg - The object containing public key data
  * @returns {HDPublicKey} A new HDPublicKey instance
  * @throws {Error} Will throw if no valid object argument is provided
  */
@@ -448,21 +449,19 @@ HDPublicKey.prototype.inspect = function () {
 };
 
 /**
- * Returns a plain JavaScript object with information to reconstruct a key.
+ * Converts the HDPublicKey instance into a plain object representation.
+ * This method is also aliased as `toJSON` for JSON serialization compatibility.
  *
- * Fields are: 
- * <ul>
- *  <li> network: 'livenet' or 'testnet' </li>
- *  <li> depth: a number from 0 to 255, the depth to the master extended key </li>
- *  <li> fingerPrint: a number of 32 bits taken from the hash of the public key </li>
- *  <li> fingerPrint: a number of 32 bits taken from the hash of this key's parent's public key </li>
- *  <li> childIndex: index with which this key was derived </li>
- *  <li> chainCode: string in hexa encoding used for derivation </li>
- *  <li> publicKey: string, hexa encoded, in compressed key format </li>
- *  <li> checksum: this._buffers.checksum.readUInt32BE(0) </li>
- *  <li> xpubkey: the string with the base58 representation of this extended key </li>
- *  <li> checksum: the base58 checksum of xpubkey </li>
- * </ul>
+ * @returns {{ network: Network, depth: number, fingerPrint: number, parentFingerPrint: number, childIndex: number, chainCode: string, publicKey: string, checksum: number, xpubkey: string }} An object containing the HDPublicKey properties:
+ *   - network: The network name derived from the version buffer.
+ *   - depth: The depth of the key in the hierarchy.
+ *   - fingerPrint: The fingerprint of the key.
+ *   - parentFingerPrint: The fingerprint of the parent key.
+ *   - childIndex: The index of the child key.
+ *   - chainCode: The chain code as a hexadecimal string.
+ *   - publicKey: The public key as a string.
+ *   - checksum: The checksum of the key.
+ *   - xpubkey: The extended public key string.
  */
 HDPublicKey.prototype.toObject = HDPublicKey.prototype.toJSON = function toObject() {
   return {
@@ -491,7 +490,7 @@ HDPublicKey.fromBuffer = function (arg) {
 /**
  * Create a HDPublicKey from a hex string argument
  *
- * @param {Buffer} arg
+ * @param {string} hex - The hex representation of an xpubkey
  * @return {HDPublicKey}
  */
 HDPublicKey.fromHex = function (hex) {

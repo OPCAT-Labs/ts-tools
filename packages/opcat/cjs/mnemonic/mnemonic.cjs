@@ -30,7 +30,7 @@ var Words = require('./words/index.cjs');
  * var xprivkey = mnemonic.toHDPrivateKey();
  *
  * @param {Buffer|string|number} [data] - Input data (Buffer for seed, string for phrase, or number for entropy bits)
- * @param {Array} [wordlist] - Optional wordlist for phrase generation/validation
+ * @param {Array.<string} [wordlist] - Optional wordlist for phrase generation/validation
  * @throws {InvalidArgument} If invalid data type provided
  * @throws {Mnemonic.UnknownWordlist} If phrase language can't be detected
  * @throws {Mnemonic.InvalidMnemonic} If phrase is invalid
@@ -95,7 +95,7 @@ function Mnemonic (data, wordlist) {
 
 /**
  * Creates a new Mnemonic instance with random entropy using the specified wordlist.
- * @param {Array} [wordlist=Mnemonic.Words.ENGLISH] - The wordlist to use for mnemonic generation (defaults to English).
+ * @param {Array.<string>} [wordlist=Mnemonic.Words.ENGLISH] - The wordlist to use for mnemonic generation (defaults to English).
  * @returns {Mnemonic} A new Mnemonic instance with random entropy.
  */
 Mnemonic.fromRandom = function (wordlist = Mnemonic.Words.ENGLISH) {
@@ -105,7 +105,7 @@ Mnemonic.fromRandom = function (wordlist = Mnemonic.Words.ENGLISH) {
 /**
  * Creates a Mnemonic instance from a mnemonic string.
  * @param {string} mnemonic - The mnemonic phrase string.
- * @param {string} [wordlist=Mnemonic.Words.ENGLISH] - Optional wordlist (defaults to English).
+ * @param {Array.<string>} [wordlist=Mnemonic.Words.ENGLISH] - Optional wordlist (defaults to English).
  * @returns {Mnemonic} A new Mnemonic instance.
  */
 Mnemonic.fromString = function (mnemonic, wordlist = Mnemonic.Words.ENGLISH) {
@@ -121,7 +121,7 @@ Mnemonic.fromString = function (mnemonic, wordlist = Mnemonic.Words.ENGLISH) {
  * // true
  *
  * @param {String} mnemonic - The mnemonic string
- * @param {String} [wordlist] - The wordlist used
+ * @param {Array.<string>} [wordlist] - The wordlist used
  * @returns {boolean}
  */
 Mnemonic.isValid = function (mnemonic, wordlist) {
@@ -172,7 +172,7 @@ Mnemonic._belongsToWordlist = function (mnemonic, wordlist) {
  * Internal function to detect the wordlist used to generate the mnemonic.
  *
  * @param {String} mnemonic - The mnemonic string
- * @returns {Array} the wordlist or null
+ * @returns {Array.<string>|null} the wordlist or null
  * @private
  */
 Mnemonic._getDictionary = function (mnemonic) {
@@ -205,7 +205,8 @@ Mnemonic.prototype.toSeed = function (passphrase) {
 /**
  * Will generate a Mnemonic object based on a seed.
  *
- * @param {Buffer} [seed]
+ * @param {Buffer} [seed] - The 256-bits entropy seed to be used for generating the mnemonic.
+ * @param {Array.<string>} [wordlist=Mnemonic.Words.ENGLISH] - the wordlist to use (defaults to english)
  * @param {string} [wordlist]
  * @returns {Mnemonic}
  */
@@ -223,8 +224,8 @@ Mnemonic.fromSeed = function (seed, wordlist) {
  * Generates a HD Private Key from a Mnemonic.
  * Optionally receive a passphrase and bitcoin network.
  *
- * @param {String=} [passphrase]
- * @param {Network|String|number=} [network] - The network: 'livenet' or 'testnet'
+ * @param {string} [passphrase] - Optional passphrase for additional security
+ * @param {Network|String|number} [network] - The network: 'livenet' or 'testnet'
  * @returns {HDPrivateKey}
  */
 Mnemonic.prototype.toHDPrivateKey = function (passphrase, network) {
@@ -235,7 +236,7 @@ Mnemonic.prototype.toHDPrivateKey = function (passphrase, network) {
 /**
  * Will return a the string representation of the mnemonic
  *
- * @returns {String} Mnemonic
+ * @returns {string} Mnemonic
  */
 Mnemonic.prototype.toString = function () {
   return this.phrase;
@@ -254,8 +255,8 @@ Mnemonic.prototype.inspect = function () {
  * Internal function to generate a random mnemonic
  *
  * @param {Number} ENT - Entropy size, defaults to 128
- * @param {Array} wordlist - Array of words to generate the mnemonic
- * @returns {String} Mnemonic string
+ * @param {Array.<string>} wordlist - Array of words to generate the mnemonic
+ * @returns {string} Mnemonic string
  * @private
  */
 Mnemonic._mnemonic = function (ENT, wordlist) {
@@ -267,8 +268,8 @@ Mnemonic._mnemonic = function (ENT, wordlist) {
  * Internal function to generate mnemonic based on entropy
  *
  * @param {Number} entropy - Entropy buffer
- * @param {Array} wordlist - Array of words to generate the mnemonic
- * @returns {String} Mnemonic string
+ * @param {Array.<string>} wordlist - Array of words to generate the mnemonic
+ * @returns {string} Mnemonic string
  * @private
  */
 Mnemonic._entropy2mnemonic = function (entropy, wordlist) {
@@ -298,7 +299,7 @@ Mnemonic._entropy2mnemonic = function (entropy, wordlist) {
 /**
  * Internal function to create checksum of entropy
  *
- * @param entropy
+ * @param {Buffer} entropy - Entropy buffer
  * @returns {string} Checksum of entropy length / 32
  * @private
  */

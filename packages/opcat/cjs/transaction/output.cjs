@@ -115,18 +115,22 @@ Output.prototype.invalidSatoshis = function () {
   return false;
 };
 
-/**
- * Gets the satoshis value as a BN (BigNumber) instance.
- * @memberof Output.prototype
- * @name satoshisBN
- * @type {BN}
- */
+
 Object.defineProperty(Output.prototype, 'satoshisBN', {
   configurable: false,
   enumerable: true,
+  /**
+   * Gets the satoshis value as a BN (Big Number) instance.
+   * @returns {BN} The satoshis value in BN format.
+   */
   get: function () {
     return this._satoshisBN;
   },
+  /**
+   * Sets the satoshis value for the output.
+   * @param {BN} num - The value to set, expected to be a BigNumber or similar object.
+   * @throws {Error} Throws an error if the converted satoshis value is not a natural number.
+   */
   set: function (num) {
     this._satoshisBN = num;
     this._satoshis = num.toNumber();
@@ -137,7 +141,7 @@ Object.defineProperty(Output.prototype, 'satoshisBN', {
 /**
  * Converts the Output instance to a plain object representation.
  * The resulting object includes satoshis, script (as hex string), and data (as hex string).
- * @returns {Object} - An object with satoshis, script, and data properties.
+ * @returns {{satoshis: number, script: string, data: string}} - An object with satoshis, script, and data properties.
  */
 Output.prototype.toObject = Output.prototype.toJSON = function toObject() {
   var obj = {
@@ -169,7 +173,7 @@ Output.prototype.setData = function (data) {
 
 /**
  * Creates an Output instance from a plain JavaScript object.
- * @param {Object} data - The input object to convert to an Output
+ * @param {{satoshis: number, script: string, data: string}} data - The input object to convert to an Output
  * @returns {Output} A new Output instance
  * @static
  */

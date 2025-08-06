@@ -37,15 +37,23 @@ declare class Output {
      *                           corrupted value, or negative), otherwise returns false.
      */
     invalidSatoshis(): string | boolean;
-    set satoshisBN(value: any);
-    get satoshisBN(): any;
+    set satoshisBN(value: BN);
+    get satoshisBN(): BN;
     /**
      * Converts the Output instance to a plain object representation.
      * The resulting object includes satoshis, script (as hex string), and data (as hex string).
-     * @returns {Object} - An object with satoshis, script, and data properties.
+     * @returns {{satoshis: number, script: string, data: string}} - An object with satoshis, script, and data properties.
      */
-    toObject: () => any;
-    toJSON(): any;
+    toObject: () => {
+        satoshis: number;
+        script: string;
+        data: string;
+    };
+    toJSON(): {
+        satoshis: number;
+        script: string;
+        data: string;
+    };
     /**
      * Sets the output data.
      * @param {Buffer|string} data - The data to set. Can be a Buffer or hex string.
@@ -100,11 +108,15 @@ declare class Output {
 declare namespace Output {
     /**
      * Creates an Output instance from a plain JavaScript object.
-     * @param {Object} data - The input object to convert to an Output
+     * @param {{satoshis: number, script: string, data: string}} data - The input object to convert to an Output
      * @returns {Output} A new Output instance
      * @static
      */
-    function fromObject(data: any): Output;
+    function fromObject(data: {
+        satoshis: number;
+        script: string;
+        data: string;
+    }): Output;
     /**
      * Creates an Output instance from a BufferReader.
      * @param {BufferReader} br - The buffer reader containing output data
@@ -115,4 +127,5 @@ declare namespace Output {
     function fromBufferReader(br: BufferReader): Output;
 }
 import Script = require("../script/script.cjs");
+import BN = require("../bn.cjs");
 import BufferWriter = require("../encoding/bufferwriter.cjs");

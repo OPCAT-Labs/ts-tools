@@ -5,18 +5,20 @@ export = UnspentOutput;
  *
  * @constructor
  * @param {object} data
- * @param {string} data.txid the previous transaction id
- * @param {string=} data.txId alias for `txid`
- * @param {number} data.vout the index in the transaction
- * @param {number=} data.outputIndex alias for `vout`
- * @param {string|Script} data.scriptPubKey the script that must be resolved to release the funds
- * @param {string|Script=} data.script alias for `scriptPubKey`
- * @param {number} data.amount amount of bitcoins associated
- * @param {number=} data.satoshis alias for `amount`, but expressed in satoshis (1 OPCAT = 1e8 satoshis)
- * @param {string|Address=} data.address the associated address to the script, if provided
+ * @param {string} data.txid - the previous transaction id
+ * @param {string} data.data - data associated to the tx, if available
+ * @param {string=} data.txId - alias for `txid`
+ * @param {number} data.vout - the index in the transaction
+ * @param {number=} data.outputIndex - alias for `vout`
+ * @param {string|Script} data.scriptPubKey - the script that must be resolved to release the funds
+ * @param {string|Script=} data.script - alias for `scriptPubKey`
+ * @param {number} data.amount - amount of bitcoins associated
+ * @param {number=} data.satoshis - alias for `amount`, but expressed in satoshis (1 OPCAT = 1e8 satoshis)
+ * @param {string|Address=} data.address - the associated address to the script, if provided
  */
 declare function UnspentOutput(data: {
     txid: string;
+    data: string;
     txId?: string | undefined;
     vout: number;
     outputIndex?: number | undefined;
@@ -33,18 +35,20 @@ declare class UnspentOutput {
      *
      * @constructor
      * @param {object} data
-     * @param {string} data.txid the previous transaction id
-     * @param {string=} data.txId alias for `txid`
-     * @param {number} data.vout the index in the transaction
-     * @param {number=} data.outputIndex alias for `vout`
-     * @param {string|Script} data.scriptPubKey the script that must be resolved to release the funds
-     * @param {string|Script=} data.script alias for `scriptPubKey`
-     * @param {number} data.amount amount of bitcoins associated
-     * @param {number=} data.satoshis alias for `amount`, but expressed in satoshis (1 OPCAT = 1e8 satoshis)
-     * @param {string|Address=} data.address the associated address to the script, if provided
+     * @param {string} data.txid - the previous transaction id
+     * @param {string} data.data - data associated to the tx, if available
+     * @param {string=} data.txId - alias for `txid`
+     * @param {number} data.vout - the index in the transaction
+     * @param {number=} data.outputIndex - alias for `vout`
+     * @param {string|Script} data.scriptPubKey - the script that must be resolved to release the funds
+     * @param {string|Script=} data.script - alias for `scriptPubKey`
+     * @param {number} data.amount - amount of bitcoins associated
+     * @param {number=} data.satoshis - alias for `amount`, but expressed in satoshis (1 OPCAT = 1e8 satoshis)
+     * @param {string|Address=} data.address - the associated address to the script, if provided
      */
     constructor(data: {
         txid: string;
+        data: string;
         txId?: string | undefined;
         vout: number;
         outputIndex?: number | undefined;
@@ -74,10 +78,29 @@ declare class UnspentOutput {
 declare namespace UnspentOutput {
     /**
      * Deserialize an UnspentOutput from an object
-     * @param {object|string} data
+     * @param {object} data
+     * @param {string} data.txid the previous transaction id
+     * @param {string=} data.txId alias for `txid`
+     * @param {number} data.vout the index in the transaction
+     * @param {number=} data.outputIndex alias for `vout`
+     * @param {string|Script} data.scriptPubKey the script that must be resolved to release the funds
+     * @param {string|Script=} data.script alias for `scriptPubKey`
+     * @param {number} data.amount amount of bitcoins associated
+     * @param {number=} data.satoshis alias for `amount`, but expressed in satoshis (1 OPCAT = 1e8 satoshis)
+     * @param {string|Address=} data.address the associated address to the script, if provided
      * @return UnspentOutput
      */
-    function fromObject(data: any): UnspentOutput;
+    function fromObject(data: {
+        txid: string;
+        txId?: string;
+        vout: number;
+        outputIndex?: number;
+        scriptPubKey: string | Script;
+        script?: string | Script;
+        amount: number;
+        satoshis?: number;
+        address?: string | Address;
+    }): UnspentOutput;
 }
 import Script = require("../script/script.cjs");
 import Address = require("../address.cjs");

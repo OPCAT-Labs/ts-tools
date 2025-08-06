@@ -3,33 +3,75 @@ export = BlockHeader;
  * Instantiate a BlockHeader from a Buffer, JSON object, or Object with
  * the properties of the BlockHeader
  *
- * @param {*} - A Buffer, JSON string, or Object
+ * @param {Buffer|{prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}} arg - A Buffer, JSON string, or Object
  * @returns {BlockHeader} - An instance of block header
  * @constructor
  */
-declare function BlockHeader(arg: any): BlockHeader;
+declare function BlockHeader(arg: Buffer | {
+    prevHash: string | Buffer;
+    merkleRoot: string | Buffer;
+    hash: string;
+    version: number;
+    time: number;
+    bits: number;
+    nonce: number;
+}): BlockHeader;
 declare class BlockHeader {
     /**
      * Instantiate a BlockHeader from a Buffer, JSON object, or Object with
      * the properties of the BlockHeader
      *
-     * @param {*} - A Buffer, JSON string, or Object
+     * @param {Buffer|{prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}} arg - A Buffer, JSON string, or Object
      * @returns {BlockHeader} - An instance of block header
      * @constructor
      */
-    constructor(arg: any);
-    version: any;
-    prevHash: any;
-    merkleRoot: any;
-    time: any;
-    timestamp: any;
-    bits: any;
-    nonce: any;
+    constructor(arg: Buffer | {
+        prevHash: string | Buffer;
+        merkleRoot: string | Buffer;
+        hash: string;
+        version: number;
+        time: number;
+        bits: number;
+        nonce: number;
+    });
+    version: number;
+    prevHash: Buffer;
+    merkleRoot: Buffer;
+    time: number;
+    timestamp: number;
+    bits: number;
+    nonce: number;
     /**
-     * @returns {Object} - A plain object of the BlockHeader
+     * Converts the BlockHeader instance into a plain JavaScript object or JSON representation.
+     * This method is used for serialization and includes all relevant block header fields.
+     *
+     * @returns {{hash: string, version: number, prevHash: string, merkleRoot: string, time: number, bits: number, nonce: number}} An object containing the block header properties:
+     *   - hash: The block hash.
+     *   - version: The block version.
+     *   - prevHash: The previous block hash, reversed and converted to hex.
+     *   - merkleRoot: The merkle root of the block, reversed and converted to hex.
+     *   - time: The block timestamp.
+     *   - bits: The block difficulty bits.
+     *   - nonce: The block nonce.
      */
-    toObject: () => any;
-    toJSON(): any;
+    toObject: () => {
+        hash: string;
+        version: number;
+        prevHash: string;
+        merkleRoot: string;
+        time: number;
+        bits: number;
+        nonce: number;
+    };
+    toJSON(): {
+        hash: string;
+        version: number;
+        prevHash: string;
+        merkleRoot: string;
+        time: number;
+        bits: number;
+        nonce: number;
+    };
     /**
      * @returns {Buffer} - A Buffer of the BlockHeader
      */
@@ -39,10 +81,10 @@ declare class BlockHeader {
      */
     toString(): string;
     /**
-     * @param {BufferWriter} - An existing instance BufferWriter
+     * @param {BufferWriter} [bw] - An existing instance BufferWriter
      * @returns {BufferWriter} - An instance of BufferWriter representation of the BlockHeader
      */
-    toBufferWriter(bw: any): BufferWriter;
+    toBufferWriter(bw?: BufferWriter): BufferWriter;
     /**
      * Returns the target difficulty for this block
      * @param {Number} bits
@@ -72,49 +114,95 @@ declare class BlockHeader {
 }
 declare namespace BlockHeader {
     /**
-     * @param {*} - A Buffer, JSON string or Object
-     * @returns {Object} - An object representing block header data
+     * @param {Buffer|{prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}} arg - A Buffer, JSON string or Object
+     * @returns {{version: number, prevHash: Buffer, merkleRoot: Buffer, time: number, bits: number, nonce: number}} - An object representing block header data
      * @throws {TypeError} - If the argument was not recognized
      * @private
      */
-    function _from(arg: any): any;
+    function _from(arg: Buffer | {
+        prevHash: string | Buffer;
+        merkleRoot: string | Buffer;
+        hash: string;
+        version: number;
+        time: number;
+        bits: number;
+        nonce: number;
+    }): {
+        version: number;
+        prevHash: Buffer;
+        merkleRoot: Buffer;
+        time: number;
+        bits: number;
+        nonce: number;
+    };
     /**
-     * @param {Object} - A JSON string
-     * @returns {Object} - An object representing block header data
+     * @param {{prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}} data - A JSON string
+     * @returns {{prevHash: Buffer, merkleRoot: Buffer, hash: string, version: number, time: number, bits: number, nonce: number}} - An object representing block header data
      * @private
      */
-    function _fromObject(data: any): any;
+    function _fromObject(data: {
+        prevHash: string | Buffer;
+        merkleRoot: string | Buffer;
+        hash: string;
+        version: number;
+        time: number;
+        bits: number;
+        nonce: number;
+    }): {
+        prevHash: Buffer;
+        merkleRoot: Buffer;
+        hash: string;
+        version: number;
+        time: number;
+        bits: number;
+        nonce: number;
+    };
     /**
-     * @param {Object} - A plain JavaScript object
+     * @param {{prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}} obj - A plain JavaScript object
      * @returns {BlockHeader} - An instance of block header
      */
-    function fromObject(obj: any): BlockHeader;
+    function fromObject(obj: {
+        prevHash: string | Buffer;
+        merkleRoot: string | Buffer;
+        hash: string;
+        version: number;
+        time: number;
+        bits: number;
+        nonce: number;
+    }): BlockHeader;
     /**
-     * @param {Binary} - Raw block binary data or buffer
+     * @param {Buffer|string} data - Raw block binary data or buffer
      * @returns {BlockHeader} - An instance of block header
      */
-    function fromRawBlock(data: any): BlockHeader;
+    function fromRawBlock(data: string | Buffer): BlockHeader;
     /**
-     * @param {Buffer} - A buffer of the block header
+     * @param {Buffer} buf - A buffer of the block header
      * @returns {BlockHeader} - An instance of block header
      */
-    function fromBuffer(buf: any): BlockHeader;
+    function fromBuffer(buf: Buffer): BlockHeader;
     /**
-     * @param {string} - A hex encoded buffer of the block header
+     * @param {string} str - A hex encoded buffer of the block header
      * @returns {BlockHeader} - An instance of block header
      */
-    function fromString(str: any): BlockHeader;
+    function fromString(str: string): BlockHeader;
     /**
-     * @param {BufferReader} - A BufferReader of the block header
-     * @returns {Object} - An object representing block header data
+     * @param {BufferReader} br - A BufferReader of the block header
+     * @returns {{version: number, prevHash: Buffer, merkleRoot: Buffer, time: number, bits: number, nonce: number}} - An object representing block header data
      * @private
      */
-    function _fromBufferReader(br: any): any;
+    function _fromBufferReader(br: BufferReader): {
+        version: number;
+        prevHash: Buffer;
+        merkleRoot: Buffer;
+        time: number;
+        bits: number;
+        nonce: number;
+    };
     /**
-     * @param {BufferReader} - A BufferReader of the block header
+     * @param {BufferReader} br - A BufferReader of the block header
      * @returns {BlockHeader} - An instance of block header
      */
-    function fromBufferReader(br: any): BlockHeader;
+    function fromBufferReader(br: BufferReader): BlockHeader;
     namespace Constants {
         let START_OF_HEADER: number;
         let MAX_TIME_OFFSET: number;
@@ -123,3 +211,4 @@ declare namespace BlockHeader {
 }
 import BufferWriter = require("../encoding/bufferwriter.cjs");
 import BN = require("../bn.cjs");
+import BufferReader = require("../encoding/bufferreader.cjs");

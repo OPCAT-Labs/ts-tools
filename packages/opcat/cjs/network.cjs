@@ -6,6 +6,10 @@
  */
 function Network() { }
 
+/**
+ * Returns the name of the network as a string.
+ * @returns {string} The name of the network.
+ */
 Network.prototype.toString = function toString() {
     return this.name;
 };

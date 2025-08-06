@@ -13,7 +13,7 @@ var $ = require('../util/preconditions.cjs');
  * Instantiate a MerkleBlock from a Buffer, JSON object, or Object with
  * the properties of the Block
  *
- * @param {*} - A Buffer, JSON string, or Object representing a MerkleBlock
+ * @param {Buffer|String|{header:{prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}, numTransactions: number, hashes: [string|Buffer], flags: [number]}} arg - A buffer, JSON string, or ObjectBuffer, JSON string, or Object representing a MerkleBlock
  * @returns {MerkleBlock}
  * @constructor
  */
@@ -57,7 +57,15 @@ function MerkleBlock(arg) {
   } else {
     throw new TypeError('Unrecognized argument for MerkleBlock');
   }
-  _.extend(this, info);
+
+  /** @type BlockHeader */
+  this.header = info.header;
+  /** @type number */
+  this.numTransactions = info.numTransactions;
+  /** @type string[] */
+  this.hashes = info.hashes;
+  /** @type number */
+  this.flags = info.flags;
   this._flagBitsUsed = 0;
   this._hashesUsed = 0;
 
@@ -65,7 +73,7 @@ function MerkleBlock(arg) {
 }
 
 /**
- * @param {Buffer} - MerkleBlock data in a Buffer object
+ * @param {Buffer} buf - MerkleBlock data in a Buffer object
  * @returns {MerkleBlock} - A MerkleBlock object
  */
 MerkleBlock.fromBuffer = function fromBuffer(buf) {
@@ -73,7 +81,7 @@ MerkleBlock.fromBuffer = function fromBuffer(buf) {
 };
 
 /**
- * @param {BufferReader} - MerkleBlock data in a BufferReader object
+ * @param {BufferReader} br - MerkleBlock data in a BufferReader object
  * @returns {MerkleBlock} - A MerkleBlock object
  */
 MerkleBlock.fromBufferReader = function fromBufferReader(br) {
@@ -109,7 +117,7 @@ MerkleBlock.prototype.toBufferWriter = function toBufferWriter(bw) {
 };
 
 /**
- * @returns {Object} - A plain object with the MerkleBlock properties
+ * @returns {{header: {hash: string, version: number, prevHash: string, merkleRoot: string, time: number, bits: number, nonce: number}, numTransactions: number, hashes: string[], flags: number[]}} - A plain object with the MerkleBlock properties
  */
 MerkleBlock.prototype.toObject = MerkleBlock.prototype.toJSON = function toObject() {
   return {
@@ -147,19 +155,10 @@ MerkleBlock.prototype.validMerkleTree = function validMerkleTree() {
   return root.equals(this.header.merkleRoot);
 };
 
-/**
- * WARNING: This method is deprecated. Use filteredTxsHash instead.
- *
- * Return a list of all the txs hash that match the filter
- * @returns {Array} - txs hash that match the filter
- */
-MerkleBlock.prototype.filterdTxsHash = function filterdTxsHash() {
-  throw new Error('filterdTxsHash has been deprecated. use filteredTxsHash.');
-};
 
 /**
  * Return a list of all the txs hash that match the filter
- * @returns {Array} - txs hash that match the filter
+ * @returns {Array.<string>} - txs hash that match the filter
  */
 MerkleBlock.prototype.filteredTxsHash = function filteredTxsHash() {
   $.checkState(_.isArray(this.flags), 'MerkleBlock flags is not an array');
@@ -200,7 +199,7 @@ MerkleBlock.prototype.filteredTxsHash = function filteredTxsHash() {
  * @param {Number} - opts.hashesUsed - Number of hashes used, should start at 0
  * @param {Array} - opts.txs - Will finish populated by transactions found during traversal that match the filter
  * @returns {Buffer|null} - Buffer containing the Merkle Hash for that height
- * @returns {Array} - transactions found during traversal that match the filter
+ * @returns {Array.<string>} - transactions found during traversal that match the filter
  * @private
  */
 MerkleBlock.prototype._traverseMerkleTree = function traverseMerkleTree(
@@ -293,7 +292,7 @@ MerkleBlock.prototype.hasTransaction = function hasTransaction(tx) {
  * Parses a MerkleBlock from a buffer reader.
  * @private
  * @param {BufferReader} br - The buffer reader containing the MerkleBlock data
- * @returns {Object} An object containing:
+ * @returns {{header: BlockHeader, numTransactions: number, hashes: string[], flags: number[]}} - The parsed MerkleBlock.An object containing:
  *   - header {BlockHeader} - The block header
  *   - numTransactions {number} - Number of transactions in the block
  *   - hashes {string[]} - Array of transaction hashes as hex strings
@@ -321,7 +320,7 @@ MerkleBlock._fromBufferReader = function _fromBufferReader(br) {
 
 /**
  * Creates a MerkleBlock instance from a plain object.
- * @param {Object} obj - The plain object containing MerkleBlock data.
+ * @param {{header:{prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}, numTransactions: number, hashes: [string|Buffer], flags: [number]}} obj - The plain object containing MerkleBlock data.
  * @returns {MerkleBlock} A new MerkleBlock instance.
  */
 MerkleBlock.fromObject = function fromObject(obj) {

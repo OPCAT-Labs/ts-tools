@@ -3,15 +3,45 @@ export = ECDSA;
  * Creates an ECDSA instance.
  * @constructor
  * @param {Object} [obj] - Optional object containing properties to initialize the instance.
+ * @param {Buffer} [obj.hashbuf] - Hash buffer
+ * @param {string} [obj.endian] - Endianness of hashbuf
+ * @param {PrivateKey} [obj.privkey] - Private key
+ * @param {PublicKey} [obj.pubkey] - Public key (derived from privkey if not provided)
+ * @param {Signature} [obj.sig] - Signature
+ * @param {BN} [obj.k] - Random number k
+ * @param {boolean} [obj.verified] - Verification status
  */
-declare function ECDSA(obj?: any): ECDSA;
+declare function ECDSA(obj?: {
+    hashbuf?: Buffer;
+    endian?: string;
+    privkey?: PrivateKey;
+    pubkey?: PublicKey;
+    sig?: Signature;
+    k?: BN;
+    verified?: boolean;
+}): ECDSA;
 declare class ECDSA {
     /**
      * Creates an ECDSA instance.
      * @constructor
      * @param {Object} [obj] - Optional object containing properties to initialize the instance.
+     * @param {Buffer} [obj.hashbuf] - Hash buffer
+     * @param {string} [obj.endian] - Endianness of hashbuf
+     * @param {PrivateKey} [obj.privkey] - Private key
+     * @param {PublicKey} [obj.pubkey] - Public key (derived from privkey if not provided)
+     * @param {Signature} [obj.sig] - Signature
+     * @param {BN} [obj.k] - Random number k
+     * @param {boolean} [obj.verified] - Verification status
      */
-    constructor(obj?: any);
+    constructor(obj?: {
+        hashbuf?: Buffer;
+        endian?: string;
+        privkey?: PrivateKey;
+        pubkey?: PublicKey;
+        sig?: Signature;
+        k?: BN;
+        verified?: boolean;
+    });
     /**
      * Updates the ECDSA instance properties with provided values.
      * @param {Object} obj - Object containing properties to update
@@ -20,7 +50,7 @@ declare class ECDSA {
      * @param {PrivateKey} [obj.privkey] - Private key
      * @param {PublicKey} [obj.pubkey] - Public key (derived from privkey if not provided)
      * @param {Signature} [obj.sig] - Signature
-     * @param {BigInteger} [obj.k] - Random number k
+     * @param {BN} [obj.k] - Random number k
      * @param {boolean} [obj.verified] - Verification status
      * @returns {ECDSA} Returns the updated ECDSA instance
      */
@@ -30,16 +60,23 @@ declare class ECDSA {
         privkey?: PrivateKey;
         pubkey?: PublicKey;
         sig?: Signature;
-        k?: BigInteger;
+        k?: BN;
         verified?: boolean;
     }): ECDSA;
-    hashbuf: any;
-    endian: any;
-    privkey: any;
-    pubkey: any;
-    sig: any;
-    k: any;
-    verified: any;
+    /** @type {Buffer} */
+    hashbuf: Buffer;
+    /** @type {'little' | 'big'} */
+    endian: 'little' | 'big';
+    /** @type {PrivateKey} */
+    privkey: PrivateKey;
+    /** @type {PublicKey} */
+    pubkey: PublicKey;
+    /** @type {Signature} */
+    sig: Signature;
+    /** @type {BN} */
+    k: BN;
+    /** @type {boolean} */
+    verified: boolean;
     /**
      * Converts the private key to a public key and stores it in the `pubkey` property.
      */
@@ -98,10 +135,13 @@ declare class ECDSA {
      *
      * @param {BN} d - Private key as a big number.
      * @param {BN} e - Message hash as a big number.
-     * @returns {Object} Signature object with properties `r` and `s` (big numbers).
+     * @returns {{s: BN, r: BN}} Signature object with properties `r` and `s` (big numbers).
      * @throws Will throw if unable to find valid signature after multiple attempts.
      */
-    _findSignature(d: BN, e: BN): any;
+    _findSignature(d: BN, e: BN): {
+        s: BN;
+        r: BN;
+    };
     /**
      * Signs a message using ECDSA.
      *

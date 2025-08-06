@@ -25,7 +25,7 @@ const SCRIPT_TO_CHUNKS_CACHE = new WeakMap();
  * See https://en.bitcoin.it/wiki/Script
  *
  * @constructor
- * @param {Object|string|Buffer} [from] optional data to populate script
+ * @param {{chunks: Array.<{opcodenum:number, len:number, buf?: Buffer}>}| {buffer:Buffer} |string|Buffer|Address|Script} [from] optional data to populate script
  */
 function Script(from) {
   if (!(this instanceof Script)) {
@@ -51,7 +51,7 @@ function Script(from) {
 /**
  * Sets the script content from an object.
  * @param {Object} obj - The source object containing either chunks array or buffer.
- * @param {Array} [obj.chunks] - Optional array of chunks to create script from.
+ * @param {Array.<{opcodenum:number, len:number, buf?: Buffer}>} [obj.chunks] - Optional array of chunks to create script from.
  * @param {Buffer} [obj.buffer] - Optional buffer containing script data.
  * @returns {Script} Returns the script instance for chaining.
  * @throws Will throw if argument is invalid (not object or missing required buffer).
@@ -86,7 +86,7 @@ Script.fromBuffer = function (buffer) {
  * Creates a Script instance from an array of opcode chunks.
  * Handles different pushdata opcodes (OP_PUSHDATA1, OP_PUSHDATA2, OP_PUSHDATA4)
  * by writing appropriate length prefixes before the buffer data.
- * @param {Array} chunks - Array of opcode chunks containing opcodenum and optional buf/len
+ * @param {Array.<{opcodenum:number, len:number, buf?: Buffer}>} chunks - Array of opcode chunks containing opcodenum and optional buf/len
  * @returns {Script} A new Script instance with compiled buffer
  */
 Script.fromChunks = function (chunks) {
@@ -217,15 +217,22 @@ Script.prototype.slice = function (start, end) {
 };
 
 /**
- * Gets the chunks associated with the Script instance.
+ * Gets the decoded chunks from the script buffer.
+ * This getter will first check if the chunks are cached, and if so, return the cached version.
+ * Otherwise, it decodes the script buffer into chunks and caches the result for future access.
+ * 
  * @memberof Script.prototype
  * @name chunks
- * @type {Array}
+ * @type {Array.<{opcodenum:number, len:number, buf?: Buffer}>}
  */
 Object.defineProperty(Script.prototype, 'chunks', {
+
   get() {
+    // Check if the chunks for this script are already cached
     if (SCRIPT_TO_CHUNKS_CACHE.has(this)) return SCRIPT_TO_CHUNKS_CACHE.get(this);
+    // Decode script buffer into chunks
     const chunks = decodeScriptChunks(this.buffer);
+    // Cache the decoded chunks for future access
     SCRIPT_TO_CHUNKS_CACHE.set(this, chunks);
     return chunks;
   },
@@ -233,9 +240,17 @@ Object.defineProperty(Script.prototype, 'chunks', {
 
 /**
  * Gets the length of the script in bytes.
+ * 
  * @memberof Script.prototype
  * @name length
  * @type {number}
+ * @description 
+ * A getter property that returns the byte length of the script buffer.
+ * This represents the total size of the script in its serialized form.
+ * 
+ * @example
+ * const script = new Script();
+ * const scriptLength = script.length; // Returns the byte length of the script
  */
 Object.defineProperty(Script.prototype, 'length', {
   get() {
@@ -247,7 +262,7 @@ Object.defineProperty(Script.prototype, 'length', {
  * Converts a script chunk to a string representation based on the given type.
  * Handles both data chunks and opcode chunks, with special formatting for ASM output.
  * 
- * @param {Object} chunk - The script chunk to convert, containing opcodenum and optional buf/len
+ * @param {{opcodenum:number, len:number, buf?: Buffer}} chunk - The script chunk to convert, containing opcodenum and optional buf/len
  * @param {string} type - The output type ('asm' or other)
  * @returns {string} The formatted string representation of the chunk
  * @private
@@ -495,13 +510,17 @@ Script.prototype.isMultisigOut = function () {
 };
 
 
+
 /**
  * Decodes a multisig output script into its components.
- * @returns {Object} An object containing:
- *   - m {number} The required number of signatures (m-of-n)
- *   - n {number} The total number of public keys
- *   - pubkeys {Buffer[]} Array of public keys involved in the multisig
+ * 
+ * @returns {{m: number, n: number, pubkeys: Array.<Buffer>}} An object containing:
+ *   - m: The number of required signatures (threshold).
+ *   - n: The total number of public keys in the multisig script.
+ *   - pubkeys: An array of public keys involved in the multisig script.
+ * @throws {Error} Throws an error if the script is not a valid multisig output script.
  */
+
 Script.prototype.decodeMultisigOut = function () {
   $.checkState(this.isMultisigOut(), "Can't decode a non-multisig output script");
   const OP_INT_BASE = Opcode.OP_RESERVED; // OP_1 - 1
@@ -680,10 +699,26 @@ Script.prototype.classify = function () {
 };
 
 Script.outputIdentifiers = {};
+/**
+ * @type {function(): boolean} Checks if the script is a public key output.
+ */
 Script.outputIdentifiers.PUBKEY_OUT = Script.prototype.isPublicKeyOut;
+/**
+ * @type {function(): boolean} Checks if the script is a public key hash output.
+ */
 Script.outputIdentifiers.PUBKEYHASH_OUT = Script.prototype.isPublicKeyHashOut;
+/**
+ * @type {function(): boolean} Checks if the script is a script hash output.
+ */
 Script.outputIdentifiers.MULTISIG_OUT = Script.prototype.isMultisigOut;
+/**
+ * @type {function(): boolean} Checks if the script is a data output.
+ */
 Script.outputIdentifiers.DATA_OUT = Script.prototype.isDataOut;
+/**
+ * @type {function(): boolean} Checks if the script is a safe data output.
+ * This is a data output that starts with OP_FALSE followed by valid data.
+ */
 Script.outputIdentifiers.SAFE_DATA_OUT = Script.prototype.isSafeDataOut;
 
 /**
@@ -700,8 +735,17 @@ Script.prototype.classifyOutput = function () {
 };
 
 Script.inputIdentifiers = {};
+/**
+ * @type {function(): boolean} Checks if the script is a public key input.
+ */
 Script.inputIdentifiers.PUBKEY_IN = Script.prototype.isPublicKeyIn;
+/**
+ * @type {function(): boolean} Checks if the script is a public key hash input.
+ */
 Script.inputIdentifiers.PUBKEYHASH_IN = Script.prototype.isPublicKeyHashIn;
+/**
+ * @type {function(): boolean} Checks if the script is a multisig input.
+ */
 Script.inputIdentifiers.MULTISIG_IN = Script.prototype.isMultisigIn;
 
 /**
@@ -729,7 +773,7 @@ Script.prototype.isStandard = function () {
 
 /**
  * Adds a script element at the start of the script.
- * @param {*} obj a string, number, Opcode, Buffer, or object to add
+ * @param {string|number|Opcode|Buffer|Script|{opcodenum:number, len:number, buf?: Buffer}} obj - a string, number, Opcode, Buffer, or object to add
  * @returns {Script} this script instance
  */
 Script.prototype.prepend = function (obj) {
@@ -761,7 +805,7 @@ Script.prototype.equals = function (script) {
 
 /**
  * Adds a script element to the end of the script.
- * @param {Object} obj - The object to add.
+ * @param {string|number|Opcode|Buffer|Script|{opcodenum:number, len:number, buf?: Buffer}} obj - The object to add.
  * @returns {Script} Returns the script instance for chaining.
  */
 Script.prototype.add = function (obj) {
@@ -772,8 +816,9 @@ Script.prototype.add = function (obj) {
 /**
  * Adds a script element to the script by type.
  * Handles strings, numbers, Opcode instances, Buffers, Script instances, or objects.
- * @param {string|number|Opcode|Buffer|Script|Object} obj - The element to add
+ * @param {string|number|Opcode|Buffer|Script|{opcodenum:number, len:number, buf?: Buffer}} obj - The element to add
  * @param {boolean} [prepend=false] - Whether to prepend (true) or append (false)
+ * @returns {Script} Returns the script instance for chaining.
  * @throws {Error} If the input is an invalid script chunk
  * @private
  */
@@ -918,7 +963,7 @@ Script.prototype.removeCodeseparators = function () {
 /**
  * If the script does not contain any OP_CODESEPARATOR, Return all scripts
  * If the script contains any OP_CODESEPARATOR, the scriptCode is the script but removing everything up to and including the last executed OP_CODESEPARATOR before the signature checking opcode being executed
- * @param {n} The {n}th codeseparator in the script
+ * @param {number} n - The {n}th codeseparator in the script
  *
  * @returns {Script} Subset of script starting at the {n}th codeseparator
  */
@@ -941,7 +986,7 @@ Script.prototype.subScript = function (n) {
             
 /**
  * Builds a multisig output script from given public keys and threshold.
- * @param {Array} publicKeys - Array of public keys to include in the multisig
+ * @param {Array.<PublicKey>} publicKeys - Array of public keys to include in the multisig
  * @param {number} threshold - Minimum number of signatures required
  * @param {Object} [opts] - Optional parameters
  * @param {boolean} [opts.noSorting] - If true, skips sorting of public keys
@@ -977,18 +1022,14 @@ Script.buildMultisigOut = function (publicKeys, threshold, opts) {
  *
  * @param {PublicKey[]} pubkeys list of all public keys controlling the output
  * @param {number} threshold amount of required signatures to spend the output
- * @param {Array} signatures and array of signature buffers to append to the script
- * @param {Object=} opts
- * @param {boolean=} opts.noSorting don't sort the given public keys before creating the script (false by default)
- * @param {Script=} opts.cachedMultisig don't recalculate the redeemScript
+ * @param {Signature[]} signatures and array of signature buffers to append to the script
  *
  * @returns {Script}
  */
-Script.buildMultisigIn = function (pubkeys, threshold, signatures, opts) {
+Script.buildMultisigIn = function (pubkeys, threshold, signatures) {
   $.checkArgument(_.isArray(pubkeys));
   $.checkArgument(_.isNumber(threshold));
   $.checkArgument(_.isArray(signatures));
-  opts = opts || {};
   var s = new Script();
   s.add(Opcode.OP_0);
   _.each(signatures, function (signature) {
@@ -1038,9 +1079,12 @@ Script.buildPublicKeyOut = function (pubkey) {
 };
 
 /**
- * @returns {Script} a new OP_RETURN script with data
- * @param {string|Buffer|Array} data - the data to embed in the output - it is a string, buffer, or array of strings or buffers
- * @param {string} encoding - the type of encoding of the string(s)
+ * Builds a script with OP_RETURN and optional data outputs.
+ *
+ * @param {string|Buffer|Array.<string|Buffer>} [data] - The data to include in the script. Can be a string, array of strings/Buffers, or a Buffer.
+ * @param {string} [encoding] - The encoding to use when converting string data to Buffer (defaults to UTF-8).
+ * @returns {Script} A new Script instance with OP_RETURN and the provided data.
+ * @throws {Error} If the data is not a string, array, Buffer, or undefined.
  */
 Script.buildDataOut = function (data, encoding) {
   $.checkArgument(
@@ -1065,9 +1109,12 @@ Script.buildDataOut = function (data, encoding) {
 };
 
 /**
- * @returns {Script} a new OP_RETURN script with data
- * @param {string|Buffer|Array} data - the data to embed in the output - it is a string, buffer, or array of strings or buffers
- * @param {string} encoding - the type of encoding of the string(s)
+ * Builds a safe data output script by wrapping the provided data in a script with an OP_FALSE opcode.
+ * This is typically used to ensure data is pushed to the stack in a secure manner.
+ *
+ * @param {Buffer|string|Array.<string|Buffer>} data - The data to be included in the script.
+ * @param {string} [encoding] - Optional encoding for the data if it is a string.
+ * @returns {Script} A new script instance containing the wrapped data.
  */
 Script.buildSafeDataOut = function (data, encoding) {
   var s2 = Script.buildDataOut(data, encoding);
@@ -1145,7 +1192,7 @@ Script.fromAddress = function (address) {
  * For input scripts, returns input address info.
  * For output scripts, returns output address info.
  * For general scripts, tries output address info first, falls back to input if not available.
- * @returns {Object} Address information object
+ * @returns {{hashBuffer: Buffer, type: string}|boolean} Address information object
  */
 Script.prototype.getAddressInfo = function () {
   if (this._isInput) {
@@ -1163,10 +1210,15 @@ Script.prototype.getAddressInfo = function () {
 
 
 /**
- * Gets the output address information from the script.
- * @returns {Object|boolean} An object containing the hash buffer and address type if the script is a public key hash output, otherwise false.
- * @property {Buffer} info.hashBuffer - The hash buffer of the address.
- * @property {number} info.type - The type of the address (Address.PayToPublicKeyHash).
+ * Retrieves the output address information for the script.
+ * If the script is a public key hash output, it returns an object with the hash buffer and address type.
+ * Otherwise, it returns false.
+ *
+ * @returns {{hashBuffer: Buffer, type: string}|boolean} An object containing:
+ *   - hashBuffer {Buffer} - The hash buffer of the address.
+ *   - type {string} - The type of the address (Address.PayToPublicKeyHash).
+ *   Returns false if the script is not a public key hash output.
+ * @private
  */
 Script.prototype._getOutputAddressInfo = function () {
   var info = {};
@@ -1181,7 +1233,7 @@ Script.prototype._getOutputAddressInfo = function () {
 
 /**
  * Will return the associated input scriptSig address information object
- * @return {Address|boolean}
+ * @return {{hashBuffer: Buffer, type: string}|boolean}
  * @private
  */
 Script.prototype._getInputAddressInfo = function () {

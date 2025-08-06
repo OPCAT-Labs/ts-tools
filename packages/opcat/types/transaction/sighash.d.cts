@@ -17,10 +17,20 @@ declare namespace Sighash {
      * @param {number} inputNumber the input index for the signature
      * @param {Script} subscript the script that will be signed
      * @param {satoshisBN} input's amount (for  ForkId signatures)
+     * @returns {Buffer} the sighash preimage buffer
      *
      */
     function sighashPreimage(transaction: Transaction, sighashType: number, inputNumber: number): Buffer;
-    function getLowSSighashPreimage(tx: any, sigtype: any, inputIndex: any): Buffer;
+    /**
+     * Generates a low-S sighash preimage for a transaction.
+     * This function iteratively adjusts the transaction's lock time to ensure the sighash meets the low-S requirement.
+     *
+     * @param {Transaction} tx - The transaction object.
+     * @param {number} sigtype - The signature type.
+     * @param {number} inputIndex - The index of the input being signed.
+     * @returns {Buffer} The preimage buffer that meets the low-S requirement.
+     */
+    function getLowSSighashPreimage(tx: Transaction, sigtype: number, inputIndex: number): Buffer;
     /**
      * Returns a buffer of length 32 bytes with the hash that needs to be signed
      * for OP_CHECKSIG.
@@ -38,11 +48,11 @@ declare namespace Sighash {
      * @name Signing.sign
      * @param {Transaction} transaction
      * @param {PrivateKey} privateKey
-     * @param {number} sighash
+     * @param {number} sighashType
      * @param {number} inputIndex
      * @return {Signature}
      */
-    function sign(transaction: Transaction, privateKey: PrivateKey, sighashType: any, inputIndex: number): Signature;
+    function sign(transaction: Transaction, privateKey: PrivateKey, sighashType: number, inputIndex: number): Signature;
     /**
      * Verify a signature
      *

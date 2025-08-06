@@ -20,10 +20,13 @@ declare class BufferWriter {
     static varintBufNum(n: number): Buffer;
     /**
      * Initializes a new BufferWriter instance.
-     * @param {Object} [obj] - Optional object to set initial buffer content. If not provided,
+     * @param {{buffers?: Buffer[], bufs?: Buffer[] }} [obj] - Optional object to set initial buffer content. If not provided,
      *                         creates an empty buffer writer with empty buffers array and length 0.
      */
-    constructor(obj?: any);
+    constructor(obj?: {
+        buffers?: Buffer[];
+        bufs?: Buffer[];
+    });
     buffers: any[];
     length: number;
     /**
@@ -34,10 +37,13 @@ declare class BufferWriter {
     write(buffer: Buffer): this;
     /**
      * Sets the internal buffers and calculates total length.
-     * @param {Object} obj - Object containing buffers (either `buffers` or `bufs` property)
-     * @returns {Object} Returns the instance for chaining
+     * @param {{buffers?: Buffer[], bufs?: Buffer[] }} obj - Object containing buffers (either `buffers` or `bufs` property)
+     * @returns {this} Returns the instance for chaining
      */
-    set(obj: any): any;
+    set(obj: {
+        buffers?: Buffer[];
+        bufs?: Buffer[];
+    }): this;
     /**
      * Returns the buffer by concatenating all written data.
      * @returns {Buffer} The concatenated buffer.
@@ -89,10 +95,10 @@ declare class BufferWriter {
     writeUInt8(n: number): this;
     /**
      * Writes a 64-bit unsigned integer in little-endian byte order from a BigNumber.
-     * @param {Object} bn - The BigNumber to write.
+     * @param {BN} bn - The BigNumber to write.
      * @returns {this} Returns the BufferWriter instance for chaining.
      */
-    writeUInt64LEBN(bn: any): this;
+    writeUInt64LEBN(bn: BN): this;
     /**
      * Writes a 64-bit unsigned integer in big-endian byte order (as BN.js instance).
      * Internally converts to little-endian and writes reversed for big-endian output.

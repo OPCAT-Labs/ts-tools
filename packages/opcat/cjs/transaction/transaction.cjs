@@ -26,7 +26,7 @@ var BN = require('../crypto/bn.cjs');
 /**
  * Represents a transaction, a set of inputs and outputs to change ownership of tokens
  * @constructor
- * @param {string|Buffer|Object|Transaction} [serialized] - Optional serialized data to initialize the transaction.
+ * @param {string|Buffer|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}|Transaction} [serialized] - Optional serialized data to initialize the transaction.
  * Can be a hex string, Buffer, plain object, or another Transaction instance.
  * @throws {errors.InvalidArgument} If invalid serialization format is provided.
  * @property {Array} inputs - Transaction input objects.
@@ -37,7 +37,9 @@ function Transaction(serialized) {
   if (!(this instanceof Transaction)) {
     return new Transaction(serialized);
   }
+  /** @type {Array.<Input>} */
   this.inputs = [];
+  /** @type {Array.<Output>} */
   this.outputs = [];
   this._inputAmount = undefined;
   this._outputAmount = undefined;
@@ -145,7 +147,7 @@ Transaction.fromBuffer = function (buffer) {
 }
 /**
  * Creates a Transaction instance from a plain object.
- * @param {Object} obj - The plain object to convert to a Transaction.
+ * @param {{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}} obj - The plain object to convert to a Transaction.
  * @returns {Transaction} A new Transaction instance populated from the object.
  */
 Transaction.fromObject = function (obj) {
@@ -230,7 +232,7 @@ Transaction.prototype._getHash = function () {
  * Retrieve a hexa string that can be used with bitcoind's CLI interface
  * (decoderawtransaction, sendrawtransaction)
  *
- * @param {Object|boolean=} unsafe if true, skip all tests. if it's an object,
+ * @param {{disableMoreOutputThanInput: boolean, disableDustOutputs: boolean, disableIsFullySigned: boolean, disableLargeFees: boolean}|boolean=} unsafe if true, skip all tests. if it's an object,
  *   it's expected to contain a set of flags to skip certain tests:
  * * `disableAll`: disable all checks
  * * `disableLargeFees`: disable checking for fees that are too large
@@ -274,7 +276,7 @@ Transaction.prototype.uncheckedSerialize = Transaction.prototype.toString = Tran
  * Retrieve a hexa string that can be used with bitcoind's CLI interface
  * (decoderawtransaction, sendrawtransaction)
  *
- * @param {Object} opts allows to skip certain tests. {@see Transaction#serialize}
+ * @param {{disableMoreOutputThanInput: boolean, disableDustOutputs: boolean, disableIsFullySigned: boolean, disableLargeFees: boolean}} opts allows to skip certain tests. {@see Transaction#serialize}
  * @return {string}
  */
 Transaction.prototype.checkedSerialize = function (opts) {
@@ -305,7 +307,7 @@ Transaction.prototype.invalidSatoshis = function () {
  * Retrieve a possible error that could appear when trying to serialize and
  * broadcast this transaction.
  *
- * @param {Object} opts allows to skip certain tests. {@see Transaction#serialize}
+ * @param {{disableMoreOutputThanInput: boolean, disableDustOutputs: boolean, disableIsFullySigned: boolean, disableLargeFees: boolean}} [opts] - allows to skip certain tests. {@see Transaction#serialize}
  * @return {opcat.Error}
  */
 Transaction.prototype.getSerializationError = function (opts) {
@@ -331,7 +333,7 @@ Transaction.prototype.getSerializationError = function (opts) {
 /**
  * Checks for fee-related errors in a transaction.
  * 
- * @param {Object} opts - Transaction options
+ * @param {{disableMoreOutputThanInput: boolean, disableDustOutputs: boolean, disableIsFullySigned: boolean, disableLargeFees: boolean}} opts - Transaction options
  * @param {number} unspent - The unspent amount to be used as fee
  * @returns {errors.Transaction.FeeError.Different|errors.Transaction.ChangeAddressMissing|errors.Transaction.FeeError.TooLarge|undefined}
  * Returns a fee error if:
@@ -374,7 +376,7 @@ Transaction.prototype._missingChange = function () {
 
 /**
  * Checks if the transaction contains any dust outputs (outputs below the dust limit).
- * @param {Object} opts - Options object.
+ * @param {{disableMoreOutputThanInput: boolean, disableDustOutputs: boolean, disableIsFullySigned: boolean, disableLargeFees: boolean}} opts - Options object.
  * @param {boolean} [opts.disableDustOutputs] - If true, skips dust output checking.
  * @returns {errors.Transaction.DustOutputs|undefined} Returns DustOutputs error if dust outputs are found, otherwise undefined.
  * @private
@@ -398,7 +400,7 @@ Transaction.prototype._hasDustOutputs = function (opts) {
 
 /**
  * Checks if the transaction is missing signatures.
- * @param {Object} opts - Options object.
+ * @param {{disableMoreOutputThanInput: boolean, disableDustOutputs: boolean, disableIsFullySigned: boolean, disableLargeFees: boolean}} opts - Options object.
  * @param {boolean} [opts.disableIsFullySigned] - If true, skips the check.
  * @returns {errors.Transaction.MissingSignatures|undefined} Returns MissingSignatures error if not fully signed, otherwise undefined.
  */
@@ -514,7 +516,7 @@ Transaction.prototype.fromBufferReader = function (reader) {
  * Converts the Transaction object to a plain JavaScript object (POJO) for serialization.
  * Includes transaction details like hash, version, inputs, outputs, and lock time.
  * Optionally includes change script, change address, change index, and fee if they are defined.
- * @returns {Object} A plain object representation of the transaction.
+ * @returns {{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}} A plain object representation of the transaction.
  */
 Transaction.prototype.toObject = Transaction.prototype.toJSON = function toObject() {
   var inputs = [];
@@ -553,7 +555,7 @@ Transaction.prototype.toObject = Transaction.prototype.toJSON = function toObjec
  * Creates a Transaction instance from a plain object or another Transaction.
  * Handles conversion of inputs/outputs and other transaction properties.
  * 
- * @param {Object|Transaction} arg - Either a transaction object or Transaction instance
+ * @param {{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}|Transaction} arg - Either a transaction object or Transaction instance
  * @returns {Transaction} The populated Transaction instance
  * @throws {Error} If argument is not an object or Transaction instance
  */
@@ -610,7 +612,7 @@ Transaction.prototype.fromObject = function fromObject(arg) {
  * Checks transaction consistency by validating:
  * - Change output script and address (if change index is set)
  * - Transaction hash (if provided in arg)
- * @param {Object} [arg] - Optional argument containing expected hash
+ * @param {{hash: string}} [arg] - Optional argument containing expected hash
  * @throws {Error} If any consistency check fails
  * @private
  */
@@ -765,9 +767,7 @@ Transaction.prototype._newTransaction = function () {
  *
  * ```
  *
- * @param {(Array.<Transaction~fromObject>|Transaction~fromObject)} utxo
- * @param {Array=} pubkeys
- * @param {number=} threshold
+ * @param {Array.<{txId: string, outputIndex: number, satoshis: number, script: Script|string, address?: string, data?: Buffer|string}>} utxo - An array of the inputs
  * @returns {Transaction} The transaction instance for chaining.
  */
 Transaction.prototype.from = function (utxo) {
@@ -794,9 +794,9 @@ Transaction.prototype.from = function (utxo) {
  * Determines the appropriate input type (PublicKeyHashInput, PublicKeyInput, or generic Input)
  * based on the UTXO's script type.
  * @param {Object} utxo - The UTXO to create input from
- * @param {Script} utxo.script - The output script
+ * @param {Script|string} utxo.script - The output script
  * @param {number} utxo.satoshis - The output amount in satoshis
- * @param {Buffer} [utxo.data] - Optional output data
+ * @param {Buffer|string} [utxo.data] - Optional output data
  * @param {string} utxo.txId - The previous transaction ID
  * @param {number} utxo.outputIndex - The output index in previous transaction
  * @private
@@ -1422,7 +1422,7 @@ Transaction.prototype.sign = function (privateKey, sigtype) {
  * Generates signatures for all inputs in the transaction using the provided private key.
  * @param {string|PrivateKey} privKey - The private key to sign with (can be string or PrivateKey instance).
  * @param {number} [sigtype=Signature.SIGHASH_ALL] - The signature hash type (defaults to SIGHASH_ALL).
- * @returns {Array} Array of generated signatures for the transaction inputs.
+ * @returns {Array.<TransactionSignature>} Array of generated signatures for the transaction inputs.
  */
 Transaction.prototype.getSignatures = function (privKey, sigtype) {
   privKey = new PrivateKey(privKey);
@@ -1450,7 +1450,7 @@ Transaction.prototype.getSignatures = function (privKey, sigtype) {
  * @param {number} signature.sigtype
  * @param {PublicKey} signature.publicKey
  * @param {Signature} signature.signature
- * @return {Transaction} this, for chaining
+ * @returns {Transaction} this, for chaining
  */
 Transaction.prototype.applySignature = function (signature) {
   this.inputs[signature.inputIndex].addSignature(this, signature);
@@ -1481,7 +1481,7 @@ Transaction.prototype.isFullySigned = function () {
 
 /**
  * Validates a signature for a transaction input.
- * @param {Object} signature - The signature object to validate.
+ * @param {TransactionSignature} signature - The signature object to validate.
  * @throws {errors.Transaction.UnableToVerifySignature} If the input script is unrecognized or lacks execution info.
  * @returns {boolean} True if the signature is valid for the specified input.
  */
@@ -1599,9 +1599,9 @@ Transaction.prototype.isCoinbase = function () {
 
 /**
  * Sets the input script for a transaction input.
- * @param {number|Object} options - Either an input index number or an options object
+ * @param {number|{inputIndex: number, sigtype?: number, privateKey: PrivateKey, isLowS?: boolean}} options - Either an input index number or an options object
  * @param {number} [options.inputIndex=0] - Input index if options is an object
- * @param {string} [options.privateKey] - Private key for signing
+ * @param {PrivateKey} [options.privateKey] - Private key for signing
  * @param {number} [options.sigtype=Signature.SIGHASH_ALL] - Signature hash type
  * @param {boolean} [options.isLowS=false] - Whether to use low-S signatures
  * @param {Function|Script} unlockScriptOrCallback - Either a script or callback function that returns a script
@@ -1657,7 +1657,7 @@ Transaction.prototype.setInputSequence = function (inputIndex, sequence) {
  * If a callback is provided, it will be invoked with the transaction instance to generate the output value.
  * Automatically updates the change output after setting.
  * @param {number} outputIndex - The index of the output to set
- * @param {any|Function} outputOrcb - The output value or a callback function that returns the output value
+ * @param {Output|Function} outputOrcb - The output value or a callback function that returns the output value
  * @returns {Transaction} Returns the transaction instance for chaining
  */
 Transaction.prototype.setOutput = function (outputIndex, outputOrcb) {
@@ -1785,7 +1785,7 @@ Transaction.prototype.isSealed = function () {
  * @param {number} inputIndex - The index of the input to get the preimage for.
  * @param {number} [sigtype=Signature.SIGHASH_ALL] - The signature hash type.
  * @param {boolean} [isLowS=false] - Whether to use low-S signatures.
- * @returns {*} The preimage for the specified input.
+ * @returns {Buffer} The preimage for the specified input.
  */
 Transaction.prototype.getPreimage = function (inputIndex, sigtype, isLowS) {
   $.checkArgumentType(inputIndex, 'number', 'inputIndex');
@@ -1798,9 +1798,9 @@ Transaction.prototype.getPreimage = function (inputIndex, sigtype, isLowS) {
 /**
  * Gets the signature(s) for a transaction input.
  * @param {number} inputIndex - Index of the input to sign.
- * @param {Array|Buffer|string} [privateKeys] - Private key(s) to sign with. Defaults to input's privateKey or transaction's _privateKey.
+ * @param {Array.<PrivateKey>|PrivateKey} [privateKeys] - Private key(s) to sign with. Defaults to input's privateKey or transaction's _privateKey.
  * @param {number} [sigtypes] - Signature hash type. Defaults to SIGHASH_ALL.
- * @returns {string|Array} - Single signature hex string or array of signatures. Returns empty array if no privateKeys provided.
+ * @returns {Array.<string>} - Single signature hex string or array of signatures. Returns empty array if no privateKeys provided.
  */
 Transaction.prototype.getSignature = function (inputIndex, privateKeys, sigtypes) {
   $.checkArgumentType(inputIndex, 'number', 'inputIndex');

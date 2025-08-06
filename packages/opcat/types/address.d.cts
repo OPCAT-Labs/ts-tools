@@ -27,13 +27,21 @@ export = Address;
  * var address = Address(publicKey, 'testnet').toString();
  * ```
  *
- * @param {*} data - The encoded data in various formats
+ * @param {Buffer|Uint8Array|string|{hashBuffer: Buffer, network: string, type: string}} data - The encoded data in various formats
  * @param {Network|String|number} [network] - The network: 'livenet' or 'testnet'
  * @param {string} [type] - The type of address: 'pubkey'
  * @returns {Address} A new valid and frozen instance of an Address
  * @constructor
+ *
+ * @property {Buffer} hashBuffer - The hash buffer of the address.
+ * @property {Network} network - The network associated with this Address instance.
+ * @property {string} type - The type of address (e.g., 'pubkey' for PayToPublicKeyHash).
  */
-declare function Address(data: any, network?: Network | string | number, type?: string): Address;
+declare function Address(data: Buffer | Uint8Array | string | {
+    hashBuffer: Buffer;
+    network: string;
+    type: string;
+}, network?: Network | string | number, type?: string): Address;
 declare class Address {
     /**
      * Instantiate an address from an address String or Buffer, a public key hash Buffer,
@@ -63,13 +71,21 @@ declare class Address {
      * var address = Address(publicKey, 'testnet').toString();
      * ```
      *
-     * @param {*} data - The encoded data in various formats
+     * @param {Buffer|Uint8Array|string|{hashBuffer: Buffer, network: string, type: string}} data - The encoded data in various formats
      * @param {Network|String|number} [network] - The network: 'livenet' or 'testnet'
      * @param {string} [type] - The type of address: 'pubkey'
      * @returns {Address} A new valid and frozen instance of an Address
      * @constructor
+     *
+     * @property {Buffer} hashBuffer - The hash buffer of the address.
+     * @property {Network} network - The network associated with this Address instance.
+     * @property {string} type - The type of address (e.g., 'pubkey' for PayToPublicKeyHash).
      */
-    constructor(data: any, network?: Network | string | number, type?: string);
+    constructor(data: Buffer | Uint8Array | string | {
+        hashBuffer: Buffer;
+        network: string;
+        type: string;
+    }, network?: Network | string | number, type?: string);
     get hashBuffer(): any;
     get network(): any;
     get type(): any;
@@ -96,10 +112,18 @@ declare class Address {
      */
     toPublickeyHash(): string;
     /**
-     * @returns {Object} A plain object with the address information
+     * @returns {{hash: string, network: string, type: string}} A plain object with the address information
      */
-    toObject: () => any;
-    toJSON(): any;
+    toObject: () => {
+        hash: string;
+        network: string;
+        type: string;
+    };
+    toJSON(): {
+        hash: string;
+        network: string;
+        type: string;
+    };
     /**
      * Will return a string formatted for the console
      *
@@ -117,10 +141,13 @@ declare namespace Address {
     let PayToPublicKeyHash: string;
     /**
      * @param {Buffer} hash - An instance of a hash Buffer
-     * @returns {Object} An object with keys: hashBuffer
+     * @returns {{hashBuffer: Buffer, type: string}} An object with keys: hashBuffer
      * @private
      */
-    function _transformHash(hash: Buffer): any;
+    function _transformHash(hash: Buffer): {
+        hashBuffer: Buffer;
+        type: string;
+    };
     /**
      * Deserializes an address serialized through `Address#toObject()`
      * @param {Object} data
@@ -139,38 +166,53 @@ declare namespace Address {
      * Internal function to discover the network and type based on the first data byte
      *
      * @param {Buffer} buffer - An instance of a hex encoded address Buffer
-     * @returns {Object} An object with keys: network and type
+     * @returns {{network: Network, type: string}} An object with keys: network and type
      * @private
      */
-    function _classifyFromVersion(buffer: Buffer): any;
+    function _classifyFromVersion(buffer: Buffer): {
+        network: Network;
+        type: string;
+    };
     /**
      * Internal function to transform a bitcoin address buffer
      *
      * @param {Buffer} buffer - An instance of a hex encoded address Buffer
-     * @param {string=} network - The network: 'livenet' or 'testnet'
-     * @param {string=} type - The type: 'pubkeyhash' or 'scripthash'
-     * @returns {Object} An object with keys: hashBuffer, network and type
+     * @param {string} [network] - The network: 'livenet' or 'testnet'
+     * @param {string} [type] - The type: 'pubkeyhash' or 'scripthash'
+     * @returns {{hashBuffer: Buffer, network: string, type: string}} An object with keys: hashBuffer, network and type
      * @private
      */
-    function _transformBuffer(buffer: Buffer, network?: string, type?: string): any;
+    function _transformBuffer(buffer: Buffer, network?: string, type?: string): {
+        hashBuffer: Buffer;
+        network: string;
+        type: string;
+    };
     /**
      * Internal function to transform a {@link PublicKey}
      *
      * @param {PublicKey} pubkey - An instance of PublicKey
-     * @returns {Object} An object with keys: hashBuffer, type
+     * @returns {{hashBuffer: Buffer, network: string, type: string}} An object with keys: hashBuffer, type
      * @private
      */
-    function _transformPublicKey(pubkey: PublicKey): any;
+    function _transformPublicKey(pubkey: PublicKey): {
+        hashBuffer: Buffer;
+        network: string;
+        type: string;
+    };
     /**
      * Internal function to transform a bitcoin cash address string
      *
-     * @param {string} data
-     * @param {String|Network=} network - either a Network instance, 'livenet', or 'testnet'
-     * @param {string=} type - The type: 'pubkeyhash'
-     * @returns {Object} An object with keys: hashBuffer, network and type
+     * @param {string} data - A string to be converted to a base58 address
+     * @param {String|Network} [network] - either a Network instance, 'livenet', or 'testnet'
+     * @param {string} [type] - The type: 'pubkeyhash'
+     * @returns {{hashBuffer: Buffer, network: string, type: string}} An object with keys: hashBuffer, network and type
      * @private
      */
-    function _transformString(data: string, network?: any, type?: string): any;
+    function _transformString(data: string, network?: string | Network, type?: string): {
+        hashBuffer: Buffer;
+        network: string;
+        type: string;
+    };
     /**
      * Instantiate an address from a PublicKey buffer
      *
@@ -178,7 +220,7 @@ declare namespace Address {
      * @param {String|Network} network - either a Network instance, 'livenet', or 'testnet'
      * @returns {Address} A new valid and frozen instance of an Address
      */
-    function fromPublicKey(data: Buffer, network: any): Address;
+    function fromPublicKey(data: Buffer, network: string | Network): Address;
     /**
      * Instantiate an address from a ripemd160 public key hash
      *
@@ -186,7 +228,7 @@ declare namespace Address {
      * @param {String|Network} network - either a Network instance, 'livenet', or 'testnet'
      * @returns {Address} A new valid and frozen instance of an Address
      */
-    function fromPublicKeyHash(hash: Buffer, network: any): Address;
+    function fromPublicKeyHash(hash: Buffer, network: string | Network): Address;
     /**
      * Instantiate an address from a bitcoin address buffer
      *
@@ -195,7 +237,7 @@ declare namespace Address {
      * @param {string=} type - The type of address: 'pubkey'
      * @returns {Address} A new valid and frozen instance of an Address
      */
-    function fromBuffer(buffer: Buffer, network?: any, type?: string): Address;
+    function fromBuffer(buffer: Buffer, network?: string | Network, type?: string): Address;
     /**
      * Creates an Address instance from a hex string.
      * @param {string} hex - The hex string representation of the address.
@@ -212,14 +254,18 @@ declare namespace Address {
      * @param {string=} type - The type of address: 'pubkey'
      * @returns {Address} A new valid and frozen instance of an Address
      */
-    function fromString(str: string, network?: any, type?: string): Address;
+    function fromString(str: string, network?: string | Network, type?: string): Address;
     /**
      * Instantiate an address from an Object
      *
-     * @param {string} json - An JSON string or Object with keys: hash, network and type
+     * @param {{hash: string, network: string, type: string}} obj - An JSON string or Object with keys: hash, network and type
      * @returns {Address} A new valid instance of an Address
      */
-    function fromObject(obj: any): Address;
+    function fromObject(obj: {
+        hash: string;
+        network: string;
+        type: string;
+    }): Address;
     /**
      * Will return a validation error if exists
      *
@@ -234,7 +280,7 @@ declare namespace Address {
      * @param {string} type - The type of address: 'pubkey'
      * @returns {null|Error} The corresponding error message
      */
-    function getValidationError(data: string, network: any, type: string): Error;
+    function getValidationError(data: string, network: string | Network, type: string): Error;
     /**
      * Will return a boolean if an address is valid
      *
@@ -248,5 +294,6 @@ declare namespace Address {
      * @param {string} type - The type of address: 'pubkey'
      * @returns {boolean} The corresponding error message
      */
-    function isValid(data: string, network: any, type: string): boolean;
+    function isValid(data: string, network: string | Network, type: string): boolean;
 }
+import Network = require("./network.cjs");
