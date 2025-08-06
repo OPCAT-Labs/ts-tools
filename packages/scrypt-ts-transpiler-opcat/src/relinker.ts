@@ -236,14 +236,18 @@ class Utils {
     let dir = path.resolve(absoluteFilePath, '..');
     while (true) {
       if (fs.existsSync(path.resolve(dir, './package.json'))) {
-        const packageJson = JSON.parse(
-          fs.readFileSync(path.resolve(dir, './package.json'), 'utf-8'),
-        );
-        return {
-          packageDir: dir,
-          packageName: packageJson.name as string,
-          packageVersion: packageJson.version as string,
-        };
+        const packageJsonPath = path.resolve(dir, './package.json');
+        try {
+          const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+          return {
+            packageDir: dir,
+            packageName: packageJson.name as string,
+            packageVersion: packageJson.version as string,
+          };
+        } catch (error) {
+          console.error(`Failed to parse package.json in ${packageJsonPath}:`);
+          throw error;
+        }
       }
       const parentDir = path.resolve(dir, '..');
       if (parentDir === dir) {

@@ -58,13 +58,38 @@ export async function singleSend(
 }>  {
   const pubkey = await signer.getPublicKey()
   const feeChangeAddress = await signer.getAddress()
-  const {guardPsbt, outputTokenStates, changeTokenOutputIndex, guard} = await singleSendStep1(provider, inputTokenUtxos, receivers, feeChangeAddress, tokenChangeAddress, feeRate);
+  let feeUtxos = await provider.getUtxos(feeChangeAddress)
+  const {guardPsbt, outputTokenStates, changeTokenOutputIndex, guard} = await singleSendStep1(
+    provider,
+    feeUtxos,
+    inputTokenUtxos,
+    receivers,
+    feeChangeAddress,
+    tokenChangeAddress,
+    feeRate
+  );
   const signedGuardPsbt = ExtPsbt.fromHex(await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions()))
   guardPsbt.combine(signedGuardPsbt).finalizeAllInputs()
-  const {sendPsbt} = await singleSendStep2(minterScriptHash, guard, guardPsbt, inputTokenUtxos, outputTokenStates, feeChangeAddress, feeRate, provider, pubkey, sendChangeData);
+  const {sendPsbt} = await singleSendStep2(
+    provider,
+    minterScriptHash,
+    guard,
+    guardPsbt,
+    inputTokenUtxos,
+    outputTokenStates,
+    feeChangeAddress,
+    pubkey,
+    feeRate,
+    sendChangeData
+  );
   const signedSendPsbt = ExtPsbt.fromHex(await signer.signPsbt(sendPsbt.toHex(), sendPsbt.psbtOptions()))
   sendPsbt.combine(signedSendPsbt).finalizeAllInputs()
-  const {newCAT20Utxos} = await singleSendStep3(provider, guardPsbt, sendPsbt, outputTokenStates)
+  const {newCAT20Utxos} = await singleSendStep3(
+    provider,
+    guardPsbt,
+    sendPsbt,
+    outputTokenStates
+  )
   return {
     guardPsbt,
     sendPsbt,
@@ -77,6 +102,7 @@ export async function singleSend(
 
 export async function singleSendStep1(
   provider: UtxoProvider & ChainProvider,
+  feeUtxos: UTXO[],
   inputTokenUtxos: UTXO[],
   receivers: Array<{
     address: ByteString
@@ -91,11 +117,10 @@ export async function singleSendStep1(
       `Too many inputs that exceed the maximum input limit of ${TX_INPUT_COUNT_MAX}`
     )
   }
-  let utxos = await provider.getUtxos(feeChangeAddress)
 
-  utxos = filterFeeUtxos(utxos).slice(0, TX_INPUT_COUNT_MAX)
+  feeUtxos = filterFeeUtxos(feeUtxos).slice(0, TX_INPUT_COUNT_MAX)
 
-  if (utxos.length === 0) {
+  if (feeUtxos.length === 0) {
     throw new Error('Insufficient satoshis input amount')
   }
 
@@ -136,7 +161,7 @@ export async function singleSendStep1(
   const guard = new CAT20Guard()
   guard.state = guardState
   const guardPsbt = new ExtPsbt({network: await provider.getNetwork()})
-    .spendUTXO(utxos)
+    .spendUTXO(feeUtxos)
     .addContractOutput(
       guard,
       Postage.GUARD_POSTAGE,
@@ -148,15 +173,15 @@ export async function singleSendStep1(
 }
 
 export async function singleSendStep2(
+  provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
   guard: CAT20Guard,
   finalizedGuardPsbt: ExtPsbt,
   inputTokenUtxos: UTXO[],
   outputTokenStates: CAT20State[],
   feeChangeAddress: string,
-  feeRate: number,
-  provider: UtxoProvider & ChainProvider,
   publicKey: string,
+  feeRate: number,
   sendChangeData?: Buffer,
 ) {
   
