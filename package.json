@@ -14,8 +14,9 @@
     "build": "turbo run build --concurrency 1",
     "test": "turbo run test",
     "ts-patch": "ts-patch install -s",
+    "package-patch": "npx patch-package",
     "husky": "husky install",
-    "prepare": "npm run ts-patch && npm run husky",
+    "prepare": "npm run ts-patch && npm run husky && npm run package-patch",
     "prerelease": "yarn build",
     "release": "changeset publish --access public --no-git-checks"
   },
@@ -48,11 +49,12 @@
     "globals": "^15.13.0",
     "husky": "^8.0.0",
     "mocha": "^10.2.0",
+    "patch-package": "^8.0.0",
     "prettier": "^3.4.2",
     "turbo": "^2.3.3",
-    "typescript": "~5.3.0",
-    "typescript-eslint": "^8.18.1",
     "typedoc": "=0.27.7",
-    "typedoc-plugin-markdown": "=4.4.2"
+    "typedoc-plugin-markdown": "=4.4.2",
+    "typescript": "~5.3.0",
+    "typescript-eslint": "^8.18.1"
   }
 }
