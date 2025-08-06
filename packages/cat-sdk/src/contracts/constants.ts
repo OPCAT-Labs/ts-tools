@@ -11,8 +11,8 @@ export const OWNER_ADDR_P2PKH_BYTE_LEN = 25n // p2pkh locking script
 // owned by contract
 export const OWNER_ADDR_CONTRACT_HASH_BYTE_LEN = SHA256_HASH_LEN // contract script hash
 
-export const TX_INPUT_COUNT_MAX = 6
-export const TX_OUTPUT_COUNT_MAX = 6
+export const TX_INPUT_COUNT_MAX = 10
+export const TX_OUTPUT_COUNT_MAX = 10
 
 // how many different tokens can there be in a guard
 export const GUARD_TOKEN_TYPE_MAX = 4
