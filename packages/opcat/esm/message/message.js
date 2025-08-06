@@ -49,6 +49,13 @@ Message.sign = function (message, privateKey) {
   return new Message(message).sign(privateKey);
 };
 
+/**
+ * Verifies a message signature against a given address.
+ * @param {string} message - The message to verify.
+ * @param {string|Address} address - The address associated with the signature.
+ * @param {string} signature - The signature to verify.
+ * @returns {boolean} True if the signature is valid for the message and address, otherwise false.
+ */
 Message.verify = function (message, address, signature) {
   return new Message(message).verify(address, signature);
 };
@@ -123,8 +130,8 @@ Message.prototype._verify = function _verify(publicKey, signature) {
  * Will return a boolean of the signature is valid for a given bitcoin address.
  * If it isn't the specific reason is accessible via the "error" member.
  *
- * @param {Address|String} bitcoinAddress - A bitcoin address
- * @param {String} signatureString - A base64 encoded compact signature
+ * @param {Address|string} bitcoinAddress - A bitcoin address
+ * @param {string} signatureString - A base64 encoded compact signature
  * @returns {Boolean}
  */
 Message.prototype.verify = function verify(bitcoinAddress, signatureString) {
@@ -179,7 +186,7 @@ Message.fromJSON = function fromJSON(json) {
 
 /**
  * Converts the message to a plain object with hex representation.
- * @returns {Object} An object containing the hex string of the message buffer.
+ * @returns {{messageHex: string}} An object containing the hex string of the message buffer.
  */
 Message.prototype.toObject = function toObject() {
   return {

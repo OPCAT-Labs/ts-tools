@@ -47,13 +47,19 @@ Input.BASE_SIZE = 32 + 4 + 4;
 
 /**
  * Gets or sets the script associated with this input.
- * @memberof Input.prototype
- * @name script
- * @return {Script}
+ * @memberof Input.prototype.script
+ * @name script 
+ * @type {Script} the script associated with this input.
  */
 Object.defineProperty(Input.prototype, 'script', {
   configurable: false,
   enumerable: true,
+  /**
+   * Gets the script associated with this input.
+   * If the input is null, returns null.
+   * Lazily initializes the script if it hasn't been created yet.
+   * @returns {Script|null} The script object or null if the input is null.
+   */
   get: function () {
     if (this.isNull()) {
       return null;
@@ -114,8 +120,11 @@ Input.prototype._fromObject = function (params) {
       ? params.output
       : new Output(params.output)
     : undefined;
+  /** @type {Buffer}*/
   this.prevTxId = prevTxId || params.txidbuf;
+  /** @type {number}*/
   this.outputIndex = _.isUndefined(params.outputIndex) ? params.txoutnum : params.outputIndex;
+  /** @type {number}*/
   this.sequenceNumber = _.isUndefined(params.sequenceNumber)
     ? _.isUndefined(params.seqnum)
       ? DEFAULT_SEQNUMBER
@@ -131,7 +140,7 @@ Input.prototype._fromObject = function (params) {
  * Includes prevTxId, outputIndex, sequenceNumber, and script as hex strings.
  * Optionally adds human-readable scriptString if script is valid,
  * and includes the output object if present.
- * @returns {Object} A plain object representation of the Input.
+ * @returns {{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}} A plain object representation of the Input.
  */
 Input.prototype.toObject = Input.prototype.toJSON = function toObject() {
   var obj = {
@@ -246,9 +255,10 @@ Input.prototype.setScript = function (script) {
  * Retrieve signatures for the provided PrivateKey.
  *
  * @param {Transaction} transaction - the transaction to be signed
- * @param {PrivateKey | Array} privateKeys - the private key to use when signing
+ * @param {PrivateKey | Array.<PrivateKey>} privateKeys - the private key to use when signing
  * @param {number} inputIndex - the index of this input in the provided transaction
- * @param {number} sigType - defaults to Signature.SIGHASH_ALL
+ * @param {number} sigtype - defaults to Signature.SIGHASH_ALL
+ * @returns {TransactionSignature[]} - an array of {@link TransactionSignature} objects
  */
 Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, sigtype) {
   $.checkState(this.output instanceof Output);
@@ -303,8 +313,9 @@ Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, 
  *
  * @param {Transaction} transaction - the transaction to be signed
  * @param {number} inputIndex - the index of this input in the provided transaction
- * @param {number} sigType - defaults to Signature.SIGHASH_ALL
+ * @param {number} sigtype - defaults to Signature.SIGHASH_ALL
  * @param {boolean} isLowS - true if the sig hash is safe for low s.
+ * @returns {Buffer} the sighash preimage buffer
  */
 Input.prototype.getPreimage = function (transaction, inputIndex, sigtype, isLowS) {
   $.checkState(this.output instanceof Output);
@@ -320,6 +331,7 @@ Input.prototype.getPreimage = function (transaction, inputIndex, sigtype, isLowS
  * to determine if all required signatures are present on this input.
  * @throws {AbstractMethodInvoked} Always throws to indicate abstract method usage
  * @abstract
+ * @returns {boolean} - Returns true if all signatures are present, false otherwise
  */
 Input.prototype.isFullySigned = function () {
   throw new errors.AbstractMethodInvoked('Input#isFullySigned');
@@ -336,11 +348,11 @@ Input.prototype.isFinal = function () {
 /**
  * Abstract method to add a signature to the transaction input.
  * Must be implemented by concrete input types.
- * @param {Object} transaction - The transaction to sign
- * @param {Object} signature - The signature to add
+ * @param {Transaction} transaction - The transaction to sign
+ * @param {Signature} signature - The signature to add
  * @abstract
  */
-Input.prototype.addSignature = function (_transaction, _signature) {
+Input.prototype.addSignature = function (transaction, signature) {
 };
 
 /**
@@ -355,7 +367,7 @@ Input.prototype.clearSignatures = function () {
  * Verifies if a signature is valid for this input in the given transaction.
  * Note: Temporarily modifies the signature object by setting nhashtype from sigtype.
  * 
- * @param {Object} transaction - The transaction to verify against
+ * @param {Transaction} transaction - The transaction to verify against
  * @param {TransactionSignature} signature - Signature object containing signature, publicKey, etc.
  * @returns {boolean} True if the signature is valid, false otherwise
  */
@@ -373,7 +385,7 @@ Input.prototype.isValidSignature = function (transaction, signature) {
 };
 
 /**
- * @returns true if this is a coinbase input (represents no input)
+ * @returns {boolean} true if this is a coinbase input (represents no input)
  */
 Input.prototype.isNull = function () {
   return (

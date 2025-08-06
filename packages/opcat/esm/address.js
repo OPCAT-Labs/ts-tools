@@ -6,6 +6,7 @@ import Base58Check from './encoding/base58check.js';
 import Networks from './networks.js';
 import Hash from './crypto/hash.js';
 import JSUtil from './util/js.js';
+import Network from './network.js';
 
 /**
  * Instantiate an address from an address String or Buffer, a public key hash Buffer,
@@ -35,11 +36,15 @@ import JSUtil from './util/js.js';
  * var address = Address(publicKey, 'testnet').toString();
  * ```
  *
- * @param {*} data - The encoded data in various formats
+ * @param {Buffer|Uint8Array|string|{hashBuffer: Buffer, network: string, type: string}} data - The encoded data in various formats
  * @param {Network|String|number} [network] - The network: 'livenet' or 'testnet'
  * @param {string} [type] - The type of address: 'pubkey'
  * @returns {Address} A new valid and frozen instance of an Address
  * @constructor
+ * 
+ * @property {Buffer} hashBuffer - The hash buffer of the address.
+ * @property {Network} network - The network associated with this Address instance.
+ * @property {string} type - The type of address (e.g., 'pubkey' for PayToPublicKeyHash).
  */
 function Address(data, network, type) {
   if (!(this instanceof Address)) {
@@ -83,6 +88,7 @@ function Address(data, network, type) {
 /**
  * Gets the hash buffer of the Address instance.
  * @memberof Address.prototype
+ * @name hashBuffer
  * @type {Buffer}
  * @readonly
  */
@@ -124,10 +130,10 @@ Object.defineProperty(Address.prototype, 'type', {
 
 /**
  * Internal function used to split different kinds of arguments of the constructor
- * @param {Buffer|Uint8Array|string|Object} data - The encoded data in various formats
+ * @param {Buffer|Uint8Array|string|{hashBuffer: Buffer, network: string, type: string}} data - The encoded data in various formats
  * @param {Network|string} [network] - The network: 'livenet' or 'testnet'
  * @param {string} [type] - The type of address: 'pubkey'
- * @returns {Object} An "info" object with "type", "network", and "hashBuffer"
+ * @returns {{hashBuffer: Buffer, network: string, type: string}} An "info" object with "type", "network", and "hashBuffer"
  * @private
  */
 Address.prototype._classifyArguments = function (data, network, type) {
@@ -156,7 +162,7 @@ Address.PayToPublicKeyHash = 'pubkeyhash';
 
 /**
  * @param {Buffer} hash - An instance of a hash Buffer
- * @returns {Object} An object with keys: hashBuffer
+ * @returns {{hashBuffer: Buffer, type: string}} An object with keys: hashBuffer
  * @private
  */
 Address._transformHash = function (hash) {
@@ -194,7 +200,7 @@ Address._transformObject = function (data) {
  * Internal function to discover the network and type based on the first data byte
  *
  * @param {Buffer} buffer - An instance of a hex encoded address Buffer
- * @returns {Object} An object with keys: network and type
+ * @returns {{network: Network, type: string}} An object with keys: network and type
  * @private
  */
 Address._classifyFromVersion = function (buffer) {
@@ -214,9 +220,9 @@ Address._classifyFromVersion = function (buffer) {
  * Internal function to transform a bitcoin address buffer
  *
  * @param {Buffer} buffer - An instance of a hex encoded address Buffer
- * @param {string=} network - The network: 'livenet' or 'testnet'
- * @param {string=} type - The type: 'pubkeyhash' or 'scripthash'
- * @returns {Object} An object with keys: hashBuffer, network and type
+ * @param {string} [network] - The network: 'livenet' or 'testnet'
+ * @param {string} [type] - The type: 'pubkeyhash' or 'scripthash'
+ * @returns {{hashBuffer: Buffer, network: string, type: string}} An object with keys: hashBuffer, network and type
  * @private
  */
 Address._transformBuffer = function (buffer, network, type) {
@@ -254,7 +260,7 @@ Address._transformBuffer = function (buffer, network, type) {
  * Internal function to transform a {@link PublicKey}
  *
  * @param {PublicKey} pubkey - An instance of PublicKey
- * @returns {Object} An object with keys: hashBuffer, type
+ * @returns {{hashBuffer: Buffer, network: string, type: string}} An object with keys: hashBuffer, type
  * @private
  */
 Address._transformPublicKey = function (pubkey) {
@@ -270,10 +276,10 @@ Address._transformPublicKey = function (pubkey) {
 /**
  * Internal function to transform a bitcoin cash address string
  *
- * @param {string} data
- * @param {String|Network=} network - either a Network instance, 'livenet', or 'testnet'
- * @param {string=} type - The type: 'pubkeyhash'
- * @returns {Object} An object with keys: hashBuffer, network and type
+ * @param {string} data - A string to be converted to a base58 address
+ * @param {String|Network} [network] - either a Network instance, 'livenet', or 'testnet'
+ * @param {string} [type] - The type: 'pubkeyhash'
+ * @returns {{hashBuffer: Buffer, network: string, type: string}} An object with keys: hashBuffer, network and type
  * @private
  */
 Address._transformString = function (data, network, type) {
@@ -361,7 +367,7 @@ Address.fromString = function (str, network, type) {
 /**
  * Instantiate an address from an Object
  *
- * @param {string} json - An JSON string or Object with keys: hash, network and type
+ * @param {{hash: string, network: string, type: string}} obj - An JSON string or Object with keys: hash, network and type
  * @returns {Address} A new valid instance of an Address
  */
 Address.fromObject = function fromObject(obj) {
@@ -450,7 +456,7 @@ Address.prototype.toPublickeyHash = function () {
 };
 
 /**
- * @returns {Object} A plain object with the address information
+ * @returns {{hash: string, network: string, type: string}} A plain object with the address information
  */
 Address.prototype.toObject = Address.prototype.toJSON = function toObject() {
   return {

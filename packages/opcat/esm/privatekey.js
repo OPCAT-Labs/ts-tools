@@ -6,6 +6,7 @@ import Base58Check from './encoding/base58check.js';
 import BN from './crypto/bn.js';
 import JSUtil from './util/js.js';
 import Networks from './networks.js';
+import Network from './network.js';
 import PublicKey from './publickey.js';
 import Point from './crypto/point.js';
 import Random from './crypto/random.js';
@@ -14,7 +15,7 @@ import $ from './util/preconditions.js';
 /**
  * Instantiate a PrivateKey from a BN, Buffer or WIF string.
  *
- * @param {string|BN|Buffer|Object} data - The encoded data in various formats
+ * @param {string|BN|Buffer|{bn: string, compressed: boolean, network: string}} data - The encoded data in various formats
  * @param {Network|string} [network] - a {@link Network} object, or a string with the network name
  * @returns {PrivateKey} A new valid instance of an PrivateKey
  * @constructor
@@ -40,6 +41,10 @@ function PrivateKey(data, network) {
     throw new TypeError('Must specify the network ("livenet" or "testnet")');
   }
 
+  this.bn = info.bn;
+  this.network = info.network;
+  this.compressed = info.compressed;
+
   JSUtil.defineImmutable(this, {
     bn: info.bn,
     compressed: info.compressed,
@@ -63,34 +68,8 @@ Object.defineProperty(PrivateKey.prototype, 'publicKey', {
   },
 });
 
-/**
- * Gets the network associated with this private key.
- * @memberof PrivateKey.prototype
- * @type {Network}
- * @readonly
- */
-Object.defineProperty(PrivateKey.prototype, 'network', {
-  configurable: false,
-  enumerable: true,
-  get: function () {
-    return this.network;
-  }
-});
 
 
-/**
- * Indicates whether the private key is in compressed format.
- * @memberof PrivateKey.prototype
- * @type {boolean}
- * @readonly
- */
-Object.defineProperty(PrivateKey.prototype, 'compressed', {
-  configurable: false,
-  enumerable: true,
-  get: function () {
-    return this.compressed;
-  }
-});
 
 /**
  * Internal helper to instantiate PrivateKey internal `info` object from
@@ -98,7 +77,7 @@ Object.defineProperty(PrivateKey.prototype, 'compressed', {
  *
  * @param {string|BN|Buffer|Object} data
  * @param {Network|string} [network] - a {@link Network} object, or a string with the network name
- * @return {Object}
+ * @return {{bn: BN, network: Network, compressed: boolean}} an object with the decomposed private key data
  * @private
  */
 PrivateKey.prototype._classifyArguments = function (data, network) {
@@ -153,7 +132,7 @@ PrivateKey._getRandomBN = function () {
  *
  * @param {Buffer} buf - An WIF string
  * @param {Network|string} [network] - a {@link Network} object, or a string with the network name
- * @returns {Object} An object with keys: bn, network and compressed
+ * @returns {{bn: BN, network: Network, compressed: boolean}} An object with keys: bn, network and compressed
  * @private
  */
 PrivateKey._transformBuffer = function (buf, network) {
@@ -191,7 +170,7 @@ PrivateKey._transformBuffer = function (buf, network) {
  *
  * @param {Buffer} buf
  * @param {Network|string=} network - a {@link Network} object, or a string with the network name
- * @returns {object} an Object with keys: bn, network, and compressed
+ * @returns {{bn: BN, network: Network, compressed: boolean}} an Object with keys: bn, network, and compressed
  * @private
  */
 PrivateKey._transformBNBuffer = function (buf, network) {
@@ -205,20 +184,21 @@ PrivateKey._transformBNBuffer = function (buf, network) {
 /**
  * Internal function to transform a WIF string into a private key
  *
- * @param {string} buf - An WIF string
- * @returns {Object} An object with keys: bn, network and compressed
+ * @param {string} wif - An WIF string
+ * @param {Network|string} [network] - a {@link Network} object, or a string with the network name
+ * @returns {{bn: BN, network: Network, compressed: boolean}} An object with keys: bn, network and compressed
  * @private
  */
-PrivateKey._transformWIF = function (str, network) {
-  return PrivateKey._transformBuffer(Base58Check.decode(str), network);
+PrivateKey._transformWIF = function (wif, network) {
+  return PrivateKey._transformBuffer(Base58Check.decode(wif), network);
 };
 
 /**
  * Instantiate a PrivateKey from a Buffer with the DER or WIF representation
  *
- * @param {Buffer} buf
- * @param {Network} network
- * @return {PrivateKey}
+ * @param {Buffer} buf - A private key string
+ * @param {Network} [network] - A Bitcoin network
+ * @return {PrivateKey} A new instance of PrivateKey
  */
 PrivateKey.fromBuffer = function (buf, network) {
   return new PrivateKey(buf, network);
@@ -238,8 +218,11 @@ PrivateKey.fromHex = function (hex, network) {
  * Internal function to transform a JSON string on plain object into a private key
  * return this.
  *
- * @param {string} json - A JSON string or plain object
- * @returns {Object} An object with keys: bn, network and compressed
+ * @param {Object} json - A JSON string or plain object
+ * @param {string} json.bn - The private key in hexadecimal format
+ * @param {string|Network} json.network - The network associated with the private keyname or alias
+ * @param {boolean} [json.compressed] - The private key's compressed state
+ * @returns {{bn: BN, network: Network, compressed: boolean}} An object with keys: bn, network and compressed
  * @private
  */
 PrivateKey._transformObject = function (json) {
@@ -266,7 +249,7 @@ PrivateKey.fromString = PrivateKey.fromWIF = function (str) {
 /**
  * Instantiate a PrivateKey from a plain JavaScript object
  *
- * @param {Object} obj - The output from privateKey.toObject()
+ * @param {{bn: string, compressed: boolean, network: string}} obj - The object representation of the private key
  */
 PrivateKey.fromObject = PrivateKey.fromJSON = function (obj) {
   $.checkArgument(_.isObject(obj), 'First argument is expected to be an object.');
@@ -399,7 +382,7 @@ PrivateKey.prototype.toAddress = function (network) {
 };
 
 /**
- * @returns {Object} A plain object representation
+ * @returns {{bn: string, compressed: boolean, network: string}} A plain object representation
  */
 PrivateKey.prototype.toObject = PrivateKey.prototype.toJSON = function toObject() {
   return {

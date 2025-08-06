@@ -15,8 +15,8 @@ var Networks = function Networks() { }
  * @member Networks#get
  * Retrieves the network associated with a magic number or string.
  * @param {string|number|Network} arg
- * @param {string|Array} keys - if set, only check if the magic number associated with this name matches
- * @return Network
+ * @param {string|Array.<string>} [keys] - if set, only check if the magic number associated with this name matches
+ * @return {Network|undefined} The network object associated with the input argument, or undefined if not found.
  */
 Networks.get = function get(arg, keys) {
   if (~networks.indexOf(arg)) {
@@ -75,7 +75,7 @@ function unindexNetworkBy(network, values) {
 
 
 /**
- * @function
+ * Adds a new network configuration to the networks list.
  * @member Networks#add
  * Will add a custom Network
  * @param {Object} data
@@ -88,8 +88,8 @@ function unindexNetworkBy(network, values) {
  * @param {Number} data.xprivkey - The extended private key magic
  * @param {Number} data.networkMagic - The network magic number
  * @param {Number} data.port - The network port
- * @param {Array}  data.dnsSeeds - An array of dns seeds
- * @return Network
+ * @param {Array.<string>}  data.dnsSeeds - An array of dns seeds
+ * @return {Network} The newly created network object.
  */
 Networks.add = function add(data) {
 

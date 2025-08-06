@@ -8,7 +8,7 @@ import JSUtil from '../util/js.js';
 /**
  * Creates a new Signature instance from BN values or an object.
  * @constructor
- * @param {BN|Object} r - Either a BN instance for the r value or an object containing r and s properties.
+ * @param {BN|{r:BN, s: BN, i: number, compressed: boolean, nhashtype: number}} r - Either a BN instance for the r value or an object containing r and s properties.
  * @param {BN} [s] - The s value (required if r is a BN instance).
  */
 function Signature(r, s) {
@@ -29,19 +29,23 @@ function Signature(r, s) {
 /**
  * Sets signature properties from an object.
  * @param {Object} obj - Object containing signature properties
- * @param {Buffer} [obj.r] - r value
- * @param {Buffer} [obj.s] - s value
+ * @param {BN} [obj.r] - r value
+ * @param {BN} [obj.s] - s value
  * @param {number} [obj.i] - Public key recovery parameter (0-3)
  * @param {boolean} [obj.compressed] - Whether recovered pubkey is compressed
  * @param {number} [obj.nhashtype] - Hash type
  * @returns {Signature} Returns the signature instance for chaining
  */
 Signature.prototype.set = function (obj) {
+  /** @type {BN}*/
   this.r = obj.r || this.r || undefined;
+  /** @type {BN}*/
   this.s = obj.s || this.s || undefined;
-
+  /** @type {number}*/
   this.i = typeof obj.i !== 'undefined' ? obj.i : this.i; // public key recovery parameter in range [0, 3]
+  /** @type {boolean}*/
   this.compressed = typeof obj.compressed !== 'undefined' ? obj.compressed : this.compressed; // whether the recovered pubkey is compressed
+  /** @type {number}*/
   this.nhashtype = obj.nhashtype || this.nhashtype || undefined;
   return this;
 };
@@ -129,7 +133,7 @@ Signature.fromString = function (str) {
  * In order to mimic the non-strict DER encoding of OpenSSL, set strict = false.
  * @param {Buffer} buf - The DER formatted signature buffer to parse
  * @param {boolean} [strict=true] - Whether to perform strict length validation
- * @returns {Object} An object containing the parsed signature components:
+ * @returns {{header: number, length: number, rheader: number, rlength: number, rneg: boolean, rbuf: Buffer, r: BN, sheader: number, slength: number, sneg: boolean, sbuf: Buffer, s: BN}} An object containing the parsed signature components:
  *   - header: The DER header byte (0x30)
  *   - length: The total length of the signature components
  *   - rheader: The R component header byte (0x02)

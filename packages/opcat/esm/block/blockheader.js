@@ -13,7 +13,7 @@ var GENESIS_BITS = 0x1d00ffff;
  * Instantiate a BlockHeader from a Buffer, JSON object, or Object with
  * the properties of the BlockHeader
  *
- * @param {*} - A Buffer, JSON string, or Object
+ * @param {Buffer|{prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}} arg - A Buffer, JSON string, or Object
  * @returns {BlockHeader} - An instance of block header
  * @constructor
  */
@@ -41,8 +41,8 @@ function BlockHeader(arg) {
 }
 
 /**
- * @param {*} - A Buffer, JSON string or Object
- * @returns {Object} - An object representing block header data
+ * @param {Buffer|{prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}} arg - A Buffer, JSON string or Object
+ * @returns {{version: number, prevHash: Buffer, merkleRoot: Buffer, time: number, bits: number, nonce: number}} - An object representing block header data
  * @throws {TypeError} - If the argument was not recognized
  * @private
  */
@@ -59,8 +59,8 @@ BlockHeader._from = function _from(arg) {
 };
 
 /**
- * @param {Object} - A JSON string
- * @returns {Object} - An object representing block header data
+ * @param {{prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}} data - A JSON string
+ * @returns {{prevHash: Buffer, merkleRoot: Buffer, hash: string, version: number, time: number, bits: number, nonce: number}} - An object representing block header data
  * @private
  */
 BlockHeader._fromObject = function _fromObject(data) {
@@ -87,7 +87,7 @@ BlockHeader._fromObject = function _fromObject(data) {
 };
 
 /**
- * @param {Object} - A plain JavaScript object
+ * @param {{prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}} obj - A plain JavaScript object
  * @returns {BlockHeader} - An instance of block header
  */
 BlockHeader.fromObject = function fromObject(obj) {
@@ -96,7 +96,7 @@ BlockHeader.fromObject = function fromObject(obj) {
 };
 
 /**
- * @param {Binary} - Raw block binary data or buffer
+ * @param {Buffer|string} data - Raw block binary data or buffer
  * @returns {BlockHeader} - An instance of block header
  */
 BlockHeader.fromRawBlock = function fromRawBlock(data) {
@@ -110,7 +110,7 @@ BlockHeader.fromRawBlock = function fromRawBlock(data) {
 };
 
 /**
- * @param {Buffer} - A buffer of the block header
+ * @param {Buffer} buf - A buffer of the block header
  * @returns {BlockHeader} - An instance of block header
  */
 BlockHeader.fromBuffer = function fromBuffer(buf) {
@@ -119,7 +119,7 @@ BlockHeader.fromBuffer = function fromBuffer(buf) {
 };
 
 /**
- * @param {string} - A hex encoded buffer of the block header
+ * @param {string} str - A hex encoded buffer of the block header
  * @returns {BlockHeader} - An instance of block header
  */
 BlockHeader.fromString = function fromString(str) {
@@ -128,8 +128,8 @@ BlockHeader.fromString = function fromString(str) {
 };
 
 /**
- * @param {BufferReader} - A BufferReader of the block header
- * @returns {Object} - An object representing block header data
+ * @param {BufferReader} br - A BufferReader of the block header
+ * @returns {{version: number, prevHash: Buffer, merkleRoot: Buffer, time: number, bits: number, nonce: number}} - An object representing block header data
  * @private
  */
 BlockHeader._fromBufferReader = function _fromBufferReader(br) {
@@ -144,7 +144,7 @@ BlockHeader._fromBufferReader = function _fromBufferReader(br) {
 };
 
 /**
- * @param {BufferReader} - A BufferReader of the block header
+ * @param {BufferReader} br - A BufferReader of the block header
  * @returns {BlockHeader} - An instance of block header
  */
 BlockHeader.fromBufferReader = function fromBufferReader(br) {
@@ -153,8 +153,19 @@ BlockHeader.fromBufferReader = function fromBufferReader(br) {
 };
 
 /**
- * @returns {Object} - A plain object of the BlockHeader
+ * Converts the BlockHeader instance into a plain JavaScript object or JSON representation.
+ * This method is used for serialization and includes all relevant block header fields.
+ *
+ * @returns {{hash: string, version: number, prevHash: string, merkleRoot: string, time: number, bits: number, nonce: number}} An object containing the block header properties:
+ *   - hash: The block hash.
+ *   - version: The block version.
+ *   - prevHash: The previous block hash, reversed and converted to hex.
+ *   - merkleRoot: The merkle root of the block, reversed and converted to hex.
+ *   - time: The block timestamp.
+ *   - bits: The block difficulty bits.
+ *   - nonce: The block nonce.
  */
+
 BlockHeader.prototype.toObject = BlockHeader.prototype.toJSON = function toObject() {
   return {
     hash: this.hash,
@@ -182,7 +193,7 @@ BlockHeader.prototype.toString = function toString() {
 };
 
 /**
- * @param {BufferWriter} - An existing instance BufferWriter
+ * @param {BufferWriter} [bw] - An existing instance BufferWriter
  * @returns {BufferWriter} - An instance of BufferWriter representation of the BlockHeader
  */
 BlockHeader.prototype.toBufferWriter = function toBufferWriter(bw) {
@@ -253,6 +264,8 @@ var idProperty = {
   },
   set: _.noop,
 };
+
+
 Object.defineProperty(BlockHeader.prototype, 'id', idProperty);
 Object.defineProperty(BlockHeader.prototype, 'hash', idProperty);
 
