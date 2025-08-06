@@ -17,6 +17,7 @@ var hdErrors = opcatErrors.HDPublicKey;
 import assert from 'assert';
 import JSUtil from './util/js.js';
 
+
 /**
  * The representation of an hierarchically derived public key.
  *
@@ -54,14 +55,6 @@ function HDPublicKey(arg) {
   }
 }
 
-/**
- * Converts an HDPrivateKey to an HDPublicKey.
- * @param {HDPrivateKey} hdPrivateKey - The HD private key to convert.
- * @returns {HDPublicKey} The corresponding HD public key.
- */
-HDPublicKey.fromHDPrivateKey = function (hdPrivateKey) {
-  return hdPrivateKey.toHDPublicKey()
-};
 
 
 /**
@@ -511,7 +504,7 @@ HDPublicKey.prototype.toBuffer = function () {
 HDPublicKey.prototype.toHex = function () {
   return this.toBuffer().toString('hex');
 };
-
+/** @static @constant {number} */
 HDPublicKey.Hardened = 0x80000000;
 HDPublicKey.RootElementAlias = ['m', 'M'];
 
@@ -527,20 +520,19 @@ HDPublicKey.DataSize = 78;
 HDPublicKey.SerializedByteSize = 82;
 
 HDPublicKey.VersionStart = 0;
-HDPublicKey.VersionEnd = HDPublicKey.VersionStart + HDPublicKey.VersionSize;
-HDPublicKey.DepthStart = HDPublicKey.VersionEnd;
-HDPublicKey.DepthEnd = HDPublicKey.DepthStart + HDPublicKey.DepthSize;
-HDPublicKey.ParentFingerPrintStart = HDPublicKey.DepthEnd;
-HDPublicKey.ParentFingerPrintEnd =
-  HDPublicKey.ParentFingerPrintStart + HDPublicKey.ParentFingerPrintSize;
-HDPublicKey.ChildIndexStart = HDPublicKey.ParentFingerPrintEnd;
-HDPublicKey.ChildIndexEnd = HDPublicKey.ChildIndexStart + HDPublicKey.ChildIndexSize;
-HDPublicKey.ChainCodeStart = HDPublicKey.ChildIndexEnd;
-HDPublicKey.ChainCodeEnd = HDPublicKey.ChainCodeStart + HDPublicKey.ChainCodeSize;
-HDPublicKey.PublicKeyStart = HDPublicKey.ChainCodeEnd;
-HDPublicKey.PublicKeyEnd = HDPublicKey.PublicKeyStart + HDPublicKey.PublicKeySize;
-HDPublicKey.ChecksumStart = HDPublicKey.PublicKeyEnd;
-HDPublicKey.ChecksumEnd = HDPublicKey.ChecksumStart + HDPublicKey.CheckSumSize;
+HDPublicKey.VersionEnd = 4;
+HDPublicKey.DepthStart = 4;
+HDPublicKey.DepthEnd = 5;
+HDPublicKey.ParentFingerPrintStart = 5;
+HDPublicKey.ParentFingerPrintEnd = 9;
+HDPublicKey.ChildIndexStart = 9;
+HDPublicKey.ChildIndexEnd = 13;
+HDPublicKey.ChainCodeStart = 13;
+HDPublicKey.ChainCodeEnd = 45;
+HDPublicKey.PublicKeyStart = 45;
+HDPublicKey.PublicKeyEnd = 78;
+HDPublicKey.ChecksumStart = 78;
+HDPublicKey.ChecksumEnd = 82;
 
 assert(HDPublicKey.PublicKeyEnd === HDPublicKey.DataSize);
 assert(HDPublicKey.ChecksumEnd === HDPublicKey.SerializedByteSize);

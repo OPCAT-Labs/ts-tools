@@ -4,6 +4,7 @@ var _ = require('../util/_.cjs');
 var BN = require('../crypto/bn.cjs');
 var JSUtil = require('../util/js.cjs');
 var BufferWriter = require('../encoding/bufferwriter.cjs');
+var BufferReader = require('../encoding/bufferreader.cjs');
 var Varint = require('../encoding/varint.cjs');
 var Script = require('../script/index.cjs');
 var $ = require('../util/preconditions.cjs');

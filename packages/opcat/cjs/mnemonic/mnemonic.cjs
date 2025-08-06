@@ -11,6 +11,7 @@ var errors = require('../errors/index.cjs');
 var $ = require('../util/preconditions.cjs');
 var HDPrivateKey = require('../hdprivatekey.cjs');
 var Words = require('./words/index.cjs');
+var Network = require('../network.cjs');
 
 
 /**
@@ -225,7 +226,7 @@ Mnemonic.fromSeed = function (seed, wordlist) {
  * Optionally receive a passphrase and bitcoin network.
  *
  * @param {string} [passphrase] - Optional passphrase for additional security
- * @param {Network|String|number} [network] - The network: 'livenet' or 'testnet'
+ * @param {Network|string|number} [network] - The network: 'livenet' or 'testnet'
  * @returns {HDPrivateKey}
  */
 Mnemonic.prototype.toHDPrivateKey = function (passphrase, network) {

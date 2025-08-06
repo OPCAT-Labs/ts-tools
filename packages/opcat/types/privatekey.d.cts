@@ -66,11 +66,7 @@ declare class PrivateKey {
      * @returns {PublicKey} A public key generated from the private key
      */
     toPublicKey(): PublicKey;
-    _pubkey: {
-        point: Point;
-        compressed?: boolean;
-        network?: string | Network;
-    };
+    _pubkey: PublicKey;
     /**
      * Will return an address for the private key
      * @param {Network|string} [network] - optional parameter specifying
@@ -220,5 +216,4 @@ declare namespace PrivateKey {
 import BN = require("./bn.cjs");
 import Network = require("./network.cjs");
 import PublicKey = require("./publickey.cjs");
-import Point = require("./crypto/point.cjs");
 import Address = require("./address.cjs");

@@ -444,7 +444,7 @@ describe('Address', function () {
   describe('#fromPublicKey', function () {
     it('should derive from public key', function () {
       let privateKey = PrivateKey.fromRandom();
-      let publicKey = PublicKey.fromPrivateKey(privateKey);
+      let publicKey = privateKey.toPublicKey();
       let address = Address.fromPublicKey(publicKey.toBuffer(), publicKey.network);
       address.toString()[0].should.equal('1');
     });

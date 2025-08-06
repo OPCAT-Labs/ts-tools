@@ -61,11 +61,11 @@ declare namespace Sighash {
      * @param {Signature} signature
      * @param {PublicKey} publicKey
      * @param {number} inputIndex
-     * @param {Script} subscript
-     * @param {satoshisBN} input's amount
-     * @param {flags} verification flags
      * @return {boolean}
      */
     function verify(transaction: Transaction, signature: Signature, publicKey: PublicKey, inputIndex: number): boolean;
 }
+import Transaction = require("./transaction.cjs");
+import PrivateKey = require("../privatekey.cjs");
 import Signature = require("../crypto/signature.cjs");
+import PublicKey = require("../publickey.cjs");

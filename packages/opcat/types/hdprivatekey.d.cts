@@ -184,7 +184,7 @@ declare namespace HDPrivateKey {
      * Creates a new HDPrivateKey instance with random values.
      * @returns {HDPrivateKey} A new HDPrivateKey object with randomly generated properties.
      */
-    export function fromRandom(): HDPrivateKey;
+    function fromRandom(): HDPrivateKey;
     /**
      * Verifies that a given path is valid.
      *
@@ -192,7 +192,7 @@ declare namespace HDPrivateKey {
      * @param {boolean} [hardened]
      * @return {boolean}
      */
-    export function isValidPath(arg: string | number, hardened?: boolean): boolean;
+    function isValidPath(arg: string | number, hardened?: boolean): boolean;
     /**
      * Verifies that a given serialized private key in base58 with checksum format
      * is valid.
@@ -202,7 +202,7 @@ declare namespace HDPrivateKey {
      *     network provided matches the network serialized.
      * @return {boolean}
      */
-    export function isValidSerialized(data: string | Buffer, network?: string | Network): boolean;
+    function isValidSerialized(data: string | Buffer, network?: any): boolean;
     /**
      * Checks what's the error that causes the validation of a serialized private key
      * in base58 with checksum to fail.
@@ -212,7 +212,7 @@ declare namespace HDPrivateKey {
      *     network provided matches the network serialized.
      * @return {Error|null} Returns the validation error, if any, otherwise null.
      */
-    export function getSerializedError(data: string | Buffer, network?: string | Network): Error;
+    function getSerializedError(data: string | Buffer, network?: any): Error;
     /**
      * Validates if the provided data matches the expected network's extended private key version.
      * @param {Buffer} data - The data buffer to validate (must include version bytes).
@@ -220,18 +220,18 @@ declare namespace HDPrivateKey {
      * @returns {Error|null} Returns error if validation fails, otherwise null.
      * @private
      */
-    export function _validateNetwork(data: Buffer, networkArg: string | Network): Error;
+    function _validateNetwork(data: Buffer, networkArg: any): Error;
     /**
      * Creates an HDPrivateKey instance from a string representation.
      * @param {string} arg - The string to convert to an HDPrivateKey
      * @returns {HDPrivateKey} A new HDPrivateKey instance
      * @throws {Error} If the input is not a valid string
      */
-    export function fromString(arg: string): HDPrivateKey;
+    function fromString(arg: string): HDPrivateKey;
     /**
      * Creates an HDPrivateKey instance from a plain object.
      * @param {Object} arg - The object containing HDPrivateKey properties.
-     * @param {Network} arg.network - Network used when the key was created.The object containing HDPrivateKey properties.
+     * @param {string} arg.network - Network used when the key was created.The object containing HDPrivateKey properties.
      * @param {number} arg.depth - The depth of the key in the hierarchy.
      * @param {number} arg.parentFingerPrint - The fingerprint of the parent key.
      * @param {number} arg.childIndex - The index of the key in the hierarchy.
@@ -241,8 +241,8 @@ declare namespace HDPrivateKey {
      * @throws {Error} Throws if argument is not a valid object.
      * @returns {HDPrivateKey} A new HDPrivateKey instance.
      */
-    export function fromObject(arg: {
-        network: Network;
+    function fromObject(arg: {
+        network: string;
         depth: number;
         parentFingerPrint: number;
         childIndex: number;
@@ -254,11 +254,11 @@ declare namespace HDPrivateKey {
      * Generate a private key from a seed, as described in BIP32
      *
      * @param {string|Buffer} hexa - The entropy hex encoded or buffer of the seed.
-     * @param {Network} [network] - optional network name.
+     * @param {string} [network] - optional network name.
      * @return HDPrivateKey
      * @static
      */
-    export function fromSeed(hexa: string | Buffer, network?: Network): HDPrivateKey;
+    function fromSeed(hexa: string | Buffer, network?: string): HDPrivateKey;
     /**
      * Validates buffer arguments for HDPrivateKey.
      * Checks that each required buffer field exists and has the correct size.
@@ -272,7 +272,7 @@ declare namespace HDPrivateKey {
      * @param {Buffer} arg.privateKey - Private key buffer
      * @param {Buffer} [arg.checksum] - Optional checksum buffer
      */
-    export function _validateBufferArguments(arg: {
+    function _validateBufferArguments(arg: {
         version: Buffer;
         depth: Buffer;
         parentFingerPrint: Buffer;
@@ -288,49 +288,43 @@ declare namespace HDPrivateKey {
      * @return {HDPrivateKey} A new HDPrivateKey instance created from the buffer.
      * @throws {Error} If the buffer is not a valid serialized HDPrivateKey.
      */
-    export function fromBuffer(buf: Buffer): HDPrivateKey;
+    function fromBuffer(buf: Buffer): HDPrivateKey;
     /**
      * Build a HDPrivateKey from a hex string
      *
      * @param {string} hex
      * @return {HDPrivateKey}
      */
-    export function fromHex(hex: string): HDPrivateKey;
-    export let DefaultDepth: number;
-    export let DefaultFingerprint: number;
-    export let DefaultChildIndex: number;
-    export let Hardened: number;
-    export let MaxIndex: number;
-    export let RootElementAlias: string;
-    export let VersionSize: number;
-    export let DepthSize: number;
-    export let ParentFingerPrintSize: number;
-    export let ChildIndexSize: number;
-    export let ChainCodeSize: number;
-    export let PrivateKeySize: number;
-    export let CheckSumSize: number;
-    export let DataLength: number;
-    export let SerializedByteSize: number;
-    export let VersionStart: number;
-    export let VersionEnd: number;
-    import DepthStart = VersionEnd;
-    export { DepthStart };
-    export let DepthEnd: number;
-    import ParentFingerPrintStart = DepthEnd;
-    export { ParentFingerPrintStart };
-    export let ParentFingerPrintEnd: number;
-    import ChildIndexStart = ParentFingerPrintEnd;
-    export { ChildIndexStart };
-    export let ChildIndexEnd: number;
-    import ChainCodeStart = ChildIndexEnd;
-    export { ChainCodeStart };
-    export let ChainCodeEnd: number;
-    export let PrivateKeyStart: number;
-    export let PrivateKeyEnd: number;
-    import ChecksumStart = PrivateKeyEnd;
-    export { ChecksumStart };
-    export let ChecksumEnd: number;
+    function fromHex(hex: string): HDPrivateKey;
+    let DefaultDepth: number;
+    let DefaultFingerprint: number;
+    let DefaultChildIndex: number;
+    let Hardened: number;
+    let MaxIndex: number;
+    let RootElementAlias: string;
+    let VersionSize: number;
+    let DepthSize: number;
+    let ParentFingerPrintSize: number;
+    let ChildIndexSize: number;
+    let ChainCodeSize: number;
+    let PrivateKeySize: number;
+    let CheckSumSize: number;
+    let DataLength: number;
+    let SerializedByteSize: number;
+    let VersionStart: number;
+    let VersionEnd: number;
+    let DepthStart: number;
+    let DepthEnd: number;
+    let ParentFingerPrintStart: number;
+    let ParentFingerPrintEnd: number;
+    let ChildIndexStart: number;
+    let ChildIndexEnd: number;
+    let ChainCodeStart: number;
+    let ChainCodeEnd: number;
+    let PrivateKeyStart: number;
+    let PrivateKeyEnd: number;
+    let ChecksumStart: number;
+    let ChecksumEnd: number;
 }
 import HDPublicKey = require("./hdpublickey.cjs");
 import PrivateKey = require("./privatekey.cjs");
-import Network = require("./network.cjs");

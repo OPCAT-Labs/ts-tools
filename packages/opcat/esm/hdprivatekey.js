@@ -8,7 +8,6 @@ import BN from './crypto/bn.js';
 import Base58 from './encoding/base58.js';
 import Base58Check from './encoding/base58check.js';
 import Hash from './crypto/hash.js';
-import Network from './network.js';
 import Networks from './networks.js';
 import Point from './crypto/point.js';
 import PrivateKey from './privatekey.js';
@@ -363,7 +362,7 @@ HDPrivateKey.fromString = function (arg) {
 /**
  * Creates an HDPrivateKey instance from a plain object.
  * @param {Object} arg - The object containing HDPrivateKey properties.
- * @param {Network} arg.network - Network used when the key was created.The object containing HDPrivateKey properties.
+ * @param {string} arg.network - Network used when the key was created.The object containing HDPrivateKey properties.
  * @param {number} arg.depth - The depth of the key in the hierarchy.
  * @param {number} arg.parentFingerPrint - The fingerprint of the parent key.
  * @param {number} arg.childIndex - The index of the key in the hierarchy.
@@ -458,7 +457,7 @@ HDPrivateKey.prototype._generateRandomly = function (network) {
  * Generate a private key from a seed, as described in BIP32
  *
  * @param {string|Buffer} hexa - The entropy hex encoded or buffer of the seed.
- * @param {Network} [network] - optional network name.
+ * @param {string} [network] - optional network name.
  * @return HDPrivateKey
  * @static
  */
@@ -757,20 +756,19 @@ HDPrivateKey.DataLength = 78;
 HDPrivateKey.SerializedByteSize = 82;
 
 HDPrivateKey.VersionStart = 0;
-HDPrivateKey.VersionEnd = HDPrivateKey.VersionStart + HDPrivateKey.VersionSize;
-HDPrivateKey.DepthStart = HDPrivateKey.VersionEnd;
-HDPrivateKey.DepthEnd = HDPrivateKey.DepthStart + HDPrivateKey.DepthSize;
-HDPrivateKey.ParentFingerPrintStart = HDPrivateKey.DepthEnd;
-HDPrivateKey.ParentFingerPrintEnd =
-  HDPrivateKey.ParentFingerPrintStart + HDPrivateKey.ParentFingerPrintSize;
-HDPrivateKey.ChildIndexStart = HDPrivateKey.ParentFingerPrintEnd;
-HDPrivateKey.ChildIndexEnd = HDPrivateKey.ChildIndexStart + HDPrivateKey.ChildIndexSize;
-HDPrivateKey.ChainCodeStart = HDPrivateKey.ChildIndexEnd;
-HDPrivateKey.ChainCodeEnd = HDPrivateKey.ChainCodeStart + HDPrivateKey.ChainCodeSize;
-HDPrivateKey.PrivateKeyStart = HDPrivateKey.ChainCodeEnd + 1;
-HDPrivateKey.PrivateKeyEnd = HDPrivateKey.PrivateKeyStart + HDPrivateKey.PrivateKeySize;
-HDPrivateKey.ChecksumStart = HDPrivateKey.PrivateKeyEnd;
-HDPrivateKey.ChecksumEnd = HDPrivateKey.ChecksumStart + HDPrivateKey.CheckSumSize;
+HDPrivateKey.VersionEnd = 4;
+HDPrivateKey.DepthStart = 4;
+HDPrivateKey.DepthEnd = 5;
+HDPrivateKey.ParentFingerPrintStart = 5;
+HDPrivateKey.ParentFingerPrintEnd = 9;
+HDPrivateKey.ChildIndexStart = 9;
+HDPrivateKey.ChildIndexEnd = 13;
+HDPrivateKey.ChainCodeStart = 13;
+HDPrivateKey.ChainCodeEnd = 45;
+HDPrivateKey.PrivateKeyStart = 46;
+HDPrivateKey.PrivateKeyEnd = 78;
+HDPrivateKey.ChecksumStart = 78;
+HDPrivateKey.ChecksumEnd = 82;
 
 assert(HDPrivateKey.ChecksumEnd === HDPrivateKey.SerializedByteSize);
 

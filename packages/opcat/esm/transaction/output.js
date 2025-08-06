@@ -4,6 +4,7 @@ import _ from '../util/_.js';
 import BN from '../crypto/bn.js';
 import JSUtil from '../util/js.js';
 import BufferWriter from '../encoding/bufferwriter.js';
+import BufferReader from '../encoding/bufferreader.js';
 import Varint from '../encoding/varint.js';
 import Script from '../script/index.js';
 import $ from '../util/preconditions.js';

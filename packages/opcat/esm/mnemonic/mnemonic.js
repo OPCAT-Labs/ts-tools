@@ -9,6 +9,7 @@ import errors from '../errors/index.js';
 import $ from '../util/preconditions.js';
 import HDPrivateKey from '../hdprivatekey.js';
 import Words from './words/index.js';
+import Network from '../network.js';
 
 
 /**
@@ -223,7 +224,7 @@ Mnemonic.fromSeed = function (seed, wordlist) {
  * Optionally receive a passphrase and bitcoin network.
  *
  * @param {string} [passphrase] - Optional passphrase for additional security
- * @param {Network|String|number} [network] - The network: 'livenet' or 'testnet'
+ * @param {Network|string|number} [network] - The network: 'livenet' or 'testnet'
  * @returns {HDPrivateKey}
  */
 Mnemonic.prototype.toHDPrivateKey = function (passphrase, network) {

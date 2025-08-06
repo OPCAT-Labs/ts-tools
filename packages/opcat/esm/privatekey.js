@@ -364,7 +364,10 @@ PrivateKey.prototype.toHex = function () {
  */
 PrivateKey.prototype.toPublicKey = function () {
   if (!this._pubkey) {
-        this._pubkey = PublicKey.fromPrivateKey(this);
+    this._pubkey = new PublicKey(this.bn, {
+      compressed: this.compressed,
+      network: this.network,
+    });
   }
   return this._pubkey;
 };

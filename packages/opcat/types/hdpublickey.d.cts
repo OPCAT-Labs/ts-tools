@@ -133,19 +133,13 @@ declare class HDPublicKey {
 }
 declare namespace HDPublicKey {
     /**
-     * Converts an HDPrivateKey to an HDPublicKey.
-     * @param {HDPrivateKey} hdPrivateKey - The HD private key to convert.
-     * @returns {HDPublicKey} The corresponding HD public key.
-     */
-    export function fromHDPrivateKey(hdPrivateKey: HDPrivateKey): HDPublicKey;
-    /**
      * Checks if a given argument is a valid HD public key derivation path.
      * @param {string|number} arg - The path to validate (either as string like "m/0/1" or as a single index number).
      * @returns {boolean} True if the path is valid, false otherwise.
      * @description Validates both string paths (e.g., "m/0/1") and individual derivation indexes.
      * String paths must contain valid indexes separated by '/', and each index must be a non-negative number less than HDPublicKey.Hardened.
      */
-    export function isValidPath(arg: string | number): boolean;
+    function isValidPath(arg: string | number): boolean;
     /**
      * Verifies that a given serialized public key in base58 with checksum format
      * is valid.
@@ -155,7 +149,7 @@ declare namespace HDPublicKey {
      *     network provided matches the network serialized.
      * @return {boolean}
      */
-    export function isValidSerialized(data: string | Buffer, network?: string | Network): boolean;
+    function isValidSerialized(data: string | Buffer, network?: string | Network): boolean;
     /**
      * Checks what's the error that causes the validation of a serialized public key
      * in base58 with checksum to fail.
@@ -165,7 +159,7 @@ declare namespace HDPublicKey {
      *     network provided matches the network serialized.
      * @return {Error|null}
      */
-    export function getSerializedError(data: string | Buffer, network?: string | Network): Error;
+    function getSerializedError(data: string | Buffer, network?: string | Network): Error;
     /**
      * Validates if the provided data matches the expected network version.
      * @param {Buffer} data - The data containing the version to validate.
@@ -173,7 +167,7 @@ declare namespace HDPublicKey {
      * @returns {Error|null} Returns an error if validation fails, otherwise null.
      * @private
      */
-    export function _validateNetwork(data: Buffer, networkArg: string | Network): Error;
+    function _validateNetwork(data: Buffer, networkArg: string | Network): Error;
     /**
      * Validates buffer arguments for HDPublicKey.
      * @private
@@ -187,7 +181,7 @@ declare namespace HDPublicKey {
      * @param {Buffer} [arg.checksum] - Optional checksum buffer (must be HDPublicKey.CheckSumSize bytes if provided)
      * @throws {Error} If any buffer is invalid or has incorrect size
      */
-    export function _validateBufferArguments(arg: {
+    function _validateBufferArguments(arg: {
         version: Buffer;
         depth: Buffer;
         parentFingerPrint: Buffer;
@@ -202,14 +196,14 @@ declare namespace HDPublicKey {
      * @returns {HDPublicKey} A new HDPublicKey instance.
      * @throws {Error} Throws if the input is not a valid string.
      */
-    export function fromString(arg: string): HDPublicKey;
+    function fromString(arg: string): HDPublicKey;
     /**
      * Creates an HDPublicKey instance from an object.
      * @param {{ network: Network, depth: number, fingerPrint: number, parentFingerPrint: number, childIndex: number, chainCode: string, publicKey: string, checksum: number, xpubkey: string }} arg - The object containing public key data
      * @returns {HDPublicKey} A new HDPublicKey instance
      * @throws {Error} Will throw if no valid object argument is provided
      */
-    export function fromObject(arg: {
+    function fromObject(arg: {
         network: Network;
         depth: number;
         fingerPrint: number;
@@ -226,44 +220,38 @@ declare namespace HDPublicKey {
      * @param {Buffer} arg
      * @return {HDPublicKey}
      */
-    export function fromBuffer(arg: Buffer): HDPublicKey;
+    function fromBuffer(arg: Buffer): HDPublicKey;
     /**
      * Create a HDPublicKey from a hex string argument
      *
      * @param {string} hex - The hex representation of an xpubkey
      * @return {HDPublicKey}
      */
-    export function fromHex(hex: string): HDPublicKey;
-    export let Hardened: number;
-    export let RootElementAlias: string[];
-    export let VersionSize: number;
-    export let DepthSize: number;
-    export let ParentFingerPrintSize: number;
-    export let ChildIndexSize: number;
-    export let ChainCodeSize: number;
-    export let PublicKeySize: number;
-    export let CheckSumSize: number;
-    export let DataSize: number;
-    export let SerializedByteSize: number;
-    export let VersionStart: number;
-    export let VersionEnd: number;
-    import DepthStart = VersionEnd;
-    export { DepthStart };
-    export let DepthEnd: number;
-    import ParentFingerPrintStart = DepthEnd;
-    export { ParentFingerPrintStart };
-    export let ParentFingerPrintEnd: number;
-    import ChildIndexStart = ParentFingerPrintEnd;
-    export { ChildIndexStart };
-    export let ChildIndexEnd: number;
-    import ChainCodeStart = ChildIndexEnd;
-    export { ChainCodeStart };
-    export let ChainCodeEnd: number;
-    import PublicKeyStart = ChainCodeEnd;
-    export { PublicKeyStart };
-    export let PublicKeyEnd: number;
-    import ChecksumStart = PublicKeyEnd;
-    export { ChecksumStart };
-    export let ChecksumEnd: number;
+    function fromHex(hex: string): HDPublicKey;
+    let Hardened: number;
+    let RootElementAlias: string[];
+    let VersionSize: number;
+    let DepthSize: number;
+    let ParentFingerPrintSize: number;
+    let ChildIndexSize: number;
+    let ChainCodeSize: number;
+    let PublicKeySize: number;
+    let CheckSumSize: number;
+    let DataSize: number;
+    let SerializedByteSize: number;
+    let VersionStart: number;
+    let VersionEnd: number;
+    let DepthStart: number;
+    let DepthEnd: number;
+    let ParentFingerPrintStart: number;
+    let ParentFingerPrintEnd: number;
+    let ChildIndexStart: number;
+    let ChildIndexEnd: number;
+    let ChainCodeStart: number;
+    let ChainCodeEnd: number;
+    let PublicKeyStart: number;
+    let PublicKeyEnd: number;
+    let ChecksumStart: number;
+    let ChecksumEnd: number;
 }
 import Network = require("./network.cjs");

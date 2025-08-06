@@ -68,7 +68,7 @@ declare class Mnemonic {
      * Optionally receive a passphrase and bitcoin network.
      *
      * @param {string} [passphrase] - Optional passphrase for additional security
-     * @param {Network|String|number} [network] - The network: 'livenet' or 'testnet'
+     * @param {Network|string|number} [network] - The network: 'livenet' or 'testnet'
      * @returns {HDPrivateKey}
      */
     toHDPrivateKey(passphrase?: string, network?: Network | string | number): HDPrivateKey;
@@ -167,6 +167,7 @@ declare namespace Mnemonic {
     export { Words };
     export { pbkdf2 };
 }
+import Network = require("../network.cjs");
 import HDPrivateKey = require("../hdprivatekey.cjs");
 import Words = require("./words/index.cjs");
 import pbkdf2 = require("./pbkdf2.cjs");

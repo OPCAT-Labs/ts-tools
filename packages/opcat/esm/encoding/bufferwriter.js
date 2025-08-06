@@ -6,6 +6,7 @@ import writeU16LE from '../script/write-u16-le.js';
 import writeU32LE from '../script/write-u32-le.js';
 import writeI32LE from '../script/write-i32-le.js';
 import writeVarint from '../script/write-varint.js';
+import BN from '../crypto/bn.js';
 
 /**
  * BufferWriter is a utility class for efficiently writing and concatenating buffers.

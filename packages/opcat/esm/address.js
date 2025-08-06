@@ -259,9 +259,9 @@ Address._transformBuffer = function (buffer, network, type) {
 /**
  * Internal function to transform a {@link PublicKey}
  *
- * @param {PublicKey} pubkey - An instance of PublicKey
+ * @param {Buffer|Uint8Array} pubkey - An instance of PublicKey
  * @returns {{hashBuffer: Buffer, network: string, type: string}} An object with keys: hashBuffer, type
- * @private
+ * @ignore
  */
 Address._transformPublicKey = function (pubkey) {
   var info = {};
@@ -344,7 +344,7 @@ Address.fromBuffer = function (buffer, network, type) {
  * Creates an Address instance from a hex string.
  * @param {string} hex - The hex string representation of the address.
  * @param {Network} network - The network type (e.g., 'mainnet', 'testnet').
- * @param {AddressType} [type] - Optional address type.
+ * @param {string=} [type] - Optional address type.
  * @returns {Address} The Address instance created from the hex string.
  */
 Address.fromHex = function (hex, network, type) {

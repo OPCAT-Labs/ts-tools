@@ -4,6 +4,7 @@ import BN from './bn.js';
 import Point from './point.js';
 import Signature from './signature.js';
 import PublicKey from '../publickey.js';
+import PrivateKey from '../privatekey.js';
 import Random from './random.js';
 import Hash from './hash.js';
 import _ from '../util/_.js';

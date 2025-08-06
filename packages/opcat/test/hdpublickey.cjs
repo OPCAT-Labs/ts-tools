@@ -175,9 +175,9 @@ describe('HDPublicKey interface', function () {
       var xprv1 = new HDPrivateKey(str);
       var xprv2 = HDPrivateKey.fromRandom();
       var xprv3 = HDPrivateKey.fromRandom();
-      var xpub1 = HDPublicKey.fromHDPrivateKey(xprv1);
-      var xpub2 = HDPublicKey.fromHDPrivateKey(xprv2);
-      var xpub3 = HDPublicKey.fromHDPrivateKey(xprv3);
+      var xpub1 = xprv1.toHDPublicKey();
+      var xpub2 = xprv2.toHDPublicKey();
+      var xpub3 = xprv3.toHDPublicKey();
       xpub1
         .toString()
         .should.equal(

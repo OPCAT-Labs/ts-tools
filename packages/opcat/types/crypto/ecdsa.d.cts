@@ -222,6 +222,7 @@ declare namespace ECDSA {
      */
     function verify(hashbuf: Buffer, sig: Signature, pubkey: PublicKey, endian?: string): boolean;
 }
+import PrivateKey = require("../privatekey.cjs");
 import PublicKey = require("../publickey.cjs");
 import Signature = require("./signature.cjs");
 import BN = require("../bn.cjs");

@@ -100,23 +100,23 @@ declare class Input {
     /**
      * Retrieve signatures for the provided PrivateKey.
      *
-     * @param {Transaction} transaction - the transaction to be signed
+     * @param {Object} transaction - the transaction to be signed
      * @param {PrivateKey | Array.<PrivateKey>} privateKeys - the private key to use when signing
      * @param {number} inputIndex - the index of this input in the provided transaction
      * @param {number} sigtype - defaults to Signature.SIGHASH_ALL
      * @returns {TransactionSignature[]} - an array of {@link TransactionSignature} objects
      */
-    getSignatures(transaction: Transaction, privateKeys: PrivateKey | Array<PrivateKey>, inputIndex: number, sigtype: number): TransactionSignature[];
+    getSignatures(transaction: any, privateKeys: PrivateKey | Array<PrivateKey>, inputIndex: number, sigtype: number): TransactionSignature[];
     /**
      * Retrieve preimage for the Input.
      *
-     * @param {Transaction} transaction - the transaction to be signed
+     * @param {Object} transaction - the transaction to be signed
      * @param {number} inputIndex - the index of this input in the provided transaction
      * @param {number} sigtype - defaults to Signature.SIGHASH_ALL
      * @param {boolean} isLowS - true if the sig hash is safe for low s.
      * @returns {Buffer} the sighash preimage buffer
      */
-    getPreimage(transaction: Transaction, inputIndex: number, sigtype: number, isLowS: boolean): Buffer;
+    getPreimage(transaction: any, inputIndex: number, sigtype: number, isLowS: boolean): Buffer;
     /**
      * Abstract method that throws an error when invoked. Must be implemented by subclasses
      * to determine if all required signatures are present on this input.
@@ -133,11 +133,11 @@ declare class Input {
     /**
      * Abstract method to add a signature to the transaction input.
      * Must be implemented by concrete input types.
-     * @param {Transaction} transaction - The transaction to sign
+     * @param {Object} transaction - The transaction to sign
      * @param {Signature} signature - The signature to add
      * @abstract
      */
-    addSignature(transaction: Transaction, signature: Signature): void;
+    addSignature(transaction: any, signature: Signature): void;
     /**
      * Clears all signatures from the input.
      * @abstract
@@ -147,11 +147,11 @@ declare class Input {
      * Verifies if a signature is valid for this input in the given transaction.
      * Note: Temporarily modifies the signature object by setting nhashtype from sigtype.
      *
-     * @param {Transaction} transaction - The transaction to verify against
+     * @param {Object} transaction - The transaction to verify against
      * @param {TransactionSignature} signature - Signature object containing signature, publicKey, etc.
      * @returns {boolean} True if the signature is valid, false otherwise
      */
-    isValidSignature(transaction: Transaction, signature: TransactionSignature): boolean;
+    isValidSignature(transaction: any, signature: TransactionSignature): boolean;
     /**
      * @returns {boolean} true if this is a coinbase input (represents no input)
      */
@@ -205,3 +205,4 @@ declare var MAXINT: number;
 declare var DEFAULT_SEQNUMBER: number;
 declare var DEFAULT_LOCKTIME_SEQNUMBER: number;
 declare var DEFAULT_RBF_SEQNUMBER: number;
+import BufferReader = require("../../encoding/bufferreader.cjs");

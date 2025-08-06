@@ -4,6 +4,7 @@ var BN = require('./bn.cjs');
 var Point = require('./point.cjs');
 var Signature = require('./signature.cjs');
 var PublicKey = require('../publickey.cjs');
+var PrivateKey = require('../privatekey.cjs');
 var Random = require('./random.cjs');
 var Hash = require('./hash.cjs');
 var _ = require('../util/_.cjs');

@@ -8,6 +8,9 @@ import Hash from '../crypto/hash.js';
 import ECDSA from '../crypto/ecdsa.js';
 import $ from '../util/preconditions.js';
 import _ from '../util/_.js';
+import Transaction from './transaction.js';
+import PrivateKey from '../privatekey.js';
+import PublicKey from '../publickey.js';
 
 var SIGHASH_SINGLE_BUG = Buffer.from('0000000000000000000000000000000000000000000000000000000000000001', 'hex')
 
@@ -180,9 +183,6 @@ Sighash.sign = function (transaction, privateKey, sighashType, inputIndex) {
  * @param {Signature} signature
  * @param {PublicKey} publicKey
  * @param {number} inputIndex
- * @param {Script} subscript
- * @param {satoshisBN} input's amount
- * @param {flags} verification flags
  * @return {boolean}
  */
 Sighash.verify = function (transaction, signature, publicKey, inputIndex) {

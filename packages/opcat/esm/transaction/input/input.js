@@ -4,6 +4,7 @@ import _ from '../../util/_.js';
 import $ from '../../util/preconditions.js';
 import errors from '../../errors/index.js';
 import BufferWriter from '../../encoding/bufferwriter.js';
+import BufferReader from '../../encoding/bufferreader.js';
 import JSUtil from '../../util/js.js';
 import Script from '../../script/index.js';
 import Sighash from '../sighash.js';
@@ -254,7 +255,7 @@ Input.prototype.setScript = function (script) {
 /**
  * Retrieve signatures for the provided PrivateKey.
  *
- * @param {Transaction} transaction - the transaction to be signed
+ * @param {Object} transaction - the transaction to be signed
  * @param {PrivateKey | Array.<PrivateKey>} privateKeys - the private key to use when signing
  * @param {number} inputIndex - the index of this input in the provided transaction
  * @param {number} sigtype - defaults to Signature.SIGHASH_ALL
@@ -311,7 +312,7 @@ Input.prototype.getSignatures = function (transaction, privateKeys, inputIndex, 
 /**
  * Retrieve preimage for the Input.
  *
- * @param {Transaction} transaction - the transaction to be signed
+ * @param {Object} transaction - the transaction to be signed
  * @param {number} inputIndex - the index of this input in the provided transaction
  * @param {number} sigtype - defaults to Signature.SIGHASH_ALL
  * @param {boolean} isLowS - true if the sig hash is safe for low s.
@@ -348,7 +349,7 @@ Input.prototype.isFinal = function () {
 /**
  * Abstract method to add a signature to the transaction input.
  * Must be implemented by concrete input types.
- * @param {Transaction} transaction - The transaction to sign
+ * @param {Object} transaction - The transaction to sign
  * @param {Signature} signature - The signature to add
  * @abstract
  */
@@ -367,7 +368,7 @@ Input.prototype.clearSignatures = function () {
  * Verifies if a signature is valid for this input in the given transaction.
  * Note: Temporarily modifies the signature object by setting nhashtype from sigtype.
  * 
- * @param {Transaction} transaction - The transaction to verify against
+ * @param {Object} transaction - The transaction to verify against
  * @param {TransactionSignature} signature - Signature object containing signature, publicKey, etc.
  * @returns {boolean} True if the signature is valid, false otherwise
  */

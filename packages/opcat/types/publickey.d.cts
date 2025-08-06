@@ -17,14 +17,18 @@ export = PublicKey;
  * var imported = PublicKey.fromString(exported);
  * ```
  *
- * @param {string} data - The encoded data in various formats
- * @param {Object} extra - additional options
+ * @param {{x: string, y: string, compressed: boolean}|string|Buffer|Point|BN} data - The encoded data in various formats
+ * @param {Object} [extra] - additional options
  * @param {Network|string} extra.network - Which network should the address for this public key be for
  * @param {boolean=} extra.compressed - If the public key is compressed
  * @returns {PublicKey} A new valid instance of an PublicKey
  * @constructor
  */
-declare function PublicKey(data: string, extra: {
+declare function PublicKey(data: {
+    x: string;
+    y: string;
+    compressed: boolean;
+} | string | Buffer | Point | BN, extra?: {
     network: Network | string;
     compressed?: boolean | undefined;
 }): PublicKey;
@@ -47,14 +51,18 @@ declare class PublicKey {
      * var imported = PublicKey.fromString(exported);
      * ```
      *
-     * @param {string} data - The encoded data in various formats
-     * @param {Object} extra - additional options
+     * @param {{x: string, y: string, compressed: boolean}|string|Buffer|Point|BN} data - The encoded data in various formats
+     * @param {Object} [extra] - additional options
      * @param {Network|string} extra.network - Which network should the address for this public key be for
      * @param {boolean=} extra.compressed - If the public key is compressed
      * @returns {PublicKey} A new valid instance of an PublicKey
      * @constructor
      */
-    constructor(data: string, extra: {
+    constructor(data: {
+        x: string;
+        y: string;
+        compressed: boolean;
+    } | string | Buffer | Point | BN, extra?: {
         network: Network | string;
         compressed?: boolean | undefined;
     });
@@ -127,14 +135,6 @@ declare class PublicKey {
 }
 declare namespace PublicKey {
     /**
-     * Internal function to detect if an object is a {@link PrivateKey}
-     *
-     * @param {*} param - object to test
-     * @returns {boolean}
-     * @private
-     */
-    function _isPrivateKey(param: any): boolean;
-    /**
      * Internal function to detect if an object is a Buffer
      *
      * @param {*} param - object to test
@@ -145,11 +145,15 @@ declare namespace PublicKey {
     /**
      * Internal function to transform a private key into a public key point
      *
-     * @param {PrivateKey} privkey - An instance of PrivateKey
+     * @param {BN} privkey - An instance of PrivateKey
+     * @param {{ compressed?: boolean, network?: string|Network}} [extra] - additional options
      * @returns {{point: Point, compressed?: boolean, network?: string|Network}} An object with keys: point and compressed
      * @private
      */
-    function _transformPrivateKey(privkey: PrivateKey): {
+    function _transformPrivateKey(privkey: BN, extra?: {
+        compressed?: boolean;
+        network?: string | Network;
+    }): {
         point: Point;
         compressed?: boolean;
         network?: string | Network;
@@ -200,17 +204,6 @@ declare namespace PublicKey {
         compressed?: boolean;
         network?: string | Network;
     };
-    /**
-     * Instantiate a PublicKey from a PrivateKey
-     *
-     * @param {PrivateKey} privkey - An instance of PrivateKey
-     * @returns {{point: Point, compressed?: boolean, network?: string|Network}} A new valid instance of PublicKey
-     */
-    function fromPrivateKey(privkey: PrivateKey): {
-        point: Point;
-        compressed?: boolean;
-        network?: string | Network;
-    };
     function fromDER(buf: Buffer, strict?: boolean): PublicKey;
     function fromBuffer(buf: Buffer, strict?: boolean): PublicKey;
     /**
@@ -246,6 +239,7 @@ declare namespace PublicKey {
      */
     function isValid(data: string): boolean;
 }
-import Network = require("./network.cjs");
 import Point = require("./crypto/point.cjs");
+import BN = require("./bn.cjs");
+import Network = require("./network.cjs");
 import Address = require("./address.cjs");

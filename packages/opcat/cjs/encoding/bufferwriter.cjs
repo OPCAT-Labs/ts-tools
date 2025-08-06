@@ -7,6 +7,7 @@ const writeU16LE = require('../script/write-u16-le.cjs');
 const writeU32LE = require('../script/write-u32-le.cjs');
 const writeI32LE = require('../script/write-i32-le.cjs');
 const writeVarint = require('../script/write-varint.cjs');
+const BN = require('../crypto/bn.cjs');
 
 /**
  * BufferWriter is a utility class for efficiently writing and concatenating buffers.

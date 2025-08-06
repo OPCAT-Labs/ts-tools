@@ -44,9 +44,9 @@ function Interpreter(obj) {
  * @param {Script} scriptPubkey - the script's last part (corresponding to the tx output)
  * @param {Transaction=} tx - the Transaction containing the scriptSig in one input (used
  *    to check signature validity for some opcodes like OP_CHECKSIG)
- * @param {number} nin - index of the transaction input containing the scriptSig verified.
- * @param {number} flags - evaluation flags. See Interpreter.SCRIPT_* constants
- * @param {number} satoshisBN - amount in satoshis of the input to be verified (when FORKID signhash is used)
+ * @param {number=} nin - index of the transaction input containing the scriptSig verified.
+ * @param {number=} flags - evaluation flags. See Interpreter.SCRIPT_* constants
+ * @param {number=} satoshis - amount in satoshis of the input to be verified (when FORKID signhash is used)
  *
  * Translated from bitcoind's VerifyScript
  */
@@ -56,7 +56,7 @@ Interpreter.prototype.verify = function (
   tx,
   nin,
   flags,
-  satoshisBN,
+  satoshis,
 ) {
 
   if (_.isUndefined(tx)) {
@@ -69,12 +69,16 @@ Interpreter.prototype.verify = function (
     flags = 0;
   }
 
+  if (_.isUndefined(satoshis)) {
+    satoshis = 0;
+  }
+
   this.set({
     script: scriptSig,
     tx: tx,
     nin: nin,
     flags: flags,
-    satoshisBN: satoshisBN,
+    satoshis: satoshis,
   });
 
   if ((flags & Interpreter.SCRIPT_VERIFY_SIGPUSHONLY) !== 0 && !scriptSig.isPushOnly()) {
@@ -95,7 +99,7 @@ Interpreter.prototype.verify = function (
     tx: tx,
     nin: nin,
     flags: flags,
-    satoshisBN: satoshisBN,
+    satoshis: satoshis,
   });
 
   // evaluate scriptPubkey
@@ -142,34 +146,47 @@ Interpreter.prototype.initialize = function () {
 /**
  * Updates the interpreter's state with provided values.
  * @param {Object} obj - Object containing properties to update
- * @param {Buffer} [obj.script] - Script buffer
- * @param {Object} [obj.tx] - Transaction object
+ * @param {Script} [obj.script] - Script buffer
+ * @param {Transaction} [obj.tx] - Transaction object
  * @param {boolean} [obj.nin] - Non-input flag
- * @param {BN} [obj.satoshisBN] - Satoshis as BN.js instance
- * @param {Array} [obj.stack] - Main stack
- * @param {Array} [obj.altstack] - Alternate stack
+ * @param {number} [obj.satoshis] - Satoshis number
+ * @param {Stack} [obj.stack] - Main stack
+ * @param {Stack} [obj.altstack] - Alternate stack
  * @param {number} [obj.pc] - Program counter
  * @param {number} [obj.pbegincodehash] - Begin code hash position
  * @param {number} [obj.nOpCount] - Operation count
- * @param {Array} [obj.vfExec] - Execution flags
- * @param {Array} [obj.vfElse] - Else flags
+ * @param {Array.<boolean>} [obj.vfExec] - Execution flags
+ * @param {Array.<boolean>} [obj.vfElse] - Else flags
  * @param {string} [obj.errstr] - Error string
  * @param {number} [obj.flags] - Interpreter flags
  */
 Interpreter.prototype.set = function (obj) {
+  /** @type {Script} - Script */
   this.script = obj.script || this.script;
+  /** @type {Transaction} - Transaction object.*/
   this.tx = obj.tx || this.tx;
+  /** @type {number} - Non-input flag. */
   this.nin = typeof obj.nin !== 'undefined' ? obj.nin : this.nin;
-  this.satoshisBN = obj.satoshisBN || this.satoshisBN;
+  /** @type {number} - Satoshis number */
+  this.satoshis = obj.satoshis || this.satoshis;
+  /** @type {Stack} - Main stack*/
   this.stack = obj.stack || this.stack;
+  /** @type {Stack} - Alt stack*/
   this.altstack = obj.altstack || this.altstack;
+  /** @type {number} - Program counter*/
   this.pc = typeof obj.pc !== 'undefined' ? obj.pc : this.pc;
+  /** @type {number} - Begin code hash position*/
   this.pbegincodehash =
     typeof obj.pbegincodehash !== 'undefined' ? obj.pbegincodehash : this.pbegincodehash;
+  /** @type {number} - Operation count*/
   this.nOpCount = typeof obj.nOpCount !== 'undefined' ? obj.nOpCount : this.nOpCount;
+  /** @type {Array.<boolean>} - Execution flags*/
   this.vfExec = obj.vfExec || this.vfExec;
+  /** @type {Array.<boolean>} - Non-Execution flags*/
   this.vfElse = obj.vfElse || this.vfElse;
+  /** @type {string} - Error string.*/
   this.errstr = obj.errstr || this.errstr;
+  /** @type {number} - Flags*/
   this.flags = typeof obj.flags !== 'undefined' ? obj.flags : this.flags;
 };
 
@@ -1675,10 +1692,7 @@ Interpreter.prototype.step = function (scriptType) {
           fSuccess = this.tx.verifySignature(
             sig,
             pubkey,
-            this.nin,
-            subscript,
-            this.satoshisBN,
-            this.flags,
+            this.nin
           );
         } catch (e) {
           console.error('invalid sig or pubkey', e);
@@ -1782,10 +1796,7 @@ Interpreter.prototype.step = function (scriptType) {
             fOk = this.tx.verifySignature(
               sig,
               pubkey,
-              this.nin,
-              subscript,
-              this.satoshisBN,
-              this.flags,
+              this.nin
             );
           } catch (e) {
             // invalid sig or pubkey

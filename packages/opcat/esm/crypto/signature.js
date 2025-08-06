@@ -409,71 +409,91 @@ Signature.prototype.toTxFormat = function () {
 
 /**
  * Signature hash type for signing all inputs/outputs (default).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x01
  */
 Signature.SIGHASH_ALL = 0x01;
 /**
  * Flag indicating that no outputs are signed (only inputs are signed).
  * Used in signature hashing to specify which parts of the transaction are included in the hash.
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x02
  */
 Signature.SIGHASH_NONE = 0x02;
 /**
  * Signature hash type for single input signing (0x03).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x03
  */
 Signature.SIGHASH_SINGLE = 0x03;
 /**
  * Bit flag indicating that only the current input is signed (others can be modified).
  * Used in Bitcoin signature hashing (SIGHASH type).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x80
  */
 Signature.SIGHASH_ANYONECANPAY = 0x80;
 
 /**
  * Signature hash type for signing all inputs/outputs (default).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x01
  */
-Signature.ALL = Signature.SIGHASH_ALL
+Signature.ALL = 0x01
 /**
  * Flag indicating that no outputs are signed (only inputs are signed).
  * Used in signature hashing to specify which parts of the transaction are included in the hash.
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x02
  */
-Signature.NONE = Signature.SIGHASH_NONE
+Signature.NONE = 0x02
 /**
  * Signature hash type for single input signing (0x03).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x03
  */
-Signature.SINGLE = Signature.SIGHASH_SINGLE
+Signature.SINGLE = 0x03
 /**
  * Bitwise flag combination for signature hash types: 
  * SIGHASH_ALL (default) with ANYONECANPAY modifier.
  * Allows anyone to add inputs to the transaction.
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x81
  */
-Signature.ANYONECANPAY_ALL = Signature.SIGHASH_ALL | Signature.SIGHASH_ANYONECANPAY
+Signature.ANYONECANPAY_ALL = 0x81
 /**
  * Bitwise flag combination for a signature that allows anyone to pay (no output locking)
  * and doesn't commit to any outputs (SIGHASH_NONE).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x82
  */
-Signature.ANYONECANPAY_NONE = Signature.SIGHASH_NONE | Signature.SIGHASH_ANYONECANPAY
+Signature.ANYONECANPAY_NONE = 0x82
 /**
  * Bitwise flag combination for signature allowing anyone to pay (SIGHASH_ANYONECANPAY) 
  * with single output mode (SIGHASH_SINGLE).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x83
  */
-Signature.ANYONECANPAY_SINGLE = Signature.SIGHASH_SINGLE | Signature.SIGHASH_ANYONECANPAY
+Signature.ANYONECANPAY_SINGLE = 0x83
 
 export default Signature;

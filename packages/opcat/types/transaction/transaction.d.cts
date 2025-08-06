@@ -2,7 +2,7 @@ export = Transaction;
 /**
  * Represents a transaction, a set of inputs and outputs to change ownership of tokens
  * @constructor
- * @param {string|Buffer|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}|Transaction} [serialized] - Optional serialized data to initialize the transaction.
+ * @param {string|Buffer|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}} [serialized] - Optional serialized data to initialize the transaction.
  * Can be a hex string, Buffer, plain object, or another Transaction instance.
  * @throws {errors.InvalidArgument} If invalid serialization format is provided.
  * @property {Array} inputs - Transaction input objects.
@@ -34,12 +34,12 @@ declare function Transaction(serialized?: string | Buffer | {
     changeAddress?: string;
     changeIndex?: number;
     fee?: number;
-} | Transaction): import("./transaction.cjs");
+}): Transaction;
 declare class Transaction {
     /**
      * Represents a transaction, a set of inputs and outputs to change ownership of tokens
      * @constructor
-     * @param {string|Buffer|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}|Transaction} [serialized] - Optional serialized data to initialize the transaction.
+     * @param {string|Buffer|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}} [serialized] - Optional serialized data to initialize the transaction.
      * Can be a hex string, Buffer, plain object, or another Transaction instance.
      * @throws {errors.InvalidArgument} If invalid serialization format is provided.
      * @property {Array} inputs - Transaction input objects.
@@ -71,7 +71,7 @@ declare class Transaction {
         changeAddress?: string;
         changeIndex?: number;
         fee?: number;
-    } | Transaction);
+    });
     /** @type {Array.<Input>} */
     inputs: Array<Input>;
     /** @type {Array.<Output>} */
@@ -143,14 +143,14 @@ declare class Transaction {
      * broadcast this transaction.
      *
      * @param {{disableMoreOutputThanInput: boolean, disableDustOutputs: boolean, disableIsFullySigned: boolean, disableLargeFees: boolean}} [opts] - allows to skip certain tests. {@see Transaction#serialize}
-     * @return {opcat.Error}
+     * @return {Error}
      */
     getSerializationError(opts?: {
         disableMoreOutputThanInput: boolean;
         disableDustOutputs: boolean;
         disableIsFullySigned: boolean;
         disableLargeFees: boolean;
-    }): opcat.Error;
+    }): Error;
     private _hasFeeError;
     private _missingChange;
     private _hasDustOutputs;
@@ -158,14 +158,14 @@ declare class Transaction {
      * Checks if the transaction is missing signatures.
      * @param {{disableMoreOutputThanInput: boolean, disableDustOutputs: boolean, disableIsFullySigned: boolean, disableLargeFees: boolean}} opts - Options object.
      * @param {boolean} [opts.disableIsFullySigned] - If true, skips the check.
-     * @returns {errors.Transaction.MissingSignatures|undefined} Returns MissingSignatures error if not fully signed, otherwise undefined.
+     * @returns {Error|undefined} Returns MissingSignatures error if not fully signed, otherwise undefined.
      */
     _isMissingSignatures(opts: {
         disableMoreOutputThanInput: boolean;
         disableDustOutputs: boolean;
         disableIsFullySigned: boolean;
         disableLargeFees: boolean;
-    }): errors.Transaction.MissingSignatures | undefined;
+    }): Error | undefined;
     /**
      * Returns a string representation of the Transaction object for debugging/inspection.
      * The format is: '<Transaction: [serializedData]>' where serializedData comes from uncheckedSerialize().
@@ -344,13 +344,6 @@ declare class Transaction {
      */
     fromString(string: string): Transaction;
     private _newTransaction;
-    /**
-     * @typedef {Object} Transaction~fromObject
-     * @property {string} prevTxId
-     * @property {number} outputIndex
-     * @property {(Buffer|string|Script)} script
-     * @property {number} satoshis
-     */
     /**
      * Add an input to this transaction. This is a high level interface
      * to add an input, for more control, use @{link Transaction#addInput}.
@@ -613,19 +606,10 @@ declare class Transaction {
     /**
      * Add a signature to the transaction
      *
-     * @param {Object} signature
-     * @param {number} signature.inputIndex
-     * @param {number} signature.sigtype
-     * @param {PublicKey} signature.publicKey
-     * @param {Signature} signature.signature
+     * @param {TransactionSignature} signature - the TransactionSignature to add
      * @returns {Transaction} this, for chaining
      */
-    applySignature(signature: {
-        inputIndex: number;
-        sigtype: number;
-        publicKey: PublicKey;
-        signature: Signature;
-    }): Transaction;
+    applySignature(signature: TransactionSignature): Transaction;
     /**
      * Checks if all inputs in the transaction are fully signed.
      * @returns {boolean} True if all inputs have valid signatures, false otherwise.
@@ -815,7 +799,68 @@ declare class Transaction {
     getOutputAmount(outputIndex: number): number;
 }
 declare namespace Transaction {
-    export { DUST_AMOUNT, FEE_SECURITY_MARGIN, MAX_MONEY, NLOCKTIME_BLOCKHEIGHT_LIMIT, NLOCKTIME_MAX_VALUE, FEE_PER_KB, DUMMY_PRIVATEKEY, fromString, fromBuffer, fromObject, shallowCopy, Input, Output, Sighash, UnspentOutput, TransactionSignature as Signature, Transaction };
+    export let DUST_AMOUNT: number;
+    export let FEE_SECURITY_MARGIN: number;
+    export let MAX_MONEY: number;
+    export let NLOCKTIME_BLOCKHEIGHT_LIMIT: number;
+    export let NLOCKTIME_MAX_VALUE: number;
+    export let FEE_PER_KB: number;
+    export let DUMMY_PRIVATEKEY: PrivateKey;
+    /**
+     * Creates a Transaction instance from a raw hexadecimal string.
+     * @param {string} rawHex - The hexadecimal string representation of the transaction.
+     * @returns {Transaction} A new Transaction instance populated from the input string.
+     */
+    export function fromString(rawHex: string): Transaction;
+    /**
+     * Creates a Transaction instance from a buffer.
+     * @param {Buffer} buffer - The input buffer containing transaction data.
+     * @returns {Transaction} A new Transaction instance populated from the buffer.
+     */
+    export function fromBuffer(buffer: Buffer): Transaction;
+    /**
+     * Creates a Transaction instance from a plain object.
+     * @param {{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}} obj - The plain object to convert to a Transaction.
+     * @returns {Transaction} A new Transaction instance populated from the object.
+     */
+    export function fromObject(obj: {
+        outputs: {
+            satoshis: number;
+            script: string;
+            data: string;
+        }[];
+        inputs: {
+            prevTxId: string;
+            outputIndex: number;
+            sequenceNumber: number;
+            script: string;
+            scriptString?: string;
+            output?: {
+                satoshis: number;
+                script: string;
+                data: string;
+            };
+        }[];
+        hash: string;
+        version: number;
+        nLockTime: number;
+        changeScript?: string;
+        changeAddress?: string;
+        changeIndex?: number;
+        fee?: number;
+    }): Transaction;
+    /**
+     * Create a 'shallow' copy of the transaction, by serializing and deserializing
+     * it dropping any additional information that inputs and outputs may have hold
+     * @param {Transaction} transaction - The transaction to copy.
+     * @returns {Transaction} A new Transaction instance with the same data.
+     */
+    export function shallowCopy(transaction: Transaction): Transaction;
+    export { Input };
+    export { Output };
+    export { Sighash };
+    export { UnspentOutput };
+    export { TransactionSignature as Signature };
 }
 import Input = require("./input/input.cjs");
 import Output = require("./output.cjs");
@@ -825,72 +870,5 @@ import Script = require("../script/script.cjs");
 import Address = require("../address.cjs");
 import PrivateKey = require("../privatekey.cjs");
 import TransactionSignature = require("./signature.cjs");
-import Signature = require("../crypto/signature.cjs");
-declare var DUST_AMOUNT: number;
-declare var FEE_SECURITY_MARGIN: number;
-declare var MAX_MONEY: number;
-declare var NLOCKTIME_BLOCKHEIGHT_LIMIT: number;
-declare var NLOCKTIME_MAX_VALUE: number;
-declare var FEE_PER_KB: number;
-declare var DUMMY_PRIVATEKEY: PrivateKey;
-/**
- * Creates a Transaction instance from a raw hexadecimal string.
- * @param {string} rawHex - The hexadecimal string representation of the transaction.
- * @returns {Transaction} A new Transaction instance populated from the input string.
- */
-declare function fromString(rawHex: string): Transaction;
-/**
- * Creates a Transaction instance from a buffer.
- * @param {Buffer} buffer - The input buffer containing transaction data.
- * @returns {Transaction} A new Transaction instance populated from the buffer.
- */
-declare function fromBuffer(buffer: Buffer): Transaction;
-/**
- * Creates a Transaction instance from a plain object.
- * @param {{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}} obj - The plain object to convert to a Transaction.
- * @returns {Transaction} A new Transaction instance populated from the object.
- */
-declare function fromObject(obj: {
-    outputs: Array<{
-        satoshis: number;
-        script: string;
-        data: string;
-    }>;
-    inputs: Array<{
-        prevTxId: string;
-        outputIndex: number;
-        sequenceNumber: number;
-        script: string;
-        scriptString?: string;
-        output?: {
-            satoshis: number;
-            script: string;
-            data: string;
-        };
-    }>;
-    hash: string;
-    version: number;
-    nLockTime: number;
-    changeScript?: string;
-    changeAddress?: string;
-    changeIndex?: number;
-    fee?: number;
-}): Transaction;
-/**
- * Create a 'shallow' copy of the transaction, by serializing and deserializing
- * it dropping any additional information that inputs and outputs may have hold
- * @param {Transaction} transaction - The transaction to copy.
- * @returns {Transaction} A new Transaction instance with the same data.
- */
-declare function shallowCopy(transaction: Transaction): Transaction;
 import Sighash = require("./sighash.cjs");
 import UnspentOutput = require("./unspentoutput.cjs");
-/**
- * ~fromObject
- */
-type Transaction = {
-    prevTxId: string;
-    outputIndex: number;
-    script: (Buffer | string | Script);
-    satoshis: number;
-};

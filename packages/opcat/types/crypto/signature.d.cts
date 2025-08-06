@@ -104,23 +104,23 @@ declare namespace Signature {
      * @throws {Error} If the input is invalid (not a Buffer, wrong length, or invalid recovery param).
      * @static
      */
-    export function fromCompact(buf: Buffer): Signature;
-    export function fromDER(buf: Buffer, strict?: boolean): Signature;
-    export function fromBuffer(buf: Buffer, strict?: boolean): Signature;
+    function fromCompact(buf: Buffer): Signature;
+    function fromDER(buf: Buffer, strict?: boolean): Signature;
+    function fromBuffer(buf: Buffer, strict?: boolean): Signature;
     /**
      * Converts a transaction-format signature buffer to a Signature object.
      * @param {Buffer} buf - The signature buffer in transaction format (DER + hash type byte)
      * @returns {Signature} The parsed Signature object with nhashtype property set
      * @static
      */
-    export function fromTxFormat(buf: Buffer): Signature;
+    function fromTxFormat(buf: Buffer): Signature;
     /**
      * Creates a Signature instance from a hex-encoded string.
      * @param {string} str - Hex-encoded signature string
      * @returns {Signature} Signature instance parsed from DER format
      * @static
      */
-    export function fromString(str: string): Signature;
+    function fromString(str: string): Signature;
     /**
      * Parses a DER formatted signature buffer into its components.
      * In order to mimic the non-strict DER encoding of OpenSSL, set strict = false.
@@ -142,7 +142,7 @@ declare namespace Signature {
      * @throws {Error} If the buffer is not valid DER format or length checks fail
      * @static
      */
-    export function parseDER(buf: Buffer, strict?: boolean): {
+    function parseDER(buf: Buffer, strict?: boolean): {
         header: number;
         length: number;
         rheader: number;
@@ -172,19 +172,16 @@ declare namespace Signature {
      * @returns {boolean} True if the signature is valid DER-encoded, false otherwise
      * @static
      */
-    export function isTxDER(buf: Buffer): boolean;
-    export let SIGHASH_ALL: number;
-    export let SIGHASH_NONE: number;
-    export let SIGHASH_SINGLE: number;
-    export let SIGHASH_ANYONECANPAY: number;
-    import ALL = SIGHASH_ALL;
-    export { ALL };
-    import NONE = SIGHASH_NONE;
-    export { NONE };
-    import SINGLE = SIGHASH_SINGLE;
-    export { SINGLE };
-    export let ANYONECANPAY_ALL: number;
-    export let ANYONECANPAY_NONE: number;
-    export let ANYONECANPAY_SINGLE: number;
+    function isTxDER(buf: Buffer): boolean;
+    let SIGHASH_ALL: number;
+    let SIGHASH_NONE: number;
+    let SIGHASH_SINGLE: number;
+    let SIGHASH_ANYONECANPAY: number;
+    let ALL: number;
+    let NONE: number;
+    let SINGLE: number;
+    let ANYONECANPAY_ALL: number;
+    let ANYONECANPAY_NONE: number;
+    let ANYONECANPAY_SINGLE: number;
 }
 import BN = require("../bn.cjs");

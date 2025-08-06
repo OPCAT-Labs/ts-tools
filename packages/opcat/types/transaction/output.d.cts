@@ -129,3 +129,4 @@ declare namespace Output {
 import Script = require("../script/script.cjs");
 import BN = require("../bn.cjs");
 import BufferWriter = require("../encoding/bufferwriter.cjs");
+import BufferReader = require("../encoding/bufferreader.cjs");

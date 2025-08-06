@@ -130,3 +130,4 @@ declare class BufferWriter {
      */
     writeVarintBN(bn: BN): BufferWriter;
 }
+import BN = require("../bn.cjs");

@@ -24,13 +24,22 @@ JSUtil.isHexa = function isHexa(value) {
   return /^[0-9a-fA-F]+$/.test(value);
 };
 
-JSUtil.isHexaString = JSUtil.isHexa;
+/**
+ * Determines whether a string contains only hexadecimal values
+ *
+ * @name JSUtil.isHexaString
+ * @param {string} value
+ * @return {boolean} true if the string is the hexa representation of a number
+ */
+JSUtil.isHexaString = function isHexaString(value) {
+  return JSUtil.isHexa(value);
+};
 
 /**
  * Checks that a value is a natural number, a positive integer or zero.
  *
- * @param {*} value
- * @return {Boolean}
+ * @param {*} value - The value to be tested for naturality
+ * @return {Boolean} - true if value is natural
  */
 JSUtil.isNaturalNumber = function isNaturalNumber(value) {
   return (
@@ -56,7 +65,7 @@ JSUtil.integerAsBuffer = function integerAsBuffer(integer) {
  * value (the json object decoded), so no double JSON.parse call is necessary
  *
  * @param {string} arg
- * @return {Object|boolean} false if the argument is not a JSON string.
+ * @return {boolean} false if the argument is not a JSON string.
  */
 JSUtil.isValidJSON = function isValidJSON(arg) {
   var parsed;

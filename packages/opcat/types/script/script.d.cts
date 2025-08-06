@@ -285,11 +285,11 @@ declare class Script {
     private _getInputAddressInfo;
     /**
      * Converts the script to an Address object for the specified network.
-     * @param {string|Network} [network] - optianal, the network name or identifier.
+     * @param {string} [network] - optianal, the network name or identifier.
      * @returns {Address} The derived Address object.
      * @throws {errors.Script.CantDeriveAddress} If address information cannot be derived from the script.
      */
-    toAddress(network?: string | Network): Address;
+    toAddress(network?: string): Address;
     /**
      * Finds and deletes a matching script chunk from the current script.
      * Analogous to bitcoind's FindAndDelete. Find and delete equivalent chunks,

@@ -26,7 +26,7 @@ var BN = require('../crypto/bn.cjs');
 /**
  * Represents a transaction, a set of inputs and outputs to change ownership of tokens
  * @constructor
- * @param {string|Buffer|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}|Transaction} [serialized] - Optional serialized data to initialize the transaction.
+ * @param {string|Buffer|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}} [serialized] - Optional serialized data to initialize the transaction.
  * Can be a hex string, Buffer, plain object, or another Transaction instance.
  * @throws {errors.InvalidArgument} If invalid serialization format is provided.
  * @property {Array} inputs - Transaction input objects.
@@ -308,7 +308,7 @@ Transaction.prototype.invalidSatoshis = function () {
  * broadcast this transaction.
  *
  * @param {{disableMoreOutputThanInput: boolean, disableDustOutputs: boolean, disableIsFullySigned: boolean, disableLargeFees: boolean}} [opts] - allows to skip certain tests. {@see Transaction#serialize}
- * @return {opcat.Error}
+ * @return {Error}
  */
 Transaction.prototype.getSerializationError = function (opts) {
   opts = opts || {};
@@ -335,7 +335,7 @@ Transaction.prototype.getSerializationError = function (opts) {
  * 
  * @param {{disableMoreOutputThanInput: boolean, disableDustOutputs: boolean, disableIsFullySigned: boolean, disableLargeFees: boolean}} opts - Transaction options
  * @param {number} unspent - The unspent amount to be used as fee
- * @returns {errors.Transaction.FeeError.Different|errors.Transaction.ChangeAddressMissing|errors.Transaction.FeeError.TooLarge|undefined}
+ * @returns {Error|undefined}
  * Returns a fee error if:
  * - Specified fee doesn't match unspent amount
  * - Fee is too large and no change address is provided (when large fees are enabled)
@@ -378,7 +378,7 @@ Transaction.prototype._missingChange = function () {
  * Checks if the transaction contains any dust outputs (outputs below the dust limit).
  * @param {{disableMoreOutputThanInput: boolean, disableDustOutputs: boolean, disableIsFullySigned: boolean, disableLargeFees: boolean}} opts - Options object.
  * @param {boolean} [opts.disableDustOutputs] - If true, skips dust output checking.
- * @returns {errors.Transaction.DustOutputs|undefined} Returns DustOutputs error if dust outputs are found, otherwise undefined.
+ * @returns {Error|undefined} Returns DustOutputs error if dust outputs are found, otherwise undefined.
  * @private
  */
 Transaction.prototype._hasDustOutputs = function (opts) {
@@ -402,7 +402,7 @@ Transaction.prototype._hasDustOutputs = function (opts) {
  * Checks if the transaction is missing signatures.
  * @param {{disableMoreOutputThanInput: boolean, disableDustOutputs: boolean, disableIsFullySigned: boolean, disableLargeFees: boolean}} opts - Options object.
  * @param {boolean} [opts.disableIsFullySigned] - If true, skips the check.
- * @returns {errors.Transaction.MissingSignatures|undefined} Returns MissingSignatures error if not fully signed, otherwise undefined.
+ * @returns {Error|undefined} Returns MissingSignatures error if not fully signed, otherwise undefined.
  */
 Transaction.prototype._isMissingSignatures = function (opts) {
   if (opts.disableIsFullySigned) {
@@ -722,16 +722,6 @@ Transaction.prototype._newTransaction = function () {
   this.version = CURRENT_VERSION;
   this.nLockTime = DEFAULT_NLOCKTIME;
 };
-
-/* Transaction creation interface */
-
-/**
- * @typedef {Object} Transaction~fromObject
- * @property {string} prevTxId
- * @property {number} outputIndex
- * @property {(Buffer|string|Script)} script
- * @property {number} satoshis
- */
 
 /**
  * Add an input to this transaction. This is a high level interface
@@ -1445,11 +1435,7 @@ Transaction.prototype.getSignatures = function (privKey, sigtype) {
 /**
  * Add a signature to the transaction
  *
- * @param {Object} signature
- * @param {number} signature.inputIndex
- * @param {number} signature.sigtype
- * @param {PublicKey} signature.publicKey
- * @param {Signature} signature.signature
+ * @param {TransactionSignature} signature - the TransactionSignature to add
  * @returns {Transaction} this, for chaining
  */
 Transaction.prototype.applySignature = function (signature) {
