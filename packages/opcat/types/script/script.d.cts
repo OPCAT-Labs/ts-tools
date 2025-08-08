@@ -285,11 +285,11 @@ declare class Script {
     private _getInputAddressInfo;
     /**
      * Converts the script to an Address object for the specified network.
-     * @param {string} [network] - optianal, the network name or identifier.
+     * @param {string|Network} [network] - optianal, the network name or identifier.
      * @returns {Address} The derived Address object.
      * @throws {errors.Script.CantDeriveAddress} If address information cannot be derived from the script.
      */
-    toAddress(network?: string): Address;
+    toAddress(network?: string | Network): Address;
     /**
      * Finds and deletes a matching script chunk from the current script.
      * Analogous to bitcoind's FindAndDelete. Find and delete equivalent chunks,
@@ -483,5 +483,6 @@ declare namespace Script {
 }
 import Address = require("../address.cjs");
 import Opcode = require("../opcode.cjs");
+import Network = require("../network.cjs");
 import PublicKey = require("../publickey.cjs");
 import Signature = require("../crypto/signature.cjs");

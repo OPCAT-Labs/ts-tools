@@ -7,6 +7,7 @@ var Opcode = require('../opcode.cjs');
 var PublicKey = require('../publickey.cjs');
 var Signature = require('../crypto/signature.cjs');
 var Networks = require('../networks.cjs');
+var Network = require('../network.cjs');
 var $ = require('../util/preconditions.cjs');
 var _ = require('../util/_.cjs');
 var errors = require('../errors/index.cjs');
@@ -1251,7 +1252,7 @@ Script.prototype._getInputAddressInfo = function () {
 
 /**
  * Converts the script to an Address object for the specified network.
- * @param {string} [network] - optianal, the network name or identifier.
+ * @param {string|Network} [network] - optianal, the network name or identifier.
  * @returns {Address} The derived Address object.
  * @throws {errors.Script.CantDeriveAddress} If address information cannot be derived from the script.
  */

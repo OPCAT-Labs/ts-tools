@@ -294,7 +294,9 @@ expectType<Script>(script.add(Opcode.fromString('OP_1')));
 expectType<Script>(script.removeCodeseparators());
 expectType<boolean>(script.equals(script));
 expectType<string>(script.inspect());
-
+expectType<Address>(script.toAddress());
+expectType<Address>(script.toAddress('livenet'));
+expectType<Address>(script.toAddress(Networks.livenet));
 /** Output */
 
 const output = new Output({

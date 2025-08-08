@@ -7,6 +7,7 @@ import Opcode from '../opcode.js';
 import PublicKey from '../publickey.js';
 import Signature from '../crypto/signature.js';
 import Networks from '../networks.js';
+import Network from '../network.js';
 import $ from '../util/preconditions.js';
 import _ from '../util/_.js';
 import errors from '../errors/index.js';
@@ -1251,7 +1252,7 @@ Script.prototype._getInputAddressInfo = function () {
 
 /**
  * Converts the script to an Address object for the specified network.
- * @param {string} [network] - optianal, the network name or identifier.
+ * @param {string|Network} [network] - optianal, the network name or identifier.
  * @returns {Address} The derived Address object.
  * @throws {errors.Script.CantDeriveAddress} If address information cannot be derived from the script.
  */
