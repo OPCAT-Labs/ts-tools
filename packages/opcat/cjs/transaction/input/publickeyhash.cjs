@@ -11,18 +11,25 @@ var Sighash = require('../sighash.cjs');
 var Script = require('../../script/index.cjs');
 var Signature = require('../../crypto/signature.cjs');
 var TransactionSignature = require('../signature.cjs');
+var PrivateKey = require('../../privatekey.cjs');
 
 /**
  * Represents a special kind of input of PayToPublicKeyHash kind.
  * @constructor
+ * @param {Object} params - Input parameters object
+ * @param {string|Buffer} params.prevTxId - Previous transaction ID (hex string or Buffer)
+ * @param {number} params.outputIndex - Output index in previous transaction
+ * @param {Output} [params.output] - Output instance or output parameters
+ * @param {number} [params.sequenceNumber] - Sequence number (defaults to DEFAULT_SEQNUMBER)
+ * @param {Script|Buffer|string} [params.script] - Script instance, buffer or hex string
  */
-function PublicKeyHashInput() {
+function PublicKeyHashInput(params) {
   Input.apply(this, arguments);
 }
 inherits(PublicKeyHashInput, Input);
 
 /**
- * @param {Transaction} transaction - the transaction to be signed
+ * @param {Object} transaction - the transaction to be signed
  * @param {PrivateKey} privateKey - the private key with which to sign the transaction
  * @param {number} index - the index of the input in the transaction input vector
  * @param {number} [sigtype] - the type of signature, defaults to Signature.SIGHASH_ALL
@@ -63,7 +70,7 @@ PublicKeyHashInput.prototype.getSignatures = function (
 
 /**
  * Adds a signature to the input and updates the script.
- * @param {Transaction} transaction - The transaction to validate against.
+ * @param {Object} transaction - The transaction to validate against.
  * @param {TransactionSignature} signature - The signature object containing publicKey, signature (DER format), and sigtype.
  * @returns {PublicKeyHashInput} Returns the instance for chaining.
  * @throws {Error} Throws if the signature is invalid.

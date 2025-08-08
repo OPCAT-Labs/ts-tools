@@ -94,6 +94,7 @@ JSUtil.defineImmutable = function defineImmutable(target, values) {
   Object.keys(values).forEach(function (key) {
     Object.defineProperty(target, key, {
       configurable: false,
+      writable: false,
       enumerable: true,
       value: values[key],
     });

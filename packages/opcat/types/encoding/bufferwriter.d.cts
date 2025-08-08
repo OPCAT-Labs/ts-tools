@@ -27,7 +27,7 @@ declare class BufferWriter {
         buffers?: Buffer[];
         bufs?: Buffer[];
     });
-    buffers: any[];
+    buffers: Buffer[];
     length: number;
     /**
      * Appends a buffer to the internal buffers array and updates the total length.

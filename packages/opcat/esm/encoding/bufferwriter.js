@@ -41,7 +41,9 @@ class BufferWriter {
    * @returns {this} Returns the instance for chaining.
    */
   write(buffer) {
+    /** @type {Buffer[]}*/
     this.buffers.push(buffer);
+    /** @type {number}*/
     this.length += buffer.length;
     return this;
   }
@@ -52,7 +54,9 @@ class BufferWriter {
    * @returns {this} Returns the instance for chaining
    */
   set(obj) {
+    /** @type {Buffer[]} */
     this.buffers = obj.buffers || obj.bufs || this.buffers || [];
+    /** @type {number} */
     this.length = this.buffers.reduce(function (prev, buf) {
       return prev + buf.length;
     }, 0);

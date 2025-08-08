@@ -71,6 +71,16 @@ declare class HDPublicKey {
     private _buildFromObject;
     private _buildFromSerialized;
     private _buildFromBuffers;
+    /** @type {string} */
+    xpubkey: string;
+    /** @type {Network} */
+    network: Network;
+    /** @type {number} */
+    depth: number;
+    /** @type {Buffer} */
+    fingerPrint: Buffer;
+    /** @type {PublicKey} */
+    publicKey: PublicKey;
     /**
      * Returns the base58 checked representation of the public key
      * @return {string} a string starting with "xpub..." in livenet
@@ -255,3 +265,4 @@ declare namespace HDPublicKey {
     let ChecksumEnd: number;
 }
 import Network = require("./network.cjs");
+import PublicKey = require("./publickey.cjs");

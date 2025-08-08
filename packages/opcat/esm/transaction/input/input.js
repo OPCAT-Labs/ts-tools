@@ -65,10 +65,8 @@ Object.defineProperty(Input.prototype, 'script', {
     if (this.isNull()) {
       return null;
     }
-    if (!this._script) {
-      this._script = new Script(this._scriptBuffer);
-      this._script._isInput = true;
-    }
+
+    /** @type {Script}*/
     return this._script;
   },
 });
@@ -177,6 +175,7 @@ Input.fromBufferReader = function (br) {
   input.outputIndex = br.readUInt32LE();
   input._scriptBuffer = br.readVarLengthBuffer();
   input.sequenceNumber = br.readUInt32LE();
+  input._script = new Script(input._scriptBuffer);
   // TODO: return different classes according to which input it is
   // e.g: CoinbaseInput, PublicKeyHashInput, etc.
   return input;
@@ -226,6 +225,7 @@ Input.prototype.toPrevout = function () {
  * @throws {TypeError} If script is of invalid type
  */
 Input.prototype.setScript = function (script) {
+  /** @type {Script|null} */
   this._script = null;
   if (script instanceof Script) {
     this._script = script;
@@ -238,6 +238,8 @@ Input.prototype.setScript = function (script) {
   } else if (JSUtil.isHexa(script)) {
     // hex string script
     this._scriptBuffer = Buffer.from(script, 'hex');
+    this._script = new Script(this._scriptBuffer);
+    this._script._isInput = true;
   } else if (_.isString(script)) {
     // human readable string script
     this._script = new Script(script);
@@ -246,6 +248,8 @@ Input.prototype.setScript = function (script) {
   } else if (Buffer.isBuffer(script)) {
     // buffer script
     this._scriptBuffer = Buffer.from(script);
+    this._script = new Script(this._scriptBuffer);
+    this._script._isInput = true;
   } else {
     throw new TypeError('Invalid argument type: script');
   }

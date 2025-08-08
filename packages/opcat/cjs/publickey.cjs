@@ -57,7 +57,7 @@ function PublicKey(data, extra) {
    */
   this.point = info.point;
   /**
-   * @type {Network|string} - which network this key is on (only useful for addresses)
+   * @type {Network} - which network this key is on (only useful for addresses)
    */
   this.network = info.network;
   /**

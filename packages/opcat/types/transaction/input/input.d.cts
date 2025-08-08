@@ -36,7 +36,7 @@ declare class Input {
         sequenceNumber?: number;
         script?: Script | Buffer | string;
     });
-    get script(): any;
+    get script(): Script;
     private _fromObject;
     output: Output;
     /** @type {Buffer}*/
@@ -95,7 +95,8 @@ declare class Input {
      * @throws {TypeError} If script is of invalid type
      */
     setScript(script: Script | string | Buffer | null): Input;
-    _script: Script;
+    /** @type {Script|null} */
+    _script: Script | null;
     _scriptBuffer: Buffer;
     /**
      * Retrieve signatures for the provided PrivateKey.

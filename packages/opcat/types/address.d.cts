@@ -86,9 +86,12 @@ declare class Address {
         network: string;
         type: string;
     }, network?: Network | string | number, type?: string);
-    get hashBuffer(): any;
-    get network(): any;
-    get type(): any;
+    /** @type {Buffer} - The hash of the Address instance. */
+    hashBuffer: Buffer;
+    /** @type {Network} - The network of the Address instance. */
+    network: Network;
+    /** @type {string} - The type of the Address instance. */
+    type: string;
     private _classifyArguments;
     /**
      * Returns true if an address is of pay to public key hash type

@@ -76,6 +76,13 @@ function Address(data, network, type) {
   info.network = info.network || Networks.get(network) || Networks.defaultNetwork;
   info.type = info.type || type || Address.PayToPublicKeyHash;
 
+  /** @type {Buffer} - The hash of the Address instance. */
+  this.hashBuffer = info.hashBuffer;
+  /** @type {Network} - The network of the Address instance. */
+  this.network = info.network;
+  /** @type {string} - The type of the Address instance. */
+  this.type = info.type;
+
   JSUtil.defineImmutable(this, {
     hashBuffer: info.hashBuffer,
     network: info.network,
@@ -85,48 +92,7 @@ function Address(data, network, type) {
   return this;
 }
 
-/**
- * Gets the hash buffer of the Address instance.
- * @memberof Address.prototype
- * @name hashBuffer
- * @type {Buffer}
- * @readonly
- */
-Object.defineProperty(Address.prototype, 'hashBuffer', {
-  enumerable: true,
-  configurable: false,
-  get: function () {
-    return this.hashBuffer;
-  },
-});
 
-/**
- * Gets or sets the network associated with this Address instance.
- * @memberof Address.prototype
- * @type {Network}
- * @readonly
- */
-Object.defineProperty(Address.prototype, 'network', {
-  enumerable: true,
-  configurable: false,
-  get: function () {
-    return this.network;
-  },
-});
-
-/**
- * Gets the address type (e.g. 'pubkeyhash').
- * @memberof Address.prototype
- * @type {string}
- * @readonly
- */
-Object.defineProperty(Address.prototype, 'type', {
-  enumerable: true,
-  configurable: false,
-  get: function () {
-    return this.type;
-  },
-});
 
 /**
  * Internal function used to split different kinds of arguments of the constructor

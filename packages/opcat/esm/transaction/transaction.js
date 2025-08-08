@@ -46,6 +46,8 @@ function Transaction(serialized) {
   this._privateKey = undefined;
   this._sigType = undefined;
   this.sealed = false;
+  this.version = CURRENT_VERSION;
+  this.nLockTime = DEFAULT_NLOCKTIME;
   if (serialized) {
     if (serialized instanceof Transaction) {
       return Transaction.shallowCopy(serialized);
@@ -1380,7 +1382,7 @@ Transaction.prototype.removeInput = function (txId, outputIndex) {
  *
  * It tries to sign each input, verifying that the signature will be valid
  * (matches a public key).
- * @param {Buffer|Array<Buffer>} privateKey - Private key(s) to sign the transaction with.
+ * @param {string|BN|Buffer|PrivateKey|Array.<string|BN|Buffer|PrivateKey>} privateKey - Private key(s) to sign the transaction with.
  * @param {number} [sigtype] - Optional signature type.
  * @returns {Transaction} Returns the transaction instance for chaining.
  * @throws {Error} Throws if not all UTXO information is available.
@@ -1408,7 +1410,7 @@ Transaction.prototype.sign = function (privateKey, sigtype) {
 
 /**
  * Generates signatures for all inputs in the transaction using the provided private key.
- * @param {string|PrivateKey} privKey - The private key to sign with (can be string or PrivateKey instance).
+ * @param {string|BN|Buffer|PrivateKey} privKey - The private key to sign with (can be string or PrivateKey instance).
  * @param {number} [sigtype=Signature.SIGHASH_ALL] - The signature hash type (defaults to SIGHASH_ALL).
  * @returns {Array.<TransactionSignature>} Array of generated signatures for the transaction inputs.
  */

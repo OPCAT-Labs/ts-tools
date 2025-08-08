@@ -80,9 +80,11 @@ declare class Transaction {
     _outputAmount: number;
     _inputsMap: Map<any, any>;
     _outputsMap: Map<any, any>;
-    _privateKey: Buffer | Buffer[];
+    _privateKey: string | Buffer | BN | PrivateKey | (string | Buffer | BN | PrivateKey)[];
     _sigType: number;
     sealed: boolean;
+    version: number;
+    nLockTime: number;
     readonly hash: any;
     readonly id: any;
     get inputAmount(): number;
@@ -211,8 +213,6 @@ declare class Transaction {
      * @throws {Error} If no transaction data is received (reader is finished).
      */
     fromBufferReader(reader: BufferReader): Transaction;
-    version: any;
-    nLockTime: any;
     /**
      * Converts the Transaction object to a plain JavaScript object (POJO) for serialization.
      * Includes transaction details like hash, version, inputs, outputs, and lock time.
@@ -590,19 +590,19 @@ declare class Transaction {
      *
      * It tries to sign each input, verifying that the signature will be valid
      * (matches a public key).
-     * @param {Buffer|Array<Buffer>} privateKey - Private key(s) to sign the transaction with.
+     * @param {string|BN|Buffer|PrivateKey|Array.<string|BN|Buffer|PrivateKey>} privateKey - Private key(s) to sign the transaction with.
      * @param {number} [sigtype] - Optional signature type.
      * @returns {Transaction} Returns the transaction instance for chaining.
      * @throws {Error} Throws if not all UTXO information is available.
      */
-    sign(privateKey: Buffer | Array<Buffer>, sigtype?: number): Transaction;
+    sign(privateKey: string | BN | Buffer | PrivateKey | Array<string | BN | Buffer | PrivateKey>, sigtype?: number): Transaction;
     /**
      * Generates signatures for all inputs in the transaction using the provided private key.
-     * @param {string|PrivateKey} privKey - The private key to sign with (can be string or PrivateKey instance).
+     * @param {string|BN|Buffer|PrivateKey} privKey - The private key to sign with (can be string or PrivateKey instance).
      * @param {number} [sigtype=Signature.SIGHASH_ALL] - The signature hash type (defaults to SIGHASH_ALL).
      * @returns {Array.<TransactionSignature>} Array of generated signatures for the transaction inputs.
      */
-    getSignatures(privKey: string | PrivateKey, sigtype?: number): Array<TransactionSignature>;
+    getSignatures(privKey: string | BN | Buffer | PrivateKey, sigtype?: number): Array<TransactionSignature>;
     /**
      * Add a signature to the transaction
      *
@@ -864,11 +864,12 @@ declare namespace Transaction {
 }
 import Input = require("./input/input.cjs");
 import Output = require("./output.cjs");
+import BN = require("../bn.cjs");
+import PrivateKey = require("../privatekey.cjs");
 import BufferWriter = require("../encoding/bufferwriter.cjs");
 import BufferReader = require("../encoding/bufferreader.cjs");
 import Script = require("../script/script.cjs");
 import Address = require("../address.cjs");
-import PrivateKey = require("../privatekey.cjs");
 import TransactionSignature = require("./signature.cjs");
 import Sighash = require("./sighash.cjs");
 import UnspentOutput = require("./unspentoutput.cjs");

@@ -358,7 +358,16 @@ HDPublicKey.prototype._buildFromBuffers = function (arg) {
   var publicKey = new PublicKey(arg.publicKey, { network: network });
   var size = HDPublicKey.ParentFingerPrintSize;
   var fingerPrint = Hash.sha256ripemd160(publicKey.toBuffer()).slice(0, size);
-
+  /** @type {string} */
+  this.xpubkey = xpubkey;
+  /** @type {Network} */
+  this.network = network;
+  /** @type {number} */
+  this.depth = arg.depth[0];
+  /** @type {Buffer} */
+  this.fingerPrint = fingerPrint;
+  /** @type {PublicKey} */
+  this.publicKey = publicKey;
   JSUtil.defineImmutable(this, {
     xpubkey: xpubkey,
     network: network,

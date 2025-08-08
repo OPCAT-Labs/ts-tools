@@ -265,8 +265,24 @@ var idProperty = {
   set: _.noop,
 };
 
-
+/**
+ * Defines the `id` property on the BlockHeader prototype.
+ * @memberof BlockHeader.prototype
+ * @name id
+ * @type {string}
+ * @readonly
+ * @description The big endian hash of the header, acts as the unique identifier for the block.
+ */
 Object.defineProperty(BlockHeader.prototype, 'id', idProperty);
+
+/**
+ * Defines the hash property on the BlockHeader prototype.
+ * @memberof BlockHeader.prototype
+ * @name hash
+ * @type {string}
+ * @readonly
+ * @description The block header hash in big endian format. This is equivalent to the `id` property.
+ */
 Object.defineProperty(BlockHeader.prototype, 'hash', idProperty);
 
 /**

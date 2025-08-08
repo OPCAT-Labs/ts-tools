@@ -49,7 +49,7 @@ declare class HDPrivateKey {
         xprivkey: string;
     });
     get hdPublicKey(): HDPublicKey;
-    get xpubkey(): any;
+    get xpubkey(): string;
     /**
      * WARNING: This method will not be officially supported until v1.0.0.
      *
@@ -78,6 +78,7 @@ declare class HDPrivateKey {
      *
      * @param {string|number} arg
      * @param {boolean} [hardened]
+     * @returns {HDPrivateKey} The derived child private key
      */
     deriveChild(arg: string | number, hardened?: boolean): HDPrivateKey;
     /**
@@ -106,7 +107,6 @@ declare class HDPrivateKey {
     private _buildFromSerialized;
     private _generateRandomly;
     private _calcHDPublicKey;
-    _hdPublicKey: HDPublicKey;
     /**
      * Converts the HDPrivateKey instance to its corresponding HDPublicKey.
      * @returns {HDPublicKey} The derived HD public key.
@@ -118,6 +118,19 @@ declare class HDPrivateKey {
      */
     toPrivateKey(): PrivateKey;
     private _buildFromBuffers;
+    /** @type {string} - The base58 encoding of the key*/
+    xprivkey: string;
+    /** @type {Network} - The network of the key*/
+    network: Network;
+    /** @type {number} - depth of the HD key in the hierarchy*/
+    depth: number;
+    /** @type {PrivateKey} */
+    privateKey: PrivateKey;
+    /** @type {PublicKey} */
+    publicKey: PublicKey;
+    /** @type {Buffer} */
+    fingerPrint: Buffer;
+    _hdPublicKey: HDPublicKey;
     /**
      * Returns the extended private key string representation of this HDPrivateKey.
      *  (a string starting with "xprv...")
@@ -202,7 +215,7 @@ declare namespace HDPrivateKey {
      *     network provided matches the network serialized.
      * @return {boolean}
      */
-    function isValidSerialized(data: string | Buffer, network?: any): boolean;
+    function isValidSerialized(data: string | Buffer, network?: string | Network): boolean;
     /**
      * Checks what's the error that causes the validation of a serialized private key
      * in base58 with checksum to fail.
@@ -212,7 +225,7 @@ declare namespace HDPrivateKey {
      *     network provided matches the network serialized.
      * @return {Error|null} Returns the validation error, if any, otherwise null.
      */
-    function getSerializedError(data: string | Buffer, network?: any): Error;
+    function getSerializedError(data: string | Buffer, network?: string | Network): Error;
     /**
      * Validates if the provided data matches the expected network's extended private key version.
      * @param {Buffer} data - The data buffer to validate (must include version bytes).
@@ -220,7 +233,7 @@ declare namespace HDPrivateKey {
      * @returns {Error|null} Returns error if validation fails, otherwise null.
      * @private
      */
-    function _validateNetwork(data: Buffer, networkArg: any): Error;
+    function _validateNetwork(data: Buffer, networkArg: string | Network): Error;
     /**
      * Creates an HDPrivateKey instance from a string representation.
      * @param {string} arg - The string to convert to an HDPrivateKey
@@ -328,3 +341,5 @@ declare namespace HDPrivateKey {
 }
 import HDPublicKey = require("./hdpublickey.cjs");
 import PrivateKey = require("./privatekey.cjs");
+import Network = require("./network.cjs");
+import PublicKey = require("./publickey.cjs");

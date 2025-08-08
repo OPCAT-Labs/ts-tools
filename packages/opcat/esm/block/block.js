@@ -14,7 +14,7 @@ import $ from '../util/preconditions.js';
  * Instantiate a Block from a Buffer, JSON object, or Object with
  * the properties of the Block
  *
- * @param {Buffer|{transactions: Array.<Transaction|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}>, header: {prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}}} arg - A Buffer, JSON string, or Object
+ * @param {Buffer|{transactions: Array.<{outputs: Array.<{satoshis: number, script: string, data?: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string}>, hash: string, version: number, nLockTime: number}>, header: {prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}}} arg - A Buffer, JSON string, or Object
  * @returns {Block}
  * @constructor
  */
@@ -59,7 +59,7 @@ Block._from = function _from(arg) {
 
 /**
  * Creates a Block instance from a plain object.
- * @param {{transactions: Array.<Transaction|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}>, header: {prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}}} data - The plain object containing block data.
+ * @param {{transactions: Array.<{outputs: Array.<{satoshis: number, script: string, data?: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string}>, hash: string, version: number, nLockTime: number}>, header: {prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}}} data - The plain object containing block data.
  * @returns {Block} The created Block instance.
  * @private
  */
@@ -82,7 +82,7 @@ Block._fromObject = function _fromObject(data) {
 
 /**
  * Creates a Block instance from a plain JavaScript object.
- * @param {{transactions: Array.<Transaction|{outputs: Array.<{satoshis: number, script: string, data: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string, scriptString?: string, output?: {satoshis: number, script: string, data: string}}>, hash: string, version: number, nLockTime: number, changeScript?: string, changeAddress?: string, changeIndex?: number, fee?: number}>, header: {prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}}} obj - The source object to convert to a Block.
+ * @param {{transactions: Array.<{outputs: Array.<{satoshis: number, script: string, data?: string}>, inputs: Array.<{prevTxId: string, outputIndex: number, sequenceNumber: number, script: string}>, hash: string, version: number, nLockTime: number}>, header: {prevHash: string|Buffer, merkleRoot: string|Buffer, hash: string, version: number, time: number, bits: number, nonce: number}}} obj - The source object to convert to a Block.
  * @returns {Block} A new Block instance.
  */
 Block.fromObject = function fromObject(obj) {

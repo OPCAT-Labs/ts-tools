@@ -10,8 +10,10 @@ var Base58 = require('./encoding/base58.cjs');
 var Base58Check = require('./encoding/base58check.cjs');
 var Hash = require('./crypto/hash.cjs');
 var Networks = require('./networks.cjs');
+var Network = require('./network.cjs');
 var Point = require('./crypto/point.cjs');
 var PrivateKey = require('./privatekey.cjs');
+var PublicKey = require('./publickey.cjs');
 var Random = require('./crypto/random.cjs');
 var HDPublicKey = require('./hdpublickey.cjs');
 var JSUtil = require('./util/js.cjs');
@@ -77,7 +79,6 @@ Object.defineProperty(HDPrivateKey.prototype, 'hdPublicKey', {
   configurable: false,
   enumerable: true,
   get: function () {
-    this._calcHDPublicKey();
     return this._hdPublicKey;
   },
 });
@@ -92,7 +93,6 @@ Object.defineProperty(HDPrivateKey.prototype, 'xpubkey', {
   configurable: false,
   enumerable: true,
   get: function () {
-    this._calcHDPublicKey();
     return this._hdPublicKey.xpubkey;
   },
 });
@@ -159,6 +159,7 @@ HDPrivateKey.isValidPath = function (arg, hardened) {
  *
  * @param {string|number} arg
  * @param {boolean} [hardened]
+ * @returns {HDPrivateKey} The derived child private key
  */
 HDPrivateKey.prototype.deriveChild = function (arg, hardened) {
   if (_.isNumber(arg)) {
@@ -495,7 +496,6 @@ HDPrivateKey.fromSeed = function (hexa, network) {
  * @private
  */
 HDPrivateKey.prototype._calcHDPublicKey = function () {
-  if (!this._hdPublicKey) {
     var args = _.clone(this._buffers);
     var point = Point.getG().mul(BN.fromBuffer(args.privateKey));
     args.publicKey = Point.pointToCompressed(point);
@@ -503,8 +503,7 @@ HDPrivateKey.prototype._calcHDPublicKey = function () {
     args.privateKey = undefined;
     args.checksum = undefined;
     args.xprivkey = undefined;
-    this._hdPublicKey = new HDPublicKey(args);
-  }
+    return new HDPublicKey(args);
 };
 
 /**
@@ -512,7 +511,6 @@ HDPrivateKey.prototype._calcHDPublicKey = function () {
  * @returns {HDPublicKey} The derived HD public key.
  */
 HDPrivateKey.prototype.toHDPublicKey = function () {
-  this._calcHDPublicKey();
   return this._hdPublicKey;
 };
 
@@ -578,6 +576,19 @@ HDPrivateKey.prototype._buildFromBuffers = function (arg) {
   var size = HDPrivateKey.ParentFingerPrintSize;
   var fingerPrint = Hash.sha256ripemd160(publicKey.toBuffer()).slice(0, size);
 
+  /** @type {string} - The base58 encoding of the key*/
+  this.xprivkey = xprivkey;
+  /** @type {Network} - The network of the key*/
+  this.network = network;
+  /** @type {number} - depth of the HD key in the hierarchy*/
+  this.depth = arg.depth[0]
+  /** @type {PrivateKey} */
+  this.privateKey = privateKey;
+  /** @type {PublicKey} */
+  this.publicKey = publicKey;
+  /** @type {Buffer} */
+  this.fingerPrint = fingerPrint;
+
   JSUtil.defineImmutable(this, {
     xprivkey: xprivkey,
     network: network,
@@ -587,7 +598,7 @@ HDPrivateKey.prototype._buildFromBuffers = function (arg) {
     fingerPrint: fingerPrint,
   });
 
-  this._hdPublicKey = null;
+  this._hdPublicKey = this._calcHDPublicKey();
   return this;
 };
 

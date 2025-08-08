@@ -4,6 +4,12 @@ var encoding = require('./encoding/index.cjs');
 var crypto = require('./crypto/index.cjs');
 var errors = require('./errors/index.cjs');
 
+var BN = require('./crypto/bn.cjs');
+var Point = require('./crypto/point.cjs');
+var ECDSA = require('./crypto/ecdsa.cjs');
+var Signature = require('./crypto/signature.cjs');
+var BufferWriter = require('./encoding/bufferwriter.cjs');
+var BufferReader = require('./encoding/bufferreader.cjs');
 var Address = require('./address.cjs');
 var Block = require('./block/index.cjs');
 var MerkleBlock = require('./block/merkleblock.cjs');
@@ -19,6 +25,10 @@ var Script = require('./script/index.cjs');
 var Transaction = require('./transaction/index.cjs');
 var Output = require('./transaction/output.cjs');
 var Input = require('./transaction/input/index.cjs');
+var PublicKeyInput = require('./transaction/input/publickey.cjs');
+var PublicKeyHashInput = require('./transaction/input/publickeyhash.cjs');
+var MultiSigInput = require('./transaction/input/multisig.cjs');
+
 var Sighash = require('./transaction/sighash.cjs');
 var TransactionSignature = require('./transaction/signature.cjs');
 var HashCache = require('./hash-cache.cjs');
@@ -28,6 +38,12 @@ var Interpreter = require('./interpreter/index.cjs');
 
 
 module.exports = {
+  BN,
+  ECDSA,
+  Point,
+  Signature,
+  BufferWriter,
+  BufferReader,
   Address,
   Block,
   MerkleBlock,
@@ -38,9 +54,9 @@ module.exports = {
   TransactionSignature,
   Output,
   Input,
-  PublicKeyInput: Input.PublicKey,
-  PublicKeyHashInput: Input.PublicKeyHash,
-  MultiSigInput: Input.MultiSig,
+  PublicKeyInput,
+  PublicKeyHashInput,
+  MultiSigInput,
   Networks,
   Network,
   Opcode,
@@ -61,6 +77,12 @@ module.exports = {
 
 
 
+module.exports.BN = BN;
+module.exports.Point = Point;
+module.exports.ECDSA = ECDSA;
+module.exports.Signature = Signature;
+module.exports.BufferWriter = BufferWriter;
+module.exports.BufferReader = BufferReader;
 module.exports.Address = Address;
 module.exports.Block = Block;
 module.exports.MerkleBlock = MerkleBlock;
@@ -76,9 +98,9 @@ module.exports.Script = Script;
 module.exports.Interpreter = Interpreter;
 module.exports.Transaction = Transaction;
 module.exports.Input = Input;
-module.exports.PublicKeyInput = Input.PublicKey;
-module.exports.PublicKeyHashInput = Input.PublicKeyHash;
-module.exports.MultiSigInput = Input.MultiSig;
+module.exports.PublicKeyInput = PublicKeyInput;
+module.exports.PublicKeyHashInput = PublicKeyHashInput;
+module.exports.MultiSigInput = MultiSigInput;
 module.exports.Sighash = Sighash;
 module.exports.TransactionSignature = TransactionSignature;
 module.exports.Output = Output

@@ -10,13 +10,14 @@ import Signature from '../../crypto/signature.js';
 import Sighash from '../sighash.js';
 import TransactionSignature from '../signature.js';
 import PublicKey from '../../publickey.js';
+import PrivateKey from '../../privatekey.js';
 import Varint from '../../encoding/varint.js';
 
 
 /**
  * Represents a MultiSigInput for a transaction.
  * @constructor
- * @param {{publicKeys: Array.<Buffer>, threshold: number, signatures: Array.<TransactionSignature>}} input - The input object containing publicKeys, threshold, and signatures.
+ * @param {{prevTxId: string|Buffer, outputIndex: number, output?: Output, sequenceNumber?: number, script?: Script|Buffer|string, publicKeys?: Array.<Buffer>, threshold?: number, signatures?: Array.<TransactionSignature>}} input - The input object containing publicKeys, threshold, and signatures.
  * @param {Array.<Buffer>} [pubkeys] - Array of public keys (optional, defaults to input.publicKeys).
  * @param {number} [threshold] - Required number of signatures (optional, defaults to input.threshold).
  * @param {Array.<TransactionSignature>} [signatures] - Array of signatures (optional, defaults to input.signatures).
@@ -96,7 +97,7 @@ MultiSigInput.prototype._serializeSignatures = function () {
  * Gets signatures for a MultiSigInput by signing the transaction with the provided private key.
  * Only signs for public keys that match the private key's public key.
  * 
- * @param {Transaction} transaction - The transaction to sign
+ * @param {Object} transaction - The transaction to sign
  * @param {PrivateKey} privateKey - The private key used for signing
  * @param {number} index - The input index
  * @param {number} [sigtype=Signature.SIGHASH_ALL] - The signature type
@@ -133,7 +134,7 @@ MultiSigInput.prototype.getSignatures = function (transaction, privateKey, index
 
 /**
  * Adds a signature to the MultiSigInput if valid and not already fully signed.
- * @param {Transaction} transaction - The transaction to validate the signature against.
+ * @param {Object} transaction - The transaction to validate the signature against.
  * @param {TransactionSignature} signature - The signature object containing publicKey and signature data.
  * @throws {Error} If already fully signed, no matching public key, or invalid signature.
  * @returns {MultiSigInput} Returns the instance for chaining.
@@ -230,7 +231,7 @@ MultiSigInput.prototype.publicKeysWithoutSignature = function () {
 /**
  * Verifies a signature for a MultiSigInput transaction.
  * 
- * @param {Transaction} transaction - The transaction to verify.
+ * @param {Object} transaction - The transaction to verify.
  * @param {TransactionSignature} signature - The signature to verify.bject containing signature data.
  * @returns {boolean} True if the signature is valid, false otherwise.
  */
@@ -251,7 +252,7 @@ MultiSigInput.prototype.isValidSignature = function (transaction, signature) {
  * Normalizes signatures for a MultiSigInput by matching each public key with its corresponding signature.
  * Filters and validates signatures against the provided public keys and transaction.
  * 
- * @param {Transaction} transaction - The transaction to verify against.
+ * @param {Object} transaction - The transaction to verify against.
  * @param {Input} input - The input containing prevTxId and outputIndex.
  * @param {number} inputIndex - The index of the input in the transaction.
  * @param {Array.<Buffer>} signatures - Array of signature buffers to normalize.

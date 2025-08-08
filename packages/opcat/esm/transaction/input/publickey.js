@@ -8,18 +8,25 @@ import Sighash from '../sighash.js';
 import Script from '../../script/index.js';
 import Signature from '../../crypto/signature.js';
 import TransactionSignature from '../signature.js';
+import PrivateKey from '../../privatekey.js';
 
 /**
  * Represents a special kind of input of PayToPublicKey kind.
  * @constructor
+ * @param {Object} params - Input parameters object
+ * @param {string|Buffer} params.prevTxId - Previous transaction ID (hex string or Buffer)
+ * @param {number} params.outputIndex - Output index in previous transaction
+ * @param {Output} [params.output] - Output instance or output parameters
+ * @param {number} [params.sequenceNumber] - Sequence number (defaults to DEFAULT_SEQNUMBER)
+ * @param {Script|Buffer|string} [params.script] - Script instance, buffer or hex string
  */
-function PublicKeyInput() {
+function PublicKeyInput(params) {
   Input.apply(this, arguments);
 }
 inherits(PublicKeyInput, Input);
 
 /**
- * @param {Transaction} transaction - the transaction to be signed
+ * @param {Object} transaction - the transaction to be signed
  * @param {PrivateKey} privateKey - the private key with which to sign the transaction
  * @param {number} index - the index of the input in the transaction input vector
  * @param {number} [sigtype] - the type of signature, defaults to Signature.SIGHASH_ALL
@@ -52,7 +59,7 @@ PublicKeyInput.prototype.getSignatures = function (transaction, privateKey, inde
 
 /**
  * Adds a signature to the public key input after validating it.
- * @param {Transaction} transaction - The transaction to validate against.
+ * @param {Object} transaction - The transaction to validate against.
  * @param {TransactionSignature} signature - The signature object containing signature data and type.
  * @returns {PublicKeyInput} Returns the instance for chaining.
  * @throws {Error} Throws if the signature is invalid.
