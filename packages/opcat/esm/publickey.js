@@ -8,6 +8,7 @@ import Networks from './networks.js';
 import _ from './util/_.js';
 import $ from './util/preconditions.js';
 import Address from './address.js';
+import Network from './network.js';
 /**
  * Instantiate a PublicKey from a {@link PrivateKey}, {@link Point}, `string`, or `Buffer`.
  *
@@ -26,10 +27,10 @@ import Address from './address.js';
  * var imported = PublicKey.fromString(exported);
  * ```
  *
- * @param {string} data - The encoded data in various formats
- * @param {Object} extra - additional options
- * @param {Network} extra.network - Which network should the address for this public key be for
- * @param {String=} extra.compressed - If the public key is compressed
+ * @param {{x: string, y: string, compressed: boolean}|string|Buffer|Point|BN} data - The encoded data in various formats
+ * @param {Object} [extra] - additional options
+ * @param {Network|string} extra.network - Which network should the address for this public key be for
+ * @param {boolean=} extra.compressed - If the public key is compressed
  * @returns {PublicKey} A new valid instance of an PublicKey
  * @constructor
  */
@@ -51,6 +52,19 @@ function PublicKey(data, extra) {
   // validation
   info.point.validate();
 
+  /**
+   * @type {Point} - the {@link Point} instance that this PublicKey represents
+   */
+  this.point = info.point;
+  /**
+   * @type {Network} - which network this key is on (only useful for addresses)
+   */
+  this.network = info.network;
+  /**
+   * @type {boolean} - if the public key is compressed
+   */
+  this.compressed = info.compressed;
+
   JSUtil.defineImmutable(this, {
     point: info.point,
     compressed: info.compressed,
@@ -61,10 +75,24 @@ function PublicKey(data, extra) {
 }
 
 /**
- * Internal function to differentiate between arguments passed to the constructor
- * @param {*} data
- * @param {Object} extra
+ * Classifies the input arguments for a PublicKey instance.
+ * This method processes the input data and extra parameters to determine the key's properties,
+ * such as compression status and network, and transforms the data into a standardized format.
+ *
+ * @param {{x: string, y: string, compressed: boolean}|string|Buffer|Point|BN} data - The input data to classify. Can be a Point instance,
+ *                                            an object with x and y properties, a hex string,
+ *                                            a Buffer, or a private key.
+ * @param {{compressed: boolean, network?: string|Network}} extra - Additional parameters for the key, including:
+ *                         - compressed: Boolean indicating if the key is compressed (default: true).
+ *                         - network: The network for the key (optional).
+ * @returns {{point: Point, compressed: boolean, network?: string|Network}} An object containing the classified key information, including:
+ *                   - point: The Point instance (if applicable).
+ *                   - compressed: Boolean indicating compression status.
+ *                   - network: The network for the key (if specified).
+ * @throws {TypeError} If the input data format is unrecognized.
+ * @private
  */
+
 PublicKey.prototype._classifyArgs = function (data, extra) {
   var info = {
     compressed: _.isUndefined(extra.compressed) || extra.compressed,
@@ -79,27 +107,17 @@ PublicKey.prototype._classifyArgs = function (data, extra) {
     info = PublicKey._transformDER(Buffer.from(data, 'hex'));
   } else if (PublicKey._isBuffer(data)) {
     info = PublicKey._transformDER(data);
-  } else if (PublicKey._isPrivateKey(data)) {
-    info = PublicKey._transformPrivateKey(data);
+  } else if (BN.isBN(data)) {
+    info = PublicKey._transformPrivateKey(data, extra);
   } else {
     throw new TypeError('First argument is an unrecognized data format.');
   }
   if (!info.network) {
-    info.network = _.isUndefined(extra.network) ? undefined : Networks.get(extra.network);
+    info.network = _.isUndefined(extra.network) ? Networks.defaultNetwork : Networks.get(extra.network);
   }
   return info;
 };
 
-/**
- * Internal function to detect if an object is a {@link PrivateKey}
- *
- * @param {*} param - object to test
- * @returns {boolean}
- * @private
- */
-PublicKey._isPrivateKey = function (param) {
-  return param && param.toPublicKey;
-};
 
 /**
  * Internal function to detect if an object is a Buffer
@@ -115,16 +133,17 @@ PublicKey._isBuffer = function (param) {
 /**
  * Internal function to transform a private key into a public key point
  *
- * @param {PrivateKey} privkey - An instance of PrivateKey
- * @returns {Object} An object with keys: point and compressed
+ * @param {BN} privkey - An instance of PrivateKey
+ * @param {{ compressed?: boolean, network?: string|Network}} [extra] - additional options
+ * @returns {{point: Point, compressed?: boolean, network?: string|Network}} An object with keys: point and compressed
  * @private
  */
-PublicKey._transformPrivateKey = function (privkey) {
-  $.checkArgument(PublicKey._isPrivateKey(privkey), 'Must be an instance of PrivateKey');
+PublicKey._transformPrivateKey = function (privkey, extra) {
+  $.checkArgument(BN.isBN(privkey), 'First argument is expected to be an instance of BN');
   var info = {};
-  info.point = Point.getG().mul(privkey.bn);
-  info.compressed = privkey.compressed;
-  info.network = privkey.network;
+  info.point = Point.getG().mul(privkey);
+  info.compressed = extra?.compressed;
+  info.network = extra?.network;
   return info;
 };
 
@@ -132,8 +151,9 @@ PublicKey._transformPrivateKey = function (privkey) {
  * Internal function to transform DER into a public key point
  *
  * @param {Buffer} buf - An DER buffer
- * @param {bool=} strict - if set to false, will loosen some conditions
- * @returns {Object} An object with keys: point and compressed
+ * @param {boolean=} strict - if set to false, will loosen some conditions
+ * @returns {{point: Point, compressed?: boolean, network?: string|Network}} An object with keys: point and compressed
+ * 
  * @private
  */
 PublicKey._transformDER = function (buf, strict) {
@@ -178,7 +198,7 @@ PublicKey._transformDER = function (buf, strict) {
  *
  * @param {Boolean} odd - If the point is above or below the x axis
  * @param {Point} x - The x point
- * @returns {Object} An object with keys: point and compressed
+ * @returns {{point: Point, compressed?: boolean, network?: string|Network}} An object with keys: point and compressed
  * @private
  */
 PublicKey._transformX = function (odd, x) {
@@ -191,8 +211,11 @@ PublicKey._transformX = function (odd, x) {
 /**
  * Internal function to transform a JSON into a public key point
  *
- * @param {String|Object} json - a JSON string or plain object
- * @returns {Object} An object with keys: point and compressed
+ * @param {Object} json - a JSON string or plain object
+ * @param {string} json.x - The x coordinate of the public key
+ * @param {string} json.y - The y coordinate of the public key
+ * @param {boolean} json.compressed - Whether the public key is compressed
+ * @returns {{point: Point, compressed?: boolean, network?: string|Network}} A publicKey with keys: point and compressed
  * @private
  */
 PublicKey._transformObject = function (json) {
@@ -204,25 +227,12 @@ PublicKey._transformObject = function (json) {
   });
 };
 
-/**
- * Instantiate a PublicKey from a PrivateKey
- *
- * @param {PrivateKey} privkey - An instance of PrivateKey
- * @returns {PublicKey} A new valid instance of PublicKey
- */
-PublicKey.fromPrivateKey = function (privkey) {
-  $.checkArgument(PublicKey._isPrivateKey(privkey), 'Must be an instance of PrivateKey');
-  var info = PublicKey._transformPrivateKey(privkey);
-  return new PublicKey(info.point, {
-    compressed: info.compressed,
-    network: info.network,
-  });
-};
+
 
 /**
  * Instantiate a PublicKey from a Buffer
  * @param {Buffer} buf - A DER buffer
- * @param {bool=} strict - if set to false, will loosen some conditions
+ * @param {boolean=} strict - if set to false, will loosen some conditions
  * @returns {PublicKey} A new valid instance of PublicKey
  */
 PublicKey.fromDER = PublicKey.fromBuffer = function (buf, strict) {
@@ -302,8 +312,16 @@ PublicKey.isValid = function (data) {
   return !PublicKey.getValidationError(data);
 };
 
+
 /**
- * @returns {Object} A plain object of the PublicKey
+ * Converts the PublicKey instance to a plain object or JSON representation.
+ * The object includes the x and y coordinates of the point in hexadecimal format,
+ * along with the compression flag.
+ *
+ * @returns {{x: string, y: string, compressed: boolean}} An object with properties:
+ *   - x: The x-coordinate of the point as a hex string.
+ *   - y: The y-coordinate of the point as a hex string.
+ *   - compressed: A boolean indicating if the key is compressed.
  */
 PublicKey.prototype.toObject = PublicKey.prototype.toJSON = function toObject() {
   return {

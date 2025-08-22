@@ -8,6 +8,9 @@ import Hash from '../crypto/hash.js';
 import ECDSA from '../crypto/ecdsa.js';
 import $ from '../util/preconditions.js';
 import _ from '../util/_.js';
+import Transaction from './transaction.js';
+import PrivateKey from '../privatekey.js';
+import PublicKey from '../publickey.js';
 
 var SIGHASH_SINGLE_BUG = Buffer.from('0000000000000000000000000000000000000000000000000000000000000001', 'hex')
 
@@ -29,6 +32,7 @@ function Sighash() {
  * @param {number} inputNumber the input index for the signature
  * @param {Script} subscript the script that will be signed
  * @param {satoshisBN} input's amount (for  ForkId signatures)
+ * @returns {Buffer} the sighash preimage buffer
  *
  */
 Sighash.sighashPreimage = function (transaction, sighashType, inputNumber) {
@@ -109,6 +113,16 @@ Sighash.sighashPreimage = function (transaction, sighashType, inputNumber) {
   return bw.toBuffer()
 }
 
+/**
+ * Generates a low-S sighash preimage for a transaction.
+ * This function iteratively adjusts the transaction's lock time to ensure the sighash meets the low-S requirement.
+ *
+ * @param {Transaction} tx - The transaction object.
+ * @param {number} sigtype - The signature type.
+ * @param {number} inputIndex - The index of the input being signed.
+ * @returns {Buffer} The preimage buffer that meets the low-S requirement.
+ */
+
 Sighash.getLowSSighashPreimage = function(tx, sigtype, inputIndex) {
   var i = 0;
   do {
@@ -148,7 +162,7 @@ Sighash.sighash = function (transaction, sighashType, inputNumber) {
  * @name Signing.sign
  * @param {Transaction} transaction
  * @param {PrivateKey} privateKey
- * @param {number} sighash
+ * @param {number} sighashType
  * @param {number} inputIndex
  * @return {Signature}
  */
@@ -169,9 +183,6 @@ Sighash.sign = function (transaction, privateKey, sighashType, inputIndex) {
  * @param {Signature} signature
  * @param {PublicKey} publicKey
  * @param {number} inputIndex
- * @param {Script} subscript
- * @param {satoshisBN} input's amount
- * @param {flags} verification flags
  * @return {boolean}
  */
 Sighash.verify = function (transaction, signature, publicKey, inputIndex) {

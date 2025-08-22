@@ -18,7 +18,8 @@
     "postgen:esm": "npm run fixup",
     "fixup": "node fixup.cjs",
     "gen:types": "tsc",
-    "test": "mocha"
+    "test": "npm run tsd && mocha",
+    "tsd": "tsd --files tsd-tests/*.test-d.cts"
   },
   "dependencies": {
     "assert": "^2.1.0",
@@ -33,7 +34,8 @@
     "cjs2esm": "^5.0.0",
     "clone-deep": "^4.0.1",
     "parcel": "^2.15.2",
-    "sinon": "^20.0.0"
+    "sinon": "^20.0.0",
+    "tsd": "^0.33.0"
   },
   "author": "",
   "license": "ISC"

@@ -1,6 +1,7 @@
 const glob = require('glob');
 const fs = require('fs');
-
+const util = require("util");
+const globPromise = util.promisify(glob);
 const updateRequires = (filePath) => {
   let content = fs.readFileSync(filePath, 'utf8');
   content = content.replace(/.cjs/g, ".js");
@@ -8,7 +9,7 @@ const updateRequires = (filePath) => {
 };
 
 async function main() {
-  const files = await glob.glob('./esm/**/*.js', { nodir: true });
+  const files = await globPromise('./esm/**/*.js', { nodir: true });
   files.forEach((file) => {
     updateRequires(file);
   });

@@ -33,10 +33,34 @@ declare class BN {
     strip(): this;
     _normSign(): this;
     inspect(): string;
-    toString(base: any, padding: any): string;
-    toNumber(): any;
+    /**
+     * Converts the BN (Big Number) instance to a string representation in the specified base.
+     *
+     * @param {number|string} [base=10] - The base for the string representation. Defaults to 10.
+     *                                    Supports hexadecimal (16 or 'hex') and bases between 2 and 36.
+     * @param {number} [padding=1] - The minimum number of digits for the output string. Defaults to 1.
+     *                              If the output is shorter than this, it will be padded with leading zeros.
+     * @returns {string} The string representation of the BN instance in the specified base.
+     * @throws {Error} Throws an error if the base is not between 2 and 36.
+     */
+    toString(base?: number | string, padding?: number): string;
+    /**
+     * Converts the BN (Big Number) instance to a JavaScript number.
+     * Note: This method can only safely store up to 53 bits due to JavaScript number limitations.
+     * If the number exceeds 53 bits, an assertion error will be thrown.
+     *
+     * @returns {number} The converted number, with the sign preserved if the BN is negative.
+     */
+    toNumber(): number;
     toJSON(): string;
-    toBuffer(endian: any, length: any): any;
+    /**
+     * Converts the BN instance to a Buffer.
+     *
+     * @param {string} [endian] - The endianness of the buffer (optional).
+     * @param {number} [length] - The desired length of the buffer (optional).
+     * @returns {Buffer} The buffer representation of the BN instance.
+     */
+    toBuffer(endian?: string, length?: number): Buffer;
     toArray(endian: any, length: any): any;
     toArrayLike(ArrayType: any, endian: any, length: any): any;
     _countBits(w: any): number;
@@ -65,16 +89,34 @@ declare class BN {
     notn(width: any): BN;
     setn(bit: any, val: any): this;
     iadd(num: any): any;
-    add(num: any): any;
+    /**
+     * Adds another BN instance to this BN instance.
+     * Handles cases where either this instance or the other instance is negative.
+     * If both are positive, it delegates to the `iadd` method for efficient addition.
+     *
+     * @param {BN} num - The BN instance to add to this instance.
+     * @returns {BN} A new BN instance representing the result of the addition.
+     */
+    add(num: BN): BN;
     isub(num: any): any;
-    sub(num: any): any;
+    /**
+     * Subtracts `num` from `this` and returns a new BN instance with the result.
+     * @param {BN} num - The number to subtract.
+     * @returns {BN} A new BN instance representing the result of the subtraction.
+     */
+    sub(num: BN): BN;
     mulTo(num: any, out: any): any;
-    mul(num: any): any;
+    /**
+     * Multiplies this BN instance by another BN instance.
+     * @param {BN} num - The BN instance to multiply with.
+     * @returns {BN} A new BN instance representing the product of the multiplication.
+     */
+    mul(num: BN): BN;
     mulf(num: any): any;
     imul(num: any): any;
     imuln(num: any): this;
     muln(num: any): BN;
-    sqr(): any;
+    sqr(): BN;
     isqr(): any;
     pow(num: any): BN;
     iushln(bits: any): this;
@@ -101,8 +143,18 @@ declare class BN {
         mod: BN;
     };
     divmod(num: any, mode: any, positive: any): any;
-    div(num: any): any;
-    mod(num: any): any;
+    /**
+     * Divides this BN instance by another BN instance.
+     * @param {BN} num - The divisor BN instance.
+     * @returns {BN} The quotient of the division.
+     */
+    div(num: BN): BN;
+    /**
+     * Computes the modulus of `this` divided by `num`.
+     * @param {BN} num - The divisor.
+     * @returns {BN} The modulus result.
+     */
+    mod(num: BN): BN;
     umod(num: any): any;
     divRound(num: any): any;
     modn(num: any): number;
@@ -193,7 +245,7 @@ declare class Mont {
     r: BN;
     r2: any;
     rinv: BN;
-    minv: any;
+    minv: BN;
     convertTo(num: any): any;
     convertFrom(num: any): any;
     imul(a: any, b: any): any;

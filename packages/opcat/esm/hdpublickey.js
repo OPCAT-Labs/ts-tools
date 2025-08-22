@@ -7,6 +7,7 @@ import Base58 from './encoding/base58.js';
 import Base58Check from './encoding/base58check.js';
 import Hash from './crypto/hash.js';
 import Networks from './networks.js';
+import Network from './network.js';
 import Point from './crypto/point.js';
 import PublicKey from './publickey.js';
 import Derivation from './util/derivation.js';
@@ -16,13 +17,14 @@ var hdErrors = opcatErrors.HDPublicKey;
 import assert from 'assert';
 import JSUtil from './util/js.js';
 
+
 /**
  * The representation of an hierarchically derived public key.
  *
  * See https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki
  *
  * @constructor
- * @param {Object|string|Buffer} arg
+ * @param {{ network: Network, depth: number, fingerPrint: number, parentFingerPrint: number, childIndex: number, chainCode: string, publicKey: string, checksum: number, xpubkey: string }|string|Buffer} arg
  */
 function HDPublicKey(arg) {
   if (arg instanceof HDPublicKey) {
@@ -53,14 +55,6 @@ function HDPublicKey(arg) {
   }
 }
 
-/**
- * Converts an HDPrivateKey to an HDPublicKey.
- * @param {HDPrivateKey} hdPrivateKey - The HD private key to convert.
- * @returns {HDPublicKey} The corresponding HD public key.
- */
-HDPublicKey.fromHDPrivateKey = function (hdPrivateKey) {
-  return hdPrivateKey.toHDPublicKey()
-};
 
 
 /**
@@ -240,7 +234,7 @@ HDPublicKey.getSerializedError = function (data, network) {
  * Validates if the provided data matches the expected network version.
  * @param {Buffer} data - The data containing the version to validate.
  * @param {string|Network} networkArg - The network or network identifier to validate against.
- * @returns {InvalidNetworkArgument|InvalidNetwork|null} Returns an error if validation fails, otherwise null.
+ * @returns {Error|null} Returns an error if validation fails, otherwise null.
  * @private
  */
 HDPublicKey._validateNetwork = function (data, networkArg) {
@@ -354,14 +348,23 @@ HDPublicKey.prototype._buildFromBuffers = function (arg) {
   }
   var network = Networks.get(arg.version.readUInt32BE(0));
 
-  var xpubkey;
-  xpubkey = Base58Check.encode(Buffer.concat(sequence));
+
+  var xpubkey = Base58Check.encode(Buffer.concat(sequence));
   arg.xpubkey = Buffer.from(xpubkey);
 
   var publicKey = new PublicKey(arg.publicKey, { network: network });
   var size = HDPublicKey.ParentFingerPrintSize;
   var fingerPrint = Hash.sha256ripemd160(publicKey.toBuffer()).slice(0, size);
-
+  /** @type {string} */
+  this.xpubkey = xpubkey;
+  /** @type {Network} */
+  this.network = network;
+  /** @type {number} */
+  this.depth = arg.depth[0];
+  /** @type {Buffer} */
+  this.fingerPrint = fingerPrint;
+  /** @type {PublicKey} */
+  this.publicKey = publicKey;
   JSUtil.defineImmutable(this, {
     xpubkey: xpubkey,
     network: network,
@@ -419,7 +422,7 @@ HDPublicKey.fromString = function (arg) {
 
 /**
  * Creates an HDPublicKey instance from an object.
- * @param {Object} arg - The object containing public key data
+ * @param {{ network: Network, depth: number, fingerPrint: number, parentFingerPrint: number, childIndex: number, chainCode: string, publicKey: string, checksum: number, xpubkey: string }} arg - The object containing public key data
  * @returns {HDPublicKey} A new HDPublicKey instance
  * @throws {Error} Will throw if no valid object argument is provided
  */
@@ -445,21 +448,19 @@ HDPublicKey.prototype.inspect = function () {
 };
 
 /**
- * Returns a plain JavaScript object with information to reconstruct a key.
+ * Converts the HDPublicKey instance into a plain object representation.
+ * This method is also aliased as `toJSON` for JSON serialization compatibility.
  *
- * Fields are: 
- * <ul>
- *  <li> network: 'livenet' or 'testnet' </li>
- *  <li> depth: a number from 0 to 255, the depth to the master extended key </li>
- *  <li> fingerPrint: a number of 32 bits taken from the hash of the public key </li>
- *  <li> fingerPrint: a number of 32 bits taken from the hash of this key's parent's public key </li>
- *  <li> childIndex: index with which this key was derived </li>
- *  <li> chainCode: string in hexa encoding used for derivation </li>
- *  <li> publicKey: string, hexa encoded, in compressed key format </li>
- *  <li> checksum: this._buffers.checksum.readUInt32BE(0) </li>
- *  <li> xpubkey: the string with the base58 representation of this extended key </li>
- *  <li> checksum: the base58 checksum of xpubkey </li>
- * </ul>
+ * @returns {{ network: Network, depth: number, fingerPrint: number, parentFingerPrint: number, childIndex: number, chainCode: string, publicKey: string, checksum: number, xpubkey: string }} An object containing the HDPublicKey properties:
+ *   - network: The network name derived from the version buffer.
+ *   - depth: The depth of the key in the hierarchy.
+ *   - fingerPrint: The fingerprint of the key.
+ *   - parentFingerPrint: The fingerprint of the parent key.
+ *   - childIndex: The index of the child key.
+ *   - chainCode: The chain code as a hexadecimal string.
+ *   - publicKey: The public key as a string.
+ *   - checksum: The checksum of the key.
+ *   - xpubkey: The extended public key string.
  */
 HDPublicKey.prototype.toObject = HDPublicKey.prototype.toJSON = function toObject() {
   return {
@@ -488,7 +489,7 @@ HDPublicKey.fromBuffer = function (arg) {
 /**
  * Create a HDPublicKey from a hex string argument
  *
- * @param {Buffer} arg
+ * @param {string} hex - The hex representation of an xpubkey
  * @return {HDPublicKey}
  */
 HDPublicKey.fromHex = function (hex) {
@@ -512,7 +513,7 @@ HDPublicKey.prototype.toBuffer = function () {
 HDPublicKey.prototype.toHex = function () {
   return this.toBuffer().toString('hex');
 };
-
+/** @static @constant {number} */
 HDPublicKey.Hardened = 0x80000000;
 HDPublicKey.RootElementAlias = ['m', 'M'];
 
@@ -528,20 +529,19 @@ HDPublicKey.DataSize = 78;
 HDPublicKey.SerializedByteSize = 82;
 
 HDPublicKey.VersionStart = 0;
-HDPublicKey.VersionEnd = HDPublicKey.VersionStart + HDPublicKey.VersionSize;
-HDPublicKey.DepthStart = HDPublicKey.VersionEnd;
-HDPublicKey.DepthEnd = HDPublicKey.DepthStart + HDPublicKey.DepthSize;
-HDPublicKey.ParentFingerPrintStart = HDPublicKey.DepthEnd;
-HDPublicKey.ParentFingerPrintEnd =
-  HDPublicKey.ParentFingerPrintStart + HDPublicKey.ParentFingerPrintSize;
-HDPublicKey.ChildIndexStart = HDPublicKey.ParentFingerPrintEnd;
-HDPublicKey.ChildIndexEnd = HDPublicKey.ChildIndexStart + HDPublicKey.ChildIndexSize;
-HDPublicKey.ChainCodeStart = HDPublicKey.ChildIndexEnd;
-HDPublicKey.ChainCodeEnd = HDPublicKey.ChainCodeStart + HDPublicKey.ChainCodeSize;
-HDPublicKey.PublicKeyStart = HDPublicKey.ChainCodeEnd;
-HDPublicKey.PublicKeyEnd = HDPublicKey.PublicKeyStart + HDPublicKey.PublicKeySize;
-HDPublicKey.ChecksumStart = HDPublicKey.PublicKeyEnd;
-HDPublicKey.ChecksumEnd = HDPublicKey.ChecksumStart + HDPublicKey.CheckSumSize;
+HDPublicKey.VersionEnd = 4;
+HDPublicKey.DepthStart = 4;
+HDPublicKey.DepthEnd = 5;
+HDPublicKey.ParentFingerPrintStart = 5;
+HDPublicKey.ParentFingerPrintEnd = 9;
+HDPublicKey.ChildIndexStart = 9;
+HDPublicKey.ChildIndexEnd = 13;
+HDPublicKey.ChainCodeStart = 13;
+HDPublicKey.ChainCodeEnd = 45;
+HDPublicKey.PublicKeyStart = 45;
+HDPublicKey.PublicKeyEnd = 78;
+HDPublicKey.ChecksumStart = 78;
+HDPublicKey.ChecksumEnd = 82;
 
 assert(HDPublicKey.PublicKeyEnd === HDPublicKey.DataSize);
 assert(HDPublicKey.ChecksumEnd === HDPublicKey.SerializedByteSize);

@@ -409,6 +409,16 @@ var groupBases = [
   24300000, 28629151, 33554432, 39135393, 45435424, 52521875, 60466176,
 ];
 
+/**
+ * Converts the BN (Big Number) instance to a string representation in the specified base.
+ *
+ * @param {number|string} [base=10] - The base for the string representation. Defaults to 10.
+ *                                    Supports hexadecimal (16 or 'hex') and bases between 2 and 36.
+ * @param {number} [padding=1] - The minimum number of digits for the output string. Defaults to 1.
+ *                              If the output is shorter than this, it will be padded with leading zeros.
+ * @returns {string} The string representation of the BN instance in the specified base.
+ * @throws {Error} Throws an error if the base is not between 2 and 36.
+ */
 BN.prototype.toString = function toString(base, padding) {
   base = base || 10;
   padding = padding | 0 || 1;
@@ -478,6 +488,13 @@ BN.prototype.toString = function toString(base, padding) {
   assert(false, 'Base should be between 2 and 36');
 };
 
+/**
+ * Converts the BN (Big Number) instance to a JavaScript number.
+ * Note: This method can only safely store up to 53 bits due to JavaScript number limitations.
+ * If the number exceeds 53 bits, an assertion error will be thrown.
+ *
+ * @returns {number} The converted number, with the sign preserved if the BN is negative.
+ */
 BN.prototype.toNumber = function toNumber() {
   var ret = this.words[0];
   if (this.length === 2) {
@@ -495,6 +512,13 @@ BN.prototype.toJSON = function toJSON() {
   return this.toString(16);
 };
 
+/**
+ * Converts the BN instance to a Buffer.
+ *
+ * @param {string} [endian] - The endianness of the buffer (optional).
+ * @param {number} [length] - The desired length of the buffer (optional).
+ * @returns {Buffer} The buffer representation of the BN instance.
+ */
 BN.prototype.toBuffer = function toBuffer(endian, length) {
   assert(typeof Buffer !== 'undefined');
   return this.toArrayLike(Buffer, endian, length);
@@ -881,7 +905,14 @@ BN.prototype.iadd = function iadd(num) {
   return this;
 };
 
-// Add `num` to `this`
+/**
+ * Adds another BN instance to this BN instance.
+ * Handles cases where either this instance or the other instance is negative.
+ * If both are positive, it delegates to the `iadd` method for efficient addition.
+ *
+ * @param {BN} num - The BN instance to add to this instance.
+ * @returns {BN} A new BN instance representing the result of the addition.
+ */
 BN.prototype.add = function add(num) {
   var res;
   if (num.negative !== 0 && this.negative === 0) {
@@ -967,7 +998,11 @@ BN.prototype.isub = function isub(num) {
   return this.strip();
 };
 
-// Subtract `num` from `this`
+/**
+ * Subtracts `num` from `this` and returns a new BN instance with the result.
+ * @param {BN} num - The number to subtract.
+ * @returns {BN} A new BN instance representing the result of the subtraction.
+ */
 BN.prototype.sub = function sub(num) {
   return this.clone().isub(num);
 };
@@ -1852,7 +1887,11 @@ FFTM.prototype.mulp = function mulp(x, y, out) {
   return out.strip();
 };
 
-// Multiply `this` by `num`
+/**
+ * Multiplies this BN instance by another BN instance.
+ * @param {BN} num - The BN instance to multiply with.
+ * @returns {BN} A new BN instance representing the product of the multiplication.
+ */
 BN.prototype.mul = function mul(num) {
   var out = new BN(null);
   out.words = new Array(this.length + num.length);
@@ -2402,12 +2441,20 @@ BN.prototype.divmod = function divmod(num, mode, positive) {
   return this._wordDiv(num, mode);
 };
 
-// Find `this` / `num`
+/**
+ * Divides this BN instance by another BN instance.
+ * @param {BN} num - The divisor BN instance.
+ * @returns {BN} The quotient of the division.
+ */
 BN.prototype.div = function div(num) {
   return this.divmod(num, 'div', false).div;
 };
 
-// Find `this` % `num`
+/**
+ * Computes the modulus of `this` divided by `num`.
+ * @param {BN} num - The divisor.
+ * @returns {BN} The modulus result.
+ */
 BN.prototype.mod = function mod(num) {
   return this.divmod(num, 'mod', false).mod;
 };

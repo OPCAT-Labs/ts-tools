@@ -4,6 +4,7 @@ import BN from './bn.js';
 import Point from './point.js';
 import Signature from './signature.js';
 import PublicKey from '../publickey.js';
+import PrivateKey from '../privatekey.js';
 import Random from './random.js';
 import Hash from './hash.js';
 import _ from '../util/_.js';
@@ -13,6 +14,13 @@ import $ from '../util/preconditions.js';
  * Creates an ECDSA instance.
  * @constructor
  * @param {Object} [obj] - Optional object containing properties to initialize the instance.
+ * @param {Buffer} [obj.hashbuf] - Hash buffer
+ * @param {string} [obj.endian] - Endianness of hashbuf
+ * @param {PrivateKey} [obj.privkey] - Private key
+ * @param {PublicKey} [obj.pubkey] - Public key (derived from privkey if not provided)
+ * @param {Signature} [obj.sig] - Signature
+ * @param {BN} [obj.k] - Random number k
+ * @param {boolean} [obj.verified] - Verification status
  */
 function ECDSA(obj) {
   if (!(this instanceof ECDSA)) {
@@ -31,17 +39,24 @@ function ECDSA(obj) {
  * @param {PrivateKey} [obj.privkey] - Private key
  * @param {PublicKey} [obj.pubkey] - Public key (derived from privkey if not provided)
  * @param {Signature} [obj.sig] - Signature
- * @param {BigInteger} [obj.k] - Random number k
+ * @param {BN} [obj.k] - Random number k
  * @param {boolean} [obj.verified] - Verification status
  * @returns {ECDSA} Returns the updated ECDSA instance
  */
 ECDSA.prototype.set = function (obj) {
+  /** @type {Buffer} */
   this.hashbuf = obj.hashbuf || this.hashbuf;
+  /** @type {'little' | 'big'} */
   this.endian = obj.endian || this.endian; // the endianness of hashbuf
+  /** @type {PrivateKey} */
   this.privkey = obj.privkey || this.privkey;
+  /** @type {PublicKey} */
   this.pubkey = obj.pubkey || (this.privkey ? this.privkey.publicKey : this.pubkey);
+  /** @type {Signature} */
   this.sig = obj.sig || this.sig;
+  /** @type {BN} */
   this.k = obj.k || this.k;
+  /** @type {boolean} */
   this.verified = obj.verified || this.verified;
   return this;
 };
@@ -284,7 +299,7 @@ ECDSA.toLowS = function (s) {
  * 
  * @param {BN} d - Private key as a big number.
  * @param {BN} e - Message hash as a big number.
- * @returns {Object} Signature object with properties `r` and `s` (big numbers).
+ * @returns {{s: BN, r: BN}} Signature object with properties `r` and `s` (big numbers).
  * @throws Will throw if unable to find valid signature after multiple attempts.
  */
 ECDSA.prototype._findSignature = function (d, e) {

@@ -8,7 +8,7 @@ var JSUtil = require('../util/js.cjs');
 /**
  * Creates a new Signature instance from BN values or an object.
  * @constructor
- * @param {BN|Object} r - Either a BN instance for the r value or an object containing r and s properties.
+ * @param {BN|{r:BN, s: BN, i: number, compressed: boolean, nhashtype: number}} r - Either a BN instance for the r value or an object containing r and s properties.
  * @param {BN} [s] - The s value (required if r is a BN instance).
  */
 function Signature(r, s) {
@@ -29,19 +29,23 @@ function Signature(r, s) {
 /**
  * Sets signature properties from an object.
  * @param {Object} obj - Object containing signature properties
- * @param {Buffer} [obj.r] - r value
- * @param {Buffer} [obj.s] - s value
+ * @param {BN} [obj.r] - r value
+ * @param {BN} [obj.s] - s value
  * @param {number} [obj.i] - Public key recovery parameter (0-3)
  * @param {boolean} [obj.compressed] - Whether recovered pubkey is compressed
  * @param {number} [obj.nhashtype] - Hash type
  * @returns {Signature} Returns the signature instance for chaining
  */
 Signature.prototype.set = function (obj) {
+  /** @type {BN}*/
   this.r = obj.r || this.r || undefined;
+  /** @type {BN}*/
   this.s = obj.s || this.s || undefined;
-
+  /** @type {number}*/
   this.i = typeof obj.i !== 'undefined' ? obj.i : this.i; // public key recovery parameter in range [0, 3]
+  /** @type {boolean}*/
   this.compressed = typeof obj.compressed !== 'undefined' ? obj.compressed : this.compressed; // whether the recovered pubkey is compressed
+  /** @type {number}*/
   this.nhashtype = obj.nhashtype || this.nhashtype || undefined;
   return this;
 };
@@ -129,7 +133,7 @@ Signature.fromString = function (str) {
  * In order to mimic the non-strict DER encoding of OpenSSL, set strict = false.
  * @param {Buffer} buf - The DER formatted signature buffer to parse
  * @param {boolean} [strict=true] - Whether to perform strict length validation
- * @returns {Object} An object containing the parsed signature components:
+ * @returns {{header: number, length: number, rheader: number, rlength: number, rneg: boolean, rbuf: Buffer, r: BN, sheader: number, slength: number, sneg: boolean, sbuf: Buffer, s: BN}} An object containing the parsed signature components:
  *   - header: The DER header byte (0x30)
  *   - length: The total length of the signature components
  *   - rheader: The R component header byte (0x02)
@@ -405,71 +409,91 @@ Signature.prototype.toTxFormat = function () {
 
 /**
  * Signature hash type for signing all inputs/outputs (default).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x01
  */
 Signature.SIGHASH_ALL = 0x01;
 /**
  * Flag indicating that no outputs are signed (only inputs are signed).
  * Used in signature hashing to specify which parts of the transaction are included in the hash.
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x02
  */
 Signature.SIGHASH_NONE = 0x02;
 /**
  * Signature hash type for single input signing (0x03).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x03
  */
 Signature.SIGHASH_SINGLE = 0x03;
 /**
  * Bit flag indicating that only the current input is signed (others can be modified).
  * Used in Bitcoin signature hashing (SIGHASH type).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x80
  */
 Signature.SIGHASH_ANYONECANPAY = 0x80;
 
 /**
  * Signature hash type for signing all inputs/outputs (default).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x01
  */
-Signature.ALL = Signature.SIGHASH_ALL
+Signature.ALL = 0x01
 /**
  * Flag indicating that no outputs are signed (only inputs are signed).
  * Used in signature hashing to specify which parts of the transaction are included in the hash.
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x02
  */
-Signature.NONE = Signature.SIGHASH_NONE
+Signature.NONE = 0x02
 /**
  * Signature hash type for single input signing (0x03).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x03
  */
-Signature.SINGLE = Signature.SIGHASH_SINGLE
+Signature.SINGLE = 0x03
 /**
  * Bitwise flag combination for signature hash types: 
  * SIGHASH_ALL (default) with ANYONECANPAY modifier.
  * Allows anyone to add inputs to the transaction.
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x81
  */
-Signature.ANYONECANPAY_ALL = Signature.SIGHASH_ALL | Signature.SIGHASH_ANYONECANPAY
+Signature.ANYONECANPAY_ALL = 0x81
 /**
  * Bitwise flag combination for a signature that allows anyone to pay (no output locking)
  * and doesn't commit to any outputs (SIGHASH_NONE).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x82
  */
-Signature.ANYONECANPAY_NONE = Signature.SIGHASH_NONE | Signature.SIGHASH_ANYONECANPAY
+Signature.ANYONECANPAY_NONE = 0x82
 /**
  * Bitwise flag combination for signature allowing anyone to pay (SIGHASH_ANYONECANPAY) 
  * with single output mode (SIGHASH_SINGLE).
- * @constant {number}
+ * @static
+ * @type {number}
+ * @constant
  * @default 0x83
  */
-Signature.ANYONECANPAY_SINGLE = Signature.SIGHASH_SINGLE | Signature.SIGHASH_ANYONECANPAY
+Signature.ANYONECANPAY_SINGLE = 0x83
 
 module.exports = Signature;

@@ -51,12 +51,16 @@ declare class HashCache {
     toBuffer(): Buffer;
     /**
      * Converts the hash cache object to a JSON representation.
-     * @returns {Object} An object containing hex string representations of the hash buffers:
+     * @returns {{prevoutsHashBuf?: string, sequenceHashBuf?: string, outputsHashBuf?: string}} - An object containing hex string representations of the hash buffers:
      *                   - prevoutsHashBuf: Hex string of prevouts hash buffer (if exists)
      *                   - sequenceHashBuf: Hex string of sequence hash buffer (if exists)
      *                   - outputsHashBuf: Hex string of outputs hash buffer (if exists)
      */
-    toJSON(): any;
+    toJSON(): {
+        prevoutsHashBuf?: string;
+        sequenceHashBuf?: string;
+        outputsHashBuf?: string;
+    };
     /**
      * Converts the object's buffer representation to a hexadecimal string.
      * @returns {string} Hexadecimal string representation of the buffer.

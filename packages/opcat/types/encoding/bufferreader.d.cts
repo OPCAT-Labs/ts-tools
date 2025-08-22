@@ -2,39 +2,47 @@ export = BufferReader;
 /**
  * Creates a BufferReader instance to read from various input types.
  * @constructor
- * @param {Buffer|string|Object} buf - Input source (Buffer, hex string, or object with buffer properties)
+ * @param {Buffer|string|{buf: Buffer, pos: number}} buf - Input source (Buffer, hex string, or object with buffer properties)
  * @throws {TypeError} If input is invalid hex string or unrecognized type
  * @example
  * new BufferReader(Buffer.from('abc')) // from Buffer
  * new BufferReader('616263')          // from hex string
  * new BufferReader({buf: buffer})      // from object
  */
-declare function BufferReader(buf: Buffer | string | any): BufferReader;
+declare function BufferReader(buf: Buffer | string | {
+    buf: Buffer;
+    pos: number;
+}): BufferReader;
 declare class BufferReader {
     /**
      * Creates a BufferReader instance to read from various input types.
      * @constructor
-     * @param {Buffer|string|Object} buf - Input source (Buffer, hex string, or object with buffer properties)
+     * @param {Buffer|string|{buf: Buffer, pos: number}} buf - Input source (Buffer, hex string, or object with buffer properties)
      * @throws {TypeError} If input is invalid hex string or unrecognized type
      * @example
      * new BufferReader(Buffer.from('abc')) // from Buffer
      * new BufferReader('616263')          // from hex string
      * new BufferReader({buf: buffer})      // from object
      */
-    constructor(buf: Buffer | string | any);
+    constructor(buf: Buffer | string | {
+        buf: Buffer;
+        pos: number;
+    });
     /**
      * Updates the buffer and position from the given object.
      * @param {Object} obj - The object containing buffer and position to set.
      * @param {Buffer} [obj.buf] - The buffer to set (optional, keeps current if not provided).
      * @param {number} [obj.pos] - The position to set (optional, keeps current if not provided).
-     * @returns {BufferReader} Returns the instance for chaining.
+     * @returns {this} Returns the instance for chaining.
      */
     set(obj: {
         buf?: Buffer;
         pos?: number;
-    }): BufferReader;
-    buf: any;
-    pos: any;
+    }): this;
+    /** @type {Buffer}  */
+    buf: Buffer;
+    /** @type {number}  */
+    pos: number;
     /**
      * Checks if the reader has reached the end of the buffer.
      * @returns {boolean} True if the current position is at or beyond the buffer length, false otherwise.
@@ -44,9 +52,10 @@ declare class BufferReader {
      * Alias for `eof` method - checks if the buffer reader has reached the end of data.
      * @name BufferReader.prototype.finished
      * @memberof BufferReader
+     * @type {boolean}
      * @instance
      */
-    finished: any;
+    finished: boolean;
     /**
      * Reads a specified number of bytes from the buffer and advances the position.
      * @param {number} len - The number of bytes to read.

@@ -212,18 +212,6 @@ describe('PublicKey', function () {
     });
   });
 
-  describe('#fromPrivateKey', function () {
-    it('should make a public key from a privkey', function () {
-      should.exist(PublicKey.fromPrivateKey(PrivateKey.fromRandom()));
-    });
-
-    it('should error because not an instance of privkey', function () {
-      (function () {
-        PublicKey.fromPrivateKey(new Error());
-      }).should.throw('Must be an instance of PrivateKey');
-    });
-  });
-
   describe('#fromBuffer', function () {
     it('should parse this uncompressed public key', function () {
       var pk = PublicKey.fromBuffer(

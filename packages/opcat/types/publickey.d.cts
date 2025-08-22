@@ -17,16 +17,20 @@ export = PublicKey;
  * var imported = PublicKey.fromString(exported);
  * ```
  *
- * @param {string} data - The encoded data in various formats
- * @param {Object} extra - additional options
- * @param {Network} extra.network - Which network should the address for this public key be for
- * @param {String=} extra.compressed - If the public key is compressed
+ * @param {{x: string, y: string, compressed: boolean}|string|Buffer|Point|BN} data - The encoded data in various formats
+ * @param {Object} [extra] - additional options
+ * @param {Network|string} extra.network - Which network should the address for this public key be for
+ * @param {boolean=} extra.compressed - If the public key is compressed
  * @returns {PublicKey} A new valid instance of an PublicKey
  * @constructor
  */
-declare function PublicKey(data: string, extra: {
-    network: Network;
-    compressed?: string | undefined;
+declare function PublicKey(data: {
+    x: string;
+    y: string;
+    compressed: boolean;
+} | string | Buffer | Point | BN, extra?: {
+    network: Network | string;
+    compressed?: boolean | undefined;
 }): PublicKey;
 declare class PublicKey {
     /**
@@ -47,30 +51,54 @@ declare class PublicKey {
      * var imported = PublicKey.fromString(exported);
      * ```
      *
-     * @param {string} data - The encoded data in various formats
-     * @param {Object} extra - additional options
-     * @param {Network} extra.network - Which network should the address for this public key be for
-     * @param {String=} extra.compressed - If the public key is compressed
+     * @param {{x: string, y: string, compressed: boolean}|string|Buffer|Point|BN} data - The encoded data in various formats
+     * @param {Object} [extra] - additional options
+     * @param {Network|string} extra.network - Which network should the address for this public key be for
+     * @param {boolean=} extra.compressed - If the public key is compressed
      * @returns {PublicKey} A new valid instance of an PublicKey
      * @constructor
      */
-    constructor(data: string, extra: {
-        network: Network;
-        compressed?: string | undefined;
+    constructor(data: {
+        x: string;
+        y: string;
+        compressed: boolean;
+    } | string | Buffer | Point | BN, extra?: {
+        network: Network | string;
+        compressed?: boolean | undefined;
     });
     /**
-     * Internal function to differentiate between arguments passed to the constructor
-     * @param {*} data
-     * @param {Object} extra
+     * @type {Point} - the {@link Point} instance that this PublicKey represents
      */
-    _classifyArgs(data: any, extra: any): {
-        compressed: any;
-    };
+    point: Point;
     /**
-     * @returns {Object} A plain object of the PublicKey
+     * @type {Network} - which network this key is on (only useful for addresses)
      */
-    toObject: () => any;
-    toJSON(): any;
+    network: Network;
+    /**
+     * @type {boolean} - if the public key is compressed
+     */
+    compressed: boolean;
+    private _classifyArgs;
+    /**
+     * Converts the PublicKey instance to a plain object or JSON representation.
+     * The object includes the x and y coordinates of the point in hexadecimal format,
+     * along with the compression flag.
+     *
+     * @returns {{x: string, y: string, compressed: boolean}} An object with properties:
+     *   - x: The x-coordinate of the point as a hex string.
+     *   - y: The y-coordinate of the point as a hex string.
+     *   - compressed: A boolean indicating if the key is compressed.
+     */
+    toObject: () => {
+        x: string;
+        y: string;
+        compressed: boolean;
+    };
+    toJSON(): {
+        x: string;
+        y: string;
+        compressed: boolean;
+    };
     /**
      * Will output the PublicKey to a DER Buffer
      *
@@ -107,14 +135,6 @@ declare class PublicKey {
 }
 declare namespace PublicKey {
     /**
-     * Internal function to detect if an object is a {@link PrivateKey}
-     *
-     * @param {*} param - object to test
-     * @returns {boolean}
-     * @private
-     */
-    function _isPrivateKey(param: any): boolean;
-    /**
      * Internal function to detect if an object is a Buffer
      *
      * @param {*} param - object to test
@@ -125,46 +145,67 @@ declare namespace PublicKey {
     /**
      * Internal function to transform a private key into a public key point
      *
-     * @param {PrivateKey} privkey - An instance of PrivateKey
-     * @returns {Object} An object with keys: point and compressed
+     * @param {BN} privkey - An instance of PrivateKey
+     * @param {{ compressed?: boolean, network?: string|Network}} [extra] - additional options
+     * @returns {{point: Point, compressed?: boolean, network?: string|Network}} An object with keys: point and compressed
      * @private
      */
-    function _transformPrivateKey(privkey: PrivateKey): any;
+    function _transformPrivateKey(privkey: BN, extra?: {
+        compressed?: boolean;
+        network?: string | Network;
+    }): {
+        point: Point;
+        compressed?: boolean;
+        network?: string | Network;
+    };
     /**
      * Internal function to transform DER into a public key point
      *
      * @param {Buffer} buf - An DER buffer
-     * @param {bool=} strict - if set to false, will loosen some conditions
-     * @returns {Object} An object with keys: point and compressed
+     * @param {boolean=} strict - if set to false, will loosen some conditions
+     * @returns {{point: Point, compressed?: boolean, network?: string|Network}} An object with keys: point and compressed
+     *
      * @private
      */
-    function _transformDER(buf: Buffer, strict?: bool): any;
+    function _transformDER(buf: Buffer, strict?: boolean): {
+        point: Point;
+        compressed?: boolean;
+        network?: string | Network;
+    };
     /**
      * Internal function to transform X into a public key point
      *
      * @param {Boolean} odd - If the point is above or below the x axis
      * @param {Point} x - The x point
-     * @returns {Object} An object with keys: point and compressed
+     * @returns {{point: Point, compressed?: boolean, network?: string|Network}} An object with keys: point and compressed
      * @private
      */
-    function _transformX(odd: boolean, x: Point): any;
+    function _transformX(odd: boolean, x: Point): {
+        point: Point;
+        compressed?: boolean;
+        network?: string | Network;
+    };
     /**
      * Internal function to transform a JSON into a public key point
      *
-     * @param {String|Object} json - a JSON string or plain object
-     * @returns {Object} An object with keys: point and compressed
+     * @param {Object} json - a JSON string or plain object
+     * @param {string} json.x - The x coordinate of the public key
+     * @param {string} json.y - The y coordinate of the public key
+     * @param {boolean} json.compressed - Whether the public key is compressed
+     * @returns {{point: Point, compressed?: boolean, network?: string|Network}} A publicKey with keys: point and compressed
      * @private
      */
-    function _transformObject(json: any): any;
-    /**
-     * Instantiate a PublicKey from a PrivateKey
-     *
-     * @param {PrivateKey} privkey - An instance of PrivateKey
-     * @returns {PublicKey} A new valid instance of PublicKey
-     */
-    function fromPrivateKey(privkey: PrivateKey): PublicKey;
-    function fromDER(buf: Buffer, strict?: bool): PublicKey;
-    function fromBuffer(buf: Buffer, strict?: bool): PublicKey;
+    function _transformObject(json: {
+        x: string;
+        y: string;
+        compressed: boolean;
+    }): {
+        point: Point;
+        compressed?: boolean;
+        network?: string | Network;
+    };
+    function fromDER(buf: Buffer, strict?: boolean): PublicKey;
+    function fromBuffer(buf: Buffer, strict?: boolean): PublicKey;
     /**
      * Instantiate a PublicKey from a Point
      *
@@ -198,5 +239,7 @@ declare namespace PublicKey {
      */
     function isValid(data: string): boolean;
 }
-import Address = require("./address.cjs");
 import Point = require("./crypto/point.cjs");
+import BN = require("./bn.cjs");
+import Network = require("./network.cjs");
+import Address = require("./address.cjs");

@@ -2,18 +2,22 @@ export = Varint;
 /**
  * Creates a Varint instance from various input types.
  * @constructor
- * @param {Buffer|number|BN|Object} buf - Input can be a Buffer, number, BN instance, or object with buffer properties.
+ * @param {Buffer|number|BN|{buf: Buffer}} buf - Input can be a Buffer, number, BN instance, or object with buffer properties.
  * @returns {Varint} New Varint instance when called without `new`.
  */
-declare function Varint(buf: Buffer | number | BN | any): Varint;
+declare function Varint(buf: Buffer | number | BN | {
+    buf: Buffer;
+}): Varint;
 declare class Varint {
     /**
      * Creates a Varint instance from various input types.
      * @constructor
-     * @param {Buffer|number|BN|Object} buf - Input can be a Buffer, number, BN instance, or object with buffer properties.
+     * @param {Buffer|number|BN|{buf: Buffer}} buf - Input can be a Buffer, number, BN instance, or object with buffer properties.
      * @returns {Varint} New Varint instance when called without `new`.
      */
-    constructor(buf: Buffer | number | BN | any);
+    constructor(buf: Buffer | number | BN | {
+        buf: Buffer;
+    });
     buf: Buffer;
     /**
      * Sets the buffer for the Varint instance.
@@ -43,10 +47,10 @@ declare class Varint {
     fromBuffer(buf: Buffer): Varint;
     /**
      * Reads a varint from a buffer reader and stores it in the instance.
-     * @param {Object} br - The buffer reader instance to read from.
+     * @param {BufferReader} br - The buffer reader instance to read from.
      * @returns {Varint} The current Varint instance for chaining.
      */
-    fromBufferReader(br: any): Varint;
+    fromBufferReader(br: BufferReader): Varint;
     /**
      * Converts a BigNumber (BN) to a varint and stores it in the buffer.
      * @param {BN} bn - The BigNumber to convert to varint format.
@@ -59,8 +63,21 @@ declare class Varint {
      * @returns {Varint} Returns the instance for chaining.
      */
     fromNumber(num: number): Varint;
+    /**
+     * Returns the internal buffer of the Varint instance.
+     * @returns {Buffer} The internal buffer.
+     */
     toBuffer(): Buffer;
-    toBN(): any;
-    toNumber(): any;
+    /**
+     * Converts the Varint buffer to a BigNumber (BN) instance.
+     * @returns {BN} The BigNumber representation of the Varint buffer.
+     */
+    toBN(): BN;
+    /**
+     * Converts the Varint buffer to a number.
+     * @returns {number} The numeric representation of the Varint buffer.
+     */
+    toNumber(): number;
 }
 import BN = require("../bn.cjs");
+import BufferReader = require("./bufferreader.cjs");

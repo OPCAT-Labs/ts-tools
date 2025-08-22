@@ -1,0 +1,13 @@
+diff --git a/node_modules/cjs2esm/src/index.js b/node_modules/cjs2esm/src/index.js
+index 4ccfb6e..38eab76 100644
+--- a/node_modules/cjs2esm/src/index.js
++++ b/node_modules/cjs2esm/src/index.js
+@@ -148,7 +148,7 @@ const findFiles = async (directory) => {
+       let newItem;
+       if (stats.isDirectory()) {
+         newItem = await findFiles(itempath);
+-      } else if (item.match(/\.js$/i)) {
++      } else if (item.match(/\.js$/i) || item.match(/\.cjs$/i)) {
+         newItem = itempath;
+       } else {
+         newItem = null;

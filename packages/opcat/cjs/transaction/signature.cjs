@@ -13,7 +13,7 @@ var Signature = require('../crypto/signature.cjs');
  * @desc
  * Wrapper around Signature with fields related to signing a transaction specifically
  *
- * @param {Object|string|TransactionSignature} arg
+ * @param {{publicKey: string, prevTxId: string, outputIndex: number, inputIndex: number, signature: string, sigtype: number}|TransactionSignature} arg
  * @constructor
  */
 function TransactionSignature(arg) {
@@ -34,6 +34,7 @@ inherits(TransactionSignature, Signature);
  * Initializes the TransactionSignature instance from a plain object.
  * Validates and converts object properties into appropriate types.
  * @param {Object} arg - The source object containing signature data
+ * @param {PublicKey|string} arg.publicKey - Public key in various formats (PublicKey instance or hex string)
  * @param {Buffer|string} arg.prevTxId - Previous transaction ID (buffer or hex string)
  * @param {number} arg.outputIndex - Output index
  * @param {number} arg.inputIndex - Input index
@@ -94,7 +95,7 @@ TransactionSignature.prototype._checkObjectArgs = function (arg) {
 
 /**
  * Serializes a transaction to a plain JS object
- * @return {Object}
+ * @return {{publicKey: string, prevTxId: string, outputIndex: number, inputIndex: number, signature: string, sigtype: number}}
  */
 TransactionSignature.prototype.toObject = TransactionSignature.prototype.toJSON =
   function toObject() {
@@ -110,7 +111,7 @@ TransactionSignature.prototype.toObject = TransactionSignature.prototype.toJSON 
 
 /**
  * Builds a TransactionSignature from an object
- * @param {Object} object
+ * @param {{publicKey: string, prevTxId: string, outputIndex: number, inputIndex: number, signature: string, sigtype: number}} object
  * @return {TransactionSignature}
  */
 TransactionSignature.fromObject = function (object) {

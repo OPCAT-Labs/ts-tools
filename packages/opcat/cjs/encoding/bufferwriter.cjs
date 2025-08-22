@@ -7,6 +7,7 @@ const writeU16LE = require('../script/write-u16-le.cjs');
 const writeU32LE = require('../script/write-u32-le.cjs');
 const writeI32LE = require('../script/write-i32-le.cjs');
 const writeVarint = require('../script/write-varint.cjs');
+const BN = require('../crypto/bn.cjs');
 
 /**
  * BufferWriter is a utility class for efficiently writing and concatenating buffers.
@@ -23,7 +24,7 @@ const writeVarint = require('../script/write-varint.cjs');
 class BufferWriter {
   /**
    * Initializes a new BufferWriter instance.
-   * @param {Object} [obj] - Optional object to set initial buffer content. If not provided,
+   * @param {{buffers?: Buffer[], bufs?: Buffer[] }} [obj] - Optional object to set initial buffer content. If not provided,
    *                         creates an empty buffer writer with empty buffers array and length 0.
    */
   constructor(obj) {
@@ -41,18 +42,22 @@ class BufferWriter {
    * @returns {this} Returns the instance for chaining.
    */
   write(buffer) {
+    /** @type {Buffer[]}*/
     this.buffers.push(buffer);
+    /** @type {number}*/
     this.length += buffer.length;
     return this;
   }
 
   /**
    * Sets the internal buffers and calculates total length.
-   * @param {Object} obj - Object containing buffers (either `buffers` or `bufs` property)
-   * @returns {Object} Returns the instance for chaining
+   * @param {{buffers?: Buffer[], bufs?: Buffer[] }} obj - Object containing buffers (either `buffers` or `bufs` property)
+   * @returns {this} Returns the instance for chaining
    */
   set(obj) {
+    /** @type {Buffer[]} */
     this.buffers = obj.buffers || obj.bufs || this.buffers || [];
+    /** @type {number} */
     this.length = this.buffers.reduce(function (prev, buf) {
       return prev + buf.length;
     }, 0);
@@ -157,7 +162,7 @@ class BufferWriter {
 
   /**
    * Writes a 64-bit unsigned integer in little-endian byte order from a BigNumber.
-   * @param {Object} bn - The BigNumber to write.
+   * @param {BN} bn - The BigNumber to write.
    * @returns {this} Returns the BufferWriter instance for chaining.
    */
   writeUInt64LEBN(bn) {

@@ -12,15 +12,16 @@ import Address from '../address.js';
  *
  * @constructor
  * @param {object} data
- * @param {string} data.txid the previous transaction id
- * @param {string=} data.txId alias for `txid`
- * @param {number} data.vout the index in the transaction
- * @param {number=} data.outputIndex alias for `vout`
- * @param {string|Script} data.scriptPubKey the script that must be resolved to release the funds
- * @param {string|Script=} data.script alias for `scriptPubKey`
- * @param {number} data.amount amount of bitcoins associated
- * @param {number=} data.satoshis alias for `amount`, but expressed in satoshis (1 OPCAT = 1e8 satoshis)
- * @param {string|Address=} data.address the associated address to the script, if provided
+ * @param {string} data.txid - the previous transaction id
+ * @param {string} data.data - data associated to the tx, if available
+ * @param {string=} data.txId - alias for `txid`
+ * @param {number} data.vout - the index in the transaction
+ * @param {number=} data.outputIndex - alias for `vout`
+ * @param {string|Script} data.scriptPubKey - the script that must be resolved to release the funds
+ * @param {string|Script=} data.script - alias for `scriptPubKey`
+ * @param {number} data.amount - amount of bitcoins associated
+ * @param {number=} data.satoshis - alias for `amount`, but expressed in satoshis (1 OPCAT = 1e8 satoshis)
+ * @param {string|Address=} data.address - the associated address to the script, if provided
  */
 function UnspentOutput(data) {
   if (!(this instanceof UnspentOutput)) {
@@ -87,7 +88,16 @@ UnspentOutput.prototype.toString = function () {
 
 /**
  * Deserialize an UnspentOutput from an object
- * @param {object|string} data
+ * @param {object} data
+ * @param {string} data.txid the previous transaction id
+ * @param {string=} data.txId alias for `txid`
+ * @param {number} data.vout the index in the transaction
+ * @param {number=} data.outputIndex alias for `vout`
+ * @param {string|Script} data.scriptPubKey the script that must be resolved to release the funds
+ * @param {string|Script=} data.script alias for `scriptPubKey`
+ * @param {number} data.amount amount of bitcoins associated
+ * @param {number=} data.satoshis alias for `amount`, but expressed in satoshis (1 OPCAT = 1e8 satoshis)
+ * @param {string|Address=} data.address the associated address to the script, if provided
  * @return UnspentOutput
  */
 UnspentOutput.fromObject = function (data) {

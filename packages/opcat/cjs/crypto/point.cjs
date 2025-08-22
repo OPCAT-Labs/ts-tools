@@ -14,6 +14,7 @@ var ecPointFromX = ec.curve.pointFromX.bind(ec.curve);
  *
  * @param {BN|String} x - The X coordinate
  * @param {BN|String} y - The Y coordinate
+ * @param {boolean} [isRed] - Whether the Y coordinate is red or not
  * @link https://github.com/indutny/elliptic
  * @augments elliptic.curve.point
  * @throws {Error} A validation error if exists
@@ -79,6 +80,7 @@ Point.getN = function getN() {
 };
 
 if (!Point.prototype._getX) {
+  /** @private */
   Point.prototype._getX = Point.prototype.getX;
 }
 
@@ -92,6 +94,7 @@ Point.prototype.getX = function getX() {
 };
 
 if (!Point.prototype._getY) {
+  /** @private */
   Point.prototype._getY = Point.prototype.getY;
 }
 

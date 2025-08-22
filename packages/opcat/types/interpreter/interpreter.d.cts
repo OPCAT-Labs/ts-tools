@@ -36,66 +36,70 @@ declare class Interpreter {
      * @param {Script} scriptPubkey - the script's last part (corresponding to the tx output)
      * @param {Transaction=} tx - the Transaction containing the scriptSig in one input (used
      *    to check signature validity for some opcodes like OP_CHECKSIG)
-     * @param {number} nin - index of the transaction input containing the scriptSig verified.
-     * @param {number} flags - evaluation flags. See Interpreter.SCRIPT_* constants
-     * @param {number} satoshisBN - amount in satoshis of the input to be verified (when FORKID signhash is used)
+     * @param {number=} nin - index of the transaction input containing the scriptSig verified.
+     * @param {number=} flags - evaluation flags. See Interpreter.SCRIPT_* constants
+     * @param {number=} satoshis - amount in satoshis of the input to be verified (when FORKID signhash is used)
      *
      * Translated from bitcoind's VerifyScript
      */
-    verify(scriptSig: Script, scriptPubkey: Script, tx?: Transaction | undefined, nin: number, flags: number, satoshisBN: number): boolean;
-    errstr: any;
+    verify(scriptSig: Script, scriptPubkey: Script, tx?: Transaction | undefined, nin?: number | undefined, flags?: number | undefined, satoshis?: number | undefined): boolean;
+    errstr: string;
     /**
      * Initializes the interpreter instance with default values.
      * Sets up empty stacks, resets program counter and execution flags,
      * and initializes state tracking variables for script execution.
      */
     initialize(): void;
-    stack: any;
-    altstack: any;
-    pc: any;
-    pbegincodehash: any;
-    nOpCount: any;
-    vfExec: any;
-    vfElse: any;
-    flags: any;
+    stack: Stack;
+    altstack: Stack;
+    pc: number;
+    pbegincodehash: number;
+    nOpCount: number;
+    vfExec: Array<boolean>;
+    vfElse: Array<boolean>;
+    flags: number;
     nonTopLevelReturnAfterGenesis: boolean;
     returned: boolean;
     /**
      * Updates the interpreter's state with provided values.
      * @param {Object} obj - Object containing properties to update
-     * @param {Buffer} [obj.script] - Script buffer
-     * @param {Object} [obj.tx] - Transaction object
+     * @param {Script} [obj.script] - Script buffer
+     * @param {Transaction} [obj.tx] - Transaction object
      * @param {boolean} [obj.nin] - Non-input flag
-     * @param {BN} [obj.satoshisBN] - Satoshis as BN.js instance
-     * @param {Array} [obj.stack] - Main stack
-     * @param {Array} [obj.altstack] - Alternate stack
+     * @param {number} [obj.satoshis] - Satoshis number
+     * @param {Stack} [obj.stack] - Main stack
+     * @param {Stack} [obj.altstack] - Alternate stack
      * @param {number} [obj.pc] - Program counter
      * @param {number} [obj.pbegincodehash] - Begin code hash position
      * @param {number} [obj.nOpCount] - Operation count
-     * @param {Array} [obj.vfExec] - Execution flags
-     * @param {Array} [obj.vfElse] - Else flags
+     * @param {Array.<boolean>} [obj.vfExec] - Execution flags
+     * @param {Array.<boolean>} [obj.vfElse] - Else flags
      * @param {string} [obj.errstr] - Error string
      * @param {number} [obj.flags] - Interpreter flags
      */
     set(obj: {
-        script?: Buffer;
-        tx?: any;
+        script?: Script;
+        tx?: Transaction;
         nin?: boolean;
-        satoshisBN?: BN;
-        stack?: any[];
-        altstack?: any[];
+        satoshis?: number;
+        stack?: Stack;
+        altstack?: Stack;
         pc?: number;
         pbegincodehash?: number;
         nOpCount?: number;
-        vfExec?: any[];
-        vfElse?: any[];
+        vfExec?: Array<boolean>;
+        vfElse?: Array<boolean>;
         errstr?: string;
         flags?: number;
     }): void;
-    script: any;
-    tx: any;
-    nin: any;
-    satoshisBN: any;
+    /** @type {Script} - Script */
+    script: Script;
+    /** @type {Transaction} - Transaction object.*/
+    tx: Transaction;
+    /** @type {number} - Non-input flag. */
+    nin: number;
+    /** @type {number} - Satoshis number */
+    satoshis: number;
     /**
      * Returns a subset of the script starting from the most recent OP_CODESEPARATOR.
      * @returns {Script} A new Script instance containing the sliced chunks.
@@ -225,4 +229,5 @@ declare namespace Interpreter {
 }
 import Script = require("../script/script.cjs");
 import Transaction = require("../transaction/transaction.cjs");
+import Stack = require("./stack.cjs");
 import BN = require("../bn.cjs");

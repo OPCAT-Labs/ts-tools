@@ -10,12 +10,12 @@ declare namespace Networks {
      * @member Networks#get
      * Retrieves the network associated with a magic number or string.
      * @param {string|number|Network} arg
-     * @param {string|Array} keys - if set, only check if the magic number associated with this name matches
-     * @return Network
+     * @param {string|Array.<string>} [keys] - if set, only check if the magic number associated with this name matches
+     * @return {Network|undefined} The network object associated with the input argument, or undefined if not found.
      */
-    export function get(arg: string | number | Network, keys: string | any[]): any;
+    export function get(arg: string | number | Network, keys?: string | string[]): Network;
     /**
-     * @function
+     * Adds a new network configuration to the networks list.
      * @member Networks#add
      * Will add a custom Network
      * @param {Object} data
@@ -28,8 +28,8 @@ declare namespace Networks {
      * @param {Number} data.xprivkey - The extended private key magic
      * @param {Number} data.networkMagic - The network magic number
      * @param {Number} data.port - The network port
-     * @param {Array}  data.dnsSeeds - An array of dns seeds
-     * @return Network
+     * @param {Array.<string>}  data.dnsSeeds - An array of dns seeds
+     * @return {Network} The newly created network object.
      */
     export function add(data: {
         name: string;
@@ -41,7 +41,7 @@ declare namespace Networks {
         xprivkey: number;
         networkMagic: number;
         port: number;
-        dnsSeeds: any[];
+        dnsSeeds: string[];
     }): Network;
     /**
      * @function
@@ -71,6 +71,6 @@ declare namespace Networks {
 declare class Networks {
 }
 import Network = require("./network.cjs");
-declare var livenet: any;
-declare var regtest: any;
-declare var testnet: any;
+declare var livenet: Network;
+declare var regtest: Network;
+declare var testnet: Network;

@@ -8,22 +8,29 @@ import Sighash from '../sighash.js';
 import Script from '../../script/index.js';
 import Signature from '../../crypto/signature.js';
 import TransactionSignature from '../signature.js';
+import PrivateKey from '../../privatekey.js';
 
 /**
  * Represents a special kind of input of PayToPublicKey kind.
  * @constructor
+ * @param {Object} params - Input parameters object
+ * @param {string|Buffer} params.prevTxId - Previous transaction ID (hex string or Buffer)
+ * @param {number} params.outputIndex - Output index in previous transaction
+ * @param {Output} [params.output] - Output instance or output parameters
+ * @param {number} [params.sequenceNumber] - Sequence number (defaults to DEFAULT_SEQNUMBER)
+ * @param {Script|Buffer|string} [params.script] - Script instance, buffer or hex string
  */
-function PublicKeyInput() {
+function PublicKeyInput(params) {
   Input.apply(this, arguments);
 }
 inherits(PublicKeyInput, Input);
 
 /**
- * @param {Transaction} transaction - the transaction to be signed
+ * @param {Object} transaction - the transaction to be signed
  * @param {PrivateKey} privateKey - the private key with which to sign the transaction
  * @param {number} index - the index of the input in the transaction input vector
  * @param {number} [sigtype] - the type of signature, defaults to Signature.SIGHASH_ALL
- * @return {Array} of objects that can be
+ * @return {Array.<TransactionSignature>} the signatures of the public key input, if any
  */
 PublicKeyInput.prototype.getSignatures = function (transaction, privateKey, index, sigtype) {
   $.checkState(this.output instanceof Output);
