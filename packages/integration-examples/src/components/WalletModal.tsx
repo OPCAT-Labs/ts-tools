@@ -91,7 +91,7 @@ const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose, onConnect, o
               <div className="wallet-options">
                 <button 
                   className="wallet-option"
-                  onClick={() => handleConnect('unisat')}
+                  onClick={() => handleConnect('opcat')}
                 >
                   <div className="wallet-icon">
                     <img src={unisatLogo} alt="Unisat Wallet" width="32" height="32" />

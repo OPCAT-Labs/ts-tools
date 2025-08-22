@@ -1,6 +1,6 @@
-import { assert, type Signer, type SupportedNetwork, UnisatSigner } from "@opcat-labs/scrypt-ts-opcat";
+import { assert, type Signer, type SupportedNetwork, WalletSigner } from "@opcat-labs/scrypt-ts-opcat";
 import { atom, useAtom, getDefaultStore } from "jotai";
-import type { Chain, UnisatProvider } from "../types/unisat";
+import type { Chain, OpcatProvider } from "../types/window";
 
 const store = getDefaultStore();
 
@@ -8,19 +8,19 @@ export const ALLOWED_CHAIN_TYPES = ['OPCAT_TESTNET'] as const;
 
 
 export type WalletState = {
-    walletType: 'unisat';
+    walletType: 'opcat';
     unisatInstalled: boolean;
     connected: boolean;
     address: string;
     chain: Chain;
     signer: Signer;
-    walletObj: UnisatProvider
+    walletObj: OpcatProvider
 
 }
 
 const walletStateAtom = atom<WalletState>({
-    walletType: 'unisat',
-    unisatInstalled: typeof window.unisat !== 'undefined',
+    walletType: 'opcat',
+    unisatInstalled: typeof window.opcat !== 'undefined',
     connected: false,
     address: '',
     chain: {
@@ -29,29 +29,29 @@ const walletStateAtom = atom<WalletState>({
         network: 'testnet',
     },
     signer: {} as Signer,
-    walletObj: window.unisat as UnisatProvider,
+    walletObj: window.opcat as OpcatProvider,
 });
 
-export async function connectWallet(walletType: 'unisat') {
-    assert(walletType === 'unisat', 'Unsupported wallet type');
+export async function connectWallet(walletType: 'opcat') {
+    assert(walletType === 'opcat', 'Unsupported wallet type');
     
-    if (!window.unisat) {
+    if (!window.opcat) {
         throw new Error('Unisat wallet not found. Please install Unisat extension.');
     }
     
-    await window.unisat.requestAccounts();
-    const chain = await window.unisat.getChain();
+    await window.opcat.requestAccounts();
+    const chain = await window.opcat.getChain();
     if (!ALLOWED_CHAIN_TYPES.includes(chain.enum as any)) {
-        await window.unisat.switchChain(ALLOWED_CHAIN_TYPES[0]);
+        await window.opcat.switchChain(ALLOWED_CHAIN_TYPES[0]);
     }
     
-    const accounts = await window.unisat.getAccounts();
+    const accounts = await window.opcat.getAccounts();
     if (!accounts || accounts.length === 0) {
         throw new Error('No accounts found');
     }
     
     
-    const signer = new UnisatSigner(window.unisat);
+    const signer = new WalletSigner(window.opcat);
     store.set(walletStateAtom, {
         walletType,
         unisatInstalled: true,
@@ -59,13 +59,13 @@ export async function connectWallet(walletType: 'unisat') {
         address: accounts[0],
         chain,
         signer,
-        walletObj: window.unisat as UnisatProvider,
+        walletObj: window.opcat as OpcatProvider,
     });
 }
 
 export function disconnectWallet() {
     store.set(walletStateAtom, {
-        walletType: 'unisat',
+        walletType: 'opcat',
         unisatInstalled: true,
         connected: false,
         address: '',
@@ -75,7 +75,7 @@ export function disconnectWallet() {
             network: 'testnet',
         },
         signer: {} as Signer,
-        walletObj: window.unisat as UnisatProvider,
+        walletObj: window.opcat as OpcatProvider,
     });
 }
 

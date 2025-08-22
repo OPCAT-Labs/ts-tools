@@ -5,7 +5,7 @@ export type Chain = {
   name: string;
   network: 'testnet' | 'mainnet';
 }
-export interface UnisatProvider {
+export interface OpcatProvider {
   getAccounts: () => Promise<string[]>;
   requestAccounts: () => Promise<string[]>;
   getPublicKey: () => Promise<string>;
@@ -19,7 +19,7 @@ export interface UnisatProvider {
 
 declare global {
   interface Window {
-    unisat?: UnisatProvider
+    opcat?: OpcatProvider
   }
 }
 
