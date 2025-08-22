@@ -18,6 +18,7 @@ declare class Block {
      * @constructor
      */
     constructor(arg: any);
+    transactions: any[];
     /**
      * Converts the Block instance to a plain object (also aliased as toJSON).
      * @returns {Object} The plain object representation of the Block.
