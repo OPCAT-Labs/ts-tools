@@ -10,7 +10,7 @@ import {
     call,
     IExtPsbt,
     ExtPsbt,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import { MultiSigPayment } from '@opcat-labs/examples'
 import { getDefaultProvider, getRandomSigner } from './utils/helper'
 

@@ -1,7 +1,7 @@
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { getDefaultProvider, getDefaultSigner } from './utils/helper.js';
-import { BacktraceInfo, call,  deployGenesis, IExtPsbt, Signer } from '@opcat-labs/scrypt-ts-opcat';
+import { BacktraceInfo, call,  deployGenesis, IExtPsbt, Signer } from '@opcat-labs/scrypt-ts';
 import { B2GCounter } from '@opcat-labs/examples'
 use(chaiAsPromised);
 

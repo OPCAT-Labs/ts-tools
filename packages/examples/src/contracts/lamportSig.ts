@@ -11,7 +11,7 @@ import {
     prop,
     slice,
     SmartContract,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 // 512 * 256 bit random byte strings
 export type LamportPubKey = ByteString

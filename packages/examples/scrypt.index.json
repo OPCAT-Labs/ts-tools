@@ -22,7 +22,7 @@
   },
   {
    "symbol": "TxUtils",
-   "path": "../../../../node_modules/@opcat-labs/scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/txUtils.scrypt.scrypt.tpl"
+   "path": "../../../../node_modules/@opcat-labs/scrypt-ts/assets/.templates/smart-contract/builtin-libs/txUtils.scrypt.scrypt.tpl"
   },
   {
    "symbol": "Auction",
@@ -36,7 +36,7 @@
   },
   {
    "symbol": "BacktraceInfo",
-   "path": "../../../../node_modules/@opcat-labs/scrypt-ts-opcat/assets/.templates/smart-contract/types/structs.scrypt.scrypt.tpl"
+   "path": "../../../../node_modules/@opcat-labs/scrypt-ts/assets/.templates/smart-contract/types/structs.scrypt.scrypt.tpl"
   },
   {
    "symbol": "B2GCounter",
@@ -65,7 +65,7 @@
   },
   {
    "symbol": "ContextUtils",
-   "path": "../../../../node_modules/@opcat-labs/scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/contextUtils.scrypt.scrypt.tpl"
+   "path": "../../../../node_modules/@opcat-labs/scrypt-ts/assets/.templates/smart-contract/builtin-libs/contextUtils.scrypt.scrypt.tpl"
   },
   {
    "symbol": "LamportP2PK",

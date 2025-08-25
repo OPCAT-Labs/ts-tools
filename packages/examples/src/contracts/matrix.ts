@@ -6,7 +6,7 @@ import {
     fill,
     method,
     prop,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 export class Matrix extends SmartContract {
     static readonly N = 4

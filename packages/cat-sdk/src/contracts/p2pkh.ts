@@ -7,7 +7,7 @@ import {
   Sig,
   PubKey,
   hash160,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 export class P2PKH extends SmartContract {
   @prop()

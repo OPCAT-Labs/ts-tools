@@ -21,7 +21,7 @@
     "prebuild": "npm run clean && npm run compile",
     "build": "tsc",
     "clean": "rimraf scrypt.index.json && rimraf dist && rimraf artifacts",
-    "compile": "node ../scrypt-ts-cli-opcat/bin/main.js compile",
+    "compile": "node ../scrypt-ts-cli/bin/main.js compile",
     "pretest": "npm run build",
     "test": "npm run test:mocha",
     "test:mocha": "cross-env DUMMY_PROVIDER=1 mocha --no-timeouts",
@@ -41,14 +41,14 @@
     ]
   },
   "dependencies": {
-    "@opcat-labs/scrypt-ts-opcat": "1.0.4"
+    "@opcat-labs/scrypt-ts": "1.0.4"
   },
   "devDependencies": {
     "dotenv": "^16.0.3",
     "cross-env": "^7.0.3",
     "rimraf": "^6.0.1",
     "tsx": "^4.19.3",
-    "@opcat-labs/cli-opcat": "1.0.5"
+    "@opcat-labs/cli": "1.0.5"
   },
   "license": "MIT"
 }

@@ -4,7 +4,7 @@ import {
     assert,
     SmartContract,
     lshift,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 //
 export class Shift extends SmartContractLib {

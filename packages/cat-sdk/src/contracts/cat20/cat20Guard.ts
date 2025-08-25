@@ -10,7 +10,7 @@ import {
     toByteString,
     TxUtils,
     ContextUtils
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import {
     TX_INPUT_COUNT_MAX,
     GUARD_TOKEN_TYPE_MAX,

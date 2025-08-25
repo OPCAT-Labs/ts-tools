@@ -8,7 +8,7 @@ import {
     prop,
     toByteString,
     TxUtils,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 export type Rule110State = {
     board: ByteString;

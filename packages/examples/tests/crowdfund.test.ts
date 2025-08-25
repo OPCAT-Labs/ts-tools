@@ -2,7 +2,7 @@ import { expect, use } from 'chai'
 import { Crowdfund } from '@opcat-labs/examples'
 import { getDefaultProvider, getDefaultSigner, getRandomSigner } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'
-import { call, deploy, IExtPsbt, PubKey } from '@opcat-labs/scrypt-ts-opcat'
+import { call, deploy, IExtPsbt, PubKey } from '@opcat-labs/scrypt-ts'
 use(chaiAsPromised)
 
 

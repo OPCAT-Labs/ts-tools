@@ -1,4 +1,4 @@
-import { ByteString, prop, Sha256, SmartContractLib, toByteString } from "@opcat-labs/scrypt-ts-opcat"
+import { ByteString, prop, Sha256, SmartContractLib, toByteString } from "@opcat-labs/scrypt-ts"
 
 
 export const HASH160_HASH_LEN = 20n

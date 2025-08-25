@@ -8,7 +8,7 @@ import {
     SmartContract,
     FixedArray,
     pubKey2Addr,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 /*
  * A simple multi-sig payment, that can be unlocked using three signatures.

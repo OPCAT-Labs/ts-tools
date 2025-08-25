@@ -1,7 +1,7 @@
-import { ByteString, FixedArray, TxHashPreimage } from "@opcat-labs/scrypt-ts-opcat"
+import { ByteString, FixedArray, TxHashPreimage } from "@opcat-labs/scrypt-ts"
 import { StateHashes } from "../types";
 import { GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants";
-import { StructObject } from "@opcat-labs/scrypt-ts-opcat";
+import { StructObject } from "@opcat-labs/scrypt-ts";
 
 // todo: uint32 or other type?
 export type CAT20_AMOUNT = bigint;

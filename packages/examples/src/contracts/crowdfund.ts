@@ -8,7 +8,7 @@ import {
     Sig,
     SmartContract,
     TxUtils,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 /*
  * Read Medium article about this contract:

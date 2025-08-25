@@ -2,7 +2,7 @@ import { expect, use } from 'chai'
 import { TuringMachine, TuringMachineState } from '@opcat-labs/examples'
 import { getDefaultProvider, getDefaultSigner } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'
-import { call, cloneDeep, deploy } from '@opcat-labs/scrypt-ts-opcat'
+import { call, cloneDeep, deploy } from '@opcat-labs/scrypt-ts'
 use(chaiAsPromised)
 
 const allStates: TuringMachineState[] = [

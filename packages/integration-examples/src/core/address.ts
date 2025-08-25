@@ -1,5 +1,5 @@
-import type { SupportedNetwork } from "@opcat-labs/scrypt-ts-opcat";
-import { Address, fromSupportedNetwork } from "@opcat-labs/scrypt-ts-opcat";
+import type { SupportedNetwork } from "@opcat-labs/scrypt-ts";
+import { Address, fromSupportedNetwork } from "@opcat-labs/scrypt-ts";
 
 export function checkAddressValid(address: string, network: SupportedNetwork) {
     try {

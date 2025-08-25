@@ -13,7 +13,7 @@ import {
   markSpent,
   fromSupportedNetwork,
   getBackTraceInfo,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types'
 import {
   ConstantsLib,

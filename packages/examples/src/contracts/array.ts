@@ -10,7 +10,7 @@ import {
     method,
     intToByteString,
     byteStringToInt,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 export class Arrays extends SmartContractLib {
     @prop()

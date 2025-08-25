@@ -1,7 +1,7 @@
 import type { AxiosInstance } from "axios";
 import axios from "axios";
 import {CAT20, CAT20Guard} from '@opcat-labs/cat-sdk'
-import { sha256 } from "@opcat-labs/scrypt-ts-opcat";
+import { sha256 } from "@opcat-labs/scrypt-ts";
 import { useEffect, useState } from "react";
 
 export interface CatTrackerToken {

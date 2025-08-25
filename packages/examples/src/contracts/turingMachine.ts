@@ -12,7 +12,7 @@ import {
     SmartContractLib,
     slice,
     TxUtils,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 // Turing machine state
 export type State = ByteString

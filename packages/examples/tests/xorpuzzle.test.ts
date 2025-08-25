@@ -4,7 +4,7 @@ import { XORPuzzle } from '@opcat-labs/examples'
 import { crypto } from '@opcat-labs/opcat'
 import { getDefaultProvider, getDefaultSigner, getRandomSigner, padLeadingZero } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'
-import { deploy, call, IExtPsbt, PubKey, toByteString } from '@opcat-labs/scrypt-ts-opcat'
+import { deploy, call, IExtPsbt, PubKey, toByteString } from '@opcat-labs/scrypt-ts'
 use(chaiAsPromised)
 
 describe('Test SmartContract `XORPuzzle`', async () => {

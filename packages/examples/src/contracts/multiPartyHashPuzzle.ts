@@ -7,7 +7,7 @@ import {
     Sha256,
     SmartContract,
     sha256,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 export type HashArray = FixedArray<Sha256, typeof MultiPartyHashPuzzle.N>
 export type PreimageArray = FixedArray<

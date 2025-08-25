@@ -1,4 +1,4 @@
-import { SmartContractLib, assert, method } from '@opcat-labs/scrypt-ts-opcat'
+import { SmartContractLib, assert, method } from '@opcat-labs/scrypt-ts'
 
 export class SafeMath extends SmartContractLib {
   @method()

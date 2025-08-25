@@ -1,4 +1,4 @@
-import { assert, ByteString, ContextUtils, prop, method, SmartContract } from "@opcat-labs/scrypt-ts-opcat";
+import { assert, ByteString, ContextUtils, prop, method, SmartContract } from "@opcat-labs/scrypt-ts";
 import { CAT20GuardConstState } from "./cat20/types";
 import { CAT20Guard } from "./cat20/cat20Guard";
 import { GUARD_TOKEN_TYPE_MAX } from "./constants";

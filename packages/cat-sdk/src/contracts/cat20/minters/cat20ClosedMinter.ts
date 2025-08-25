@@ -1,4 +1,4 @@
-import { SmartContract, method, prop, assert, ByteString, toByteString, Sig, PubKey, BacktraceInfo, TxUtils, UInt64, len, SHA256_HASH_LEN } from '@opcat-labs/scrypt-ts-opcat'
+import { SmartContract, method, prop, assert, ByteString, toByteString, Sig, PubKey, BacktraceInfo, TxUtils, UInt64, len, SHA256_HASH_LEN } from '@opcat-labs/scrypt-ts'
 
 import { CAT20State, CAT20ClosedMinterState } from '../types'
 import { OwnerUtils } from '../../utils/ownerUtils'

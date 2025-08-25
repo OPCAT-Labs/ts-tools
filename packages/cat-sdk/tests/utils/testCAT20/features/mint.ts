@@ -1,5 +1,5 @@
-import { ByteString, PubKey, toHex } from '@opcat-labs/scrypt-ts-opcat'
-import { ExtPsbt, Signer, ChainProvider, UtxoProvider, UTXO, getBackTraceInfo, markSpent } from '@opcat-labs/scrypt-ts-opcat'
+import { ByteString, PubKey, toHex } from '@opcat-labs/scrypt-ts'
+import { ExtPsbt, Signer, ChainProvider, UtxoProvider, UTXO, getBackTraceInfo, markSpent } from '@opcat-labs/scrypt-ts'
 import {
   CAT20_AMOUNT,
   CAT20ClosedMinterState,

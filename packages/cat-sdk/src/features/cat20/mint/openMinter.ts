@@ -1,7 +1,7 @@
 import { buildMintPsbt } from '../deploy/openMinter'
 import { CAT20OpenMinterPeripheral } from '../../../utils/contractPeripheral'
 import { OpenMinterCAT20Meta } from '../../../contracts/cat20/types'
-import { Signer, UtxoProvider, ChainProvider, UTXO, ExtPsbt, markSpent, ByteString, toHex } from '@opcat-labs/scrypt-ts-opcat'
+import { Signer, UtxoProvider, ChainProvider, UTXO, ExtPsbt, markSpent, ByteString, toHex } from '@opcat-labs/scrypt-ts'
 import { Transaction } from '@opcat-labs/opcat'
 import { CAT20OpenMinter } from '../../../contracts'
 

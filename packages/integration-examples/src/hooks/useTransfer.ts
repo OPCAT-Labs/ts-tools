@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { checkAddressValid } from '../core/address';
 import { useWalletState } from '../core/state';
-import type { SupportedNetwork } from "@opcat-labs/scrypt-ts-opcat";
+import type { SupportedNetwork } from "@opcat-labs/scrypt-ts";
 
 export interface AddressAmount {
   address: string;

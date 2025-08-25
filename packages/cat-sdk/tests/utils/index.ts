@@ -1,6 +1,6 @@
 import { join } from 'path'
 import { readFileSync } from 'fs'
-import { ChainProvider, UtxoProvider, DummyProvider, ExtPsbt, bvmVerify } from '@opcat-labs/scrypt-ts-opcat'
+import { ChainProvider, UtxoProvider, DummyProvider, ExtPsbt, bvmVerify } from '@opcat-labs/scrypt-ts'
 
 export function readArtifact(artifactFileName: string) {
   const filePath = join(process.cwd(), artifactFileName)

@@ -6,7 +6,7 @@ import {
     deploy,
     call,
     Sha256
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import {
     MultiPartyHashPuzzle
 } from '@opcat-labs/examples'

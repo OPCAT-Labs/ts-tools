@@ -4,7 +4,7 @@ import {
     DummyProvider,
     DefaultSigner,
     fromSupportedNetwork,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import { getTestKeyPair } from './privateKey'
 import { PrivateKey } from '@opcat-labs/opcat'
 

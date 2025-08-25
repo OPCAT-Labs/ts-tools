@@ -1,4 +1,4 @@
-import { call, deploy, IExtPsbt } from '@opcat-labs/scrypt-ts-opcat';
+import { call, deploy, IExtPsbt } from '@opcat-labs/scrypt-ts';
 import { ModExp } from '@opcat-labs/examples'
 import { getDefaultProvider, getDefaultSigner } from './utils/helper'
 import { expect, use } from 'chai'

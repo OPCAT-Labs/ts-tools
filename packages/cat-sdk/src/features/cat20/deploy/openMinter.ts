@@ -8,7 +8,7 @@ import {
 import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
 import { CAT20 } from '../../../contracts/cat20/cat20'
 import { checkState } from '../../../utils/check'
-import { ByteString, PubKey, Sig, Signer, ExtPsbt, UTXO, markSpent, UtxoProvider, ChainProvider, hexToUint8Array, SupportedNetwork, getBackTraceInfo, toHex } from '@opcat-labs/scrypt-ts-opcat'
+import { ByteString, PubKey, Sig, Signer, ExtPsbt, UTXO, markSpent, UtxoProvider, ChainProvider, hexToUint8Array, SupportedNetwork, getBackTraceInfo, toHex } from '@opcat-labs/scrypt-ts'
 import {
   CAT20OpenMinterPeripheral,
   ContractPeripheral,

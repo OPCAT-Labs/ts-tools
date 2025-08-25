@@ -8,7 +8,7 @@ import {
     toByteString,
     and, deploy,
     call
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import {
     LamportP2PK,
     LamportPubKey,

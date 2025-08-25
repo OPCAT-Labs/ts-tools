@@ -1,7 +1,7 @@
-import { ByteString, Ripemd160 } from '@opcat-labs/scrypt-ts-opcat'
+import { ByteString, Ripemd160 } from '@opcat-labs/scrypt-ts'
 import { toTokenOwnerAddress } from '../../src/utils'
 import { CAT20TokenInfo, formatMetadata } from '../../src/lib/metadata'
-import { ExtPsbt, UTXO } from '@opcat-labs/scrypt-ts-opcat'
+import { ExtPsbt, UTXO } from '@opcat-labs/scrypt-ts'
 import { deploy } from './testCAT20/features/deploy'
 import { testSigner } from './testSigner'
 import {

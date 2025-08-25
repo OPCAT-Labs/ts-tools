@@ -1,4 +1,4 @@
-import { assert, ByteString, hash160, len, method, SmartContractLib, toByteString } from "@opcat-labs/scrypt-ts-opcat";
+import { assert, ByteString, hash160, len, method, SmartContractLib, toByteString } from "@opcat-labs/scrypt-ts";
 import {
     OWNER_ADDR_CONTRACT_HASH_BYTE_LEN,
     OWNER_ADDR_P2PKH_BYTE_LEN,

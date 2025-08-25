@@ -1,4 +1,4 @@
-import { StateLib, method, assert, ByteString, len, SHA256_HASH_LEN, FixedArray, toByteString, fill } from "@opcat-labs/scrypt-ts-opcat";
+import { StateLib, method, assert, ByteString, len, SHA256_HASH_LEN, FixedArray, toByteString, fill } from "@opcat-labs/scrypt-ts";
 import { CAT20GuardConstState } from "./types";
 import { ConstantsLib, STATE_HASH_BYTE_LEN, GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants";
 

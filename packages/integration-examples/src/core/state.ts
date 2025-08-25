@@ -1,4 +1,4 @@
-import { assert, type Signer, type SupportedNetwork, WalletSigner } from "@opcat-labs/scrypt-ts-opcat";
+import { assert, type Signer, type SupportedNetwork, WalletSigner } from "@opcat-labs/scrypt-ts";
 import { atom, useAtom, getDefaultStore } from "jotai";
 import type { Chain, OpcatProvider } from "../types/window";
 

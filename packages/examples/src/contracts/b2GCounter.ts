@@ -8,7 +8,7 @@ import {
     BacktraceInfo,
     prop,
     ByteString,
-  } from '@opcat-labs/scrypt-ts-opcat';
+  } from '@opcat-labs/scrypt-ts';
   
   export type CounterState = {
     count: Int32

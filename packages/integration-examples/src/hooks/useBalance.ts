@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWalletState } from '../core/state';
-import { MempoolProvider } from '@opcat-labs/scrypt-ts-opcat';
+import { MempoolProvider } from '@opcat-labs/scrypt-ts';
 
 export function useSatsBalance() {
   const [walletState] = useWalletState();

@@ -7,7 +7,7 @@ import {
     PubKey,
     Sig,
     assert,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 export class TimedCommit extends SmartContract {
     @prop()
