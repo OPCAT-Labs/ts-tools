@@ -5,25 +5,25 @@
 ### Patch Changes
 
 - Updated dependencies
-  - @opcat-labs/scrypt-ts@1.0.4
+  - @opcat-labs/scrypt-ts-opcat@1.0.4
 
 ## 0.1.3
 
 ### Patch Changes
 
 - Updated dependencies
-  - @opcat-labs/scrypt-ts@1.0.3
+  - @opcat-labs/scrypt-ts-opcat@1.0.3
 
 ## 0.1.2
 
 ### Patch Changes
 
 - Updated dependencies
-  - @opcat-labs/scrypt-ts@1.0.2
+  - @opcat-labs/scrypt-ts-opcat@1.0.2
 
 ## 0.1.1
 
 ### Patch Changes
 
 - Updated dependencies
-  - @opcat-labs/scrypt-ts@1.0.1
+  - @opcat-labs/scrypt-ts-opcat@1.0.1
