@@ -24,8 +24,9 @@
   },
   "include": [
     // "./contracts/state.ts",
+    "./contracts/hashMap.ts",
     // "./contracts/ctx.ts",
-    "./contracts/*.ts",
+    // "./contracts/*.ts",
     //"./contracts/b2G.ts",
     // "./contracts/b2G2.ts",
   ],

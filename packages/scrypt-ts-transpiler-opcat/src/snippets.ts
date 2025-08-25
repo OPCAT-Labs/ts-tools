@@ -57,3 +57,177 @@ export const ACCESS_INPUT_COUNT = {
   accessArgument: InjectedVar_InputCount,
   accessThis: `ContextUtils.checkSpentAmounts(this.${InjectedProp_SpentAmounts}, this.${InjectedProp_SHPreimage}.hashSpentAmounts)`,
 }
+
+
+export const HASHEDMAP_LIBRARY_TEMPLATE = (
+  libName: string, 
+  keyType: string, 
+  valueType: string, 
+  maxAccessKeys: number,
+  serializeKeyFnBody: string,
+  serializeValueFnBody: string,
+  isSameValueFnBody: string
+) => {
+  const code = `
+library ${libName} {
+  static const int MAX_ACCESS_KEYS_ALLOWED = 127;
+  static const int HASH_LEN = 20;
+  static const int DEPTH = 160;
+  static const int PROOF_LEN = 3220; 
+
+  // HashedMap holds the root of the merkle tree
+  private bytes _root;
+
+  // injected by typescript sdk
+  private bytes _nextRoot;
+  private bytes _proofs;
+  private ${keyType}[${maxAccessKeys}] _keys;
+  private ${valueType}[${maxAccessKeys}] _leafValues;
+  private ${valueType}[${maxAccessKeys}] _nextLeafValues;
+  private bytes _accessIndexes;
+
+  // temp variable
+  private int _accessCount;
+  private bool _dataFunctionCalled;
+
+  constructor(
+    bytes root
+  ) {
+    this._root = root;
+  }
+
+  function init (
+    bytes proofs,
+    ${keyType}[${maxAccessKeys}] keys,
+    ${valueType}[${maxAccessKeys}] leafValues,
+    ${valueType}[${maxAccessKeys}] nextLeafValues,
+    bytes accessIndexes
+  ) {
+    this._proofs = proofs;
+    this._keys = keys;
+    this._leafValues = leafValues;
+    this._nextLeafValues = nextLeafValues;
+    this._accessIndexes = accessIndexes;
+    this._accessCount = 0;
+    this.verifyMerkleProof();
+    this._dataFunctionCalled = false;
+  }
+
+  private function serializeKey(${keyType} key): bytes {
+    ${serializeKeyFnBody}
+  }
+
+  private function serializeValue(${valueType} value): bytes {
+    ${serializeValueFnBody}
+  }
+
+  private function isSameValue(${valueType} value1, ${valueType} value2): bool {
+    ${isSameValueFnBody}
+  }
+
+  private function verifyMerkleProof(): bool {
+    // 1. check _proofs length is valid
+    // 1.1 check if _proofs length is divisible by PROOF_LEN
+    int proofCount = len(this._proofs) / PROOF_LEN;
+    require(proofCount * PROOF_LEN == len(this._proofs));
+    // 1.2 check if _proofs length is less than maxAccessKeys * PROOF_LEN
+    require(proofCount <= ${maxAccessKeys});
+    // 1.3 check if _accessIndexes length is less than maxAccessKeys
+    // 1 byte for each access index
+    require(len(this._accessIndexes) <= ${maxAccessKeys});
+
+    // 2. check _root, _nextRoot, _leafValues, _nextLeafValues are valid
+    bytes nextRoot = this._root;
+    loop(${maxAccessKeys}): i {
+      if (i < proofCount) {
+        bytes proof = this._proofs[i * PROOF_LEN : (i + 1) * PROOF_LEN];
+        bytes keyHash = hash160(this.serializeKey(this._keys[i]));
+        bytes leafHash = hash160(this.serializeValue(this._leafValues[i]));
+        bytes nextLeafHash = hash160(this.serializeValue(this._nextLeafValues[i]));
+        bytes expectedLeafHash = proof[0:HASH_LEN];
+        bytes neighbors = proof[HASH_LEN: HASH_LEN + DEPTH * HASH_LEN];
+
+        // make sure _leafValues[i] is the same as the leafHash in the proof
+        require(expectedLeafHash == leafHash);
+        // verify the merkle proof
+        nextRoot = this.verifySingleMerkle(nextRoot, keyHash, leafHash, nextLeafHash, neighbors);
+      }
+    }
+    this._nextRoot = nextRoot;
+    return true;
+  }
+
+  private function verifySingleMerkle(
+    bytes root,
+    bytes keyHash,
+    bytes leafHash,
+    bytes nextLeafHash,
+    bytes neighbors
+  ): bytes {
+    int keyNumber = unpack(keyHash + b'00');
+    bytes oldMerkleValue = leafHash;
+    bytes newMerkleValue = nextLeafHash;
+    loop(DEPTH): i {
+      int neighborType = keyNumber % 2;
+      keyNumber = keyNumber / 2;
+      bytes neighborItem = neighbors[i * HASH_LEN : (i + 1) * HASH_LEN];
+      if (neighborType == 0) {
+        oldMerkleValue = hash160(oldMerkleValue + neighborItem);
+        newMerkleValue = hash160(newMerkleValue + neighborItem);
+      } else {
+        oldMerkleValue = hash160(neighborItem + oldMerkleValue);
+        newMerkleValue = hash160(neighborItem + newMerkleValue);
+      }
+    }
+    require(root == oldMerkleValue);
+    return newMerkleValue;
+  }
+
+  private function accessKey(${keyType} key): int {
+    int accessIndex = unpack(this._accessIndexes[this._accessCount: ++this._accessCount]);
+    require(accessIndex >= 0);
+    bytes expectedKeyHash = this.serializeKey(this._keys[accessIndex]);
+    bytes accessKeyHash = this.serializeKey(key);
+    require(accessKeyHash == expectedKeyHash);
+    return accessIndex;
+  }
+
+  // public function
+  function getValue(${keyType} key):  ${valueType} {
+    int accessIndex = this.accessKey(key);
+    return this._leafValues[accessIndex];
+  }
+
+  // public function
+  function setValue(${keyType} key, ${valueType} value): bool {
+    // cannot call \`set\` function after \`data\` function is called
+    require(!this._dataFunctionCalled);
+    int accessIndex = this.accessKey(key);
+    this._leafValues[accessIndex] = value;
+    return true;
+  }
+
+  // public function
+  function data(): bytes {
+    int proofCount = len(this._proofs) / PROOF_LEN;
+    loop(${maxAccessKeys}): i {
+      if (i < proofCount) {
+        require(this.isSameValue(this._leafValues[i], this._nextLeafValues[i]));
+      }
+    }
+    this._dataFunctionCalled = true;
+    return this._nextRoot;
+  }
+}
+`;
+
+ // remove comments
+ const purifiedCode = code.split('\n').map(line => {
+  const index = line.indexOf('//')
+  if (index !== -1) {
+    return line.slice(0, index);
+  }
+  return line;
+ }).join('\n');
+ return purifiedCode;
+}

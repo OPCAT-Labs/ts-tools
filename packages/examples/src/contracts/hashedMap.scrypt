@@ -1,0 +1,179 @@
+
+
+
+// __KeyType__, __ValueType__ and 999 are dummy values, they should be replaced with the actual max access keys
+
+// should be removed after transpiler is implemented
+struct __KeyType__ {}
+struct __ValueType__ {}
+
+// 因为 MAX_ACCESS_KEYS extends number 无法作为泛型, 所以需要使用 generated library 来实现
+
+library HashedMap__KeyType____ValueType__Utils {
+
+  static const int MAX_ACCESS_KEYS_ALLOWED = 127; // int8.max
+  static const int HASH_LEN = 20;
+  // we use hash160 as the hash function, so the depth is 160
+  static const int DEPTH = 160;
+  static const int PROOF_LEN = 3220;  // 20(leafHash) + 20 * 160(neighbor hashes of merkle proof)
+  static const int MAX_ACCESS_KEYS = 3;
+
+  // 3 is a dummy value, it should be replaced by transpiler
+
+
+  // ------------------------ field value -----------------------
+  // current merkle root
+  private bytes _root;
+  // next merkle root after all `set` functions are called
+
+
+  // ------------------------ 
+  private bytes _nextRoot;
+  // all fields needed by verifying merkle proofmerkle
+  // proof1:  20(leafHash) + 20 * 160(neighbor hashes of  proof)
+  // proof2:  20(leafHash) + 20 * 160(neighbor hashes of merkle proof after leaf1 is updated)
+  // proof3:  20(leafHash) + 20 * 160(neighbor hashes of merkle proof after leaf1 and leaf2 are updated)
+  // ...
+  private bytes _proofs;
+  // current leaf values
+  // 999 is a dummy value, it should be replaced by transpiler
+  private __KeyType__[MAX_ACCESS_KEYS] _keys;
+  private __ValueType__[MAX_ACCESS_KEYS] _leafValues;
+  private __ValueType__[MAX_ACCESS_KEYS] _nextLeafValues;
+
+  // inject by typescript sdk, index for each `get` and `set` calling
+  // the index value is the index of the leaf value in the `_leafValues`, `_nextLeafValues` array and the index of the proof in the `_proofs` bytes
+  private bytes _accessIndexes;
+
+  // temp variable
+  private int _accessCount;
+  // temp variable
+  private bool _dataFunctionCalled;
+
+  constructor(
+    // save in field
+    bytes root 
+  ) {
+    this._root = root;
+  }
+
+  function init (
+
+    // inject by typescript sdk
+    bytes proofs,
+    __KeyType__[MAX_ACCESS_KEYS] keys,
+    __ValueType__[MAX_ACCESS_KEYS] leafValues,
+    __ValueType__[MAX_ACCESS_KEYS] nextLeafValues,
+    bytes accessIndexes
+  ) {
+    this._proofs = proofs;
+    this._keys = keys;
+    this._leafValues = leafValues;
+    this._nextLeafValues = nextLeafValues;
+    this._accessIndexes = accessIndexes;
+    this._accessCount = 0;
+    this.verifyMerkleProof();
+    this._dataFunctionCalled = false;
+  }
+
+  // should be generated
+  private function serializeKey(__KeyType__ key): bytes {
+    return b'';
+  }
+  // should be generated
+  private function serializeValue(__ValueType__ value): bytes {
+    return b'';
+  }
+  // should be generated
+  private function isSameValue(__ValueType__ value1, __ValueType__ value2): bool {
+    return true;
+  }
+
+  private function verifyMerkleProof(): bool {
+    // 1. check _proofs length is valid
+    // 1.1 check if _proofs length is divisible by PROOF_LEN
+    int proofCount = len(this._proofs) / PROOF_LEN;
+    require(proofCount * PROOF_LEN == len(this._proofs));
+    // 1.2 check if _proofs length is less than MAX_ACCESS_KEYS_ALLOWED * PROOF_LEN
+    require(proofCount < MAX_ACCESS_KEYS);
+
+    // 2. check _root, _nextRoot, _leafValues, _nextLeafValues are valid
+    bytes nextRoot = this._root;
+    loop(MAX_ACCESS_KEYS): i {
+      if (i < proofCount) {
+        bytes proof = this._proofs[i * PROOF_LEN : (i + 1) * PROOF_LEN];
+        bytes keyHash = hash160(this.serializeKey(this._keys[i]));
+        bytes leafHash = hash160(this.serializeValue(this._leafValues[i]));
+        bytes nextLeafHash = hash160(this.serializeValue(this._nextLeafValues[i]));
+        bytes expectedLeafHash = proof[0:HASH_LEN];
+        bytes neighbors = proof[HASH_LEN: HASH_LEN + DEPTH * HASH_LEN];
+
+        // make sure _leafValues[i] is the same as the leafHash in the proof
+        require(expectedLeafHash == leafHash);
+        // verify the merkle proof
+        nextRoot = this.verifySingleMerkle(nextRoot, keyHash, leafHash, nextLeafHash, neighbors);
+      }
+    }
+    this._nextRoot = nextRoot;
+    return true;
+  }
+
+  private function verifySingleMerkle(
+    bytes root,
+    bytes keyHash,
+    bytes leafHash,
+    bytes nextLeafHash,
+    bytes neighbors
+  ): bytes {
+    int keyNumber = unpack(keyHash + b'00');
+    bytes oldMerkleValue = leafHash;
+    bytes newMerkleValue = nextLeafHash;
+    loop(DEPTH): i {
+      int neighborType = keyNumber % 2;
+      keyNumber = keyNumber / 2;
+      bytes neighborItem = neighbors[i * HASH_LEN : (i + 1) * HASH_LEN];
+      if (neighborType == 0) {
+        oldMerkleValue = hash160(oldMerkleValue + neighborItem);
+        newMerkleValue = hash160(newMerkleValue + neighborItem);
+      } else {
+        oldMerkleValue = hash160(neighborItem + oldMerkleValue);
+        newMerkleValue = hash160(neighborItem + newMerkleValue);
+      }
+    }
+    require(root == oldMerkleValue);
+    return newMerkleValue;
+  }
+
+  private function accessKey(__KeyType__ key): int {
+    int accessIndex = unpack(this._accessIndexes[this._accessCount: ++this._accessCount]);
+    require(accessIndex >= 0);
+    bytes expectedKeyHash = this.serializeKey(this._keys[accessIndex]);
+    bytes accessKeyHash = this.serializeKey(key);
+    require(accessKeyHash == expectedKeyHash);
+    return accessIndex;
+  }
+
+  function getValue(__KeyType__ key):  __ValueType__ {
+    int accessIndex = this.accessKey(key);
+    return this._leafValues[accessIndex];
+  }
+
+  function setValue(__KeyType__ key, __ValueType__ value): bool {
+    // cannot call `set` function after `data` function is called
+    require(!this._dataFunctionCalled);
+    int accessIndex = this.accessKey(key);
+    this._leafValues[accessIndex] = value;
+    return true;
+  }
+
+  function data(): bytes {
+    int proofCount = len(this._proofs) / PROOF_LEN;
+    loop(MAX_ACCESS_KEYS): i {
+      if (i < proofCount) {
+        require(this.isSameValue(this._leafValues[i], this._nextLeafValues[i]));
+      }
+    }
+    this._dataFunctionCalled = true;
+    return this._nextRoot;
+  }
+}

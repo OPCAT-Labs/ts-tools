@@ -191,6 +191,9 @@ export function Sha256(b: ByteString): Sha256 {
   return getValidatedHexString(b, false) as Sha256;
 }
 
+
+export type HashedMap = Flavor<Map<SupportedParamType, SupportedParamType>, 'HashedMap'>;
+
 /**
  * An array is a fixed-size list of values of the same basic type.
  * When you declare an array you have to declare it like this:
@@ -283,7 +286,7 @@ export interface StructObject {
 /**
  * @ignore
  */
-export type SupportedParamType = PrimitiveTypes | StructObject | SupportedParamType[];
+export type SupportedParamType = PrimitiveTypes | StructObject | HashedMap | SupportedParamType[];
 
 
 

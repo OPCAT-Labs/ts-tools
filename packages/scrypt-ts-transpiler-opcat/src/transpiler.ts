@@ -47,6 +47,7 @@ import {
   InjectedProp_Prevout,
   InjectedProp_PrevTxHashPreimage,
   InjectedParam_PrevTxHashPreimage,
+  HASHEDMAP_LIBRARY_TEMPLATE,
 } from './snippets';
 import { MethodDecoratorOptions } from '@opcat-labs/scrypt-ts-opcat';
 import { Relinker } from './relinker';
@@ -312,6 +313,7 @@ export class Transpiler {
   _accessBuiltinsSymbols = new Set<string>();
   _importedTypeSymbols = new Map<string, ts.Symbol>();
   _stateTypeSymbols = new Map<string, ts.Symbol>();
+  _hashedMapLibraries = new Map<string, {type: ts.TypeReference, node: ts.Node}>();
 
   _watch = false;
 
@@ -395,10 +397,11 @@ export class Transpiler {
     // transform the contract, library, structs and find its imported symbols
     const contractAndLibs = this.scComponents.map((cDef) => this.transformClassDeclaration(cDef));
     const structs = this.transformTypeLiteralAndInterfaces();
+    const hashedMapLibraries = this.transformHashedMapLibraries();
 
     // transform the import expressions
     const imports = this.transformImports(allmissSym, relinker);
-    const result = EmittedSection.join(imports, structs, ...contractAndLibs);
+    const result = EmittedSection.join(imports, hashedMapLibraries, structs, ...contractAndLibs);
 
     if (this._watch) {
       setTimeout(() => {
@@ -1014,6 +1017,7 @@ export class Transpiler {
       section.append(`\nTxHashPreimage ${InjectedProp_PrevTxHashPreimage};`);
     }
     if (this.shouldInjectCurStateProp()) {
+      // todo inject state hashedMap fields
       const stateTypeSymbol = this._stateTypeSymbols.get(this.currentContractName);
       if (!stateTypeSymbol) {
         throw new Error('State type symbol is not defined');
@@ -1024,13 +1028,8 @@ export class Transpiler {
 
   private injectScryptStructs(_section: EmittedSection) { }
 
-  private injectSerializeStateFunc(section: EmittedSection) {
-    const stateTypeSymbol = this._stateTypeSymbols.get(this.currentContractName);
-
-    if (!stateTypeSymbol) {
-      throw new Error('State type symbol is not defined');
-    }
-
+  private generateSerializeTypeCode(symbol: ts.Symbol, prefix: string, equalPrefix: string) {
+    
     const flattenProps = (prop: ts.Symbol, prefix: string): { name: string; type: ts.Type }[] => {
       const dec =
         prop.flags & ts.SymbolFlags.Alias
@@ -1104,6 +1103,25 @@ export class Transpiler {
         }
       };
 
+      const flattenHashedMap = (type: ts.Type, prefix: string) => {
+        // const keyType = type.aliasTypeArguments![0];
+        // const valueType = type.aliasTypeArguments![1];
+        // const keyTypeStr = this.type2ResolvedName(keyType);
+        // const valueTypeStr = this.type2ResolvedName(valueType);
+        // const maxAccessKeys = type.aliasTypeArguments![2];
+        // if (maxAccessKeys.isNumberLiteral()) {
+
+        // } else {
+        //   throw new Error(`The third type argument for HashedMap must be a number literal: ${prefix}: ${typeStr}`);
+        // }
+        return [
+          {
+            name: prefix,
+            type: type,
+          },
+        ];
+      }
+
       if (!members) {
         // not a struct type, throw error
         throw new Error(`Unsupported type for prop hash: ${prop.name}: ${typeStr}`);
@@ -1117,6 +1135,8 @@ export class Transpiler {
           if (type.aliasSymbol?.name === 'FixedArray') {
             // fixed array type under struct type
             return flattenFixedArray(type, `${prefix}.${k}`);
+          } else if (typeStr === 'HashedMap') {
+            return flattenHashedMap(type, `${prefix}.${k}`);
           } else {
             // non-fixed array types under struct type
             const symbol = type.aliasSymbol || type.symbol;
@@ -1138,7 +1158,7 @@ export class Transpiler {
         });
       }
     };
-
+    
     function allowedTypeStr(typeStr: string) {
       try {
         propHash('dummyName', typeStr);
@@ -1166,12 +1186,14 @@ export class Transpiler {
         case 'OpCodeType':
         case 'string':
           return `${name}`;
+        case 'HashedMap':
+          return `${name}._root`;
         default: {
           throw new Error(`Unsupported type for byteStringify: ${typeStr}`);
         }
       }
     }
-
+    
     function propHash(name: string, typeStr: string): string {
       switch (typeStr) {
         case 'Int32':
@@ -1190,22 +1212,247 @@ export class Transpiler {
         case 'OpCodeType':
         case 'string':
           return `hash160(${name})`;
+        case 'HashedMap':
+          return `hash160(${name}._root)`;
         default: {
           throw new Error(`Unsupported type for prop hash: ${typeStr}`);
         }
       }
     }
 
-    const hashes = flattenProps(stateTypeSymbol, InjectedParam_CurState).map(({ name, type }) =>
+    const flattenedProps = flattenProps(symbol, prefix);
+    const flattenedEqualProps = flattenProps(symbol, equalPrefix);
+
+    const hashes = flattenedProps.map(({ name, type }) =>
       propHash(name, this.type2ResolvedName(type)),
-    );
-    const dataPart = flattenProps(stateTypeSymbol, InjectedParam_CurState).map(({ name, type }) =>
+    ).join(' + ');
+    const dataPart = flattenedProps.map(({ name, type }) =>
     {
       const bytes = byteStringify(name, this.type2ResolvedName(type));
       return `num2bin(len(${bytes}), 2) + ${bytes}`;
       // return `StdUtils.writeVarint(${bytes})`;
     }
-    );
+    ).join(' + ');
+    const equalsPart = flattenedProps.map(({ name, type }, index) => {
+      return name == flattenedEqualProps[index].name;
+    }).join(' && ');
+
+    return {
+      hashPart: hashes,
+      dataPart: dataPart,
+      equalsPart: equalsPart,
+    }
+  }
+
+  private injectSerializeStateFunc(section: EmittedSection) {
+    const stateTypeSymbol = this._stateTypeSymbols.get(this.currentContractName);
+
+    if (!stateTypeSymbol) {
+      throw new Error('State type symbol is not defined');
+    }
+
+    // const flattenProps = (prop: ts.Symbol, prefix: string): { name: string; type: ts.Type }[] => {
+    //   const dec =
+    //     prop.flags & ts.SymbolFlags.Alias
+    //       ? this._checker.getAliasedSymbol(prop).declarations![0]
+    //       : prop.declarations![0];
+
+    //   let members: ts.NodeArray<ts.TypeElement>;
+
+    //   // interface StateA {count: Int32}; SmartContract<StateA>
+    //   if (ts.isInterfaceDeclaration(dec)) {
+    //     members = dec.members;
+    //   }
+    //   // SmartContract<{count: Int32}>
+    //   if (ts.isTypeLiteralNode(dec)) {
+    //     members = dec.members;
+    //   }
+    //   // type StateA = {count: Int32}; SmartContract<StateA>
+    //   if (ts.isTypeAliasDeclaration(dec) && ts.isTypeLiteralNode(dec.type)) {
+    //     members = dec.type.members;
+    //   }
+
+    //   // state type must be a struct type
+    //   if (!members && prefix === InjectedParam_CurState) {
+    //     throw new Error(`State type must extends StructObject`);
+    //   }
+
+    //   // is a primitive type, just return
+    //   const type = this._checker.getTypeAtLocation(dec);
+    //   const typeStr = this.type2ResolvedName(type);
+    //   if (allowedTypeStr(typeStr)) {
+    //     return [
+    //       {
+    //         name: prefix,
+    //         type,
+    //       },
+    //     ];
+    //   }
+
+    //   const flattenFixedArray = (type: ts.Type, prefix: string) => {
+    //     const len = type.aliasTypeArguments![1];
+    //     if (len.isNumberLiteral()) {
+    //       return Array.from({ length: len.value }).flatMap((_, i) => {
+    //         const elemType = type.aliasTypeArguments![0];
+    //         const typeStr = this.type2ResolvedName(elemType);
+
+    //         if (elemType.aliasSymbol?.name === 'FixedArray') {
+    //           // fixed array type under fixed array type
+    //           return flattenFixedArray(elemType, `${prefix}[${i}]`);
+    //         } else {
+    //           // non-fixed array types under fixed array type
+    //           const symbol = elemType.aliasSymbol || elemType.symbol;
+    //           if (!symbol) {
+    //             if (allowedTypeStr(typeStr)) {
+    //               // compatible with bigint, boolean, string
+    //               return [
+    //                 {
+    //                   name: `${prefix}[${i}]`,
+    //                   type: elemType,
+    //                 },
+    //               ];
+    //             } else {
+    //               throw new Error(`Unsupported type for prop hash: ${prefix}[${i}]: ${typeStr}`);
+    //             }
+    //           } else {
+    //             return flattenProps(symbol, `${prefix}[${i}]`);
+    //           }
+    //         }
+    //       });
+    //     } else {
+    //       throw new Error(`Unsupported type for prop hash: ${prefix}[index]: ${typeStr}`);
+    //     }
+    //   };
+
+    //   const flattenHashedMap = (type: ts.Type, prefix: string) => {
+    //     // const keyType = type.aliasTypeArguments![0];
+    //     // const valueType = type.aliasTypeArguments![1];
+    //     // const keyTypeStr = this.type2ResolvedName(keyType);
+    //     // const valueTypeStr = this.type2ResolvedName(valueType);
+    //     // const maxAccessKeys = type.aliasTypeArguments![2];
+    //     // if (maxAccessKeys.isNumberLiteral()) {
+
+    //     // } else {
+    //     //   throw new Error(`The third type argument for HashedMap must be a number literal: ${prefix}: ${typeStr}`);
+    //     // }
+    //     return [
+    //       {
+    //         name: prefix,
+    //         type: type,
+    //       },
+    //     ];
+    //   }
+
+    //   if (!members) {
+    //     // not a struct type, throw error
+    //     throw new Error(`Unsupported type for prop hash: ${prop.name}: ${typeStr}`);
+    //   } else {
+    //     // is a struct type, do recursive flatten for each member
+    //     return members.flatMap((m) => {
+    //       const k = m.name.getText();
+    //       const type = this._checker.getTypeAtLocation(m);
+    //       const typeStr = this.type2ResolvedName(type);
+
+    //       if (type.aliasSymbol?.name === 'FixedArray') {
+    //         // fixed array type under struct type
+    //         return flattenFixedArray(type, `${prefix}.${k}`);
+    //       } else if (typeStr === 'HashedMap') {
+    //         return flattenHashedMap(type, `${prefix}.${k}`);
+    //       } else {
+    //         // non-fixed array types under struct type
+    //         const symbol = type.aliasSymbol || type.symbol;
+    //         if (!symbol) {
+    //           if (allowedTypeStr(typeStr)) {
+    //             // compatible with bigint, boolean, string
+    //             return [
+    //               {
+    //                 name: `${prefix}.${k}`,
+    //                 type,
+    //               },
+    //             ];
+    //           } else {
+    //             throw new Error(`Unsupported type for prop hash: ${prefix}.${k}: ${typeStr}`);
+    //           }
+    //         }
+    //         return flattenProps(symbol, `${prefix}.${k}`);
+    //       }
+    //     });
+    //   }
+    // };
+
+    // function allowedTypeStr(typeStr: string) {
+    //   try {
+    //     propHash('dummyName', typeStr);
+    //     return true;
+    //   } catch (_e) {
+    //     return false;
+    //   }
+    // }
+
+    // function byteStringify(name: string, typeStr: string): string {
+    //   switch(typeStr) {
+    //     case 'Int32': 
+    //     case 'SigHashType':
+    //     case 'bigint': 
+    //       return `pack(${name})`;
+    //     case 'Bool':
+    //     case 'boolean': 
+    //       return `(${name} ? b'01' : b'')`;
+    //     case 'ByteString':
+    //     case 'Sha256':
+    //     case 'Sha1':
+    //     case 'Sig':
+    //     case 'PubKey':
+    //     case 'Ripemd160':
+    //     case 'OpCodeType':
+    //     case 'string':
+    //       return `${name}`;
+    //     case 'HashedMap':
+    //       return `${name}._root`;
+    //     default: {
+    //       throw new Error(`Unsupported type for byteStringify: ${typeStr}`);
+    //     }
+    //   }
+    // }
+
+    // function propHash(name: string, typeStr: string): string {
+    //   switch (typeStr) {
+    //     case 'Int32':
+    //     case 'SigHashType':
+    //     case 'bigint':
+    //       return `hash160(pack(${name}))`;
+    //     case 'Bool':
+    //     case 'boolean':
+    //       return `hash160(${name} ? b'01' : b'')`;
+    //     case 'ByteString':
+    //     case 'Sha256':
+    //     case 'Sha1':
+    //     case 'Sig':
+    //     case 'PubKey':
+    //     case 'Ripemd160':
+    //     case 'OpCodeType':
+    //     case 'string':
+    //       return `hash160(${name})`;
+    //     case 'HashedMap':
+    //       return `hash160(${name}._root)`;
+    //     default: {
+    //       throw new Error(`Unsupported type for prop hash: ${typeStr}`);
+    //     }
+    //   }
+    // }
+
+    // const hashes = flattenProps(stateTypeSymbol, InjectedParam_CurState).map(({ name, type }) =>
+    //   propHash(name, this.type2ResolvedName(type)),
+    // );
+    // const dataPart = flattenProps(stateTypeSymbol, InjectedParam_CurState).map(({ name, type }) =>
+    // {
+    //   const bytes = byteStringify(name, this.type2ResolvedName(type));
+    //   return `num2bin(len(${bytes}), 2) + ${bytes}`;
+    //   // return `StdUtils.writeVarint(${bytes})`;
+    // }
+    // );
+
+    const {dataPart, hashPart} = this.generateSerializeTypeCode(stateTypeSymbol, InjectedParam_CurState, InjectedParam_CurState);
 
     section
       .append('\n')
@@ -1213,13 +1460,13 @@ export class Transpiler {
         `static function serializeState(${stateTypeSymbol.name} ${InjectedParam_CurState}): bytes {`,
       )
       .append('\n')
-      .append(`  return ${dataPart.join(' + ')} + hash160(${hashes.join(' + ')});`)
+      .append(`  return ${dataPart} + hash160(${hashPart});`)
       .append('\n')
       .append('}')
       .append('\n')
       .append(`static function stateHash(${stateTypeSymbol.name} ${InjectedParam_CurState}): bytes {`)
       .append('\n')
-      .append(`  return sha256(${dataPart.join(' + ')} + hash160(${hashes.join(' + ')}));`)
+      .append(`  return sha256(${dataPart} + hash160(${hashPart}));`)
       .append('\n')
       .append('}');
   }
@@ -3196,6 +3443,12 @@ export class Transpiler {
           );
         }
 
+        if (typeString === 'HashedMap') {
+          const [libraryName] =this.hashedMapToLibraryName(type as ts.TypeReference, node);
+          this._hashedMapLibraries.set(libraryName, {type: type as ts.TypeReference, node});
+          return toSection.append(libraryName, coordinates);
+        }
+
         const isFixedArray = (type: ts.Type) => {
           if (type.isUnionOrIntersection() && type.types.length === 2) {
             const t1 = this._checker.typeToString(type.types[0]);
@@ -4309,6 +4562,63 @@ export class Transpiler {
       }
     });
     return EmittedSection.join(...structSecs.concat(enumSecs));
+  }
+
+  private transformHashedMapLibraries(): EmittedSection {
+    // todo implement it
+    const librarySecs: EmittedSection[] = [];
+    this._hashedMapLibraries.forEach(({type, node}, libraryName) => {
+      const [_, keyType, valueType, maxAccessKeys] = this.hashedMapToLibraryName(type, node);
+      librarySecs.push(new EmittedSection().appendWith(this, (librarySec) => {
+
+        const typeTypeRef = this._checker.getTypeAtLocation(type.typeArguments![0].getSymbol()!.declarations![0])
+        const keyTypeRef = this._checker.getTypeAtLocation(type.typeArguments![1].getSymbol()!.declarations![0])
+        const keyCodes = this.generateSerializeTypeCode(, 'key', 'key')
+        const valueCodes = this.generateSerializeTypeCode(keyTypeRef.symbol!, 'value', 'value')
+
+        const serializeKeyFnBody = ''
+        const serializeValueFnBody = ''
+        const isSameValueFnBody = ''
+
+        const libraryCodeLines = HASHEDMAP_LIBRARY_TEMPLATE(libraryName, keyType, valueType, maxAccessKeys, '', '', '').split('\n');
+        libraryCodeLines.forEach((line) => {
+          librarySec.append(line).append('\n');
+        });
+        return librarySec;
+      }));
+    });
+    return EmittedSection.join(...librarySecs);
+  }
+
+  private generateSerializeType(type: ts.Type, node: ts.Node, toSection: EmittedSection) {
+    if (type.symbol) {
+      toSection.append(type.symbol.escapedName.toString());
+    } else {
+      toSection.append(this.transformType(type, node, toSection).getCode());
+    }
+  }
+
+  private hashedMapToLibraryName(type: ts.TypeReference, node: ts.Node) {
+    if (type.typeArguments.length !== 3) {
+      throw new Error(`HashedMap must have 3 type arguments: ${node.getText()}`);
+    }
+    // const keyType = type.typeArguments[0].aliasSymbol?.name;
+    // const valueType = type.typeArguments[1].aliasSymbol?.name;
+
+    const keyTypeES = new EmittedSection();
+    const keyType = this.transformType(type.typeArguments[0], node, keyTypeES).getCode();
+    const valueTypeES = new EmittedSection();
+    const valueType = this.transformType(type.typeArguments[1], node, valueTypeES).getCode();
+    if (!type.typeArguments[2].isNumberLiteral()) { 
+      throw new Error(`The third type argument for HashedMap must be a number literal: ${node.getText()}`);
+    }
+    const maxAccessKeys = type.typeArguments[2].value;
+    return [
+      `HashedMapLib_${keyType}_${valueType}_${maxAccessKeys}`,
+      keyType,
+      valueType,
+      maxAccessKeys
+    ] as const;
   }
 
   private toScryptBinary(node: ts.Node, operator: string): string {
