@@ -1,4 +1,4 @@
-import { ByteString, sha256, toByteString } from '@opcat-labs/scrypt-ts-opcat'
+import { ByteString, sha256, toByteString } from '@opcat-labs/scrypt-ts'
 
 export const SIGNATURE_LEN = 64
 export const DUMMY_SIGNATURE = '00'.repeat(SIGNATURE_LEN)

@@ -14,7 +14,7 @@ import {
     byteStringToInt,
     intToByteString,
     xor,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 export class XORPuzzle extends SmartContract {
     @prop()

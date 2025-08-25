@@ -8,7 +8,7 @@ import {
     Sha256,
     Sig,
     SmartContract,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 // This contract can both be utilized as an atomic swap on the same chain
 // or as a cross-chain atomic swap.

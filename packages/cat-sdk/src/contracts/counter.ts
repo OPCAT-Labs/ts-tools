@@ -4,7 +4,7 @@ import {
   method,
   assert,
   TxUtils,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 export type CounterState = {
   count: bigint

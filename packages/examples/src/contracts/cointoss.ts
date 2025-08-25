@@ -8,7 +8,7 @@ import {
     hash256,
     ByteString,
     assert,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 export class CoinToss extends SmartContract {
     @prop()

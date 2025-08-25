@@ -3,7 +3,7 @@
 import { use, expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { deployToken, loadAllArtifacts, mintToken } from '../utils'
-import { ByteString, UTXO, ExtPsbt } from '@opcat-labs/scrypt-ts-opcat'
+import { ByteString, UTXO, ExtPsbt } from '@opcat-labs/scrypt-ts'
 import { OpenMinterCAT20Meta } from '../../../../src/contracts/cat20/types'
 import { testSigner } from '../../../utils/testSigner'
 import { toTokenOwnerAddress } from '../../../../src/utils'

@@ -8,7 +8,7 @@ import {
     prop,
     SmartContract,
     slice,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 /*
  * This is an implementation of the Ackermann function. It serves

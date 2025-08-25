@@ -12,7 +12,7 @@ import {
   Signer,
   ExtPsbt,
   getBackTraceInfo,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import {
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,

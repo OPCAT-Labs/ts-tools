@@ -1,5 +1,5 @@
 import type { AddressAmount } from "../hooks/useTransfer";
-import { ExtPsbt, MempoolProvider, Script, sha256, type Signer, type SupportedNetwork } from "@opcat-labs/scrypt-ts-opcat";
+import { ExtPsbt, MempoolProvider, Script, sha256, type Signer, type SupportedNetwork } from "@opcat-labs/scrypt-ts";
 import { CAT20_TRACKER_URL, CatTrackerApi, type Cat20Balance } from "./cat20";
 import { CAT20, CAT20Guard, singleSend } from "@opcat-labs/cat-sdk";
 

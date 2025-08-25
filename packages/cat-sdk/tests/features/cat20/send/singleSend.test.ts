@@ -2,7 +2,7 @@
 
 import chaiAsPromised from 'chai-as-promised'
 import { expect, use } from 'chai'
-import { ByteString, UTXO } from '@opcat-labs/scrypt-ts-opcat'
+import { ByteString, UTXO } from '@opcat-labs/scrypt-ts'
 import { OpenMinterCAT20Meta } from '../../../../src/contracts/cat20/types'
 import { TestCAT20Generator } from '../../../utils/testCAT20Generator'
 import { loadAllArtifacts, singleSendToken } from '../utils'

@@ -5,7 +5,7 @@ import {
     SmartContract,
     FixedArray,
     TxUtils,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 export type CandidateName = ByteString
 

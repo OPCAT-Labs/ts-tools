@@ -14,7 +14,7 @@ import {
   sha256,
   BacktraceInfo,
   TxHashPreimageUtils
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import {
   CAT20State,
   CAT20OpenMinterState,

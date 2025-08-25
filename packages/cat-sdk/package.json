@@ -29,7 +29,8 @@
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:esm": "tsc -p tsconfig.esm.json",
     "deploy": "npx ts-node ./deploy.ts",
-    "compile": "rimraf artifacts && npx -y @opcat-labs/cli-opcat@1.0.4 compile",
+    "//compile": "rimraf artifacts && npx -y @opcat-labs/cli@1.0.4 compile",
+    "compile": "rimraf artifacts && node ../scrypt-ts-cli/bin/main.js compile",
     "test": "npm run test:local",
     "test:local": "mocha",
     "test:testnet": "cross-env NETWORK=opcat-testnet mocha --no-timeouts",
@@ -48,7 +49,7 @@
   },
   "dependencies": {
     "@opcat-labs/opcat": "1.0.3",
-    "@opcat-labs/scrypt-ts-opcat": "1.0.4",
+    "@opcat-labs/scrypt-ts": "1.0.4",
     "dotenv": "^16.0.3",
     "ts-node": "^10.9.2"
   },

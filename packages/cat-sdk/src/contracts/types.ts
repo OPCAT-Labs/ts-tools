@@ -1,4 +1,4 @@
-import { ByteString, FixedArray, PubKey, Sig } from '@opcat-labs/scrypt-ts-opcat';
+import { ByteString, FixedArray, PubKey, Sig } from '@opcat-labs/scrypt-ts';
 import { TX_OUTPUT_COUNT_MAX } from './constants';
 
 // args to unlock a token UTXO or a nft UTXO

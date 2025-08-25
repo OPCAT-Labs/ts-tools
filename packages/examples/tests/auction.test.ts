@@ -9,7 +9,7 @@ import {
     ExtPsbt,
     fromSupportedNetwork,
     markSpent,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import { Auction } from '@opcat-labs/examples'
 import { getDefaultSigner, getDefaultProvider, getRandomSigner } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'

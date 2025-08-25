@@ -1,8 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 // @ts-ignore
-import nodePolyfills from 'vite-plugin-node-stdlib-browser'
-
+import {nodePolyfills} from 'vite-plugin-node-polyfills'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -15,5 +14,6 @@ export default defineConfig({
   plugins: [react(), nodePolyfills()],
   define: {
     'process.env.NODE_DEBUG': 'false',
+    'process.version': JSON.stringify(`${process.version}`),
   }
 })

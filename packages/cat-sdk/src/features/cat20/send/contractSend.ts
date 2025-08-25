@@ -13,7 +13,7 @@ import {
   ExtPsbt,
   markSpent,
   getBackTraceInfo,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import { CAT20 } from '../../../contracts/cat20/cat20'
 import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
 import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types'

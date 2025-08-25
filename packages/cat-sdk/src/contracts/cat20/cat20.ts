@@ -10,14 +10,14 @@ import {
   SpentScriptHashes,
   TX_OUTPUT_SCRIPT_HASH_LEN,
   ContextUtils
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import { OwnerUtils } from '../utils/ownerUtils'
 import { CAT20State, CAT20GuardConstState } from './types'
 import {
   ContractUnlockArgs,
 } from '../types'
 import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN } from '../constants'
-import { SpentDataHashes } from '@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs'
+import { SpentDataHashes } from '@opcat-labs/scrypt-ts/dist/types/smart-contract/types/structs'
 import { CAT20GuardStateLib } from './cat20GuardStateLib'
 
 export class CAT20 extends SmartContract<CAT20State> {

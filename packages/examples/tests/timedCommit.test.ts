@@ -1,7 +1,7 @@
 import { expect, use } from 'chai'
 import { getDefaultProvider, getDefaultSigner, getRandomSigner } from './utils/helper'
 import { TimedCommit } from '@opcat-labs/examples'
-import { PubKey, toByteString, Signer, ByteString, deploy, call, sha256, ExtPsbt } from '@opcat-labs/scrypt-ts-opcat'
+import { PubKey, toByteString, Signer, ByteString, deploy, call, sha256, ExtPsbt } from '@opcat-labs/scrypt-ts'
 import chaiAsPromised from 'chai-as-promised'
 use(chaiAsPromised)
 describe('Test SmartContract `TimedCommit`', async () => {

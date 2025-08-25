@@ -1,4 +1,4 @@
-import { SmartContract, assert, method, prop } from "@opcat-labs/scrypt-ts-opcat";
+import { SmartContract, assert, method, prop } from "@opcat-labs/scrypt-ts";
 
 export class ModExp extends SmartContract {
     // max # of bits for e = ceil(log2(y))

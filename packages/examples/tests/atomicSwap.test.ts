@@ -6,7 +6,7 @@ import {
     call,
     IExtPsbt,
     PubKey,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import { AtomicSwap } from '@opcat-labs/examples'
 import { getDefaultSigner, getDefaultProvider, getRandomSigner } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'

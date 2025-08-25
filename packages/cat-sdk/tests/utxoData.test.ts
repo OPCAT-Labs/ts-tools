@@ -4,7 +4,7 @@ import { use, expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { testProvider } from './utils/testProvider'
 import { testSigner } from './utils/testSigner'
-import { ExtPsbt} from '@opcat-labs/scrypt-ts-opcat'
+import { ExtPsbt} from '@opcat-labs/scrypt-ts'
 import { isOnchainTest } from './utils'
 
 use(chaiAsPromised)

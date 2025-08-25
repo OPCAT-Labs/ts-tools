@@ -7,7 +7,7 @@ import {
   sha256,
   toByteString,
   UTXO,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import { TX_OUTPUT_COUNT_MAX } from '../contracts/constants'
 import { Outpoint } from '../typeConstants'
 import { randomBytes } from 'crypto'

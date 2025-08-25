@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import { Counter, CounterState } from '../src/contracts/counter'
-import { ExtPsbt, UTXO } from '@opcat-labs/scrypt-ts-opcat'
+import { ExtPsbt, UTXO } from '@opcat-labs/scrypt-ts'
 import chaiAsPromised from 'chai-as-promised'
 import { testSigner } from './utils/testSigner'
 import { testProvider } from './utils/testProvider'

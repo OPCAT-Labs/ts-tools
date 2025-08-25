@@ -3,7 +3,7 @@ import {
     deploy,
     call,
     IExtPsbt,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import { ShiftTest } from '@opcat-labs/examples'
 import { getDefaultSigner, getDefaultProvider } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'

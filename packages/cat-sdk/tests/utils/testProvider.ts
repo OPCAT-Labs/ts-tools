@@ -1,4 +1,4 @@
-import { RPCProvider, DummyProvider, ChainProvider, UtxoProvider, SupportedNetwork } from '@opcat-labs/scrypt-ts-opcat'
+import { RPCProvider, DummyProvider, ChainProvider, UtxoProvider, SupportedNetwork } from '@opcat-labs/scrypt-ts'
 import * as dotenv from 'dotenv'
 dotenv.config({
   path: '.env',

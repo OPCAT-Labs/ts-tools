@@ -2,7 +2,7 @@ import {
     DefaultSigner,
     SupportedNetwork,
     fromSupportedNetwork,
-} from '@opcat-labs/scrypt-ts-opcat';
+} from '@opcat-labs/scrypt-ts';
 import * as fs from 'fs';
 import * as dotenv from 'dotenv';
 import { pathToFileURL } from 'url';

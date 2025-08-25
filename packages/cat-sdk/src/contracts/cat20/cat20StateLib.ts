@@ -1,4 +1,4 @@
-import { StateLib, method, assert, ByteString } from "@opcat-labs/scrypt-ts-opcat";
+import { StateLib, method, assert, ByteString } from "@opcat-labs/scrypt-ts";
 import { CAT20_AMOUNT, CAT20State } from "./types";
 import { OwnerUtils } from "../utils/ownerUtils";
 import { ConstantsLib } from "../constants";

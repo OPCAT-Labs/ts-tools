@@ -1,4 +1,4 @@
-import { StateLib } from "@opcat-labs/scrypt-ts-opcat";
+import { StateLib } from "@opcat-labs/scrypt-ts";
 import { OpenMinterCAT20Meta } from "../types";
 import { ConstantsLib } from "../../constants";
 

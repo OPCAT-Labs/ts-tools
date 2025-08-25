@@ -8,7 +8,7 @@ import {
   UtxoProvider,
   ChainProvider,
   UTXO,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 import { Transaction } from '@opcat-labs/opcat'
 import { CAT20 } from '../contracts/cat20/cat20'
 import { CAT20Guard } from '../contracts/cat20/cat20Guard'

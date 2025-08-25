@@ -6,7 +6,7 @@ import {
     sha256,
     Sha256,
     SmartContract,
-} from '@opcat-labs/scrypt-ts-opcat'
+} from '@opcat-labs/scrypt-ts'
 
 export class Examples extends SmartContract {
     @prop()
