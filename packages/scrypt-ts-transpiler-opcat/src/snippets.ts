@@ -29,6 +29,8 @@ export const InjectedVar_StateRoots = '__scrypt_ts_stateRoots';
 export const InjectedVar_InputStateHashes = '__scrypt_ts_inputStateHashes';
 export const InjectedVar_NextState = '__scrypt_ts_nextState';
 
+export const ScryptInternalHashedMap = '___ScryptInternalHashedMap__';
+
 // export const BUILD_CHANGE_OUTPUT_FUNCTION = `
 // function buildChangeOutput() : bytes {
 //   return len(this.${InjectedProp_ChangeInfo}.satoshis) > 0 ? TxUtils.buildOutput(this.${InjectedProp_ChangeInfo}.script, this.${InjectedProp_ChangeInfo}.satoshis) : b'';
@@ -58,11 +60,26 @@ export const ACCESS_INPUT_COUNT = {
   accessThis: `ContextUtils.checkSpentAmounts(this.${InjectedProp_SpentAmounts}, this.${InjectedProp_SHPreimage}.hashSpentAmounts)`,
 }
 
+export const HASHEDMAP_CONTEXT_STRUCT = (libName: string, keyType: string, valueType: string, maxAccessKeys: number) => `
+struct ${HASHEDMAP_CONTEXT_STRUCT_NAME(libName)} {
+  bytes proofs;
+  ${keyType}[${maxAccessKeys}] keys;
+  ${valueType}[${maxAccessKeys}] leafValues;
+  ${valueType}[${maxAccessKeys}] nextLeafValues;
+  bytes accessIndexes;
+}
+`;
+
+export const HASHEDMAP_CONTEXT_STRUCT_NAME = (libName: string) => `${libName}_Context__`;
+
+export const HASHEDMAP_STATE_STRUCT_VARIABLE = (fieldPrefix: string) => fieldPrefix.replaceAll('.', '__dot__') + '__ctx';
+
+export const HASHEDMAP_STATE_LIB_VARIABLE = (fieldPrefix: string) => fieldPrefix.replaceAll('.', '__dot__') + '__lib';
 
 export const HASHEDMAP_LIBRARY_TEMPLATE = (
-  libName: string, 
-  keyType: string, 
-  valueType: string, 
+  libName: string,
+  keyType: string,
+  valueType: string,
   maxAccessKeys: number,
   serializeKeyFnBody: string,
   serializeValueFnBody: string,
@@ -102,15 +119,15 @@ library ${libName} {
     ${valueType}[${maxAccessKeys}] leafValues,
     ${valueType}[${maxAccessKeys}] nextLeafValues,
     bytes accessIndexes
-  ) {
+  ): bool {
     this._proofs = proofs;
     this._keys = keys;
     this._leafValues = leafValues;
     this._nextLeafValues = nextLeafValues;
     this._accessIndexes = accessIndexes;
     this._accessCount = 0;
-    this.verifyMerkleProof();
     this._dataFunctionCalled = false;
+    return this.verifyMerkleProof();
   }
 
   private function serializeKey(${keyType} key): bytes {
@@ -121,7 +138,7 @@ library ${libName} {
     ${serializeValueFnBody}
   }
 
-  private function isSameValue(${valueType} value1, ${valueType} value2): bool {
+  private function isSameValue(${valueType} value, ${valueType} value2): bool {
     ${isSameValueFnBody}
   }
 
@@ -193,13 +210,13 @@ library ${libName} {
   }
 
   // public function
-  function getValue(${keyType} key):  ${valueType} {
+  function get(${keyType} key):  ${valueType} {
     int accessIndex = this.accessKey(key);
     return this._leafValues[accessIndex];
   }
 
   // public function
-  function setValue(${keyType} key, ${valueType} value): bool {
+  function set(${keyType} key, ${valueType} value): bool {
     // cannot call \`set\` function after \`data\` function is called
     require(!this._dataFunctionCalled);
     int accessIndex = this.accessKey(key);
@@ -207,27 +224,35 @@ library ${libName} {
     return true;
   }
 
-  // public function
-  function data(): bytes {
+  // public function, called by the end of the public function
+  function verifyValues(): bool {
     int proofCount = len(this._proofs) / PROOF_LEN;
     loop(${maxAccessKeys}): i {
       if (i < proofCount) {
         require(this.isSameValue(this._leafValues[i], this._nextLeafValues[i]));
       }
     }
+    return true;
+  }
+
+  // public function
+  function data(): bytes {
     this._dataFunctionCalled = true;
     return this._nextRoot;
   }
 }
 `;
 
- // remove comments
- const purifiedCode = code.split('\n').map(line => {
-  const index = line.indexOf('//')
-  if (index !== -1) {
-    return line.slice(0, index);
-  }
-  return line;
- }).join('\n');
- return purifiedCode;
+  // remove comments
+  const purifiedCode = code.split('\n').map(line => {
+    const index = line.indexOf('//')
+    if (index !== -1) {
+      line = line.slice(0, index);
+      if (line.trim() === '') {
+        return '';
+      }
+    }
+    return line;
+  }).filter(line => line !== '').join('\n');
+  return purifiedCode;
 }

@@ -6,7 +6,7 @@ export class HashedMap<
     KeyType extends PrimitiveTypes,
     ValueType extends SupportedParamType,
     MaxAccessKeys extends number
-> extends Map<KeyType, ValueType>  {
+> extends Map<KeyType, ValueType> {
     root: ByteString
 
     /**
@@ -17,7 +17,6 @@ export class HashedMap<
         super(...arguments)
         this.root = root
     }
-    
 
     /**
      * Can call it inside a `@method` function

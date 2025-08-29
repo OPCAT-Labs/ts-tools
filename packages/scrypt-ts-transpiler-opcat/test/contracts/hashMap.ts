@@ -1,8 +1,9 @@
-import { assert, ByteString, HashedMap, method, SmartContract, toByteString, TxUtils } from "@opcat-labs/scrypt-ts-opcat";
+import { assert, ByteString, HashedMap, method, Sha256, SmartContract, toByteString, TxUtils } from "@opcat-labs/scrypt-ts-opcat";
 
 
 export type HashMapContractState = {
-    map1: HashedMap<ByteString, ByteString, 3>
+    map1: HashedMap<ByteString, ByteString, 3>;
+    h1: Sha256;
 }
 
 export class HashMapContract extends SmartContract<HashMapContractState> {
@@ -16,10 +17,9 @@ export class HashMapContract extends SmartContract<HashMapContractState> {
 
         this.state.map1.set(toByteString('03'), toByteString('030303'))
         const val3 = this.state.map1.get(toByteString('03'))
-        assert(val3 === toByteString('030303'), 'val3 is not 03')
-        this.state.map1.set(toByteString('03'), toByteString('030304'))
+        assert(val3 === toByteString('030303'), 'val3 is not 03');    this.state.map1.set(toByteString('03'), toByteString('030304'))
 
-        const outputs = TxUtils.buildDataOutput(this.ctx.spentScriptHash, this.ctx.value, this.ctx.spentDataHash)
+        const outputs = TxUtils.buildDataOutput(this.ctx.spentScriptHash,this.ctx.value,  HashMapContract.stateHash( this.state))
         assert(this.checkOutputs(outputs), 'outputs is not valid')
     }
 }

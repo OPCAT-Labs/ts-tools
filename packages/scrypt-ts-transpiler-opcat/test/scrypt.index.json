@@ -2,27 +2,6 @@
  "scryptBase": "artifacts/.templates",
  "bindings": [
   {
-   "symbol": "STLib",
-   "path": "contracts/state.scrypt.tpl"
-  },
-  {
-   "symbol": "StateTest",
-   "stateType": "A",
-   "path": "contracts/state.scrypt.tpl"
-  },
-  {
-   "symbol": "A",
-   "path": "contracts/state.scrypt.tpl"
-  },
-  {
-   "symbol": "C",
-   "path": "contracts/state.scrypt.tpl"
-  },
-  {
-   "symbol": "B",
-   "path": "contracts/state.scrypt.tpl"
-  },
-  {
    "symbol": "TxUtils",
    "path": "../../../../scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/txUtils.scrypt.scrypt.tpl"
   },
