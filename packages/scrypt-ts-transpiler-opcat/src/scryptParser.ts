@@ -121,6 +121,23 @@ export class ScryptFileParser {
     // suppose the symbols are not wrapped by ""
 
     // match function functionName(ArgTyep1 arg1, ArgType2 arg2): ReturnType {
+    /**
+     * note: the function declaration statement must be declared in and only in 1 line, multiple lines are not supported
+     * 
+     * Good:
+     * function functionName(ArgTyep1 arg1, ArgType2 arg2): ReturnType {
+     *   ...
+     * }
+     * 
+     * Bad:
+     * function functionName(
+     *   ArgTyep1 arg1,
+     *   ArgType2 arg2
+     * ): ReturnType {
+     *   ...
+     * }
+     * 
+     */
     const functionRegex = /\bfunction\s*.+\{/g;
     const constructorRegex = /\bconstructor\s*.+\{/g;
 

@@ -191,7 +191,6 @@ export function Sha256(b: ByteString): Sha256 {
   return getValidatedHexString(b, false) as Sha256;
 }
 
-
 export type HashedMap = Flavor<Map<SupportedParamType, SupportedParamType>, 'HashedMap'>;
 
 /**

@@ -189,3 +189,24 @@ export function deserializeState<T>(
 
   return state;
 }
+
+export function createEmptyState<T>(
+  artifact: Artifact,
+  stateType: string,
+): T {
+  const abiCoder = new ABICoder(artifact);
+
+  const stateStruct = abiCoder.artifact.structs.find(
+    (struct) => getUnRenamedSymbol(struct.name) === getUnRenamedSymbol(stateType),
+  );
+  if (!stateStruct) {
+    throw new Error(
+      `Struct ${stateType} is not defined in artifact of contract ${artifact.contract}!`,
+    );
+  }
+
+  const fields = abiCoder.flattenStruct({}, stateType, true);
+  const serializedState = new Array(fields.length).fill(intToByteString(0n, FIELD_LEN_BYTES)).join('');
+
+  return deserializeState<T>(artifact, stateType, serializedState);
+}

@@ -13,6 +13,28 @@
   {
    "symbol": "HashMapContractState",
    "path": "contracts/hashMap.scrypt.tpl"
+  },
+  {
+   "symbol": "UserData",
+   "path": "contracts/hashMap.scrypt.tpl"
+  },
+  {
+   "symbol": "AirdropBTCStateLib",
+   "stateType": "AirdropBTCState",
+   "path": "contracts/airdropBTC.scrypt.tpl"
+  },
+  {
+   "symbol": "AirdropBTCState",
+   "path": "contracts/airdropBTC.scrypt.tpl"
+  },
+  {
+   "symbol": "AirdropBTC",
+   "stateType": "AirdropBTCState",
+   "path": "contracts/airdropBTC.scrypt.tpl"
+  },
+  {
+   "symbol": "ClaimInfo",
+   "path": "contracts/airdropBTC.scrypt.tpl"
   }
  ]
 }

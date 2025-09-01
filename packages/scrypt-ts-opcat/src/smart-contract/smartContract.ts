@@ -81,7 +81,14 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * The state of the contract UTXO, usually committed to the first OP_RETURN output, is revealed when spending.
    * @onchain
    */
-  state: StateT;
+  _state: StateT;
+
+  get state(): StateT {
+    return this._state;
+  }
+  set state(state: StateT) {
+    this._state = state;
+  }
 
   /**
    * Locking script corresponding to the SmartContract

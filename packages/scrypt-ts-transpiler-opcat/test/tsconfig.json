@@ -25,6 +25,7 @@
   "include": [
     // "./contracts/state.ts",
     "./contracts/hashMap.ts",
+    "./contracts/airdropBTC.ts",
     // "./contracts/ctx.ts",
     // "./contracts/*.ts",
     //"./contracts/b2G.ts",

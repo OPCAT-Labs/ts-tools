@@ -107,19 +107,11 @@ library ${libName} {
   private int _accessCount;
   private bool _dataFunctionCalled;
 
-  constructor(
-    bytes root
-  ) {
+  constructor(bytes root) {
     this._root = root;
   }
 
-  function init (
-    bytes proofs,
-    ${keyType}[${maxAccessKeys}] keys,
-    ${valueType}[${maxAccessKeys}] leafValues,
-    ${valueType}[${maxAccessKeys}] nextLeafValues,
-    bytes accessIndexes
-  ): bool {
+  function init (bytes proofs, ${keyType}[${maxAccessKeys}] keys, ${valueType}[${maxAccessKeys}] leafValues, ${valueType}[${maxAccessKeys}] nextLeafValues, bytes accessIndexes): bool {
     this._proofs = proofs;
     this._keys = keys;
     this._leafValues = leafValues;
@@ -174,13 +166,7 @@ library ${libName} {
     return true;
   }
 
-  private function verifySingleMerkle(
-    bytes root,
-    bytes keyHash,
-    bytes leafHash,
-    bytes nextLeafHash,
-    bytes neighbors
-  ): bytes {
+  private function verifySingleMerkle(bytes root, bytes keyHash, bytes leafHash, bytes nextLeafHash, bytes neighbors): bytes {
     int keyNumber = unpack(keyHash + b'00');
     bytes oldMerkleValue = leafHash;
     bytes newMerkleValue = nextLeafHash;
