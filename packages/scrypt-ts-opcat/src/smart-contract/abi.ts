@@ -209,6 +209,8 @@ export class ABICoder {
 
     const args_ = this.transformerArgs(args, methodABI.params);
 
+    console.log('args_', args_);
+
     const flatteredArgs = methodABI.params.flatMap((p, index) => {
       const a = Object.assign(
         { ...p },
@@ -219,6 +221,8 @@ export class ABICoder {
 
       return flatternArg(a, resolver, { state: false, ignoreValue: false });
     });
+
+    // console.log('flatteredArgs', flatteredArgs);
 
     let unlockingScriptHex = flatteredArgs.map((a) => serializeArgToHex(a.value as PrimitiveTypes)).join('');
 

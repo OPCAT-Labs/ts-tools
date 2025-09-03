@@ -141,9 +141,6 @@ library ${libName} {
     require(proofCount * PROOF_LEN == len(this._proofs));
     // 1.2 check if _proofs length is less than maxAccessKeys * PROOF_LEN
     require(proofCount <= ${maxAccessKeys});
-    // 1.3 check if _accessIndexes length is less than maxAccessKeys
-    // 1 byte for each access index
-    require(len(this._accessIndexes) <= ${maxAccessKeys});
 
     // 2. check _root, _nextRoot, _leafValues, _nextLeafValues are valid
     bytes nextRoot = this._root;

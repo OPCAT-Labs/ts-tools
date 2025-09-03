@@ -29,6 +29,7 @@ import { checkInputStateHashesImpl } from './methods/checkInputStateHashes.js';
 import { toTxHashPreimage } from '../utils/proof.js';
 import { assert } from './fns/assert.js';
 import { Arguments } from './types/abi.js';
+import { extractHashedMapCtx, attachToStateType } from './builtin-libs/hashedMap/utils.js';
 
 
 /**
@@ -87,6 +88,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return this._state;
   }
   set state(state: StateT) {
+    attachToStateType((this.constructor as typeof SmartContract).artifact, state);
     this._state = state;
   }
 
@@ -180,6 +182,10 @@ export class SmartContract<StateT extends OpcatState = undefined>
     publickey: PubKey,
     errorMsg: string = 'signature check failed',
   ): boolean {
+    if (this.spentPsbt && !this.spentPsbt.isSealed) {
+      // skip signature check if the PSBT is not sealed
+      return true;
+    }
     const fSuccess = checkSigImpl(this, signature, publickey);
     if (!fSuccess && signature.length) {
       // because NULLFAIL rule, always throw if catch a wrong signature
@@ -251,7 +257,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
     if (!stateType) {
       throw new Error(`State struct \`${stateType}\` is not defined!`);
     }
-
+    attachToStateType(artifact, state);
     return serializeState(artifact, stateType, state);
   }
 
@@ -390,11 +396,12 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @param method - The method name to call.
    * @param args - The arguments to pass to the method.
    * @param autoCheckInputState - Whether to automatically check input state before injection.
+   * @param nextState - The next state of the contract after the method is called.
    */
-  extendMethodArgs(method: string, args: SupportedParamType[], autoCheckInputState: boolean) {
+  extendMethodArgs(method: string, args: SupportedParamType[], autoCheckInputState: boolean, nextState: StateT) {
   // extend the args with the context
     if (this._shouldInjectCtx(method)) {
-      this._autoInject(method, args, autoCheckInputState);
+      this._autoInject(method, args, autoCheckInputState, nextState);
     }
 
     const unlockingScript = this._abiCoder.encodePubFunctionCall(method, args);
@@ -437,6 +444,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
     method: string,
     args: SupportedParamType[],
     autoCheckInputState: boolean,
+    nextState: StateT,
   ) {
     const {
       shPreimage,
@@ -500,6 +508,9 @@ export class SmartContract<StateT extends OpcatState = undefined>
             throw new Error('utxo.txHashPreimage is required for backtrace');
           }
           args.push(toTxHashPreimage(hexToUint8Array(this.utxo!.txHashPreimage!)));
+        } else if (param.name.startsWith('__scrypt_ts_nextState') && param.name.endsWith('__ctx')) {
+          // inject ctx
+          args.push(extractHashedMapCtx(this._abiCoder.artifact, nextState, param.name));
         }
       });
     }

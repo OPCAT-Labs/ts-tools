@@ -2,6 +2,10 @@
  "scryptBase": "artifacts/.templates",
  "bindings": [
   {
+   "symbol": "P2PKH",
+   "path": "contracts/p2pkh.scrypt.tpl"
+  },
+  {
    "symbol": "TxUtils",
    "path": "../../../../scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/txUtils.scrypt.scrypt.tpl"
   },

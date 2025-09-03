@@ -17,6 +17,9 @@ export class StateDelegatee extends SmartContract<DelegateeState> {
   public unlock(
     delegatorScript: ByteString,
     delegatorState: DelegatorState,
+    delegatorState__dot__mapHashedMapCtx: HashedMapCtx,
+    map: HashedMap<ByteString, DelegateeState, 1>,
+    mapHashedMapCtx: HashedMapCtx,
     delegatorInputVal: Int32,
   ) {
     // manually check this.state

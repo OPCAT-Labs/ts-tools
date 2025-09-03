@@ -189,9 +189,15 @@ export type Sha256 = ByteString & { __type: 'Sha256' };
  */
 export function Sha256(b: ByteString): Sha256 {
   return getValidatedHexString(b, false) as Sha256;
+
 }
 
-export type HashedMap = Flavor<Map<SupportedParamType, SupportedParamType>, 'HashedMap'>;
+interface IMap<K, V> {
+  get(key: K): V;
+  set(key: K, value: V): void;
+}
+
+export type HashedMap = Flavor<IMap<SupportedParamType, SupportedParamType>, 'HashedMap'>;
 
 /**
  * An array is a fixed-size list of values of the same basic type.

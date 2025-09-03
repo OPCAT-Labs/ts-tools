@@ -24,8 +24,10 @@
   },
   "include": [
     // "./contracts/state.ts",
+    "./contracts/p2pkh.ts",
     "./contracts/hashMap.ts",
     "./contracts/airdropBTC.ts",
+    // "./contracts/stateDelegatee.ts",
     // "./contracts/ctx.ts",
     // "./contracts/*.ts",
     //"./contracts/b2G.ts",
