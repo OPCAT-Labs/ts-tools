@@ -7,6 +7,30 @@
    "md5": "595b698e3a6f1ce811cb5b76af41e9a1"
   },
   {
+   "symbol": "AirdropBTCStateLib",
+   "path": "contracts/airdropBTCStateLib.scrypt.tpl",
+   "md5": "d41d8cd98f00b204e9800998ecf8427e",
+   "stateType": "AirdropBTCState"
+  },
+  {
+   "symbol": "AirdropBTCState",
+   "path": "contracts/airdropBTCStateLib.scrypt.tpl"
+  },
+  {
+   "symbol": "ClaimInfo",
+   "path": "contracts/airdropBTCStateLib.scrypt.tpl"
+  },
+  {
+   "symbol": "TxUtils",
+   "path": "../../../../node_modules/@opcat-labs/scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/txUtils.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "AirdropBTC",
+   "path": "contracts/airdropBTC.scrypt.tpl",
+   "md5": "cd08d9e1c2d5d9afdb97e753f544392c",
+   "stateType": "AirdropBTCState"
+  },
+  {
    "symbol": "Arrays",
    "path": "contracts/array.scrypt.tpl"
   },
@@ -19,10 +43,6 @@
    "symbol": "AtomicSwap",
    "path": "contracts/atomicSwap.scrypt.tpl",
    "md5": "fd2454c4c054df320158a296b5bf3bc1"
-  },
-  {
-   "symbol": "TxUtils",
-   "path": "../../../../node_modules/@opcat-labs/scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/txUtils.scrypt.scrypt.tpl"
   },
   {
    "symbol": "Auction",

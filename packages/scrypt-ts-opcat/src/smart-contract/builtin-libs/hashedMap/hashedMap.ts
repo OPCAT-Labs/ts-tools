@@ -4,8 +4,10 @@ import { assert, intToByteString, toByteString } from "../../fns/index.js"
 import { createEmptyState, serializeState } from "../../stateSerializer.js"
 import { ByteString } from "../../types/index.js"
 import { Artifact } from "../../types/artifact.js"
-import { PrimitiveTypes, StructObject } from "../../types/primitives.js"
+import { PrimitiveTypes, StructObject, SupportedParamType } from "../../types/primitives.js"
 import { Hash160Merkle } from "./hash160Merkle.js"
+import { serializeKey, serializeValue } from "./serializer.js"
+
 
 export class AnotherMap<K, V> {
     private map: Map<K, V> = new Map();
@@ -28,7 +30,7 @@ export class AnotherMap<K, V> {
 
 export class HashedMap<
     KeyType extends PrimitiveTypes,
-    ValueType extends StructObject,
+    ValueType extends SupportedParamType,
     MaxAccessKeys extends number
 > extends AnotherMap<KeyType, ValueType> {
     private root: ByteString
@@ -150,17 +152,7 @@ export class HashedMap<
      */
     public serializeKey(key: KeyType): ByteString {
         this.assertAttached();
-        switch(typeof key) {
-            case 'number':
-            case 'bigint':
-                return intToByteString(key);
-            case 'boolean':
-                return key ? '01' : '';
-            case 'string':
-                return toByteString(key);
-            default:
-                throw new Error(`Unsupported key type: ${typeof key}`);
-        }
+        return serializeKey(key);
     }
 
     /**
@@ -169,7 +161,8 @@ export class HashedMap<
      */
     public serializeValue(value: ValueType): ByteString {
         this.assertAttached();
-        return serializeState(this._artifact, this.genericType.valueType, value, false)
+        return serializeValue(this._artifact, this.genericType.valueType, value);
+        // return serializeState(this._artifact, this.genericType.valueType, value, false)
     }
 
     /**

@@ -242,6 +242,6 @@ export type BacktraceInfo = {
   prevPrevTxPreimage: TxHashPreimage;
 };
 
-export type __ScryptInternalHashedMap__ = {
+export type __ScryptInternalHashedMap__<KeyType, ValueType, MaxAccessKeys> = {
   _root: ByteString;
 }

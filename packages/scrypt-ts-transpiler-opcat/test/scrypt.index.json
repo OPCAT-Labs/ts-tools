@@ -25,19 +25,19 @@
   {
    "symbol": "AirdropBTCStateLib",
    "stateType": "AirdropBTCState",
-   "path": "contracts/airdropBTC.scrypt.tpl"
+   "path": "contracts/airdropBTCStateLib.scrypt.tpl"
   },
   {
    "symbol": "AirdropBTCState",
-   "path": "contracts/airdropBTC.scrypt.tpl"
+   "path": "contracts/airdropBTCStateLib.scrypt.tpl"
+  },
+  {
+   "symbol": "ClaimInfo",
+   "path": "contracts/airdropBTCStateLib.scrypt.tpl"
   },
   {
    "symbol": "AirdropBTC",
    "stateType": "AirdropBTCState",
-   "path": "contracts/airdropBTC.scrypt.tpl"
-  },
-  {
-   "symbol": "ClaimInfo",
    "path": "contracts/airdropBTC.scrypt.tpl"
   }
  ]

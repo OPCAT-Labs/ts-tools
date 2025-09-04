@@ -197,7 +197,7 @@ interface IMap<K, V> {
   set(key: K, value: V): void;
 }
 
-export type HashedMap = Flavor<IMap<SupportedParamType, SupportedParamType>, 'HashedMap'>;
+export type HashedMap = Flavor<IMap<PrimitiveTypes, SupportedParamType>, 'HashedMap'>;
 
 /**
  * An array is a fixed-size list of values of the same basic type.

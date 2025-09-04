@@ -3552,6 +3552,7 @@ export class Transpiler {
         if (typeString === 'HashedMap') {
           const [libraryName] = this.hashedMapToLibraryName(type as ts.TypeReference, node);
           this._hashedMapLibraries.set(libraryName, { type: type as ts.TypeReference, node });
+          this._accessBuiltinsSymbols.add(ScryptInternalHashedMap);
           return toSection.append(ScryptInternalHashedMap, coordinates);
         }
 
