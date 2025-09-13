@@ -66,6 +66,7 @@ export class TestCAT20Generator {
       testSigner,
       testProvider,
       this.deployInfo.minterScriptHash,
+      this.deployInfo.adminScriptHash,
       [mintInfo.cat20Utxo],
       [
         {

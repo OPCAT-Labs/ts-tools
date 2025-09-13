@@ -8,7 +8,22 @@ import {
 import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
 import { CAT20 } from '../../../contracts/cat20/cat20'
 import { checkState } from '../../../utils/check'
-import { ByteString, PubKey, Sig, Signer, ExtPsbt, UTXO, markSpent, UtxoProvider, ChainProvider, hexToUint8Array, SupportedNetwork, getBackTraceInfo, toHex } from '@opcat-labs/scrypt-ts-opcat'
+import {
+  ByteString,
+  PubKey,
+  Sig,
+  Signer,
+  ExtPsbt,
+  UTXO,
+  markSpent,
+  UtxoProvider,
+  ChainProvider,
+  hexToUint8Array,
+  SupportedNetwork,
+  getBackTraceInfo,
+  toHex,
+  sha256,
+} from '@opcat-labs/scrypt-ts-opcat'
 import {
   CAT20OpenMinterPeripheral,
   ContractPeripheral,
@@ -43,12 +58,19 @@ export async function deploy(
   const premineCount = metadata.premine / metadata.limit
   const remainingSupplyCount = maxCount - premineCount
 
-  const genesisPsbt = new ExtPsbt({network: await provider.getNetwork()})
+  const genesisPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
-    .change(changeAddress, feeRate, hexToUint8Array(CAT20OpenMinterMetadata.serializeState(metadata)))
+    .change(
+      changeAddress,
+      feeRate,
+      hexToUint8Array(CAT20OpenMinterMetadata.serializeState(metadata))
+    )
     .seal()
 
-  const signedGenesisPsbt = await signer.signPsbt(genesisPsbt.toHex(), genesisPsbt.psbtOptions())
+  const signedGenesisPsbt = await signer.signPsbt(
+    genesisPsbt.toHex(),
+    genesisPsbt.psbtOptions()
+  )
   genesisPsbt.combine(ExtPsbt.fromHex(signedGenesisPsbt))
   genesisPsbt.finalizeAllInputs()
 
@@ -60,9 +82,12 @@ export async function deploy(
 
   const minterScriptHash = ContractPeripheral.scriptHash(openMinter)
 
+  const adminScriptHash = sha256('')
+
   const guard = new CAT20Guard()
   const cat20 = new CAT20(
     minterScriptHash,
+    adminScriptHash,
     ContractPeripheral.scriptHash(guard)
   )
   const tokenScriptHash = ContractPeripheral.scriptHash(cat20)
@@ -73,18 +98,19 @@ export async function deploy(
     remainingCount: remainingSupplyCount,
   }
 
-
   openMinter.state = minterState
-  const deployPsbt = new ExtPsbt({network: await provider.getNetwork()})
+  const deployPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(genesisUtxo)
     .addContractOutput(openMinter, Postage.MINTER_POSTAGE)
     .change(changeAddress, feeRate)
     .seal()
 
-  const signedDeployPsbt = await signer.signPsbt(deployPsbt.toHex(), deployPsbt.psbtOptions())
+  const signedDeployPsbt = await signer.signPsbt(
+    deployPsbt.toHex(),
+    deployPsbt.psbtOptions()
+  )
   deployPsbt.combine(ExtPsbt.fromHex(signedDeployPsbt))
   deployPsbt.finalizeAllInputs()
-
 
   const minterOutputIndex = 0
   const deployUtxo = deployPsbt.getUtxo(minterOutputIndex)
@@ -106,12 +132,18 @@ export async function deploy(
       metadata,
       await preminerSigner.getPublicKey()
     )
-    const signedTx1 = await preminerSigner.signPsbt(preminePsbt.toHex(), preminePsbt.psbtOptions())
+    const signedTx1 = await preminerSigner.signPsbt(
+      preminePsbt.toHex(),
+      preminePsbt.psbtOptions()
+    )
     preminePsbt.combine(ExtPsbt.fromHex(signedTx1))
     preminePsbt.finalizeAllInputs()
 
-    if (await preminerSigner.getAddress() !== address) {
-      const signedTx2 = await signer.signPsbt(preminePsbt.toHex(), preminePsbt.psbtOptions())
+    if ((await preminerSigner.getAddress()) !== address) {
+      const signedTx2 = await signer.signPsbt(
+        preminePsbt.toHex(),
+        preminePsbt.psbtOptions()
+      )
       preminePsbt.combine(ExtPsbt.fromHex(signedTx2))
       preminePsbt.finalizeAllInputs()
     }
@@ -129,6 +161,7 @@ export async function deploy(
   return {
     tokenId,
     minterScriptHash,
+    adminScriptHash,
     tokenScriptHash,
 
     genesisTxid: genesisPsbt.extractTransaction().id,
@@ -169,7 +202,7 @@ export function buildMintPsbt(
     throw new Error('Preminer info is required for premining')
   }
 
-  const mintPsbt = new ExtPsbt({network: network})
+  const mintPsbt = new ExtPsbt({ network: network })
 
   const { nextMinterStates, splitAmountList } =
     CAT20OpenMinterPeripheral.createNextMinters(spentMinter, spentMinterState)
@@ -193,34 +226,32 @@ export function buildMintPsbt(
   )
 
   cat20.state = cat20State
-  spentMinter.bindToUtxo({...spentMinterUtxo, txHashPreimage: toHex(new Transaction(spentMinterTxHex).toTxHashPreimage())})
+  spentMinter.bindToUtxo({
+    ...spentMinterUtxo,
+    txHashPreimage: toHex(new Transaction(spentMinterTxHex).toTxHashPreimage()),
+  })
   mintPsbt
-    .addContractOutput(
-      cat20,
-      Postage.TOKEN_POSTAGE    
-    )
+    .addContractOutput(cat20, Postage.TOKEN_POSTAGE)
     .addContractInput(spentMinter, (contract, tx) => {
-        // if the minter has minted before, the metadata is empty to reduce tx size
-        const _metadata = spentMinterState.hasMintedBefore
-          ? CAT20OpenMinterMetadata.createEmptyMetadata()
-          : metadata
+      // if the minter has minted before, the metadata is empty to reduce tx size
+      const _metadata = spentMinterState.hasMintedBefore
+        ? CAT20OpenMinterMetadata.createEmptyMetadata()
+        : metadata
 
-        contract.mint(
-          cat20State,
-          splitAmountList,
-          (isPremining
-            ? PubKey(preminerPubKey!)
-            : '') as PubKey,
-          (isPremining
-            ? tx.getSig(minterInputIndex, {
-                publicKey: preminerPubKey,
-              })
-            : '') as Sig,
-          BigInt(Postage.MINTER_POSTAGE),
-          BigInt(Postage.TOKEN_POSTAGE),
-          backTraceInfo,
-          _metadata
-        )
+      contract.mint(
+        cat20State,
+        splitAmountList,
+        (isPremining ? PubKey(preminerPubKey!) : '') as PubKey,
+        (isPremining
+          ? tx.getSig(minterInputIndex, {
+              publicKey: preminerPubKey,
+            })
+          : '') as Sig,
+        BigInt(Postage.MINTER_POSTAGE),
+        BigInt(Postage.TOKEN_POSTAGE),
+        backTraceInfo,
+        _metadata
+      )
     })
     .spendUTXO(feeUtxos)
     .change(changeAddress, feeRate)

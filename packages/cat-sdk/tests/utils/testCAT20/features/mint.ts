@@ -1,5 +1,13 @@
-import { ByteString, PubKey, toHex } from '@opcat-labs/scrypt-ts-opcat'
-import { ExtPsbt, Signer, ChainProvider, UtxoProvider, UTXO, getBackTraceInfo, markSpent } from '@opcat-labs/scrypt-ts-opcat'
+import { ByteString, PubKey, sha256, toHex } from '@opcat-labs/scrypt-ts-opcat'
+import {
+  ExtPsbt,
+  Signer,
+  ChainProvider,
+  UtxoProvider,
+  UTXO,
+  getBackTraceInfo,
+  markSpent,
+} from '@opcat-labs/scrypt-ts-opcat'
 import {
   CAT20_AMOUNT,
   CAT20ClosedMinterState,
@@ -10,10 +18,7 @@ import { CAT20Guard } from '../../../../src/contracts/cat20/cat20Guard'
 import { CAT20 } from '../../../../src/contracts/cat20/cat20'
 import { checkArgument } from '../../../../src/utils/check'
 import { CAT20ClosedMinter } from '../../../../src/contracts/cat20/minters/cat20ClosedMinter'
-import {
-  outpoint2ByteString,
-  toTokenOwnerAddress,
-} from '../../../../src/utils'
+import { outpoint2ByteString, toTokenOwnerAddress } from '../../../../src/utils'
 import { Postage } from '../../../../src/typeConstants'
 import { Transaction } from '@opcat-labs/opcat'
 import { ConstantsLib } from '../../../../src/contracts'
@@ -46,7 +51,8 @@ export async function mint(
   const minterScriptHash = ContractPeripheral.scriptHash(minterUtxo.script)
   const guard = new CAT20Guard()
   const guardScriptHash = ContractPeripheral.scriptHash(guard)
-  const cat20 = new CAT20(minterScriptHash, guardScriptHash)
+  const adminScriptHash = sha256('')
+  const cat20 = new CAT20(minterScriptHash, adminScriptHash, guardScriptHash)
   const cat20ScriptHash = ContractPeripheral.scriptHash(cat20)
 
   const minterState: CAT20ClosedMinterState =
@@ -85,36 +91,32 @@ export async function mint(
   closedMinter.state = minterState
 
   const nextMinter = closedMinter.next(closedMinter.state)
-  const mintTx = new ExtPsbt({network: await provider.getNetwork()})
+  const mintTx = new ExtPsbt({ network: await provider.getNetwork() })
     .addContractInput(closedMinter, (contract, tx) => {
-        const sig = tx.getSig(minterInputIndex, {
-          address: changeAddress,
-        })
-        contract.mint(
-          cat20State,
+      const sig = tx.getSig(minterInputIndex, {
+        address: changeAddress,
+      })
+      contract.mint(
+        cat20State,
 
-          PubKey(pubkey),
-          sig,
+        PubKey(pubkey),
+        sig,
 
-          BigInt(Postage.MINTER_POSTAGE),
-          BigInt(Postage.TOKEN_POSTAGE),
-          backtraceInfo
-        )
-      }
-    )
+        BigInt(Postage.MINTER_POSTAGE),
+        BigInt(Postage.TOKEN_POSTAGE),
+        backtraceInfo
+      )
+    })
     .spendUTXO(utxos)
-    .addContractOutput(
-      nextMinter,
-      Postage.MINTER_POSTAGE,
-    )
-    .addContractOutput(
-      cat20,
-      Postage.TOKEN_POSTAGE,
-    )
+    .addContractOutput(nextMinter, Postage.MINTER_POSTAGE)
+    .addContractOutput(cat20, Postage.TOKEN_POSTAGE)
     .change(changeAddress, feeRate)
     .seal()
 
-  const signedMintTx = await signer.signPsbt(mintTx.toHex(), mintTx.psbtOptions())
+  const signedMintTx = await signer.signPsbt(
+    mintTx.toHex(),
+    mintTx.psbtOptions()
+  )
   mintTx.combine(ExtPsbt.fromHex(signedMintTx))
   mintTx.finalizeAllInputs()
 

@@ -16,7 +16,7 @@ import { CAT20OpenMinter } from '../../../../src/contracts/cat20/minters/cat20Op
 import { verifyTx } from '../../../utils'
 import { formatMetadata } from '../../../../src/lib/metadata'
 import { ConstantsLib } from '../../../../src/contracts'
-  use(chaiAsPromised)
+use(chaiAsPromised)
 
 describe('Test the feature `deploy` for `openMinterV2`', () => {
   let metadata: OpenMinterCAT20Meta
@@ -51,9 +51,8 @@ describe('Test the feature `deploy` for `openMinterV2`', () => {
     })
 
     it('shoud premine the token if applicable', async () => {
-      const { deployPsbt, preminePsbt, minterScriptHash } = await deployToken(
-        metadata
-      )
+      const { deployPsbt, preminePsbt, minterScriptHash, adminScriptHash } =
+        await deployToken(metadata)
 
       // test premine tx
       expect(preminePsbt).to.not.be.null
@@ -67,6 +66,7 @@ describe('Test the feature `deploy` for `openMinterV2`', () => {
       }
       const expectTokenScript = new CAT20(
         minterScriptHash,
+        adminScriptHash,
         ContractPeripheral.scriptHash(new CAT20Guard())
       ).lockingScript.toHex()
       const tokenOutputIndex = 2

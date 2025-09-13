@@ -30,7 +30,9 @@ import { ConstantsLib } from '../contracts/constants'
 
 export class ContractPeripheral {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static scriptHash(contractOrScriptBuffer: SmartContract<any> | Buffer | string) {
+  static scriptHash(
+    contractOrScriptBuffer: SmartContract<any> | Buffer | string
+  ) {
     if (contractOrScriptBuffer instanceof SmartContract) {
       return sha256(contractOrScriptBuffer.lockingScript.toHex())
     } else {
@@ -119,11 +121,17 @@ export class CAT20OpenMinterPeripheral {
       receiverAddr = minter.preminerAddr
     }
     const guard = new CAT20Guard()
+    const adminScriptHash = sha256('')
     const cat20 = new CAT20(
       ContractPeripheral.scriptHash(minter),
+      adminScriptHash,
       ContractPeripheral.scriptHash(guard)
     )
-    const cat20State: CAT20State = { tag: ConstantsLib.OPCAT_CAT20_TAG, amount, ownerAddr: receiverAddr }
+    const cat20State: CAT20State = {
+      tag: ConstantsLib.OPCAT_CAT20_TAG,
+      amount,
+      ownerAddr: receiverAddr,
+    }
     return [cat20, cat20State] as const
   }
 }
@@ -268,6 +276,7 @@ export class CAT20GuardPeripheral {
     const expectTokenScriptHash = ContractPeripheral.scriptHash(
       new CAT20(
         minterScrtptHash,
+        sha256(''),
         ContractPeripheral.scriptHash(new CAT20Guard())
       )
     )

@@ -111,6 +111,7 @@ describe('Test the feature `contractSend` for `Cat20`', () => {
       testSigner,
       testProvider,
       cat20Generator.deployInfo.minterScriptHash,
+      cat20Generator.deployInfo.adminScriptHash,
       cat20Utxos,
       [{ address: contractScriptHash, amount: toReceiverAmount }],
       cat20ChangeAddr,

@@ -97,6 +97,7 @@ describe('Test the feature `send` for `Cat20`', () => {
   ) {
     const { guardPsbt, sendPsbt } = await singleSendToken(
       cat20Generator.deployInfo.minterScriptHash,
+      cat20Generator.deployInfo.adminScriptHash,
       toReceiverAmount,
       cat20Utxos,
       tokenReceiverAddr
