@@ -6,11 +6,12 @@ import {
   toByteString,
   toHex,
   ExtPsbt,
-  UtxoProvider, ChainProvider,
+  UtxoProvider,
+  ChainProvider,
   Signer,
   UTXO,
   markSpent,
-  getBackTraceInfo
+  getBackTraceInfo,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20 } from '../../../contracts/cat20/cat20'
 import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
@@ -21,10 +22,7 @@ import {
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants'
 import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants'
-import {
-  applyFixedArray,
-  filterFeeUtxos,
-} from '../../../utils'
+import { applyFixedArray, filterFeeUtxos } from '../../../utils'
 import {
   CAT20GuardPeripheral,
   ContractPeripheral,
@@ -34,6 +32,7 @@ export async function burn(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
+  adminScriptHash: ByteString,
   inputTokenUtxos: UTXO[],
   feeRate: number
 ): Promise<{
@@ -69,13 +68,16 @@ export async function burn(
   guard.state = guardState
   const guardScriptHash = ContractPeripheral.scriptHash(guard)
 
-  const guardPsbt = new ExtPsbt({network: await provider.getNetwork()})
+  const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
     .addContractOutput(guard, Postage.GUARD_POSTAGE)
     .change(changeAddress, feeRate)
     .seal()
-  
-  const signedGuardPsbt = await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions())
+
+  const signedGuardPsbt = await signer.signPsbt(
+    guardPsbt.toHex(),
+    guardPsbt.psbtOptions()
+  )
   guardPsbt.combine(ExtPsbt.fromHex(signedGuardPsbt))
 
   guardPsbt.finalizeAllInputs()
@@ -83,11 +85,13 @@ export async function burn(
   const guardUtxo = guardPsbt.getUtxo(0)
   const feeUtxo = guardPsbt.getChangeUTXO()
 
-  const inputTokens: CAT20[] = inputTokenUtxos.map(
-    (utxo) => new CAT20(minterScriptHash, guardScriptHash).bindToUtxo(utxo)
+  const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
+    new CAT20(minterScriptHash, adminScriptHash, guardScriptHash).bindToUtxo(
+      utxo
+    )
   )
 
-  const burnPsbt = new ExtPsbt({network: await provider.getNetwork()})
+  const burnPsbt = new ExtPsbt({ network: await provider.getNetwork() })
 
   const guardInputIndex = inputTokens.length
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
@@ -98,72 +102,72 @@ export async function burn(
 
   // add token inputs
   for (let index = 0; index < inputTokens.length; index++) {
-    burnPsbt.addContractInput(inputTokens[index], 
-      (contract, tx) => {
-        contract.unlock(
-          {
-            userPubKey: PubKey(pubkey),
-            userSig: tx.getSig(index, { address: changeAddress }),
-            contractInputIndex: BigInt(-1),
-          },
-          guardState,
-          BigInt(guardInputIndex),
+    burnPsbt.addContractInput(inputTokens[index], (contract, tx) => {
+      contract.unlock(
+        {
+          userPubKey: PubKey(pubkey),
+          userSig: tx.getSig(index, { address: changeAddress }),
+          contractInputIndex: BigInt(-1),
+        },
+        guardState,
+        BigInt(guardInputIndex),
 
-          getBackTraceInfo(
-            backtraces[index].prevTxHex,
-            backtraces[index].prevPrevTxHex,
-            backtraces[index].prevTxInput
-          )
+        getBackTraceInfo(
+          backtraces[index].prevTxHex,
+          backtraces[index].prevPrevTxHex,
+          backtraces[index].prevTxInput
         )
-      }
-    )
+      )
+    })
   }
 
   // add guard input
   guard.bindToUtxo(guardUtxo)
   burnPsbt.addContractInput(guard, (contract, tx) => {
-      const ownerAddrOrScript = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
-      applyFixedArray(
-        ownerAddrOrScript,
-        tx.txOutputs.map((output) =>
-          ContractPeripheral.scriptHash(toHex(output.script))
-        )
+    const ownerAddrOrScript = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+    applyFixedArray(
+      ownerAddrOrScript,
+      tx.txOutputs.map((output) =>
+        ContractPeripheral.scriptHash(toHex(output.script))
       )
-      const outputTokenAmts = fill(BigInt(0), TX_OUTPUT_COUNT_MAX)
-      const tokenScriptIndexArray = fill(-1n, TX_OUTPUT_COUNT_MAX)
-      const outputSatoshis = fill(0n, TX_OUTPUT_COUNT_MAX)
-      applyFixedArray(
-        outputSatoshis,
-        tx.txOutputs.map((output) => BigInt(output.value))
-      )
-      const inputCAT20States = fill(
-        CAT20StateLib.create(0n, toByteString('')),
-        TX_INPUT_COUNT_MAX
-      )
-      applyFixedArray(inputCAT20States, inputTokenStates)
-      const nextStateHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
-      applyFixedArray(
-        nextStateHashes,
-        tx.txOutputs.map((output) => sha256(toHex(output.data)))
-      )
-      contract.unlock(
-        nextStateHashes,
-        ownerAddrOrScript,
-        outputTokenAmts,
-        tokenScriptIndexArray,
-        outputSatoshis,
-        inputCAT20States,
-        BigInt(tx.txOutputs.length)
-      )
-    }
-  )
+    )
+    const outputTokenAmts = fill(BigInt(0), TX_OUTPUT_COUNT_MAX)
+    const tokenScriptIndexArray = fill(-1n, TX_OUTPUT_COUNT_MAX)
+    const outputSatoshis = fill(0n, TX_OUTPUT_COUNT_MAX)
+    applyFixedArray(
+      outputSatoshis,
+      tx.txOutputs.map((output) => BigInt(output.value))
+    )
+    const inputCAT20States = fill(
+      CAT20StateLib.create(0n, toByteString('')),
+      TX_INPUT_COUNT_MAX
+    )
+    applyFixedArray(inputCAT20States, inputTokenStates)
+    const nextStateHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+    applyFixedArray(
+      nextStateHashes,
+      tx.txOutputs.map((output) => sha256(toHex(output.data)))
+    )
+    contract.unlock(
+      nextStateHashes,
+      ownerAddrOrScript,
+      outputTokenAmts,
+      tokenScriptIndexArray,
+      outputSatoshis,
+      inputCAT20States,
+      BigInt(tx.txOutputs.length)
+    )
+  })
 
   // add fee input
   burnPsbt.spendUTXO(feeUtxo!)
   burnPsbt.change(changeAddress, feeRate)
   burnPsbt.seal()
 
-  const signedBurnPsbt = await signer.signPsbt(burnPsbt.toHex(), burnPsbt.psbtOptions())
+  const signedBurnPsbt = await signer.signPsbt(
+    burnPsbt.toHex(),
+    burnPsbt.psbtOptions()
+  )
   burnPsbt.combine(ExtPsbt.fromHex(signedBurnPsbt))
   burnPsbt.finalizeAllInputs()
 
