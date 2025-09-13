@@ -198,6 +198,7 @@ export async function singleSendStep2(
   const guardScriptHash = ContractPeripheral.scriptHash(guard)
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
+    adminScriptHash,
     inputTokenUtxos,
     provider
   )

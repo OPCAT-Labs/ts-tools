@@ -34,6 +34,7 @@ export async function incinerate(
   feeSigner: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
+  adminScriptHash: ByteString,
   tokenUtxos: UTXO[],
   feeRate: number
 ): Promise<{
@@ -106,7 +107,9 @@ export async function incinerate(
   const feeUtxo = guardPsbt.getChangeUTXO()
 
   const inputTokens: CAT20[] = tokenUtxos.map((utxo) =>
-    new CAT20(minterScriptHash, sha256(''), guardScriptHash).bindToUtxo(utxo)
+    new CAT20(minterScriptHash, adminScriptHash, guardScriptHash).bindToUtxo(
+      utxo
+    )
   )
 
   const burnPsbt = new ExtPsbt({ network: await provider.getNetwork() })
@@ -115,6 +118,7 @@ export async function incinerate(
   const incineratorInputIndex = inputTokens.length + 1
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
+    adminScriptHash,
     tokenUtxos,
     provider
   )

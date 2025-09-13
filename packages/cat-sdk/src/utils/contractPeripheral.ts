@@ -255,6 +255,7 @@ export class CAT20GuardPeripheral {
 
   static async getBackTraceInfo(
     minterScrtptHash: string,
+    adminScriptHash: string,
     inputTokenUtxos: UTXO[],
     provider: UtxoProvider & ChainProvider
   ) {
@@ -276,7 +277,7 @@ export class CAT20GuardPeripheral {
     const expectTokenScriptHash = ContractPeripheral.scriptHash(
       new CAT20(
         minterScrtptHash,
-        sha256(''),
+        adminScriptHash,
         ContractPeripheral.scriptHash(new CAT20Guard())
       )
     )

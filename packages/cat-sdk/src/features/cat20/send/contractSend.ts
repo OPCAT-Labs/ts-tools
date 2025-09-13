@@ -144,6 +144,7 @@ export async function contractSend(
   const guardInputIndex = inputTokens.length
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
+    adminScriptHash,
     inputTokenUtxos,
     provider
   )
