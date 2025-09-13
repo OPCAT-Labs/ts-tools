@@ -36,10 +36,11 @@ export const loadAllArtifacts = function () {
   CAT20.loadArtifact(readArtifact('artifacts/cat20/cat20.json'))
   CAT20StateLib.loadArtifact(readArtifact('artifacts/cat20/cat20StateLib.json'))
   CAT20Guard.loadArtifact(readArtifact('artifacts/cat20/cat20Guard.json'))
-  CAT20GuardStateLib.loadArtifact(readArtifact('artifacts/cat20/cat20GuardStateLib.json'))
+  CAT20GuardStateLib.loadArtifact(
+    readArtifact('artifacts/cat20/cat20GuardStateLib.json')
+  )
 
   CAT20Incinerator.loadArtifact(readArtifact('artifacts/cat20Incinerator.json'))
-
 }
 
 export async function deployToken(info: OpenMinterCAT20Meta) {
@@ -75,6 +76,7 @@ export async function mintToken(
 
 export async function singleSendToken(
   minterScriptHash: string,
+  adminScriptHash: string,
   amount: CAT20_AMOUNT,
   inputTokenUtxos: UTXO[],
   tokenRecieverAddr: ByteString
@@ -85,6 +87,7 @@ export async function singleSendToken(
     testSigner,
     testProvider,
     minterScriptHash,
+    adminScriptHash,
     inputTokenUtxos,
     [{ address: tokenRecieverAddr, amount }],
     tokenChangeAddr,
