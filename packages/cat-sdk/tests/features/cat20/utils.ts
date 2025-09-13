@@ -2,6 +2,7 @@ import { CAT20Guard } from '../../../src/contracts/cat20/cat20Guard'
 import { CAT20ClosedMinter } from '../../../src/contracts/cat20/minters/cat20ClosedMinter'
 import { CAT20OpenMinter } from '../../../src/contracts/cat20/minters/cat20OpenMinter'
 import { CAT20 } from '../../../src/contracts/cat20/cat20'
+import { CAT20Admin } from '../../../src/contracts/cat20/cat20Admin'
 import { readArtifact } from '../../utils/index'
 import { OpenMinterCAT20Meta } from '../../../src/contracts/cat20/types'
 import { deploy } from '../../../src/features/cat20/deploy/openMinter'
@@ -23,6 +24,7 @@ export const loadAllArtifacts = function () {
   CAT20ClosedMinter.loadArtifact(
     readArtifact('artifacts/cat20/minters/cat20ClosedMinter.json')
   )
+  CAT20Admin.loadArtifact(readArtifact('artifacts/cat20/cat20Admin.json'))
   CAT20ClosedMinterMetadata.loadArtifact(
     readArtifact('artifacts/cat20/minters/cat20ClosedMinterMetadata.json')
   )

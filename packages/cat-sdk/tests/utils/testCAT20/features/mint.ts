@@ -27,6 +27,7 @@ export async function mint(
   signer: Signer,
   provider: ChainProvider & UtxoProvider,
   minterUtxo: UTXO,
+  adminScriptHash: string,
   tokenId: string,
   tokenReceiver: ByteString,
   tokenAmount: CAT20_AMOUNT,
@@ -51,7 +52,6 @@ export async function mint(
   const minterScriptHash = ContractPeripheral.scriptHash(minterUtxo.script)
   const guard = new CAT20Guard()
   const guardScriptHash = ContractPeripheral.scriptHash(guard)
-  const adminScriptHash = sha256('')
   const cat20 = new CAT20(minterScriptHash, adminScriptHash, guardScriptHash)
   const cat20ScriptHash = ContractPeripheral.scriptHash(cat20)
 
