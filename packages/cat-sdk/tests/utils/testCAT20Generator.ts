@@ -22,6 +22,7 @@ export class TestCAT20Generator {
     deployTx: ExtPsbt
   }
   minterTx: ExtPsbt
+  adminTx: ExtPsbt
 
   constructor(
     deployInfo: CAT20TokenInfo<ClosedMinterCAT20Meta> & {
@@ -31,6 +32,7 @@ export class TestCAT20Generator {
   ) {
     this.deployInfo = deployInfo
     this.minterTx = deployInfo.deployTx
+    this.adminTx = deployInfo.deployTx
   }
 
   static async init(info: ClosedMinterCAT20Meta) {
@@ -47,6 +49,15 @@ export class TestCAT20Generator {
     return this.minterTx.getUtxo(0)
   }
 
+  private getCat20AdminUtxo() {
+    const outputs = this.adminTx.txOutputs
+    return this.adminTx.getUtxo(outputs.length - 2)
+  }
+
+  public updateAdminTx(adminTx: ExtPsbt) {
+    this.adminTx = adminTx
+  }
+
   async mintThenTransfer(addr: ByteString, amount: CAT20_AMOUNT) {
     const signerAddr = await testSigner.getAddress()
     const signerOwnerAddr = toTokenOwnerAddress(signerAddr)
@@ -54,6 +65,7 @@ export class TestCAT20Generator {
       testSigner,
       testProvider,
       this.getCat20MinterUtxo(),
+      this.deployInfo.adminScriptHash,
       this.deployInfo.genesisTx.extractTransaction().id,
       signerOwnerAddr,
       amount,
@@ -128,6 +140,7 @@ export async function createCat20(
     cat20.utxoTraces.push(
       ...(await CAT20GuardPeripheral.getBackTraceInfo(
         cat20Generater.deployInfo.minterScriptHash,
+        cat20Generater.deployInfo.adminScriptHash,
         [utxo],
         testProvider
       ))
