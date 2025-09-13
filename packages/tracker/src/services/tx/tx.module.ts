@@ -1,0 +1,25 @@
+import { Module } from '@nestjs/common';
+import { TxService } from './tx.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { TxEntity } from '../../entities/tx.entity';
+import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
+import { CommonModule } from '../common/common.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TxOutEntity } from '../../entities/txOut.entity';
+import { NftInfoEntity } from '../../entities/nftInfo.entity';
+import { TokenMintEntity } from '../../entities/tokenMint.entity';
+import { RpcModule } from '../rpc/rpc.module';
+import { ZmqModule } from '../zmq/zmq.module';
+
+@Module({
+  imports: [
+    RpcModule,
+    TypeOrmModule.forFeature([TxEntity, TokenInfoEntity, TxOutEntity, NftInfoEntity, TokenMintEntity]),
+    CommonModule,
+    ScheduleModule.forRoot(),
+    ZmqModule,
+  ],
+  providers: [TxService],
+  exports: [TxService],
+})
+export class TxModule {}
