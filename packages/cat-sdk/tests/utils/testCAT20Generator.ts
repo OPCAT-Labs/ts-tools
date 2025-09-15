@@ -49,8 +49,9 @@ export class TestCAT20Generator {
     return this.minterTx.getUtxo(0)
   }
 
-  private getCat20AdminUtxo() {
+  public getCat20AdminUtxo() {
     const outputs = this.adminTx.txOutputs
+    console.log(this.adminTx.txOutputs)
     return this.adminTx.getUtxo(outputs.length - 2)
   }
 
