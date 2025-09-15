@@ -26,7 +26,6 @@ export class CAT20Admin extends SmartContract<CAT20AdminState> {
     // args to
     adminPubKey: PubKey,
     adminSig: Sig,
-    tokenOutputs: ByteString,
     // backtrace
     backtraceInfo: BacktraceInfo
   ) {
@@ -46,9 +45,7 @@ export class CAT20Admin extends SmartContract<CAT20AdminState> {
     )
 
     // confine curTx outputs
-    assert(
-      this.checkOutputs(tokenOutputs + adminOutput + this.buildChangeOutput())
-    )
+    assert(this.checkOutputs(adminOutput + this.buildChangeOutput()))
   }
 
   @method()

@@ -89,6 +89,7 @@ export async function deploy(
   const deployTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(genesisUtxo)
     .addContractOutput(closeMinter, Postage.MINTER_POSTAGE)
+    .addContractOutput(admin, Postage.ADMIN_POSTAGE)
     .change(
       changeAddress,
       feeRate,
