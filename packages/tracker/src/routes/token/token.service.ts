@@ -57,6 +57,7 @@ export class TokenService {
           'decimals',
           'rawInfo',
           'minterScriptHash',
+          'adminScriptHash',
           'tokenScriptHash',
           'firstMintHeight',
         ],
