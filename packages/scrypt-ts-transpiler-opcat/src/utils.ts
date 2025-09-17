@@ -231,6 +231,8 @@ export function toBuiltinsTypes(t: string): string | undefined {
     case 'UInt32':
     case 'Int64':
     case 'UInt64':
+    case 'bigint':
+    case 'PrivKey':
       return 'int';
     case 'Bool':
       return ScryptType.BOOL;

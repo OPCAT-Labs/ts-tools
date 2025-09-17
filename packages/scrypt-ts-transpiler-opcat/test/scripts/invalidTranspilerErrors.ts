@@ -116,9 +116,9 @@ export const expectTranspilerErrors: { [fileName: string]: TranspilerError } = {
     errors: [
       {
         message:
-          "Untransformable parameter: '@method()\n" +
-          '  static myCheckPreimage(txPreimage: SHPreimage, contractCtx: SmartContract): boolean {\n' +
-          '    return contractCtx.checkSHPreimage(txPreimage);\n' +
+          "Untransformable parameter: '@method()\r\n" +
+          '  static myCheckPreimage(txPreimage: SHPreimage, contractCtx: SmartContract): boolean {\r\n' +
+          '    return contractCtx.checkSHPreimage(txPreimage);\r\n' +
           "  }'",
       },
     ],
@@ -153,9 +153,6 @@ export const expectTranspilerErrors: { [fileName: string]: TranspilerError } = {
   ctx: {
     testTitle: 'errors on contract `InvalidCTX`.',
     errors: [
-      {
-        message: '`IContext` is not allowed to be defined in the contract',
-      },
       {
         message:
           'Direct access to `this.ctx` is prohibited, only access to `this.ctx.*` is allowed, such as: `this.ctx.shaSpentAmounts` or `this.ctx.inputIndex`',
@@ -213,6 +210,40 @@ export const expectTranspilerErrors: { [fileName: string]: TranspilerError } = {
       {
         message:
           "`for` statement in `@method` should have incrementor expression as: 'for(...; ...; $i++)'",
+      },
+    ],
+  },
+
+  hashedMap1: {
+    testTitle: 'errors on contract `HashedMap1`.',
+    errors: [
+      {
+        message: 'Cannot call stateHash in a private method `p1`',
+      },
+    ],
+  },
+
+  hashedMap2: {
+    testTitle: 'errors on contract `HashedMap2`.',
+    errors: [
+      {
+        message: 'Cannot call hashedMap .set/.get in a private method `p1`',
+      },
+    ],
+  },
+  hashedMap3: {
+    testTitle: 'errors on contract `HashedMap3`.',
+    errors: [
+      {
+        message: "Untransformable property: 'p1', HashedMap cannot be used as a property type",
+      },
+    ],
+  },
+  hashedMap4: {
+    testTitle: 'errors on contract `HashedMap4`.',
+    errors: [
+      {
+        message: 'Cannot call new HashedMap() in SmartContract or SmartContractLib',
       },
     ],
   },

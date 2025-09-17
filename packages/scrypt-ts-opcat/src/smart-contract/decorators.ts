@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { SigHashType } from './types/primitives.js';
+import { wrapParamType, wrapStateType } from './builtin-libs/hashedMap/utils.js';
 
 /**
  * @ignore
@@ -72,15 +73,17 @@ export function method(options: MethodDecoratorOptions = { autoCheckInputState: 
               const curPsbt = self.spentPsbt;
 
               self.setSighashType(sigHashType);
-              self.extendMethodArgs(methodName, args, options.autoCheckInputState);
-
-              if (curPsbt !== undefined && !curPsbt.isFinalizing) {
-                // the psbt is not finalizing, so just extend the arguments, but not run the method
-                return;
-              }
+              const originState = self.state;
+              const clonedState = wrapStateType(self.constructor.artifact, originState);
+              const clonedArgs = args.map((arg, index) => wrapParamType(self.constructor.artifact, methodName, arg, index));
+              self.state = clonedState;
+              originalMethod.apply(this, clonedArgs);
+              self.state = originState
+              self.extendMethodArgs(methodName, args, options.autoCheckInputState, clonedState, clonedArgs);
+              return;
+            } else {
+              return originalMethod.apply(this, args);
             }
-
-            return originalMethod.apply(this, args);
           }
 
           throw new Error(

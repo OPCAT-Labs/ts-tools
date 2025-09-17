@@ -1,5 +1,5 @@
-import ts, { ClassDeclaration, isAutoAccessorPropertyDeclaration, MethodDeclaration } from 'typescript';
-import { tsquery } from '@phenomnomnominal/tsquery';
+import ts, { BindingName, Block, ClassDeclaration, isAutoAccessorPropertyDeclaration, MethodDeclaration, NodeArray, ParameterDeclaration } from 'typescript';
+import { Identifier, tsquery } from '@phenomnomnominal/tsquery';
 import { Indexer, Symbol } from './indexer';
 import * as path from 'path';
 import {
@@ -47,8 +47,12 @@ import {
   InjectedProp_Prevout,
   InjectedProp_PrevTxHashPreimage,
   InjectedParam_PrevTxHashPreimage,
+  HASHEDMAP_LIBRARY_TEMPLATE,
+  ScryptInternalHashedMap,
+  HASHEDMAP_CONTEXT_STRUCT,
+  HASHEDMAP_NAMES,
 } from './snippets';
-import { MethodDecoratorOptions } from '@opcat-labs/scrypt-ts-opcat';
+import { MAX_FLAT_FIELDS_IN_STATE, MethodDecoratorOptions } from '@opcat-labs/scrypt-ts-opcat';
 import { Relinker } from './relinker';
 
 const BUILDIN_PACKAGE_NAME = '@opcat-labs/scrypt-ts-opcat';
@@ -312,6 +316,7 @@ export class Transpiler {
   _accessBuiltinsSymbols = new Set<string>();
   _importedTypeSymbols = new Map<string, ts.Symbol>();
   _stateTypeSymbols = new Map<string, ts.Symbol>();
+  _hashedMapLibraries = new Map<string, { type: ts.TypeReference, node: ts.Node }>();
 
   _watch = false;
 
@@ -319,6 +324,10 @@ export class Transpiler {
   _currentMethodName: string;
   _currentMethodDecOptions: MethodDecoratorOptions;
   _constructorParametersMap: Map<string, ts.Node> = new Map();
+  _currentMethodParams: Map<string, {
+    name: BindingName,
+    typeSymbol: ts.Symbol
+  }> = new Map();
 
   constructor(
     sourceFile: ts.SourceFile,
@@ -395,10 +404,11 @@ export class Transpiler {
     // transform the contract, library, structs and find its imported symbols
     const contractAndLibs = this.scComponents.map((cDef) => this.transformClassDeclaration(cDef));
     const structs = this.transformTypeLiteralAndInterfaces();
+    const hashedMapLibraries = this.transformHashedMapLibraries();
 
     // transform the import expressions
     const imports = this.transformImports(allmissSym, relinker);
-    const result = EmittedSection.join(imports, structs, ...contractAndLibs);
+    const result = EmittedSection.join(imports, hashedMapLibraries, structs, ...contractAndLibs);
 
     if (this._watch) {
       setTimeout(() => {
@@ -949,6 +959,7 @@ export class Transpiler {
 
             if (this.isStateful()) {
               this.injectSerializeStateFunc(membersSection);
+              this.injectStateHelperFunc(membersSection);
             }
 
             // if (this.accessChange()) {
@@ -1014,6 +1025,7 @@ export class Transpiler {
       section.append(`\nTxHashPreimage ${InjectedProp_PrevTxHashPreimage};`);
     }
     if (this.shouldInjectCurStateProp()) {
+      // todo inject state hashedMap fields
       const stateTypeSymbol = this._stateTypeSymbols.get(this.currentContractName);
       if (!stateTypeSymbol) {
         throw new Error('State type symbol is not defined');
@@ -1024,14 +1036,49 @@ export class Transpiler {
 
   private injectScryptStructs(_section: EmittedSection) { }
 
-  private injectSerializeStateFunc(section: EmittedSection) {
-    const stateTypeSymbol = this._stateTypeSymbols.get(this.currentContractName);
-
-    if (!stateTypeSymbol) {
-      throw new Error('State type symbol is not defined');
-    }
+  private generateSerializeTypeCode(symbol: ts.Symbol, prefix: string, equalPrefix: string) {
 
     const flattenProps = (prop: ts.Symbol, prefix: string): { name: string; type: ts.Type }[] => {
+      
+      const flattenFixedArray = (type: ts.Type, prefix: string) => {
+        const len = type.aliasTypeArguments![1];
+        if (len.isNumberLiteral()) {
+          return Array.from({ length: len.value }).flatMap((_, i) => {
+            const elemType = type.aliasTypeArguments![0];
+            const typeStr = this.type2ResolvedName(elemType);
+
+            if (elemType.aliasSymbol?.name === 'FixedArray') {
+              // fixed array type under fixed array type
+              return flattenFixedArray(elemType, `${prefix}[${i}]`);
+            } else {
+              // non-fixed array types under fixed array type
+              const symbol = elemType.aliasSymbol || elemType.symbol;
+              if (!symbol) {
+                if (allowedTypeStr(typeStr)) {
+                  // compatible with bigint, boolean, string
+                  return [
+                    {
+                      name: `${prefix}[${i}]`,
+                      type: elemType,
+                    },
+                  ];
+                } else {
+                  throw new Error(`Unsupported type for prop hash: ${prefix}[${i}]: ${typeStr}`);
+                }
+              } else {
+                return flattenProps(symbol, `${prefix}[${i}]`);
+              }
+            }
+          });
+        } else {
+          throw new Error(`Unsupported type for prop hash: ${prefix}[index]: ${typeStr}`);
+        }
+      };
+
+      if ((prop as any)?.typeName?.getText() === 'FixedArray') {
+        return flattenFixedArray((prop as any), prefix);
+      }
+
       const dec =
         prop.flags & ts.SymbolFlags.Alias
           ? this._checker.getAliasedSymbol(prop).declarations![0]
@@ -1069,40 +1116,15 @@ export class Transpiler {
         ];
       }
 
-      const flattenFixedArray = (type: ts.Type, prefix: string) => {
-        const len = type.aliasTypeArguments![1];
-        if (len.isNumberLiteral()) {
-          return Array.from({ length: len.value }).flatMap((_, i) => {
-            const elemType = type.aliasTypeArguments![0];
-            const typeStr = this.type2ResolvedName(elemType);
 
-            if (elemType.aliasSymbol?.name === 'FixedArray') {
-              // fixed array type under fixed array type
-              return flattenFixedArray(elemType, `${prefix}[${i}]`);
-            } else {
-              // non-fixed array types under fixed array type
-              const symbol = elemType.aliasSymbol || elemType.symbol;
-              if (!symbol) {
-                if (allowedTypeStr(typeStr)) {
-                  // compatible with bigint, boolean, string
-                  return [
-                    {
-                      name: `${prefix}[${i}]`,
-                      type: elemType,
-                    },
-                  ];
-                } else {
-                  throw new Error(`Unsupported type for prop hash: ${prefix}[${i}]: ${typeStr}`);
-                }
-              } else {
-                return flattenProps(symbol, `${prefix}[${i}]`);
-              }
-            }
-          });
-        } else {
-          throw new Error(`Unsupported type for prop hash: ${prefix}[index]: ${typeStr}`);
-        }
-      };
+      const flattenHashedMap = (type: ts.Type, prefix: string) => {
+        return [
+          {
+            name: prefix,
+            type: type,
+          },
+        ];
+      }
 
       if (!members) {
         // not a struct type, throw error
@@ -1117,6 +1139,8 @@ export class Transpiler {
           if (type.aliasSymbol?.name === 'FixedArray') {
             // fixed array type under struct type
             return flattenFixedArray(type, `${prefix}.${k}`);
+          } else if (typeStr === 'HashedMap') {
+            return flattenHashedMap(type, `${prefix}.${k}`);
           } else {
             // non-fixed array types under struct type
             const symbol = type.aliasSymbol || type.symbol;
@@ -1149,13 +1173,17 @@ export class Transpiler {
     }
 
     function byteStringify(name: string, typeStr: string): string {
-      switch(typeStr) {
-        case 'Int32': 
+      switch (typeStr) {
+        case 'Int32':
         case 'SigHashType':
-        case 'bigint': 
+        case 'bigint':
+        case 'UInt32':
+        case 'UInt64':
+        case 'bigint':
+        case 'PrivKey':
           return `pack(${name})`;
         case 'Bool':
-        case 'boolean': 
+        case 'boolean':
           return `(${name} ? b'01' : b'')`;
         case 'ByteString':
         case 'Sha256':
@@ -1164,8 +1192,12 @@ export class Transpiler {
         case 'PubKey':
         case 'Ripemd160':
         case 'OpCodeType':
+        case 'Addr':
         case 'string':
+        case 'PubKeyHash':
           return `${name}`;
+        case 'HashedMap':
+          return `${name}._root`;
         default: {
           throw new Error(`Unsupported type for byteStringify: ${typeStr}`);
         }
@@ -1177,6 +1209,10 @@ export class Transpiler {
         case 'Int32':
         case 'SigHashType':
         case 'bigint':
+        case 'UInt32':
+        case 'UInt64':
+        case 'bigint':
+        case 'PrivKey':
           return `hash160(pack(${name}))`;
         case 'Bool':
         case 'boolean':
@@ -1188,24 +1224,87 @@ export class Transpiler {
         case 'PubKey':
         case 'Ripemd160':
         case 'OpCodeType':
+        case 'Addr':
         case 'string':
+        case 'PubKeyHash':
           return `hash160(${name})`;
+        case 'HashedMap':
+          return `hash160(${name}._root)`;
         default: {
           throw new Error(`Unsupported type for prop hash: ${typeStr}`);
         }
       }
     }
 
-    const hashes = flattenProps(stateTypeSymbol, InjectedParam_CurState).map(({ name, type }) =>
+    const flattenedProps = flattenProps(symbol, prefix);
+    const flattenedEqualProps = flattenProps(symbol, equalPrefix);
+
+    const hashes = flattenedProps.map(({ name, type }) =>
       propHash(name, this.type2ResolvedName(type)),
-    );
-    const dataPart = flattenProps(stateTypeSymbol, InjectedParam_CurState).map(({ name, type }) =>
-    {
+    ).join(' + ');
+    const dataPart = flattenedProps.map(({ name, type }) => {
       const bytes = byteStringify(name, this.type2ResolvedName(type));
       return `num2bin(len(${bytes}), 2) + ${bytes}`;
       // return `StdUtils.writeVarint(${bytes})`;
     }
-    );
+    ).join(' + ');
+    const equalsPart = flattenedProps.map(({ name, type }, index) => {
+      return `(${name} == ${flattenedEqualProps[index].name})`;
+    }).join(' && ');
+    const flattenedTypes = flattenedProps.map(({ name, type }) => {
+      const typeStr = this.type2ResolvedName(type)
+      return {
+        name, type, typeStr
+      }
+    })
+
+    return {
+      hashPart: hashes,
+      dataPart: dataPart,
+      equalsPart: equalsPart,
+      flattenedTypes,
+    }
+  }
+
+  private getHashedMapFieldsInState(prefix?: string) {
+    const stateTypeSymbol = this._stateTypeSymbols.get(this.currentContractName);
+    if (!stateTypeSymbol) {
+      return []
+    }
+    prefix = prefix || InjectedVar_NextState;
+    const { flattenedTypes } = this.generateSerializeTypeCode(stateTypeSymbol, prefix, 'dummy');
+    const hashedMapTypes = flattenedTypes.filter(({ typeStr }) => typeStr === 'HashedMap');
+    return hashedMapTypes
+  }
+
+  private getHashedMapFieldsForParam(
+    name: BindingName,
+    typeSymbol: ts.Symbol,
+    prefix?: string
+  ) {
+    try {
+      if (typeSymbol.declarations[0]?.kind === ts.SyntaxKind.EnumDeclaration) {
+        return [];
+      }
+      if (typeSymbol.name === 'FixedArray') {
+        return [];
+      }
+      prefix = prefix || name.getText();
+      const { flattenedTypes } = this.generateSerializeTypeCode(typeSymbol, prefix, 'dummy');
+      return flattenedTypes.filter(({ typeStr }) => typeStr === 'HashedMap');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  private injectSerializeStateFunc(section: EmittedSection) {
+    const stateTypeSymbol = this._stateTypeSymbols.get(this.currentContractName);
+
+    if (!stateTypeSymbol) {
+      throw new Error('State type symbol is not defined');
+    }
+
+    const { dataPart, hashPart } = this.generateSerializeTypeCode(stateTypeSymbol, InjectedParam_CurState, InjectedParam_CurState);
 
     section
       .append('\n')
@@ -1213,15 +1312,179 @@ export class Transpiler {
         `static function serializeState(${stateTypeSymbol.name} ${InjectedParam_CurState}): bytes {`,
       )
       .append('\n')
-      .append(`  return ${dataPart.join(' + ')} + hash160(${hashes.join(' + ')});`)
+      .append(`  return ${dataPart} + hash160(${hashPart});`)
       .append('\n')
       .append('}')
       .append('\n')
       .append(`static function stateHash(${stateTypeSymbol.name} ${InjectedParam_CurState}): bytes {`)
       .append('\n')
-      .append(`  return sha256(${dataPart.join(' + ')} + hash160(${hashes.join(' + ')}));`)
+      .append(`  return sha256(${dataPart} + hash160(${hashPart}));`)
       .append('\n')
       .append('}');
+  }
+  private injectStateHelperFunc(section: EmittedSection) {
+    // for library, we need to inject the state helper function
+    // state helper function's args is the state type, hashedMapContexts
+    // because the hashedmap type doese not hold the generic types, but the hashedmapContexts do
+    // so we need to inject the state helper function to the library
+    // the js runtime will read this function(artifacts) to recognize the the hashedmap generic types
+    // for js runtime simplicity, we inject this function both in SmartContract and StateLib
+    const stateTypeSymbol = this._stateTypeSymbols.get(this.currentContractName);
+    if (!stateTypeSymbol) {
+      throw new Error('State type symbol is not defined');
+    }
+    const funcParams = [
+      `${stateTypeSymbol.name} ${InjectedVar_NextState}`,
+    ]
+    const hashedMapTypes = this.getHashedMapFieldsInState();
+    hashedMapTypes.forEach(({ name, type }) => {
+
+      const [_, ctxType] = this.hashedMapToTypeName(type as ts.TypeReference, type.symbol.declarations[0]);
+      const ctxArgName = HASHEDMAP_NAMES.contextVar(name)
+      funcParams.push(`${ctxType} ${ctxArgName}`);
+    })
+
+    section
+      .append('\n')
+      .append(`static function __scrypt__stateHelper(${funcParams.join(', ')}): bool {`)
+      .append('\n')
+      .append(`  return true;`)
+      .append('\n')
+      .append('}')
+  }
+
+  private appendHashedMapCtxParams(
+    psSec: EmittedSection,
+    params: NodeArray<ParameterDeclaration>,
+    shouldAppendstateArg: boolean
+  ) {
+    if (this.isLibrary(this._currentContract)) return;
+    if (shouldAppendstateArg) {
+      const hashedMapTypes = this.getHashedMapFieldsInState();
+      hashedMapTypes.forEach(({ name, type }) => {
+        const [_, ctxType] = this.hashedMapToTypeName(type as ts.TypeReference, type.symbol.declarations[0]);
+
+        const ctxArgName = HASHEDMAP_NAMES.contextVar(name)
+        psSec.append(', ');
+        psSec.append(`${ctxType} ${ctxArgName}`);
+      })
+    }
+
+    // get every param's type symbol
+    params.forEach((paramDecalaration) => {
+      if (!paramDecalaration.type) return;
+      const typeRef = this._checker.getSymbolAtLocation((paramDecalaration.type as ts.TypeReferenceNode).typeName)
+      if (!typeRef) return;
+      const typeSymbol = typeRef.flags & ts.SymbolFlags.Alias ? this._checker.getAliasedSymbol(typeRef) : typeRef;
+      this._currentMethodParams.set(
+        paramDecalaration.name.getText(),
+        {
+          name: paramDecalaration.name,
+          typeSymbol
+        }
+      );
+    })
+
+    // for each params which contains a hashedmap, append the hashedmap context
+    this._currentMethodParams.forEach(({ name: varName, typeSymbol }, varNameString) => {
+      const hashedMapFields = this.getHashedMapFieldsForParam(varName, typeSymbol);
+      hashedMapFields.forEach(({ name, type }) => {
+        const [_, ctxType] = this.hashedMapToTypeName(type as ts.TypeReference, type.symbol.declarations[0]);
+
+        const ctxArgName = HASHEDMAP_NAMES.contextVar(name)
+        psSec.append(', ');
+        psSec.append(`${ctxType} ${ctxArgName}`);
+      })
+
+    })
+  }
+
+  private injectHashedMapVerifyValues(
+    section: EmittedSection,
+    isPublicMethod: boolean,
+    shouldAutoAppendStateArgs: boolean,
+  ) {
+    if (!isPublicMethod) return section;
+    if (this.isLibrary(this._currentContract)) return section;
+
+
+    let verifyHashedMapValuesStatements: string[] = [];
+
+    // append the verifyValues statements for this.state
+    if (this._stateTypeSymbols.has(this.currentContractName) && shouldAutoAppendStateArgs) {
+      const hashedMapTypes = this.getHashedMapFieldsInState();
+      hashedMapTypes.forEach(({ name }) => {
+        verifyHashedMapValuesStatements.push(`  require(${HASHEDMAP_NAMES.libraryVar(name)}.verifyValues());`);
+      });
+    }
+
+    // append the verifyValues statements for each param which contains a hashedmap
+    this._currentMethodParams.forEach(({ name: varName, typeSymbol }, varNameString) => {
+      const hashedMapFields = this.getHashedMapFieldsForParam(varName, typeSymbol);
+      hashedMapFields.forEach(({ name }) => {
+        verifyHashedMapValuesStatements.push(`  require(${HASHEDMAP_NAMES.libraryVar(name)}.verifyValues());`);
+      })
+    })
+
+    for (const statement of verifyHashedMapValuesStatements) {
+      section.append('\n')
+        .append(statement)
+    }
+    section.append('\n')
+
+    return section
+  }
+
+  private appendHashedMapNewLibStatements(
+    section: EmittedSection,
+    shouldAutoAppendStateArgs: {
+      shouldAppendArguments: boolean,
+      shouldAppendThisAssignment: boolean,
+      shouldAccessThis: boolean,
+    },
+    isPublicMethod: boolean,
+  ) {
+    if (!isPublicMethod) return section;
+    if (this.isLibrary(this._currentContract)) return section;
+    if (this._stateTypeSymbols.has(this.currentContractName) && shouldAutoAppendStateArgs.shouldAppendArguments) {
+      const hashedMapTypes = this.getHashedMapFieldsInState();
+      hashedMapTypes.forEach(({ name, type }) => {
+        const ctxArgName = HASHEDMAP_NAMES.contextVar(name);
+        const libVaraible = HASHEDMAP_NAMES.libraryVar(name);
+        const [libType] = this.hashedMapToTypeName(type as ts.TypeReference, type.symbol.declarations[0]);
+
+        section
+          .append('\n')
+          .append(`${libType} ${libVaraible} = new ${libType}(${name}._root);`)
+          .append('\n')
+          .append(`${libVaraible}.init(${ctxArgName}.proofs, ${ctxArgName}.keys, ${ctxArgName}.leafValues, ${ctxArgName}.nextLeafValues, ${ctxArgName}.accessIndexes);`)
+          .append('\n');
+        if (shouldAutoAppendStateArgs.shouldAppendThisAssignment) {
+          section
+            .append('\n')
+            .append(`${thisAssignment(libVaraible)}`)
+            .append('\n');
+        }
+      })
+    }
+
+    this._currentMethodParams.forEach(({ name: varName, typeSymbol }, varNameString) => {
+      const hashedMapFields = this.getHashedMapFieldsForParam(varName, typeSymbol);
+      hashedMapFields.forEach(({ name, type }) => {
+        const ctxArgName = HASHEDMAP_NAMES.contextVar(name);
+        const libVaraible = HASHEDMAP_NAMES.libraryVar(name);
+        const [libType] = this.hashedMapToTypeName(type as ts.TypeReference, type.symbol.declarations[0]);
+
+        section
+          .append('\n')
+          .append(`${libType} ${libVaraible} = new ${libType}(${name}._root);`)
+          .append('\n')
+          .append(`${libVaraible}.init(${ctxArgName}.proofs, ${ctxArgName}.keys, ${ctxArgName}.leafValues, ${ctxArgName}.nextLeafValues, ${ctxArgName}.accessIndexes);`)
+          .append('\n');
+      })
+    })
+
+    return section
   }
 
   private transformPropertySignature(
@@ -1275,6 +1538,20 @@ export class Transpiler {
       }
     }
 
+    const checkTypeHasHashedMap = () => {
+      try {
+        const typeRef = this._checker.getSymbolAtLocation((node.type as ts.TypeReferenceNode).typeName)
+        if (!typeRef) {
+          return false;
+        }
+        let typeSymbol = typeRef.flags & ts.SymbolFlags.Alias ? this._checker.getAliasedSymbol(typeRef) : typeRef;        
+        const hashedMapTypes = this.getHashedMapFieldsForParam(null, typeSymbol, 'dummy');
+        return hashedMapTypes.length > 0;
+      } catch (e) {
+        return false;
+      }
+    }
+
     toSection
       .appendWith(this, (toSec) => {
         return this.transformModifiers(node, toSec);
@@ -1283,6 +1560,13 @@ export class Transpiler {
         if (!node.type) {
           throw new TranspileError(
             `Untransformable property: '${node.name.getText()}', all \`prop()\` should be typed explicitly`,
+            this.getRange(node),
+          );
+        }
+
+        if (checkTypeHasHashedMap()) {
+          throw new TranspileError(
+            `Untransformable property: '${node.name.getText()}', HashedMap cannot be used as a property type`,
             this.getRange(node),
           );
         }
@@ -1646,6 +1930,7 @@ export class Transpiler {
 
     this.setMethodDecOptions(methodDec);
     this._currentMethodName = node.name.getText();
+    this._currentMethodParams.clear()
 
     let sigHashType = '41'; //SigHash.ALL;
 
@@ -1840,7 +2125,7 @@ export class Transpiler {
           psSec.append(`TxHashPreimage ${InjectedParam_PrevTxHashPreimage}`);
           paramLen += 1;
         }
-
+        this.appendHashedMapCtxParams(psSec, node.parameters, shouldAutoAppendStateArgs.shouldAppendArguments)
         return psSec;
       })
       .append(') ');
@@ -1860,7 +2145,7 @@ export class Transpiler {
         toSection.append(': bool ');
         autoReturnStatement = '\n  return true;';
       }
-    }
+    } 
     this._accessBuiltinsSymbols.add('TxUtils');
     this._accessBuiltinsSymbols.add('ContextUtils');
     return toSection
@@ -1882,7 +2167,6 @@ export class Transpiler {
             sec.append(`\n`).append(thisAssignment(InjectedProp_ChangeInfo)).append(`\n`);
           }
 
-          
           if (shouldAutoAppendSpentAmounts.shouldAppendArguments) {
             sec
               .append('\n')
@@ -1946,6 +2230,11 @@ export class Transpiler {
             }
           }
 
+          sec.appendWith(
+            this,
+            (sec) => this.appendHashedMapNewLibStatements(sec, shouldAutoAppendStateArgs, isPublicMethod)
+          )
+
           if (
             shouldAutoAppendStateArgs.shouldAppendArguments &&
             this._currentMethodDecOptions.autoCheckInputState
@@ -2005,6 +2294,8 @@ export class Transpiler {
         },
         true,
       )
+      .append('\n')
+      .appendWith(this, (sec) => this.injectHashedMapVerifyValues(sec, isPublicMethod, shouldAutoAppendStateArgs.shouldAppendArguments))
       .append(autoReturnStatement)
       .append('\n}');
   }
@@ -2199,7 +2490,7 @@ export class Transpiler {
               accessSpentAmounts: true, // spentDataHashes depends on spentAmounts
               accessSpentDataHashes: true, // state depends on spentDataHashes
             });
-          } else if (node.name.getText() ==='ctx') {
+          } else if (node.name.getText() === 'ctx') {
             Object.assign(accessInfo, {
               accessSHPreimage: true, // accessSpentDataHashes depends on shPreimage
             });
@@ -2230,7 +2521,7 @@ export class Transpiler {
                 accessSHPreimage: true,
                 accessCLTV: true,
               });
-            }  else if (['checkOutputs'].includes(methodName)) {
+            } else if (['checkOutputs'].includes(methodName)) {
               Object.assign(accessInfo, {
                 accessSHPreimage: true,
               });
@@ -2821,7 +3112,117 @@ export class Transpiler {
       .append(node.name.getText(), this.getCoordinates(node.name.getStart()));
   }
 
+  private findStateHashCalls(node: ts.Statement) {
+    // find `ASmartContract.stateHash(this.state)`, `AStateLib.stateHash(this.state)`, `ASmartContract.stateHash(state1)`, `AStateLib.stateHash(state1)`
+    let nodes: ts.Node[] = [];
+    nodes.push(node)
+    let stateHashNodes: ts.Node[] = [];
+
+    // find the `stateHash` node
+    while (nodes.length > 0) {
+      nodes.pop().getChildren().forEach(
+        (child) => {
+          if (child.getText() === 'stateHash') {
+            stateHashNodes.push(child)
+          } else {
+            nodes.push(child)
+          }
+        }
+      )
+    }
+
+    let callsForThisState: Array<{
+      // Xxx.stateHash(yyy)
+      expression: ts.Identifier,  // Xxx
+      arg: ts.Identifier,         // yyy
+    }> = [];
+    let callsForParam = [...callsForThisState]
+    for (const node of stateHashNodes) {
+      if (node.parent.kind !== ts.SyntaxKind.PropertyAccessExpression) {
+        break;
+      }
+      const expression = (node.parent as ts.PropertyAccessExpression).expression as ts.Identifier;
+      if (node.parent.parent.kind !== ts.SyntaxKind.CallExpression) {
+        break;
+      }
+
+      const args = (node.parent.parent as ts.CallExpression).arguments;
+      if (args.length !== 1) {
+        break;
+      }
+      const arg = args[0] as ts.Identifier
+
+      if (arg.getText().startsWith('this.state')) {
+        callsForThisState.push({
+          expression: expression,
+          arg: arg,
+        })
+      } else {
+        callsForParam.push({
+          expression: expression,
+          arg: arg,
+        })
+      }
+    }
+
+    return {
+      callsForThisState,
+      callsForParam,
+    }
+  }
+
+
+  private injectHashedMapRootUpdateIfCallingStateHash(node: ts.Statement, toSection: EmittedSection) {
+    const hasStateHash = node.getText().replaceAll(' ', '').replaceAll('\n', '').replaceAll('\r', '').includes('.stateHash(');
+    if (!hasStateHash) return;
+
+    const { callsForThisState, callsForParam } = this.findStateHashCalls(node);
+    const methodInfo = this.findMethodInfo(this._currentMethodName);
+    const isPrivateFunction = !methodInfo || !methodInfo.isPublic;
+
+    callsForThisState.forEach(() => {
+      const hashedMapTypes = this.getHashedMapFieldsInState();
+      if (hashedMapTypes.length > 0 && isPrivateFunction) {
+        throw new TranspileError(
+          `Cannot call stateHash in a private method \`${this._currentMethodName}\``,
+          this.getRange(node),
+        );
+      }
+      hashedMapTypes.forEach(({ name }) => {
+        const libVaraible = HASHEDMAP_NAMES.libraryVar(name);
+        const shouldAccessThis = this.shouldAutoAppendStateArgs(this.getMethodContainsTheNode(node)).shouldAccessThis;
+        toSection.append('\n').append(`${shouldAccessThis ? 'this.' : ''}${name}._root = ${libVaraible}.data();`)
+      })
+    })
+
+    callsForParam.forEach(({ arg }) => {
+      const argName = arg.getText();
+      if (!this._currentMethodParams.has(argName)) {
+        return;
+      }
+      const { name, typeSymbol } = this._currentMethodParams.get(argName);
+      const hashedMapTypes = this.getHashedMapFieldsForParam(name, typeSymbol, argName);
+      if (hashedMapTypes.length > 0 && isPrivateFunction) {
+        throw new TranspileError(
+          `Cannot call stateHash in a private method \`${this._currentMethodName}\``,
+          this.getRange(node),
+        );
+      }
+      hashedMapTypes.forEach(({ name }) => {
+        const libVaraible = HASHEDMAP_NAMES.libraryVar(name);
+        toSection.append('\n').append(`${name}._root = ${libVaraible}.data();`)
+      })
+    })
+  }
+
+
+
   private transformStatement(node: ts.Statement, toSection: EmittedSection): EmittedSection {
+
+    // update hashed map root before calling stateHash
+    this.injectHashedMapRootUpdateIfCallingStateHash(node, toSection);
+
+    // if (node.getText().indexOf())
     switch (node.kind) {
       case ts.SyntaxKind.Block: {
         return toSection
@@ -2869,7 +3270,6 @@ export class Transpiler {
         ) {
           return this.transformCallCheckInputState(s.expression as ts.CallExpression, toSection);
         }
-
         return this.transformExpression(s.expression, toSection).append(';');
       }
       case ts.SyntaxKind.VariableStatement: {
@@ -3194,6 +3594,13 @@ export class Transpiler {
             `Untransformable type \`${typeStrCtx}\` here, please use type \`ByteString\` instead`,
             this.getRange(node),
           );
+        }
+
+        if (typeString === 'HashedMap') {
+          const [libraryName] = this.hashedMapToTypeName(type as ts.TypeReference, node);
+          this._hashedMapLibraries.set(libraryName, { type: type as ts.TypeReference, node });
+          this._accessBuiltinsSymbols.add(ScryptInternalHashedMap);
+          return toSection.append(ScryptInternalHashedMap, coordinates);
         }
 
         const isFixedArray = (type: ts.Type) => {
@@ -4311,6 +4718,71 @@ export class Transpiler {
     return EmittedSection.join(...structSecs.concat(enumSecs));
   }
 
+  private transformHashedMapLibraries(): EmittedSection {
+    const librarySecs: EmittedSection[] = [];
+    let hashedMapLibs = new Set<string>();
+    this._hashedMapLibraries.forEach(({ type, node }, libraryName) => {
+      const [_, _2, keyType, valueType, maxAccessKeys] = this.hashedMapToTypeName(type, node);
+      if (hashedMapLibs.has(libraryName)) {
+        return;
+      }
+      hashedMapLibs.add(libraryName);
+      librarySecs.push(new EmittedSection().appendWith(this, (librarySec) => {
+        const keyCodes = this.generateSerializeTypeCode(type.typeArguments![0].aliasSymbol || type.typeArguments![0].symbol, 'key', 'key')
+        const valueCodes = this.generateSerializeTypeCode(type.typeArguments![1].aliasSymbol || type.typeArguments![1].symbol, 'value', 'value2')
+
+        const serializeKeyFnBody = `return ${keyCodes.dataPart};`
+        const serializeValueFnBody = `return ${valueCodes.dataPart};`
+        const isSameValueFnBody = `return ${valueCodes.equalsPart};`
+
+        const libraryCodeLines = HASHEDMAP_LIBRARY_TEMPLATE(keyType, valueType, maxAccessKeys, serializeKeyFnBody, serializeValueFnBody, isSameValueFnBody).split('\n');
+
+        const contextCodeLines = HASHEDMAP_CONTEXT_STRUCT(keyType, valueType, maxAccessKeys).split('\n');
+
+        libraryCodeLines.forEach((line) => {
+          librarySec.append(line).append('\n');
+        });
+        contextCodeLines.forEach((line) => {
+          librarySec.append(line).append('\n');
+        });
+        return librarySec;
+      }));
+    });
+    return EmittedSection.join(...librarySecs);
+  }
+
+  private generateSerializeType(type: ts.Type, node: ts.Node, toSection: EmittedSection) {
+    if (type.symbol) {
+      toSection.append(type.symbol.escapedName.toString());
+    } else {
+      toSection.append(this.transformType(type, node, toSection).getCode());
+    }
+  }
+
+  private hashedMapToTypeName(type: ts.TypeReference, node: ts.Node) {
+    if (type.typeArguments.length !== 3) {
+      throw new Error(`HashedMap must have 3 type arguments: ${node.getText()}`);
+    }
+    // const keyType = type.typeArguments[0].aliasSymbol?.name;
+    // const valueType = type.typeArguments[1].aliasSymbol?.name;
+
+    const keyTypeES = new EmittedSection();
+    const keyType = this.transformType(type.typeArguments[0], node, keyTypeES).getCode();
+    const valueTypeES = new EmittedSection();
+    const valueType = this.transformType(type.typeArguments[1], node, valueTypeES).getCode();
+    if (!type.typeArguments[2].isNumberLiteral()) {
+      throw new Error(`The third type argument for HashedMap must be a number literal: ${node.getText()}`);
+    }
+    const maxAccessKeys = type.typeArguments[2].value;
+    return [
+      HASHEDMAP_NAMES.libraryType(keyType, valueType, maxAccessKeys),
+      HASHEDMAP_NAMES.contextType(keyType, valueType, maxAccessKeys),
+      keyType,
+      valueType,
+      maxAccessKeys
+    ] as const;
+  }
+
   private toScryptBinary(node: ts.Node, operator: string): string {
     switch (operator) {
       case '==':
@@ -4788,10 +5260,85 @@ export class Transpiler {
     return false;
   }
 
+  private transformHashedMapGetSet(node: ts.PropertyAccessExpression, toSection: EmittedSection): boolean {
+    if (node.kind !== ts.SyntaxKind.PropertyAccessExpression) {
+      return false;
+    }
+
+    // make sure the parent is a call expression
+    if (node.parent.kind !== ts.SyntaxKind.CallExpression) {
+      return false;
+    }
+
+    // make sure the call function is set/get
+    const funcName = node.name.getText();
+    if (funcName !== 'set' && funcName !== 'get') {
+      return false;
+    };
+
+    
+    const methodInfo = this.findMethodInfo(this._currentMethodName);
+    const isPrivateFunction = !methodInfo || !methodInfo.isPublic;
+
+    // make sure the expression is a property access expression
+    const expression = node.expression as ts.PropertyAccessExpression;
+    const expressionText = expression.getText();
+    if (expressionText.startsWith('this.state')) {
+
+      if (isPrivateFunction) {
+        throw new TranspileError(
+          `Cannot call hashedMap .set/.get in a private method \`${this._currentMethodName}\``,
+          this.getRange(node),
+        );
+      }
+
+      const shouldAccessThis = this.shouldAutoAppendStateArgs(
+        this.getMethodContainsTheNode(node),
+      ).shouldAccessThis;
+      const hashedFields = this.getHashedMapFieldsInState('this.state');
+      const hashedFields2 = this.getHashedMapFieldsInState();
+      const findedIndex = hashedFields.findIndex(({ name }) => name === expressionText);
+      if (findedIndex >= 0) {
+        const libVariable = HASHEDMAP_NAMES.libraryVar(hashedFields2[findedIndex].name);
+        toSection.append(`${shouldAccessThis ? 'this.' : ''}${libVariable}.${funcName}`);
+      }
+      return true;
+    }
+
+
+    let paramVariable: ts.PropertyAccessExpression = node.expression as any
+    while (paramVariable.expression) {
+      paramVariable = paramVariable.expression as ts.PropertyAccessExpression;
+    }
+    const paramName = paramVariable.getText();
+    if (!this._currentMethodParams.has(paramName)) {
+      return false;
+    }
+    const { name, typeSymbol } = this._currentMethodParams.get(paramName);
+    const hashedMapTypes = this.getHashedMapFieldsForParam(name, typeSymbol, paramName);
+    const findIndex = hashedMapTypes.findIndex(({ name }) => name === expressionText);
+    if (findIndex >= 0) {
+      if (isPrivateFunction) {
+        throw new TranspileError(
+          `Cannot call hashedMap .set/.get in a private method \`${this._currentMethodName}\``,
+          this.getRange(node),
+        );
+      }
+      const libVaraible = HASHEDMAP_NAMES.libraryVar(hashedMapTypes[findIndex].name);
+      toSection.append(`${libVaraible}.${funcName}`);
+      return true;
+    }
+    return false;
+  }
+
   private transformPropertyAccessExpression(
     node: ts.PropertyAccessExpression,
     toSection: EmittedSection,
   ): EmittedSection {
+    if (this.transformHashedMapGetSet(node, toSection)) {
+      return toSection;
+    }
+
     if (this.transformSpecialPropertyAccessExpression(node, toSection)) {
       return toSection;
     }
@@ -4859,6 +5406,14 @@ export class Transpiler {
     const e = node as ts.NewExpression;
     const clsText = e.expression.getText();
     const scryptType = getBuiltInType(clsText);
+
+    if (clsText === 'HashedMap') {
+      throw new TranspileError(
+        `Cannot call new HashedMap() in SmartContract or SmartContractLib`,
+        this.getRange(e),
+      );
+    }
+
     if (scryptType) {
       toSection.append(scryptType, this.getCoordinates(e.getStart())).append('(');
 
@@ -5326,8 +5881,8 @@ export class Transpiler {
     return toSection.append(
       `ContextUtils.checknLockTime(${shouldAccessThis ? 'this.' : ''}${InjectedProp_SHPreimage},`,
     )
-    .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
-    .append(')');
+      .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
+      .append(')');
   }
 
   private transformCallCheckSig(
@@ -5490,8 +6045,7 @@ export class Transpiler {
   }
 
 
-  private transformCallCheckInputState(
-    node: ts.CallExpression,
+  private transformCallCheckInputState(node: ts.CallExpression,
     toSection: EmittedSection,
   ): EmittedSection {
     const dynamicInputIndex = this.isDynamicIndex(node.arguments[0]);
@@ -5513,9 +6067,9 @@ export class Transpiler {
       .append('\n')
       .append(`StateUtils.checkInputState(`)
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
-      .append(', ')
+      .append(', sha256(')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
-      .append(', ')
+      .append('), ')
       .appendWith(this, (toSec) => {
         const shouldAccessThis = this.shouldAutoAppendStateArgs(
           this.getMethodContainsTheNode(node),
@@ -5524,7 +6078,7 @@ export class Transpiler {
           ? `this.${InjectedParam_SpentDataHashes}`
           : `${InjectedParam_SpentDataHashes}`);
 
-          return toSec;
+        return toSec;
       })
       .append(');')
       .append('\n');
@@ -5619,7 +6173,7 @@ export class Transpiler {
     const expr = shouldAccessThis ? `this.${InjectedProp_PrevTxHashPreimage}` : InjectedProp_PrevTxHashPreimage;
     return toSection.append(expr);
   }
-  
+
   private isDynamicIndex(node: ts.Expression): boolean {
     const indexExpr = this.unwrapNumberConversion(node);
     return (

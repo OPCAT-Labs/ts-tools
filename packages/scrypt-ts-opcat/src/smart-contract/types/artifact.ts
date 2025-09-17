@@ -12,6 +12,7 @@ export const SUPPORTED_MINIMUM_VERSION = 8;
 export interface ABI {
   contract: string;
   abi: Array<ABIEntity>;
+  staticAbis: Array<ABIEntity>;
 }
 
 /**
@@ -43,6 +44,8 @@ export interface Artifact {
   alias: Array<AliasEntity>;
   /** ABI of the contract: interfaces of its public functions and constructor */
   abi: Array<ABIEntity>;
+  /** ABI of the contract: interfaces of its static functions */
+  staticAbi: Array<ABIEntity>;
   /** locking script of the contract in hex format, including placeholders for constructor parameters */
   hex: string;
   /** relative file uri of the main contract source code file */
@@ -88,6 +91,7 @@ export interface ABIEntity {
   name?: string;
   params: Array<ParamEntity>;
   index?: number;
+  returnType?: string;
 }
 
 /**

@@ -189,7 +189,15 @@ export type Sha256 = ByteString & { __type: 'Sha256' };
  */
 export function Sha256(b: ByteString): Sha256 {
   return getValidatedHexString(b, false) as Sha256;
+
 }
+
+interface IMap<K, V> {
+  get(key: K): V;
+  set(key: K, value: V): void;
+}
+
+export type HashedMap = Flavor<IMap<PrimitiveTypes, SupportedParamType>, 'HashedMap'>;
 
 /**
  * An array is a fixed-size list of values of the same basic type.
@@ -268,6 +276,24 @@ export type PrimitiveTypes =
   | Ripemd160
   | OpCodeType;
 
+export const PRIMITIVE_TYPES = [
+  // int types
+  'int',
+  'PrivKey',
+
+  // bool types
+  'bool',
+
+  // bytes types
+  'bytes',
+  'PubKey',
+  'Sig',
+  'Ripemd160',
+  'Sha1',
+  'Sha256',
+  'OpCodeType',
+]
+
 /**
  * @ignore
  */
@@ -283,7 +309,7 @@ export interface StructObject {
 /**
  * @ignore
  */
-export type SupportedParamType = PrimitiveTypes | StructObject | SupportedParamType[];
+export type SupportedParamType = PrimitiveTypes | StructObject | HashedMap | SupportedParamType[];
 
 
 

@@ -58,6 +58,7 @@ const desc = {
         },
     ],
     stateProps: [],
+    staticAbi: [],
     buildType: 'release',
     file: '',
     hex: '<pubKey>ac',
