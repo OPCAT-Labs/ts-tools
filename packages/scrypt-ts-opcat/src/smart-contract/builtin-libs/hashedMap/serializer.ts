@@ -63,17 +63,17 @@ export function deserializeSingleField(bytes: ByteString, fieldType: string) {
 
 export function createEmptyValue<T>(
     artifact: Artifact,
-    stateType: string
+    valueType: string
 ): T {
   const abiCoder = new ABICoder(artifact);
 
   const stateStruct = abiCoder.artifact.structs.find(
-    (struct) => getUnRenamedSymbol(struct.name) === getUnRenamedSymbol(stateType),
+    (struct) => getUnRenamedSymbol(struct.name) === getUnRenamedSymbol(valueType),
   );
   if (stateStruct) {
-    return createEmptyState(artifact, stateType, false)
+    return createEmptyState(artifact, valueType, false)
   }
-  switch(stateType) {
+  switch(valueType) {
     case 'bigint':
     case 'int':
       return 0n as T;
@@ -82,6 +82,22 @@ export function createEmptyValue<T>(
     case 'bytes':
       return '' as T;
     default:
-      throw new Error(`Unsupported state type: ${stateType}`)
+      throw new Error(`Unsupported state type: ${valueType}`)
+  }
+}
+
+export function createEmptyKey<T>(
+    keyType: string
+): T {
+  switch(keyType) {
+    case 'bigint':
+    case 'int':
+      return 0n as T;
+    case 'boolean':
+      return false as T;
+    case 'bytes':
+      return '' as T;
+    default:
+      throw new Error(`Unsupported state type: ${keyType}`)
   }
 }

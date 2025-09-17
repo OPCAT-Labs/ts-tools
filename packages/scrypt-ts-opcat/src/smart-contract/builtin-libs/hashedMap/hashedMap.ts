@@ -5,7 +5,7 @@ import { ByteString } from "../../types/index.js"
 import { Artifact } from "../../types/artifact.js"
 import { PrimitiveTypes, StructObject, SupportedParamType } from "../../types/primitives.js"
 import { Hash160Merkle } from "./hash160Merkle.js"
-import { serializeKey, serializeValue, createEmptyValue, deserializeKey, deserializeValue } from "./serializer.js"
+import { serializeKey, serializeValue, createEmptyValue, deserializeKey, deserializeValue, createEmptyKey } from "./serializer.js"
 import { AbstractContract } from "../../abstractContract.js"
 import { SmartContractLib } from "../../smartContractLib.js"
 
@@ -200,17 +200,7 @@ export class HashedMap<
    */
   public emptyKey(): KeyType {
     this.assertAttached();
-    switch (typeof this.genericType.keyType) {
-      case 'number':
-      case 'bigint':
-        return 0n as KeyType;
-      case 'boolean':
-        return false as KeyType;
-      case 'string':
-        return '' as KeyType;
-      default:
-        throw new Error(`Unsupported key type: ${typeof this.genericType.keyType}`);
-    }
+    return createEmptyKey<KeyType>(this.genericType.keyType)
   }
 
 

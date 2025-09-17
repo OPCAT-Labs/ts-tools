@@ -1,5 +1,4 @@
 import { ABICoder } from "../../abi.js";
-import { getUnRenamedSymbol } from "../../abiutils.js";
 import { Artifact } from "../../types/artifact.js";
 import { HashedMap } from "./hashedMap.js";
 import { cloneDeep } from "../../../utils/common.js";
@@ -70,7 +69,7 @@ export function wrapParamType(artifact: Artifact, callingMethod: string, param: 
 }
 
 export function extractHashedMapCtx(artifact: Artifact, baseVariable: any, ctxFieldName: string) {
-  const hashedMapFieldPath = ctxFieldName.split('__dot__').slice(1).join('__dot__')
+  const hashedMapFieldPath = ctxFieldName.split(HashedMapAbiUtil.SYMBOLS.SCRYPT_SPLITTERS.DOT).slice(1).join(HashedMapAbiUtil.SYMBOLS.SCRYPT_SPLITTERS.DOT)
 
   const map = HashedMapAbiUtil.getFieldValueByPath(baseVariable, hashedMapFieldPath) as TracedHashedMap<any, any, any>;
 
@@ -82,31 +81,7 @@ export function extractHashedMapCtx(artifact: Artifact, baseVariable: any, ctxFi
 
 
 function changeFieldValue(fieldName: string, state: any, changeFn: (value: any) => any) {
-  const value = changeFn(HashedMapAbiUtil.getFieldValueByPath(state, fieldName));
-  const fields = parseField(fieldName);
-  const prefix = fields.slice(0, -1)
-  const last = fields[fields.length - 1];
-  let cur = state;
-  for (const field of prefix) {
-    cur = cur[field.value];
-  }
-  cur[last.value] = value;
-  return state;
-}
-
-function parseField(f: string) {
-  f = f.replaceAll('__dot__', '.').replaceAll('__brl__', '[').replaceAll('__brr__', ']')
-  const result: ({ type: 'dot', value: string } | { type: 'array', value: number })[] = [];
-  const regex = /(\w+)|\[(\d+)\]/g;
-  let match;
-
-  while ((match = regex.exec(f)) !== null) {
-    if (match[1]) {
-      result.push({ type: 'dot', value: match[1] });
-    } else if (match[2]) {
-      result.push({ type: 'array', value: parseInt(match[2], 10) });
-    }
-  }
-
-  return result;
+  const value = HashedMapAbiUtil.getFieldValueByPath(state, fieldName);
+  const newValue = changeFn(value);
+  return HashedMapAbiUtil.setFieldValueByPath(state, fieldName, newValue);
 }

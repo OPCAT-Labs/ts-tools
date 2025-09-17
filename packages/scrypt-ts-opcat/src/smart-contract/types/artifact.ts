@@ -12,7 +12,7 @@ export const SUPPORTED_MINIMUM_VERSION = 8;
 export interface ABI {
   contract: string;
   abi: Array<ABIEntity>;
-  staticAbis: Array<ABIEntity>;
+  staticAbi: Array<ABIEntity>;
 }
 
 /**

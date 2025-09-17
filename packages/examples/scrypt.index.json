@@ -167,11 +167,6 @@
    "md5": "5af6630204828c748a367c34f6104a42"
   },
   {
-   "symbol": "TestSimpleContract",
-   "path": "contracts/testSimpleContract.scrypt.tpl",
-   "md5": "7cc6de177f4697de671f88434f94955d"
-  },
-  {
    "symbol": "TimedCommit",
    "path": "contracts/timedCommit.scrypt.tpl",
    "md5": "c44fc9f85ffda68e02aff766013bdc32"

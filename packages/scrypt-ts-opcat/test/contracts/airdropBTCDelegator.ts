@@ -13,9 +13,7 @@ export class AirdropBTCDelegator extends SmartContract<AirdropBTCDelegatorState>
         delegatorPubKey: PubKey,
         delegatorSig: Sig,
     ) {
-        assert(
-            ContextUtils.getSpentDataHash(this.ctx.spentDataHashes, 0n) == AirdropBTCStateLib.stateHash(airdropState),
-        )
+        this.checkInputState(0n, AirdropBTCStateLib.serializeState(airdropState));
 
         const expectDelegatorAddress = this.state.delegators.get(claimerAddress);
         assert(expectDelegatorAddress != toByteString(''), 'No delegator address found');

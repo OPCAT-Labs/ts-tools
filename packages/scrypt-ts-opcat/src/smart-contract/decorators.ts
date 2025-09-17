@@ -70,8 +70,6 @@ export function method(options: MethodDecoratorOptions = { autoCheckInputState: 
             if (this.isPubFunction(methodName)) {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const self = this as any;
-              const curPsbt = self.spentPsbt;
-
               self.setSighashType(sigHashType);
               const originState = self.state;
               const clonedState = wrapStateType(self.constructor.artifact, originState);

@@ -31,11 +31,13 @@ import { toTxHashPreimage } from '../utils/proof.js';
 import { assert } from './fns/assert.js';
 import { Arguments } from './types/abi.js';
 import { extractHashedMapCtx, attachToStateType } from './builtin-libs/hashedMap/utils.js';
+import { HashedMapAbiUtil } from "./builtin-libs/hashedMap/hashedMapAbiUtil.js";
 
 
 /**
  * Used to invoke public methods of a contract, corresponding to the witness of a Taproot input
  */
+
 interface MethodCallData {
   method: string;
   args: SupportedParamType[];
@@ -399,12 +401,13 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @param method - The method name to call.
    * @param args - The arguments to pass to the method.
    * @param autoCheckInputState - Whether to automatically check input state before injection.
-   * @param nextState - The next state of the contract after the method is called.
+   * @param changedState - The state of the contract after the method is called.
+   * @param changedArgs - The arguments to pass to the method after the method is called.
    */
-  extendMethodArgs(method: string, args: SupportedParamType[], autoCheckInputState: boolean, nextState: StateT, clonedArgs: SupportedParamType[]) {
+  extendMethodArgs(method: string, args: SupportedParamType[], autoCheckInputState: boolean, changedState: StateT, changedArgs: SupportedParamType[]) {
     // extend the args with the context
     if (this._shouldInjectCtx(method)) {
-      this._autoInject(method, args, autoCheckInputState, nextState, clonedArgs);
+      this._autoInject(method, args, autoCheckInputState, changedState, changedArgs);
     }
 
     const unlockingScript = this._abiCoder.encodePubFunctionCall(method, args);
@@ -447,8 +450,8 @@ export class SmartContract<StateT extends OpcatState = undefined>
     method: string,
     args: SupportedParamType[],
     autoCheckInputState: boolean,
-    nextState: StateT,
-    clonedArgs: SupportedParamType[],
+    changedState: StateT,
+    changedArgs: SupportedParamType[],
   ) {
     const {
       shPreimage,
@@ -512,19 +515,17 @@ export class SmartContract<StateT extends OpcatState = undefined>
             throw new Error('utxo.txHashPreimage is required for backtrace');
           }
           args.push(toTxHashPreimage(hexToUint8Array(this.utxo!.txHashPreimage!)));
-        } else if (param.name.startsWith('__scrypt_ts_hashedMapCtx__')) {
-          // inject ctx
-
-          if (param.name.startsWith('__scrypt_ts_hashedMapCtx____scrypt_ts_nextState')) {
-            args.push(extractHashedMapCtx(this._abiCoder.artifact, nextState, param.name));
+        } else if (param.name.startsWith(HashedMapAbiUtil.SYMBOLS.SCRYPT_PREFIXERS.HASHED_MAP_CTX_VARIABLE)) {
+          // inject HashedMap ctx
+          if (param.name.startsWith(HashedMapAbiUtil.SYMBOLS.SCRYPT_PREFIXERS.HASHED_MAP_CTX_VARIABLE + HashedMapAbiUtil.SYMBOLS.SCRYPT_VARIABLES.NEXT_STATE)) {
+            args.push(extractHashedMapCtx(this._abiCoder.artifact, changedState, param.name));
           } else {
-            // throw new Error(`Unknown context variable: ${param.name}`);
-            const baseParamName = param.name.slice('__scrypt_ts_hashedMapCtx__'.length).split('__dot__')[0]
+            const baseParamName = param.name.slice(HashedMapAbiUtil.SYMBOLS.SCRYPT_PREFIXERS.HASHED_MAP_CTX_VARIABLE.length).split(HashedMapAbiUtil.SYMBOLS.SCRYPT_SPLITTERS.DOT)[0]
             const baseParamIndex = abiEntity.params.findIndex((p) => p.name === baseParamName);
             if (baseParamIndex < 0) {
               throw new Error(`Base param ${baseParamName} for hashed map context ${param.name} is not found in artifact`);
             }
-            const baseParamValue = clonedArgs[baseParamIndex];
+            const baseParamValue = changedArgs[baseParamIndex];
             args.push(extractHashedMapCtx(this._abiCoder.artifact, baseParamValue, param.name));
           }
         }

@@ -1,18 +1,18 @@
 import * as dotenv from 'dotenv';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { PrivateKey, DefaultSigner, Address, Script, HashedMap, ByteString, toByteString, attachToStateType, cloneDeep, ExtPsbt, hexToUint8Array, bvmVerify, PubKey } from '@opcat-labs/scrypt-ts-opcat';
+import { PrivateKey, DefaultSigner, Address, Script, HashedMap, ByteString, toByteString, cloneDeep, ExtPsbt, hexToUint8Array, bvmVerify, PubKey } from '@opcat-labs/scrypt-ts-opcat';
 import { AirdropBTC } from '../contracts/airdropBTC.js';
 import { AirdropBTCStateLib, ClaimInfo } from '../contracts/airdropBTCStateLib.js';
 import { AirdropBTCDelegator, AirdropBTCDelegatorState } from '../contracts/airdropBTCDelegator.js';
 
-import { getDummyUtxo, readArtifact } from '../utils';
+import { getDefaultSigner, getDummyUtxo, readArtifact } from '../utils';
 
 dotenv.config();
 use(chaiAsPromised);
 
 describe('Test AirdropBTC', () => {
-    const testSigner = new DefaultSigner(PrivateKey.fromWIF('cQfb2vnBvKryZjG7MuWwDoeMpvHBNAqaNyJH3cNxdHxnHWd6Kv7f'));
+    const testSigner = getDefaultSigner()
 
     const addresses = [
         Script.fromAddress(Address.fromString('1NiNacS1FrNdd5WUudZePSsHi5ZzGNW9CC')).toHex(),

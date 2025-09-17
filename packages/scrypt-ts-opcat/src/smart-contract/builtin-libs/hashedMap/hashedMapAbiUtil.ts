@@ -33,6 +33,11 @@ export class HashedMapAbiUtil {
       .replaceAll(this.SYMBOLS.JS_SPLITTERS.BRACKET_LEFT, this.SYMBOLS.SCRYPT_SPLITTERS.BRACKET_LEFT)
       .replaceAll(this.SYMBOLS.JS_SPLITTERS.BRACKET_RIGHT, this.SYMBOLS.SCRYPT_SPLITTERS.BRACKET_RIGHT);
   }
+  static fieldPathToJsSymbol(fieldPath: string) {
+    return fieldPath.replaceAll(this.SYMBOLS.SCRYPT_SPLITTERS.DOT, this.SYMBOLS.JS_SPLITTERS.DOT)
+      .replaceAll(this.SYMBOLS.SCRYPT_SPLITTERS.BRACKET_LEFT, this.SYMBOLS.JS_SPLITTERS.BRACKET_LEFT)
+      .replaceAll(this.SYMBOLS.SCRYPT_SPLITTERS.BRACKET_RIGHT, this.SYMBOLS.JS_SPLITTERS.BRACKET_RIGHT);
+  }
 
   static getHashedMapCtxByState(artifact: Artifact, stateFieldPath: string) {
     const stateHelperFunc = artifact.staticAbi.find(f => f.name === this.SYMBOLS.SCRYPT_VARIABLES.STATE_HELPER_FUNCTION);
@@ -123,8 +128,28 @@ export class HashedMapAbiUtil {
   }
 
   static getFieldValueByPath(state: any, path: string) {
-    const getFeildList = (fieldPath: string) => {
-      const result: ({ type: 'dot', value: string } | { type: 'array', value: number })[] = [];
+    const fields = this.getFieldListByPath(path);
+    let cur = state;
+    for (const field of fields) {
+      cur = cur[field.value];
+    }
+    return cur;
+  }
+
+  static setFieldValueByPath(state: any, path: string, value: any) {
+    const fields = this.getFieldListByPath(path);
+    let cur = state;
+    const prefix = fields.slice(0, -1)
+    const last = fields[fields.length - 1];
+    for (const field of prefix) {
+      cur = cur[field.value];
+    }
+    cur[last.value] = value;
+    return state;
+  }
+
+  static getFieldListByPath(fieldPath: string) {
+    const result: ({ type: 'dot', value: string } | { type: 'array', value: number })[] = [];
       const regex = /(\w+)|\[(\d+)\]/g;
       let match;
 
@@ -136,14 +161,6 @@ export class HashedMapAbiUtil {
         }
       }
       return result;
-    }
-
-    const fields = getFeildList(path);
-    let cur = state;
-    for (const field of fields) {
-      cur = cur[field.value];
-    }
-    return cur;
   }
 
   static exportHashedMapTrackerConfig(

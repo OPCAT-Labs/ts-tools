@@ -78,10 +78,6 @@ export const HASHEDMAP_NAMES = {
   libraryVar: (fieldPrefix: string) => `__scrypt_ts_hashedMapLib__${fieldPrefix.replaceAll('.', '__dot__').replaceAll('[', '__brl__').replaceAll(']', '__brr__')}`,
 }
 
-// export const HASHEDMAP_STATE_STRUCT_VARIABLE = (fieldPrefix: string) => fieldPrefix.replaceAll('.', '__dot__') + '__ctx';
-
-// export const HASHEDMAP_STATE_LIB_VARIABLE = (fieldPrefix: string) => fieldPrefix.replaceAll('.', '__dot__') + '__lib';
-
 export const HASHEDMAP_LIBRARY_TEMPLATE = (
   keyType: string,
   valueType: string,

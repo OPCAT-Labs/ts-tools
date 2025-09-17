@@ -6,11 +6,11 @@ import { HashedMapContext, TracedHashedMap } from "./tracedHashedMap.js";
 
 
 export class HashedMapLibrary<KeyType, ValueType> {
-    static readonly HASH_LEN = 20n;
-    static readonly DEPTH = 160n;
-    static readonly PROOF_LEN = 3220n; 
+  static readonly HASH_LEN = 20n;
+  static readonly DEPTH = 160n;
+  static readonly PROOF_LEN = 3220n;
 
-    
+
   // HashedMap holds the root of the merkle tree
   private _root: ByteString;
 
@@ -58,7 +58,7 @@ export class HashedMapLibrary<KeyType, ValueType> {
     let nextRoot = this._root;
     for (let i = 0; i < this.maxAccessKeys; i++) {
       if (i < proofCount) {
-        let proof = slice(this._proofs, BigInt(i) * HashedMapLibrary.PROOF_LEN , BigInt(i + 1) * HashedMapLibrary.PROOF_LEN)
+        let proof = slice(this._proofs, BigInt(i) * HashedMapLibrary.PROOF_LEN, BigInt(i + 1) * HashedMapLibrary.PROOF_LEN)
         let keyHash = hash160(this.serializeKey(this._keys[i]));
         let leafHash = hash160(this.serializeValue(this._leafValues[i]));
         let nextLeafHash = hash160(this.serializeValue(this._nextLeafValues[i]));
@@ -66,7 +66,7 @@ export class HashedMapLibrary<KeyType, ValueType> {
         let neighbors = slice(proof, HashedMapLibrary.HASH_LEN, HashedMapLibrary.HASH_LEN + HashedMapLibrary.DEPTH * HashedMapLibrary.HASH_LEN);
 
         // make sure _leafValues[i] is the same as the leafHash in the proof
-        assert(expectedLeafHash == leafHash); 
+        assert(expectedLeafHash == leafHash);
         // verify the merkle proof
         nextRoot = this.verifySingleMerkle(nextRoot, keyHash, leafHash, nextLeafHash, neighbors);
       }
@@ -82,7 +82,7 @@ export class HashedMapLibrary<KeyType, ValueType> {
     for (let i = 0; i < HashedMapLibrary.DEPTH; i++) {
       let isNeighborLeft = keyNumber % 2n === 1n;
       keyNumber = keyNumber / 2n;
-      let neighborItem = slice(neighbors, BigInt(i) * HashedMapLibrary.HASH_LEN , BigInt(i + 1) * HashedMapLibrary.HASH_LEN);
+      let neighborItem = slice(neighbors, BigInt(i) * HashedMapLibrary.HASH_LEN, BigInt(i + 1) * HashedMapLibrary.HASH_LEN);
       if (isNeighborLeft) {
         oldMerkleValue = hash160(neighborItem + oldMerkleValue);
         newMerkleValue = hash160(neighborItem + newMerkleValue);
@@ -144,25 +144,25 @@ export class HashedMapLibrary<KeyType, ValueType> {
 
 
 export function verifyHashedMapContext(
-    m: TracedHashedMap<any, any, any>,
+  m: TracedHashedMap<any, any, any>,
 ) {
-    const { ctx, operations } = m.extractContext();
-    const lib = new HashedMapLibrary(m.beforeMap.getRoot());
-    lib.serializeKey = m.serializeKey.bind(m)
-    lib.serializeValue = m.serializeValue.bind(m)
-    lib.isSameValue = (v1: any, v2: any) => {
-        return lib.serializeValue(v1) == lib.serializeValue(v2)
+  const { ctx, operations } = m.extractContext();
+  const lib = new HashedMapLibrary(m.beforeMap.getRoot());
+  lib.serializeKey = m.serializeKey.bind(m)
+  lib.serializeValue = m.serializeValue.bind(m)
+  lib.isSameValue = (v1: any, v2: any) => {
+    return lib.serializeValue(v1) == lib.serializeValue(v2)
+  }
+  lib.maxAccessKeys = m.genericType.maxAccessKeys
+  lib.init(ctx.proofs, ctx.keys, ctx.leafValues, ctx.nextLeafValues, ctx.accessIndexes)
+  operations.forEach(op => {
+    if (op.method === 'set') {
+      lib.set(op.key, op.value)
+    } else if (op.method === 'get') {
+      lib.get(op.key)
     }
-    lib.maxAccessKeys = m.genericType.maxAccessKeys
-    lib.init(ctx.proofs, ctx.keys, ctx.leafValues, ctx.nextLeafValues, ctx.accessIndexes)
-    operations.forEach(op => {
-        if (op.method === 'set') {
-            lib.set(op.key, op.value)
-        } else if (op.method === 'get') {
-            lib.get(op.key)
-        }
-    })
-    return lib.verifyValues()
+  })
+  return lib.verifyValues()
 }
 
 export function verifyHashedMapMerkleProof(
@@ -171,25 +171,13 @@ export function verifyHashedMapMerkleProof(
   oldRoot: ByteString,
   newRoot: ByteString,
 ): boolean {
-   const lib = new HashedMapLibrary(oldRoot);
-   lib.serializeKey = dummyHashedMap.serializeKey.bind(dummyHashedMap)
-   lib.serializeValue = dummyHashedMap.serializeValue.bind(dummyHashedMap)
-   lib.isSameValue = (v1: any, v2: any) => {
+  const lib = new HashedMapLibrary(oldRoot);
+  lib.serializeKey = dummyHashedMap.serializeKey.bind(dummyHashedMap)
+  lib.serializeValue = dummyHashedMap.serializeValue.bind(dummyHashedMap)
+  lib.isSameValue = (v1: any, v2: any) => {
     return lib.serializeValue(v1) == lib.serializeValue(v2)
-   }
-   lib.maxAccessKeys = dummyHashedMap.genericType.maxAccessKeys;
-   lib.init(ctx.proofs, ctx.keys, ctx.leafValues, ctx.nextLeafValues, ctx.accessIndexes)
-   return lib.data() === newRoot;
+  }
+  lib.maxAccessKeys = dummyHashedMap.genericType.maxAccessKeys;
+  lib.init(ctx.proofs, ctx.keys, ctx.leafValues, ctx.nextLeafValues, ctx.accessIndexes)
+  return lib.data() === newRoot;
 }
-
-function test() {
-    const merkleTree = new Hash160Merkle(toByteString(''))
-
-    const k1 = '00'
-    const v1 = '01'
-    let root = merkleTree.getRoot()
-    const proofs = merkleTree.updateLeaf(k1, v1)
-    HashedMapLibrary.verifySingleMerkle(root, hash160(k1), hash160(''), hash160(v1), proofs.slice(1).join(''))
-}
-
-// test()
