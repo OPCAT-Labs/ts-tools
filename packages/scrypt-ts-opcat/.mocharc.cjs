@@ -1,4 +1,4 @@
-const offchainSpec = ['./test/local-test/airdropBTC.test.ts'];
+const offchainSpec = ['./test/local-test/*.test.ts'];
 const onchainSpec = './test/onchain-test/*.test.ts';
 
 const isOnchain = process.env.NETWORK !== undefined;
