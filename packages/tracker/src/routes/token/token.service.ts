@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
 import { IsNull, LessThanOrEqual, Repository, MoreThanOrEqual, LessThan } from 'typeorm';
@@ -10,6 +10,7 @@ import { TxEntity } from '../../entities/tx.entity';
 import { CommonService } from '../../services/common/common.service';
 import { TokenTypeScope } from '../../common/types';
 import { TokenMintEntity } from '../../entities/tokenMint.entity';
+import { HttpStatusCode } from 'axios';
 
 @Injectable()
 export class TokenService {
@@ -126,7 +127,7 @@ export class TokenService {
     const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
     const tokenInfo = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenAddr, scope);
     if (!tokenInfo) {
-      return null;
+      throw new HttpException('Invalid tokenIdOrTokenAddr', HttpStatusCode.BadRequest);
     }
     const balances = await this.queryTokenBalancesByOwnerAddress(lastProcessedHeight, ownerAddrOrPkh, scope, tokenInfo);
     return {
@@ -171,6 +172,9 @@ export class TokenService {
     tokenInfo: TokenInfoEntity | null = null,
   ) {
     const ownerPubKeyHash = ownerAddressToPubKeyHash(ownerAddrOrPkh);
+    if (!ownerPubKeyHash) {
+      throw new HttpException('Invalid ownerAddrOrPkh', HttpStatusCode.BadRequest);
+    }
     if (lastProcessedHeight === null || (tokenInfo && !tokenInfo.tokenScriptHash) || !ownerPubKeyHash) {
       return [];
     }
