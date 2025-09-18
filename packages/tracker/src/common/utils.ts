@@ -18,7 +18,7 @@ export function okResponse(data: any) {
 
 export function errorResponse(e: Error) {
   return {
-    code: 100,
+    code: 400,
     msg: e.message,
     data: null,
   };
