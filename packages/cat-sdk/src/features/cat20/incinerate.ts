@@ -17,10 +17,7 @@ import {
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../contracts/constants'
-import {
-  applyFixedArray,
-  filterFeeUtxos,
-} from '../../utils'
+import { applyFixedArray, filterFeeUtxos } from '../../utils'
 import { CAT20Guard } from '../../contracts/cat20/cat20Guard'
 import {
   CAT20GuardPeripheral,
@@ -36,6 +33,7 @@ export async function incinerate(
   feeSigner: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
+  adminScriptHash: ByteString,
   tokenUtxos: UTXO[],
   feeRate: number
 ): Promise<{
@@ -85,20 +83,20 @@ export async function incinerate(
       SHA256_EMPTY_STRING, // fee input
     ]
   )
-  guardState.tokenBurnAmounts[0] = guardState.tokenAmounts[0];
+  guardState.tokenBurnAmounts[0] = guardState.tokenAmounts[0]
   guard.state = guardState
 
-  const guardPsbt = new ExtPsbt({network: await provider.getNetwork()})
+  const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
-    .addContractOutput(
-      guard,
-      Postage.GUARD_POSTAGE,
-    )
+    .addContractOutput(guard, Postage.GUARD_POSTAGE)
     .addContractOutput(incinerator, Postage.GUARD_POSTAGE)
     .change(changeAddress, feeRate)
     .seal()
 
-  const signedGuardPsbt = await feeSigner.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions())
+  const signedGuardPsbt = await feeSigner.signPsbt(
+    guardPsbt.toHex(),
+    guardPsbt.psbtOptions()
+  )
   guardPsbt.combine(ExtPsbt.fromHex(signedGuardPsbt))
 
   guardPsbt.finalizeAllInputs()
@@ -107,43 +105,42 @@ export async function incinerate(
   const incineratorUtxo = guardPsbt.getUtxo(1)
   const feeUtxo = guardPsbt.getChangeUTXO()
 
-  const inputTokens: CAT20[] = tokenUtxos.map(
-    (utxo) => new CAT20(minterScriptHash, guardScriptHash).bindToUtxo(utxo)
+  const inputTokens: CAT20[] = tokenUtxos.map((utxo) =>
+    new CAT20(minterScriptHash, adminScriptHash, guardScriptHash).bindToUtxo(
+      utxo
+    )
   )
 
-  const burnPsbt = new ExtPsbt({network: await provider.getNetwork()})
+  const burnPsbt = new ExtPsbt({ network: await provider.getNetwork() })
 
   const guardInputIndex = inputTokens.length
   const incineratorInputIndex = inputTokens.length + 1
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
+    adminScriptHash,
     tokenUtxos,
     provider
   )
 
   // add token inputs
   for (let index = 0; index < inputTokens.length; index++) {
-    burnPsbt.addContractInput(
-      inputTokens[index], 
-      (contract) => {
-        contract.unlock(
-          {
-            userPubKey: '' as PubKey,
-            userSig: '' as Sig,
-            contractInputIndex: BigInt(incineratorInputIndex),
-          },
-          guardState,
-          BigInt(guardInputIndex),
+    burnPsbt.addContractInput(inputTokens[index], (contract) => {
+      contract.unlock(
+        {
+          userPubKey: '' as PubKey,
+          userSig: '' as Sig,
+          contractInputIndex: BigInt(incineratorInputIndex),
+        },
+        guardState,
+        BigInt(guardInputIndex),
 
-          getBackTraceInfo(
-            backtraces[index].prevTxHex,
-            backtraces[index].prevPrevTxHex,
-            backtraces[index].prevTxInput
-          )
+        getBackTraceInfo(
+          backtraces[index].prevTxHex,
+          backtraces[index].prevPrevTxHex,
+          backtraces[index].prevTxInput
         )
-      }
-    )
-    
+      )
+    })
   }
   // add guard input
   guard.bindToUtxo(guardUtxo)
@@ -185,21 +182,19 @@ export async function incinerate(
 
   // add incinerator input
   incinerator.bindToUtxo(incineratorUtxo)
-  burnPsbt.addContractInput(incinerator, 
-    (contract) => {
-      contract.incinerate(
-        BigInt(guardInputIndex),
-        guardState
-      )
-    }
-  )
+  burnPsbt.addContractInput(incinerator, (contract) => {
+    contract.incinerate(BigInt(guardInputIndex), guardState)
+  })
 
   // add fee input
   burnPsbt.spendUTXO(feeUtxo!)
   burnPsbt.change(changeAddress, feeRate)
   burnPsbt.seal()
 
-  const signedBurnPsbt = await feeSigner.signPsbt(burnPsbt.toHex(), burnPsbt.psbtOptions())
+  const signedBurnPsbt = await feeSigner.signPsbt(
+    burnPsbt.toHex(),
+    burnPsbt.psbtOptions()
+  )
   burnPsbt.combine(ExtPsbt.fromHex(signedBurnPsbt))
   burnPsbt.finalizeAllInputs()
 

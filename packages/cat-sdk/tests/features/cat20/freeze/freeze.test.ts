@@ -7,20 +7,18 @@ import { TestCAT20Generator } from '../../../utils/testCAT20Generator'
 import { OpenMinterCAT20Meta } from '../../../../src/contracts/cat20/types'
 import { loadAllArtifacts } from '../utils'
 import { testSigner } from '../../../utils/testSigner'
-import { toTokenOwnerAddress } from '../../../../src/utils'
-import { ContractPeripheral } from '../../../../src/utils/contractPeripheral'
+import { outpoint2ByteString, toTokenOwnerAddress } from '../../../../src/utils'
 import { CAT20OpenMinter } from '../../../../src/contracts/cat20/minters/cat20OpenMinter'
-import { contractSend } from '../../../../src/features/cat20/send/contractSend'
+import { freeze } from '../../../../src/features/cat20/freeze/freeze'
 import { testProvider } from '../../../utils/testProvider'
-import { CAT20_AMOUNT } from '../../../../src/contracts/cat20/types'
 import { verifyTx } from '../../../utils'
 import { formatMetadata } from '../../../../src/lib/metadata'
-import { CAT20 } from '../../../../src/contracts/cat20/cat20'
 import { ConstantsLib } from '../../../../src/contracts'
+import { CAT20Admin } from '../../../../src/contracts/cat20/cat20Admin'
 
 use(chaiAsPromised)
 
-describe('Test the feature `contractSend` for `Cat20`', () => {
+describe('Test the feature `freeze` for `Cat20`', () => {
   let address: string
   let contractScriptHash: ByteString
   let cat20ChangeAddr: ByteString
@@ -65,56 +63,37 @@ describe('Test the feature `contractSend` for `Cat20`', () => {
   }
 
   describe('When sending tokens in a single tx', () => {
-    it('should contract send one token utxo successfully', async () => {
+    it('should freeze one token utxo successfully', async () => {
       const tokenUtxos = await getTokenUtxos(
         cat20Generator,
         contractScriptHash,
         1
       )
-      const total = tokenUtxos.reduce(
-        (acc, utxo) => acc + CAT20.deserializeState(utxo.data).amount,
-        0n
-      )
-      const toReceiverAmount = total / 2n
-      await testContractSendResult(
-        tokenUtxos,
-        toReceiverAmount,
-        total - toReceiverAmount
-      )
+      await testFreezeResult(tokenUtxos)
     })
-    ;``
-    it('should contract send multiple token utxos successfully', async () => {
+    it('should freeze multiple token utxos successfully', async () => {
       const tokenUtxos = await getTokenUtxos(
         cat20Generator,
         contractScriptHash,
         3
       )
-      const total = tokenUtxos.reduce(
-        (acc, utxo) => acc + CAT20.deserializeState(utxo.data).amount,
-        0n
-      )
-      const toReceiverAmount = total / 2n
-      await testContractSendResult(
-        tokenUtxos,
-        toReceiverAmount,
-        total - toReceiverAmount
-      )
+      await testFreezeResult(tokenUtxos)
     })
   })
 
-  async function testContractSendResult(
-    cat20Utxos: UTXO[],
-    toReceiverAmount: CAT20_AMOUNT,
-    tokenChangeAmount?: CAT20_AMOUNT
-  ) {
-    const { guardPsbt, sendPsbt } = await contractSend(
+  async function testFreezeResult(cat20Utxos: UTXO[]) {
+    const cat20Admin = new CAT20Admin(
+      outpoint2ByteString(cat20Generator.deployInfo.tokenId)
+    )
+    cat20Admin.bindToUtxo(cat20Generator.getCat20AdminUtxo())
+    const { guardPsbt, sendPsbt } = await freeze(
       testSigner,
+      cat20Admin,
+      cat20Admin.utxo!,
       testProvider,
       cat20Generator.deployInfo.minterScriptHash,
       cat20Generator.deployInfo.adminScriptHash,
       cat20Utxos,
-      [{ address: contractScriptHash, amount: toReceiverAmount }],
-      cat20ChangeAddr,
       await testProvider.getFeeRate()
     )
 
@@ -122,38 +101,10 @@ describe('Test the feature `contractSend` for `Cat20`', () => {
     expect(guardPsbt).to.not.be.null
     verifyTx(guardPsbt, expect)
 
-    // check send tx
+    // check freeze tx
     expect(sendPsbt).to.not.be.null
     verifyTx(sendPsbt, expect)
 
-    // verify token to receiver
-    const toReceiverIndex = 0
-    expect(
-      ContractPeripheral.scriptHash(sendPsbt.getUtxo(toReceiverIndex).script)
-    ).to.eq(cat20Generator.deployInfo.tokenScriptHash)
-    expect(sendPsbt.getUtxo(toReceiverIndex).data).to.eq(
-      CAT20.serializeState({
-        tag: ConstantsLib.OPCAT_CAT20_TAG,
-        amount: toReceiverAmount,
-        ownerAddr: contractScriptHash,
-      })
-    )
-
-    // verify token change
-    if (tokenChangeAmount && tokenChangeAmount > 0n) {
-      const tokenChangeOutputIndex = 1
-      expect(
-        ContractPeripheral.scriptHash(
-          sendPsbt.getUtxo(tokenChangeOutputIndex).script
-        )
-      ).to.eq(cat20Generator.deployInfo.tokenScriptHash)
-      expect(sendPsbt.getUtxo(tokenChangeOutputIndex).data).to.eq(
-        CAT20.serializeState({
-          tag: ConstantsLib.OPCAT_CAT20_TAG,
-          amount: tokenChangeAmount,
-          ownerAddr: cat20ChangeAddr,
-        })
-      )
-    }
+    cat20Generator.updateAdminTx(sendPsbt)
   }
 })

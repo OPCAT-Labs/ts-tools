@@ -75,6 +75,7 @@ describe('Test the feature `burn` for `CAT20`', () => {
       testSigner,
       testProvider,
       cat20Generater.deployInfo.minterScriptHash,
+      cat20Generater.deployInfo.adminScriptHash,
       cat20Utxos,
       await testProvider.getFeeRate()
     )

@@ -5,6 +5,8 @@ export interface CAT20TokenInfo<T extends CAT20Metadata> {
   tokenId: string
   /** token p2tr address */
   tokenScriptHash: string
+  /** admin p2tr address */
+  adminScriptHash: string
   /** minter p2tr address */
   minterScriptHash: string
   /** genesis txid */
