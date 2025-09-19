@@ -15,6 +15,16 @@ import { TX_INPUT_COUNT_MAX } from '../../../contracts/constants'
 import { filterFeeUtxos } from '../../../utils'
 import { CAT20Admin } from '../../../contracts/cat20/cat20Admin'
 
+/**
+ * Change CAT20 admin owner in a single transaction.
+ * @param signer a signer, such as {@link DefaultSigner} or {@link UnisatSigner}
+ * @param cat20Admin a CAT20Admin {@link CAT20Admin}
+ * @param adminUtxo a utxo of cat20Admin {@link UTXO}
+ * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
+ * @param newAddress a new admin owner address
+ * @param feeRate the fee rate for constructing transactions
+ * @returns a transferOwnership transaction
+ */
 export async function transferOwnership(
   signer: Signer,
   cat20Admin: CAT20Admin,
