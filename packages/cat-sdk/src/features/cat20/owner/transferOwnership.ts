@@ -17,7 +17,7 @@ import { CAT20Admin } from '../../../contracts/cat20/cat20Admin'
 
 /**
  * Change CAT20 admin owner in a single transaction.
- * @param signer a signer, such as {@link DefaultSigner} or {@link UnisatSigner}
+ * @param signer a signer, such as {@link DefaultSigner} or {@link WalletSigner}
  * @param cat20Admin a CAT20Admin {@link CAT20Admin}
  * @param adminUtxo a utxo of cat20Admin {@link UTXO}
  * @param provider a  {@link UtxoProvider} & {@link ChainProvider}

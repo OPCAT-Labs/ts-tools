@@ -34,7 +34,7 @@ import { Transaction } from '@opcat-labs/opcat'
 
 /**
  * Send CAT20 tokens to the list of recipients.
- * @param signer a signer, such as {@link DefaultSigner} or {@link UnisatSigner}
+ * @param signer a signer, such as {@link DefaultSigner} or {@link WalletSigner}
  * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
  * @param minterScriptHash the minter script hash of the CAT20 token
  * @param adminScriptHash the admin script hash of the CAT20 token
