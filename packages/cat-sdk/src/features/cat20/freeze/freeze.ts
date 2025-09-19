@@ -35,6 +35,18 @@ import {
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
 import { CAT20Admin } from '../../../contracts/cat20/cat20Admin'
 
+/**
+ * Freeze CAT20 tokens in a single transaction.
+ * @param signer a signer, such as {@link DefaultSigner} or {@link UnisatSigner}
+ * @param cat20Admin a CAT20Admin {@link CAT20Admin}
+ * @param adminUtxo a utxo of cat20Admin {@link UTXO}
+ * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
+ * @param minterScriptHash the minter script hash of the CAT20 token
+ * @param adminScriptHash the admin script hash of the CAT20 token
+ * @param inputTokenUtxos CAT20 token utxos to be sent
+ * @param feeRate the fee rate for constructing transactions
+ * @returns the guard transaction, the freeze transaction.
+ */
 export async function freeze(
   signer: Signer,
   cat20Admin: CAT20Admin,

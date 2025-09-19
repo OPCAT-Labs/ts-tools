@@ -23,6 +23,7 @@ import {
   getBackTraceInfo,
   toHex,
   sha256,
+  DefaultSigner,
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
   CAT20OpenMinterPeripheral,
@@ -32,6 +33,16 @@ import { CAT20OpenMinterMetadata } from '../../../contracts/cat20/minters/cat20O
 import { Transaction } from '@opcat-labs/opcat'
 import { ConstantsLib } from '../../../contracts/constants'
 
+/**
+ * Deploy a CAT20 token with metadata and automatically mint the pre-mined tokens, if applicable.
+ * @param signer a signer, such as {@link DefaultSigner}  or {@link WalletSigner}
+ * @param preminerSigner a signer, such as {@link DefaultSigner}  or {@link WalletSigner}
+ * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
+ * @param metadata the metadata of the CAT20 token
+ * @param feeRate the fee rate for constructing transactions
+ * @param changeAddress the address to receive change satoshis, use the signer address as the default
+ * @returns the genesis transaction, the token transaction and the premine transaction
+ */
 export async function deploy(
   // signer for deployer
   signer: Signer,

@@ -32,6 +32,19 @@ import * as opcat from '@opcat-labs/opcat'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
 import { Transaction } from '@opcat-labs/opcat'
 
+/**
+ * Send CAT20 tokens to the list of recipients.
+ * @param signer a signer, such as {@link DefaultSigner} or {@link UnisatSigner}
+ * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
+ * @param minterScriptHash the minter script hash of the CAT20 token
+ * @param adminScriptHash the admin script hash of the CAT20 token
+ * @param inputTokenUtxos CAT20 token utxos to be sent
+ * @param receivers the recipient's address and token amount
+ * @param tokenChangeAddress the address to receive change CAT20 tokens
+ * @param feeRate the fee rate for constructing transactions
+ * @param sendChangeData change utxo data
+ * @returns the guard transaction, the send transaction and the CAT20 token outputs
+ */
 export async function singleSend(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
