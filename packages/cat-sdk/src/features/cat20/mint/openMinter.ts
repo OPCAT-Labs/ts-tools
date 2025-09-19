@@ -16,7 +16,7 @@ import { CAT20OpenMinter } from '../../../contracts'
 
 /**
  * Mint CAT20 tokens in a single transaction.
- * @param signer a signer, such as {@link DefaultSigner} or {@link UnisatSigner}
+ * @param signer a signer, such as {@link DefaultSigner} or {@link WalletSigner}
  * @param preminerSigner a signer, such as {@link DefaultSigner}  or {@link WalletSigner}
  * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
  * @param minterUtxo an UTXO that contains the minter of the CAT20 token
