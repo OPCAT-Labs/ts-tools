@@ -28,6 +28,16 @@ import {
   ContractPeripheral,
 } from '../../../utils/contractPeripheral'
 
+/**
+ * Burn CAT20 tokens in a single transaction.
+ * @param signer a signer, such as {@link DefaultSigner} or {@link WalletSigner}
+ * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
+ * @param minterScriptHash the minter script hash of the CAT20 token
+ * @param adminScriptHash the admin script hash of the CAT20 token
+ * @param inputTokenUtxos CAT20 token utxos to be sent
+ * @param feeRate the fee rate for constructing transactions
+ * @returns the guard transaction, the send transaction and the CAT20 token outputs
+ */
 export async function burn(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
