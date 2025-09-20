@@ -3,7 +3,7 @@
 import { TestHashedMapOperator } from './src/contracts/testHashedMapOperator.js'
 import { TestHashedMapMain } from './src/contracts/testHashedMapMain.js'
 import { DummyStruct, TestHashedMapMainState, TestHashedMapStateLib } from './src/contracts/testHashedMapStateLib.js'
-import { HashedMap, HashedMapAbiUtil, PrivateKey, sha256, deploy, DefaultSigner, MempoolProvider, UTXO, ExtPsbt, Sha256, ByteString, cloneDeep, Int32, bvmVerify } from '@opcat-labs/scrypt-ts-opcat'
+import { HashedMap, HashedMapAbiUtil, PrivateKey, sha256, deploy, DefaultSigner, MempoolProvider, UTXO, ExtPsbt, Sha256, ByteString, cloneDeep, Int32, bvmVerify, HashedMapTrackerProvider } from '@opcat-labs/scrypt-ts-opcat'
 import * as fs from 'fs'
 import * as path from 'path'
 
@@ -19,10 +19,32 @@ const privateKey = PrivateKey.fromWIF('cQfb2vnBvKryZjG7MuWwDoeMpvHBNAqaNyJH3cNxd
 const signer = new DefaultSigner(privateKey)
 const provider = new MempoolProvider('opcat-testnet')
 
-runTestCase({
-    map1: new HashedMap<Int32, ByteString, 2>([]),
-    map2: new HashedMap<ByteString, DummyStruct, 1>([]),
-}, -1)
+// runTestCase({
+//     map1: new HashedMap<Int32, ByteString, 2>([]),
+//     map2: new HashedMap<ByteString, DummyStruct, 1>([]),
+// }, -1)
+
+testHashedMapBindUtxo()
+
+async function testHashedMapBindUtxo() {
+    const hashedMapTrackerProvider = new HashedMapTrackerProvider('http://localhost:3000')
+    const mainContract = new TestHashedMapMain()
+    // const utxos = await provider.getUtxos(mainContract.lockingScript.toHex())
+    // const utxo = utxos[3]
+
+    const utxo = await hashedMapTrackerProvider.getLatestUtxo(sha256(mainContract.lockingScript.toHex()), 'map1', {
+        txId: 'f97167f1d56ceaae6bfd3b9efde0c894ab35a203790f665eaba5c19d77876e79',
+        outputIndex: 0,
+    });
+
+    await mainContract.asyncBindToUtxo(
+        utxo,
+        HashedMapTrackerProvider.bindUtxoCallback(hashedMapTrackerProvider)
+    )
+    console.log('state', TestHashedMapMain.serializeState(mainContract.state))
+    console.log('map1', mainContract.state.map1.entries())
+    console.log('map2', mainContract.state.map2.entries())
+}
 
 async function runTestCase(
     initialMainState: TestHashedMapMainState,
@@ -120,7 +142,9 @@ async function deployMain(
     const mainContract = new TestHashedMapMain()
     mainContract.state = initMainState
     const psbt = await deploy(signer, provider, mainContract)
-    mainContract.bindToUtxo(psbt.getUtxo(0))
+    mainContract.asyncBindToUtxo(psbt.getUtxo(0), async () => {
+        mainContract.state.map = new HashedMap(await CallTracker.getKvs(psbt.getUtxo(0)))
+    })
     mainContract.state = initMainState
     return {
         psbt,

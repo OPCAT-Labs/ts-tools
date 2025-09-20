@@ -47,16 +47,6 @@ describe('Test AirdropBTC', () => {
                 }],
             ]),
         }
-
-        const serializedState = AirdropBTCStateLib.serializeState({
-            claimInfos: new HashedMap<ByteString, ClaimInfo, 1>([
-                [addresses[0], {
-                    amount: 300n,
-                    claimed: false,
-                }],
-            ]),
-        })
-
         contract = new AirdropBTC();
         contract.bindToUtxo({
             txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
@@ -70,8 +60,6 @@ describe('Test AirdropBTC', () => {
     it('should claim successfully', async () => {
         const nextState = cloneDeep(contract.state);
         nextState.claimInfos.set(addresses[0], { ...nextState.claimInfos.get(addresses[0]), claimed: true });
-
-        const serializedState = AirdropBTC.serializeState(nextState);
 
         const claimAmount = nextState.claimInfos.get(addresses[0])!.amount;
 

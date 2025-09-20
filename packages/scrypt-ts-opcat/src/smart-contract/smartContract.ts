@@ -746,6 +746,16 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return this;
   }
 
+  async asyncBindToUtxo(
+    utxo: Optional<ExtUtxo, 'script'> | Optional<UTXO, 'script'>, 
+    callback: (contract: this) => Promise<void>
+  ) {
+    this.bindToUtxo(utxo)
+    await callback(this);
+    return this
+  }
+
+
   /**
    * Checks if the contract has state by verifying if the state object exists and is not empty.
    * @returns {boolean} True if the contract has state, false otherwise.
