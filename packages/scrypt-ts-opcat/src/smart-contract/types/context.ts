@@ -137,6 +137,11 @@ export interface Contextual {
   isFinalized: boolean;
 
   /**
+   * Whether the PSBT is sealed.
+   */
+  isSealed: boolean;
+
+  /**
    * Get the output state hashes of the current transaction
    * @returns the output state hashes of the current transaction
    */

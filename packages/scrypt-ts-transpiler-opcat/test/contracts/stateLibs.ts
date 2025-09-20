@@ -1,4 +1,4 @@
-import { StructObject, StateLib, Int32, assert, method, Bool } from '@opcat-labs/scrypt-ts-opcat';
+import { StructObject, StateLib, Int32, assert, method, Bool, HashedMap, ByteString } from '@opcat-labs/scrypt-ts-opcat';
 
 export interface DelegateeState extends StructObject {
   total: Int32;
@@ -6,6 +6,7 @@ export interface DelegateeState extends StructObject {
 
 export interface DelegatorState extends StructObject {
   delegated: Bool;
+  map: HashedMap<ByteString, DelegateeState, 1>
 }
 
 export class DelegatorStateLib extends StateLib<DelegatorState> {

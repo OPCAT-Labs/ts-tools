@@ -4,6 +4,8 @@ import fetch from 'cross-fetch';
 import { UtxoProvider, UtxoQueryOptions, getUtxoKey } from './utxoProvider.js';
 import { uint8ArrayToHex, duplicateFilter } from '../utils/common.js';
 import { Script } from '@opcat-labs/opcat';
+import { util } from '@opcat-labs/opcat';
+import { sha256 } from '../smart-contract/fns/index.js';
 
 /**
  * The MempoolProvider is backed by [Mempool]{@link https://opcatlabs.io}
@@ -21,10 +23,17 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
     return this.network;
   }
 
-  async getUtxos(address: string, _options?: UtxoQueryOptions): Promise<UTXO[]> {
-    const script = uint8ArrayToHex(Script.fromAddress(address).toBuffer());
-
-    const url = `${this.getMempoolApiHost()}/api/address/${address}/utxo`;
+  async getUtxos(addressOrScript: string, _options?: UtxoQueryOptions): Promise<UTXO[]> {
+    // const script = uint8ArrayToHex(Script.fromAddress(address).toBuffer());
+    let script: string;
+    let url = ''
+    if (util.js.isHexaString(addressOrScript)) {
+      script = addressOrScript;
+      url = `${this.getMempoolApiHost()}/api/scripthash/${sha256(addressOrScript)}/utxo`;
+    } else {
+      script = uint8ArrayToHex(Script.fromAddress(addressOrScript).toBuffer());
+      url = `${this.getMempoolApiHost()}/api/address/${addressOrScript}/utxo`;
+    }
 
     const utxos: Array<UTXO> = await fetch(url)
       .then(async (res) => {

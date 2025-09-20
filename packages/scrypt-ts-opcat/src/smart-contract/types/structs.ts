@@ -134,7 +134,7 @@ export type SHPreimage = {
    */
   inputIndex: UInt32;
 
-  
+
   /**
    * 4 bytes little endian.
    */
@@ -241,4 +241,6 @@ export type BacktraceInfo = {
   prevPrevTxPreimage: TxHashPreimage;
 };
 
-
+export type __ScryptInternalHashedMap__ = {
+  _root: ByteString;
+}
