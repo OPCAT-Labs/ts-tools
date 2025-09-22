@@ -32,7 +32,7 @@ async function testHashedMapBindUtxo() {
     // const utxos = await provider.getUtxos(mainContract.lockingScript.toHex())
     // const utxo = utxos[3]
 
-    const utxo = await hashedMapTrackerProvider.getLatestUtxo(sha256(mainContract.lockingScript.toHex()), 'map1', {
+    const utxo = await hashedMapTrackerProvider.getLatestUtxo(mainContract.lockingScriptHash, 'map1', {
         txId: 'f97167f1d56ceaae6bfd3b9efde0c894ab35a203790f665eaba5c19d77876e79',
         outputIndex: 0,
     });
@@ -52,7 +52,7 @@ async function runTestCase(
 ) {
     console.log('address', await signer.getAddress())
     console.log('initialMainState', TestHashedMapMain.serializeState(initialMainState))
-    const configs = getHashedMapConfig(initialMainState)
+    const configs = getHashedMapTrackerConfig(initialMainState)
     const date = new Date().toISOString()
     const fileName = `testHashedMap_${date.replaceAll(':', '_')}.json`
     fs.writeFileSync(path.resolve(__dirname, 'tmp', fileName), JSON.stringify(configs, null, 2))
@@ -70,7 +70,7 @@ async function runTestCase(
     console.log('map2', utxoData.mainContractInput.state.map2.serializedEntries())
 }
 
-function getHashedMapConfig(
+function getHashedMapTrackerConfig(
     initMainState: TestHashedMapMainState,
 ) {
 
@@ -721,4 +721,4 @@ function verifyBvm(psbt: ExtPsbt) {
     }
 }
 
-// console.log(getHashedMapConfig({map1: new HashedMap([]), map2: new HashedMap([])}))
+// console.log(getHashedMapTrackerConfig({map1: new HashedMap([]), map2: new HashedMap([])}))

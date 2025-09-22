@@ -50,6 +50,9 @@ export class HashedMapTrackerProvider implements HashedMapProvider {
 
     static bindUtxoCallback = bindUtxoCallback;
 
+    /**
+     * @param trackerUrl the url of the tracker server
+     */
     constructor(
         private readonly trackerUrl: string,
     ) {}

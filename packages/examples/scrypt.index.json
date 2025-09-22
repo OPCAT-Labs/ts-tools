@@ -142,6 +142,24 @@
    "md5": "168ce435771b2e5b00d9ca8c80ad35aa"
   },
   {
+   "symbol": "TestHashedMap2",
+   "path": "contracts/testHashedMap2.scrypt.tpl",
+   "md5": "094119992d4cfe7ffc38f8d2bf27b0bf",
+   "stateType": "TestHashedMap2State"
+  },
+  {
+   "symbol": "TestHashedMap2State",
+   "path": "contracts/testHashedMap2.scrypt.tpl"
+  },
+  {
+   "symbol": "Struct2",
+   "path": "contracts/testHashedMap2.scrypt.tpl"
+  },
+  {
+   "symbol": "Struct1",
+   "path": "contracts/testHashedMap2.scrypt.tpl"
+  },
+  {
    "symbol": "TestHashedMapStateLib",
    "path": "contracts/testHashedMapStateLib.scrypt.tpl",
    "md5": "d41d8cd98f00b204e9800998ecf8427e",

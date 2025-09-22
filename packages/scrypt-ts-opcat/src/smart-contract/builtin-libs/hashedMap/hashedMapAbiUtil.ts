@@ -149,6 +149,9 @@ export class HashedMapAbiUtil {
   }
 
   static getFieldListByPath(fieldPath: string) {
+    fieldPath = fieldPath.replaceAll(this.SYMBOLS.SCRYPT_SPLITTERS.DOT, this.SYMBOLS.JS_SPLITTERS.DOT)
+      .replaceAll(this.SYMBOLS.SCRYPT_SPLITTERS.BRACKET_LEFT, this.SYMBOLS.JS_SPLITTERS.BRACKET_LEFT)
+      .replaceAll(this.SYMBOLS.SCRYPT_SPLITTERS.BRACKET_RIGHT, this.SYMBOLS.JS_SPLITTERS.BRACKET_RIGHT);
     const result: ({ type: 'dot', value: string } | { type: 'array', value: number })[] = [];
       const regex = /(\w+)|\[(\d+)\]/g;
       let match;
