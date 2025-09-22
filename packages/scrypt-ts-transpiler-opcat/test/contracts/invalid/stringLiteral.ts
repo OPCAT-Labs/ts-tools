@@ -59,10 +59,9 @@ export class StringLiteral extends SmartContract {
     pkh: PubKeyHash,
     sha256: Sha256,
     sha1: Sha1,
-    sigHashType: SigHashType,
     opCodeType: OpCodeType,
   ) {
-    super(eb, pubkey, key, sig, txPreimage, ripemd160, pkh, sha256, sha1, sigHashType, opCodeType);
+    super(eb, pubkey, key, sig, txPreimage, ripemd160, pkh, sha256, sha1, opCodeType);
 
     this.b = toByteString('0011');
 

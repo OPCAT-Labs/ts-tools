@@ -9,7 +9,7 @@ import { AccessContext } from '../contracts/accessContext.js';
 
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { readArtifact } from '../utils/index.js';
+import { getDummyUtxo, readArtifact } from '../utils/index.js';
 use(chaiAsPromised);
 
 describe('Test Contract with verifyContext', () => {
@@ -29,6 +29,7 @@ describe('Test Contract with verifyContext', () => {
     });
 
     const address = await testSigner.getAddress();
+    const dummyFeeUtxo = getDummyUtxo(address)
     const psbt = new ExtPsbt({
       network: testSigner.network,
     })
@@ -36,6 +37,7 @@ describe('Test Contract with verifyContext', () => {
       .addContractInput(accessContext, (accessContext) => {
         accessContext.unlock();
       })
+      .spendUTXO(dummyFeeUtxo)
       .change(address, 1)
       .seal();
 

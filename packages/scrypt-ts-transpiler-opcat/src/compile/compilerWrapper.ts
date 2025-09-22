@@ -119,6 +119,7 @@ export class CompileResult {
   ast?: Record<string, unknown>;
   dependencyAsts?: Record<string, unknown>;
   abi?: Array<ABIEntity>;
+  staticAbi?: Array<ABIEntity>;
   stateProps?: Array<ParamEntity>;
   stateType?: string;
   compilerVersion?: string;
@@ -152,6 +153,7 @@ export class CompileResult {
       library: this.library || [],
       alias: this.alias || [],
       abi: this.abi || [],
+      staticAbi: this.staticAbi || [],
       stateProps: this.stateProps || [],
       stateType: this.stateType,
       buildType: this.buildType || BuildType.Release,
@@ -674,6 +676,25 @@ function getPublicFunctionDeclaration(mainContract: object): ABIEntity[] {
   return interfaces;
 }
 
+function getStaticFunctionDeclaration(mainContract: object): ABIEntity[] {
+  let staticIndex = 0;
+  const interfaces: ABIEntity[] = mainContract['functions']
+    .filter((f) => f['static'] === true)
+    .map((f) => {
+      const entity: ABIEntity = {
+        type: ABIEntityType.FUNCTION,
+        name: f['name'],
+        index: staticIndex++,
+        params: f['params'].map((p) => {
+          return { name: p['name'], type: p['type'] };
+        }),
+        returnType: f['returnType'],
+      };
+      return entity;
+    });
+  return interfaces;
+}
+
 export function getContractName(astRoot: object): string {
   const mainContract = astRoot['contracts'][astRoot['contracts'].length - 1];
   if (!mainContract) {
@@ -702,6 +723,7 @@ export function getABIDeclaration(astRoot: object, typeResolver: TypeResolver): 
     return {
       contract: '',
       abi: [],
+      staticAbi: [],
     };
   }
 
@@ -718,9 +740,12 @@ export function getABIDeclaration(astRoot: object, typeResolver: TypeResolver): 
     });
   });
 
+  const staticAbi: ABIEntity[] = getStaticFunctionDeclaration(mainContract);
+
   return {
     contract: getContractName(astRoot),
     abi: interfaces,
+    staticAbi,
   };
 }
 
@@ -1128,7 +1153,7 @@ function parserAst(
     ),
   );
 
-  const { contract: name, abi } = getABIDeclaration(result.ast!, typeResolver);
+  const { contract: name, abi, staticAbi } = getABIDeclaration(result.ast!, typeResolver);
 
   result.stateProps = getStateProps(result.ast).map((p) => ({
     name: p.name,
@@ -1136,6 +1161,7 @@ function parserAst(
   }));
 
   result.abi = abi;
+  result.staticAbi = staticAbi;
   result.contract = name;
 }
 

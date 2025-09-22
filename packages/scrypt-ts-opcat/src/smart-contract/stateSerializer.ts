@@ -22,6 +22,7 @@ export function serializeState(
   artifact: Artifact,
   stateType: string,
   state: OpcatState,
+  withHash: boolean = true,
 ): ByteString {
   const abiCoder = new ABICoder(artifact);
 
@@ -69,8 +70,10 @@ export function serializeState(
   });
 
   const checkHash = hash160(fieldHashes.join(''));
+  if (withHash) {
+    data += checkHash;
+  }
 
-  data += checkHash;
   return data;
 }
 
@@ -90,6 +93,7 @@ export function deserializeState<T>(
   artifact: Artifact,
   stateType: string,
   serializedState: ByteString,
+  withHash: boolean = true,
 ): T {
   const abiCoder = new ABICoder(artifact);
 
@@ -127,7 +131,6 @@ export function deserializeState<T>(
         val = valueByteString;
         break;
     }
-    // todo: test multi-dimensional array
 
     let curObj = state;
     fieldNames.forEach((fieldName, index) => {
@@ -182,10 +185,39 @@ export function deserializeState<T>(
     setFieldValue(field, value);
   }
 
-  const checkHash = hash160(fieldHashes);
-  const checkHashFromState = slice(serializedState, readIndex, readIndex + 20n);
-  assert(checkHash === checkHashFromState, 'check hash mismatch');
-  assert(readIndex + 20n === len(serializedState), 'serialized state is not complete');
+  if (withHash) {
+    const checkHash = hash160(fieldHashes);
+    const checkHashFromState = slice(serializedState, readIndex, readIndex + 20n);
+    assert(checkHash === checkHashFromState, 'check hash mismatch');
+    assert(readIndex + 20n === len(serializedState), 'serialized state is not complete');
+  } else {
+    assert(readIndex === len(serializedState), 'serialized state is not complete');
+  }
 
   return state;
+}
+
+export function createEmptyState<T>(
+  artifact: Artifact,
+  stateType: string,
+  withHash: boolean = true,
+): T {
+  const abiCoder = new ABICoder(artifact);
+
+  const stateStruct = abiCoder.artifact.structs.find(
+    (struct) => getUnRenamedSymbol(struct.name) === getUnRenamedSymbol(stateType),
+  );
+  if (!stateStruct) {
+    throw new Error(
+      `Struct ${stateType} is not defined in artifact of contract ${artifact.contract}!`,
+    );
+  }
+
+  const fields = abiCoder.flattenStruct({}, stateType, true);
+  let serializedState = new Array(fields.length).fill(intToByteString(0n, FIELD_LEN_BYTES)).join('');
+  if (withHash) {
+    serializedState += hash160(new Array(fields.length).fill(hash160('')).join(''));
+  }
+
+  return deserializeState<T>(artifact, stateType, serializedState, withHash);
 }

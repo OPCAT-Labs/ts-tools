@@ -62,6 +62,14 @@
       "path": "smart-contract/builtin-libs/contextUtils.scrypt.tpl"
     },
     {
+      "symbol": "___ScryptInternalHashedMap__",
+      "path": "smart-contract/types/structs.scrypt.tpl"
+    },
+    {
+      "symbol": "DummyLib",
+      "path": "smart-contract/builtin-libs/dummyLib.scrypt.tpl"
+    },
+    {
       "symbol": "StateUtils",
       "path": "smart-contract/builtin-libs/stateUtils.scrypt.tpl"
     },

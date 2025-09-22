@@ -1,0 +1,335 @@
+{
+  "version": 10,
+  "compilerVersion": "1.21.0+commit.2ada378",
+  "contract": "_opcat_labs_examples_0_1_4__rs__AirdropBTCStateLib",
+  "md5": "d41d8cd98f00b204e9800998ecf8427e",
+  "structs": [
+    {
+      "name": "_opcat_labs_examples_0_1_4__rs__ScryptTSHashedMapCtx_hm_bytes_hm_ClaimInfo_hm_1",
+      "params": [
+        {
+          "name": "proofs",
+          "type": "bytes"
+        },
+        {
+          "name": "keys",
+          "type": "bytes[1]"
+        },
+        {
+          "name": "leafValues",
+          "type": "_opcat_labs_examples_0_1_4__rs__ClaimInfo[1]"
+        },
+        {
+          "name": "nextLeafValues",
+          "type": "_opcat_labs_examples_0_1_4__rs__ClaimInfo[1]"
+        },
+        {
+          "name": "accessIndexes",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_examples_0_1_4__rs__AirdropBTCState",
+      "params": [
+        {
+          "name": "claimInfos",
+          "type": "_opcat_labs_scrypt_ts_opcat_1_0_4__rs_____ScryptInternalHashedMap__"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_examples_0_1_4__rs__ClaimInfo",
+      "params": [
+        {
+          "name": "amount",
+          "type": "int"
+        },
+        {
+          "name": "claimed",
+          "type": "bool"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_4__rs__TxOut",
+      "params": [
+        {
+          "name": "scriptHash",
+          "type": "bytes"
+        },
+        {
+          "name": "dataHash",
+          "type": "bytes"
+        },
+        {
+          "name": "satoshis",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_4__rs__TxIn",
+      "params": [
+        {
+          "name": "prevTxHash",
+          "type": "bytes"
+        },
+        {
+          "name": "prevOutputIndex",
+          "type": "int"
+        },
+        {
+          "name": "sequence",
+          "type": "int"
+        },
+        {
+          "name": "scriptHash",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_4__rs__TxHashPreimage",
+      "params": [
+        {
+          "name": "version",
+          "type": "bytes"
+        },
+        {
+          "name": "inputList",
+          "type": "bytes"
+        },
+        {
+          "name": "outputList",
+          "type": "bytes"
+        },
+        {
+          "name": "nLockTime",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_4__rs__BacktraceInfo",
+      "params": [
+        {
+          "name": "prevTxInput",
+          "type": "_opcat_labs_scrypt_ts_opcat_1_0_4__rs__TxIn"
+        },
+        {
+          "name": "prevTxInputIndex",
+          "type": "int"
+        },
+        {
+          "name": "prevPrevTxPreimage",
+          "type": "_opcat_labs_scrypt_ts_opcat_1_0_4__rs__TxHashPreimage"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_4__rs__SHPreimage",
+      "params": [
+        {
+          "name": "nVersion",
+          "type": "bytes"
+        },
+        {
+          "name": "hashPrevouts",
+          "type": "bytes"
+        },
+        {
+          "name": "spentScriptHash",
+          "type": "bytes"
+        },
+        {
+          "name": "spentDataHash",
+          "type": "bytes"
+        },
+        {
+          "name": "value",
+          "type": "int"
+        },
+        {
+          "name": "nSequence",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentAmounts",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentScriptHashes",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentDataHashes",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSequences",
+          "type": "bytes"
+        },
+        {
+          "name": "hashOutputs",
+          "type": "bytes"
+        },
+        {
+          "name": "inputIndex",
+          "type": "int"
+        },
+        {
+          "name": "nLockTime",
+          "type": "int"
+        },
+        {
+          "name": "sigHashType",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_4__rs__Outpoint",
+      "params": [
+        {
+          "name": "txHash",
+          "type": "bytes"
+        },
+        {
+          "name": "outputIndex",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_4__rs_____ScryptInternalHashedMap__",
+      "params": [
+        {
+          "name": "_root",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    }
+  ],
+  "library": [
+    {
+      "name": "_opcat_labs_examples_0_1_4__rs__ScryptTSHashedMapLib_hm_bytes_hm_ClaimInfo_hm_1",
+      "params": [
+        {
+          "name": "ctor.root",
+          "type": "bytes"
+        }
+      ],
+      "properties": [
+        {
+          "name": "_root",
+          "type": "bytes"
+        },
+        {
+          "name": "_nextRoot",
+          "type": "bytes"
+        },
+        {
+          "name": "_proofs",
+          "type": "bytes"
+        },
+        {
+          "name": "_keys",
+          "type": "bytes[1]"
+        },
+        {
+          "name": "_leafValues",
+          "type": "_opcat_labs_examples_0_1_4__rs__ClaimInfo[1]"
+        },
+        {
+          "name": "_nextLeafValues",
+          "type": "_opcat_labs_examples_0_1_4__rs__ClaimInfo[1]"
+        },
+        {
+          "name": "_accessIndexes",
+          "type": "bytes"
+        },
+        {
+          "name": "_accessCount",
+          "type": "int"
+        },
+        {
+          "name": "_dataFunctionCalled",
+          "type": "bool"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_examples_0_1_4__rs__AirdropBTCStateLib",
+      "params": [],
+      "properties": [],
+      "genericTypes": [],
+      "stateType": "_opcat_labs_examples_0_1_4__rs__AirdropBTCState"
+    }
+  ],
+  "alias": [],
+  "abi": [
+    {
+      "type": "constructor",
+      "params": []
+    }
+  ],
+  "staticAbi": [
+    {
+      "type": "function",
+      "name": "serializeState",
+      "index": 0,
+      "params": [
+        {
+          "name": "__scrypt_ts_curState",
+          "type": "_opcat_labs_examples_0_1_4__rs__AirdropBTCState"
+        }
+      ],
+      "returnType": "bytes"
+    },
+    {
+      "type": "function",
+      "name": "stateHash",
+      "index": 1,
+      "params": [
+        {
+          "name": "__scrypt_ts_curState",
+          "type": "_opcat_labs_examples_0_1_4__rs__AirdropBTCState"
+        }
+      ],
+      "returnType": "bytes"
+    },
+    {
+      "type": "function",
+      "name": "__scrypt__stateHelper",
+      "index": 2,
+      "params": [
+        {
+          "name": "__scrypt_ts_nextState",
+          "type": "_opcat_labs_examples_0_1_4__rs__AirdropBTCState"
+        },
+        {
+          "name": "__scrypt_ts_hashedMapCtx____scrypt_ts_nextState__dot__claimInfos",
+          "type": "_opcat_labs_examples_0_1_4__rs__ScryptTSHashedMapCtx_hm_bytes_hm_ClaimInfo_hm_1"
+        }
+      ],
+      "returnType": "bool"
+    }
+  ],
+  "stateProps": [],
+  "stateType": "_opcat_labs_examples_0_1_4__rs__AirdropBTCState",
+  "buildType": "release",
+  "file": "..\\airdropBTCStateLib.scrypt",
+  "hex": ""
+}

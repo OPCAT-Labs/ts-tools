@@ -7,6 +7,44 @@
    "md5": "595b698e3a6f1ce811cb5b76af41e9a1"
   },
   {
+   "symbol": "AirdropBTCStateLib",
+   "path": "contracts/airdropBTCStateLib.scrypt.tpl",
+   "md5": "d41d8cd98f00b204e9800998ecf8427e",
+   "stateType": "AirdropBTCState"
+  },
+  {
+   "symbol": "AirdropBTCState",
+   "path": "contracts/airdropBTCStateLib.scrypt.tpl"
+  },
+  {
+   "symbol": "ClaimInfo",
+   "path": "contracts/airdropBTCStateLib.scrypt.tpl"
+  },
+  {
+   "symbol": "TxUtils",
+   "path": "../../../../node_modules/@opcat-labs/scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/txUtils.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "AirdropBTC",
+   "path": "contracts/airdropBTC.scrypt.tpl",
+   "md5": "3c6838d92c92489d0be18ed365f5efa3",
+   "stateType": "AirdropBTCState"
+  },
+  {
+   "symbol": "ContextUtils",
+   "path": "../../../../node_modules/@opcat-labs/scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/contextUtils.scrypt.scrypt.tpl"
+  },
+  {
+   "symbol": "AirdropBTCDelegator",
+   "path": "contracts/airdropBTCDelegator.scrypt.tpl",
+   "md5": "dea67e10ef68b3d0588c95b7b8ab1ac3",
+   "stateType": "AirdropBTCDelegatorState"
+  },
+  {
+   "symbol": "AirdropBTCDelegatorState",
+   "path": "contracts/airdropBTCDelegator.scrypt.tpl"
+  },
+  {
    "symbol": "Arrays",
    "path": "contracts/array.scrypt.tpl"
   },
@@ -19,10 +57,6 @@
    "symbol": "AtomicSwap",
    "path": "contracts/atomicSwap.scrypt.tpl",
    "md5": "fd2454c4c054df320158a296b5bf3bc1"
-  },
-  {
-   "symbol": "TxUtils",
-   "path": "../../../../node_modules/@opcat-labs/scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/txUtils.scrypt.scrypt.tpl"
   },
   {
    "symbol": "Auction",
@@ -62,10 +96,6 @@
    "symbol": "Examples",
    "path": "contracts/examples.scrypt.tpl",
    "md5": "30792d4b4450718993a04bd7275accf2"
-  },
-  {
-   "symbol": "ContextUtils",
-   "path": "../../../../node_modules/@opcat-labs/scrypt-ts-opcat/assets/.templates/smart-contract/builtin-libs/contextUtils.scrypt.scrypt.tpl"
   },
   {
    "symbol": "LamportP2PK",
@@ -110,6 +140,49 @@
    "symbol": "ShiftTest",
    "path": "contracts/shift.scrypt.tpl",
    "md5": "168ce435771b2e5b00d9ca8c80ad35aa"
+  },
+  {
+   "symbol": "TestHashedMap2",
+   "path": "contracts/testHashedMap2.scrypt.tpl",
+   "md5": "094119992d4cfe7ffc38f8d2bf27b0bf",
+   "stateType": "TestHashedMap2State"
+  },
+  {
+   "symbol": "TestHashedMap2State",
+   "path": "contracts/testHashedMap2.scrypt.tpl"
+  },
+  {
+   "symbol": "Struct2",
+   "path": "contracts/testHashedMap2.scrypt.tpl"
+  },
+  {
+   "symbol": "Struct1",
+   "path": "contracts/testHashedMap2.scrypt.tpl"
+  },
+  {
+   "symbol": "TestHashedMapStateLib",
+   "path": "contracts/testHashedMapStateLib.scrypt.tpl",
+   "md5": "d41d8cd98f00b204e9800998ecf8427e",
+   "stateType": "TestHashedMapMainState"
+  },
+  {
+   "symbol": "TestHashedMapMainState",
+   "path": "contracts/testHashedMapStateLib.scrypt.tpl"
+  },
+  {
+   "symbol": "DummyStruct",
+   "path": "contracts/testHashedMapStateLib.scrypt.tpl"
+  },
+  {
+   "symbol": "TestHashedMapMain",
+   "path": "contracts/testHashedMapMain.scrypt.tpl",
+   "md5": "7e24c2b66bf72f8d922b35bcbdcfc7e8",
+   "stateType": "TestHashedMapMainState"
+  },
+  {
+   "symbol": "TestHashedMapOperator",
+   "path": "contracts/testHashedMapOperator.scrypt.tpl",
+   "md5": "5af6630204828c748a367c34f6104a42"
   },
   {
    "symbol": "TimedCommit",
