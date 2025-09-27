@@ -122,7 +122,7 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
           this.ctx.spentScriptHash,
           minterSatoshis,
           sha256(CAT20OpenMinter.serializeState({
-            tag: ConstantsLib.OPCAT_MINTER_TAG,
+            tag: ConstantsLib.OPCAT_CAT20_MINTER_TAG,
             tokenScriptHash: this.state.tokenScriptHash,
             hasMintedBefore: true,
             remainingCount,

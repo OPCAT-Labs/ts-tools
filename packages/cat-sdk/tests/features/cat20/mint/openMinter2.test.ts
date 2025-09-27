@@ -36,7 +36,7 @@ describe('Test the feature `mint` for `CAT20OpenMinter`, premine=0', () => {
     address = await testSigner.getAddress()
     tokenReceiverAddr = toTokenOwnerAddress(address)
     metadata = formatMetadata({
-      tag: ConstantsLib.OPCAT_METADATA_TAG,
+      tag: ConstantsLib.OPCAT_CAT20_METADATA_TAG,
       name: 'c',
       symbol: 'C',
       decimals: 2n,
@@ -101,7 +101,7 @@ describe('Test the feature `mint` for `CAT20OpenMinter`, premine=0', () => {
         metadata
       )
       const nextMinterState: CAT20OpenMinterState = {
-        tag: ConstantsLib.OPCAT_MINTER_TAG,
+        tag: ConstantsLib.OPCAT_CAT20_MINTER_TAG,
         tokenScriptHash: tokenScriptHash,
         hasMintedBefore: true,
         remainingCount: expectedNextMinterCounts[i],

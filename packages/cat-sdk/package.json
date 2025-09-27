@@ -29,10 +29,11 @@
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:esm": "tsc -p tsconfig.esm.json",
     "deploy": "npx ts-node ./deploy.ts",
-    "compile": "rimraf artifacts && npx -y @opcat-labs/cli-opcat@1.0.4 compile",
+    "//compile": "rimraf artifacts && npx -y @opcat-labs/cli-opcat@1.0.4 compile",
+    "compile": "node ../scrypt-ts-cli-opcat/bin/main.js compile",
     "test": "npm run test:local",
     "test:local": "mocha",
-    "test:testnet": "cross-env NETWORK=opcat-testnet mocha --no-timeouts",
+    "test:testnet": "cross-env NETWORK=opcat-testnet mocha --no-timeouts --bail",
     "genprivkey": "npx ts-node tests/utils/privateKey.ts",
     "lint": "eslint ./src --fix && prettier --write --ignore-unknown \"**/*\"",
     "lint-check": "eslint ./src && prettier --check --ignore-unknown \"**/*\"",
@@ -49,6 +50,7 @@
   "dependencies": {
     "@opcat-labs/opcat": "1.0.3",
     "@opcat-labs/scrypt-ts-opcat": "1.0.4",
+    "cbor2": "^2.0.1",
     "dotenv": "^16.0.3",
     "ts-node": "^10.9.2"
   },

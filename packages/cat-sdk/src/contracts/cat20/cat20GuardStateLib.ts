@@ -59,5 +59,4 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
       tokenScriptIndexes: fill(-1n, TX_INPUT_COUNT_MAX),
     }
   }
-
 }

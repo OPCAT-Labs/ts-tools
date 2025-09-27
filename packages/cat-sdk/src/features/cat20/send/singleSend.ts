@@ -249,9 +249,9 @@ export async function singleSendStep2(
   // add guard input
   guard.bindToUtxo(guardUtxo)
   sendPsbt.addContractInput(guard, (contract, tx) => {
-      const ownerAddrOrScript = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+      const ownerAddrOrScriptHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
       applyFixedArray(
-        ownerAddrOrScript,
+        ownerAddrOrScriptHashes,
         tx.txOutputs.map((output, index) => {
           return index < outputTokenStates.length
             ? outputTokenStates[index].ownerAddr
@@ -286,7 +286,7 @@ export async function singleSendStep2(
 
       contract.unlock(
         nextStateHashes,
-        ownerAddrOrScript,
+        ownerAddrOrScriptHashes,
         outputTokenAmts,
         tokenScriptIndexArray,
         outputSatoshis,

@@ -6,7 +6,7 @@ import { ConstantsLib } from "../../constants";
 export class CAT20ClosedMinterMetadata extends StateLib<ClosedMinterCAT20Meta> {
     static createEmptyMetadata(): ClosedMinterCAT20Meta {
         return {
-            tag: ConstantsLib.OPCAT_METADATA_TAG,
+            tag: ConstantsLib.OPCAT_CAT20_METADATA_TAG,
             name: '',
             symbol: '',
             decimals: 0n,

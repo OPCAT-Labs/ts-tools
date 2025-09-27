@@ -35,7 +35,7 @@ describe('Test the feature `contractSend` for `Cat20`', () => {
     cat20ChangeAddr = toTokenOwnerAddress(address)
 
     metadata = formatMetadata({
-      tag: ConstantsLib.OPCAT_METADATA_TAG,
+      tag: ConstantsLib.OPCAT_CAT20_METADATA_TAG,
       name: 'c',
       symbol: 'C',
       decimals: 2n,

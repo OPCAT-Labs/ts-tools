@@ -67,7 +67,7 @@ export async function deploy(
   )
   const tokenScriptHash = ContractPeripheral.scriptHash(cat20)
   const minterState: CAT20OpenMinterState = {
-    tag: ConstantsLib.OPCAT_MINTER_TAG,
+    tag: ConstantsLib.OPCAT_CAT20_MINTER_TAG,
     tokenScriptHash,
     hasMintedBefore: false,
     remainingCount: remainingSupplyCount,

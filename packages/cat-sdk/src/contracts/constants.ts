@@ -17,6 +17,7 @@ export const TX_OUTPUT_COUNT_MAX = 10
 // how many different tokens can there be in a guard
 export const GUARD_TOKEN_TYPE_MAX = 4
 
+export const NFT_GUARD_COLLECTION_TYPE_MAX = 4
 
 // txHashPreimage
 // output: satoshis(8) + lockingScriptHash(32) + dataHash(32)
@@ -63,28 +64,41 @@ export class ConstantsLib extends SmartContractLib {
     )
 
 
-    @prop()
-    static readonly _OPCAT_TAG: ByteString = toByteString('6f70636174'); // 'opcat'
-    @prop()
-    static readonly _OPCAT_VERSION: ByteString = toByteString('01');
-    @prop()
-    static readonly _OPCAT_METADATA_SUB_TAG: ByteString = toByteString('00')
-    @prop()
-    static readonly _OPCAT_MINTER_SUB_TAG: ByteString = toByteString('01')
-    @prop()
-    static readonly _OPCAT_CAT20_SUB_TAG: ByteString = toByteString('02')
+    // @prop()
+    // static readonly _OPCAT_TAG: ByteString = toByteString('6f70636174'); // 'opcat'
+    // @prop()
+    // static readonly _OPCAT_VERSION: ByteString = toByteString('01');
+    // @prop()
+    // static readonly _OPCAT_CAT20_METADATA_SUB_TAG: ByteString = toByteString('00')
+    // @prop()
+    // static readonly _OPCAT_CAT20_MINTER_SUB_TAG: ByteString = toByteString('01')
+    // @prop()
+    // static readonly _OPCAT_CAT20_SUB_TAG: ByteString = toByteString('02')
+    // @prop()
+    // static readonly _OPCAT_CAT721_METADATA_SUB_TAG: ByteString = toByteString('03')
+    // @prop()
+    // static readonly _OPCAT_CAT721_MINTER_SUB_TAG: ByteString = toByteString('04')
+    // @prop()
+    // static readonly _OPCAT_CAT721_SUB_TAG: ByteString = toByteString('05')
 
-    // @prop()
-    // static readonly OPCAT_METADATA_TAG: ByteString = this.OPCAT_TAG + this.OPCAT_VERSION + this.OPCAT_METADATA_SUB_TAG
-    // @prop()
-    // static readonly OPCAT_MINTER_TAG: ByteString = this.OPCAT_TAG + this.OPCAT_VERSION + this.OPCAT_MINTER_SUB_TAG
-    // @prop()
-    // static readonly OPCAT_CAT20_TAG: ByteString = this.OPCAT_TAG + this.OPCAT_VERSION + this.OPCAT_CAT20_SUB_TAG
+    // _OPCAT_TAG + _OPCAT_VERSION + _OPCAT_CAT20_METADATA_SUB_TAG
     @prop()
-    static readonly OPCAT_METADATA_TAG: ByteString = toByteString('6f706361740100')
+    static readonly OPCAT_CAT20_METADATA_TAG: ByteString = toByteString('6f706361740100')
+    // _OPCAT_TAG + _OPCAT_VERSION + _OPCAT_CAT20_MINTER_SUB_TAG
     @prop()
-    static readonly OPCAT_MINTER_TAG: ByteString = toByteString('6f706361740101')
+    static readonly OPCAT_CAT20_MINTER_TAG: ByteString = toByteString('6f706361740101')
+    // _OPCAT_TAG + _OPCAT_VERSION + _OPCAT_CAT20_SUB_TAG
     @prop()
     static readonly OPCAT_CAT20_TAG: ByteString = toByteString('6f706361740102')
+
+    // _OPCAT_TAG + _OPCAT_VERSION + _OPCAT_CAT721_METADATA_SUB_TAG
+    @prop()
+    static readonly OPCAT_CAT721_METADATA_TAG: ByteString = toByteString('6f706361740103')
+    // _OPCAT_TAG + _OPCAT_VERSION + _OPCAT_CAT721_MINTER_SUB_TAG
+    @prop()
+    static readonly OPCAT_CAT721_MINTER_TAG: ByteString = toByteString('6f706361740104')
+    // _OPCAT_TAG + _OPCAT_VERSION + _OPCAT_CAT721_SUB_TAG
+    @prop()
+    static readonly OPCAT_CAT721_TAG: ByteString = toByteString('6f706361740105')
   }
   

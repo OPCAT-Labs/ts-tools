@@ -27,7 +27,7 @@ describe('Test the feature `burn` for `CAT20`', () => {
     toReceiverAddr = toTokenOwnerAddress(address)
 
     metadata = formatMetadata({
-      tag: ConstantsLib.OPCAT_METADATA_TAG,
+      tag: ConstantsLib.OPCAT_CAT20_METADATA_TAG,
       name: 'c',
       symbol: 'C',
       decimals: 2n,

@@ -56,10 +56,8 @@ export class CAT20 extends SmartContract<CAT20State> {
 
     if (len(this.state.ownerAddr) == OWNER_ADDR_CONTRACT_HASH_BYTE_LEN) {
       // unlock token owned by contract script
-      assert(
-        this.state.ownerAddr ==
-        slice(this.ctx.spentScriptHashes, unlockArgs.contractInputIndex * TX_OUTPUT_SCRIPT_HASH_LEN, (unlockArgs.contractInputIndex + 1n) * TX_OUTPUT_SCRIPT_HASH_LEN)
-      )
+      assert(unlockArgs.contractInputIndex >= 0n && unlockArgs.contractInputIndex < this.ctx.inputCount)
+      assert(this.state.ownerAddr == ContextUtils.getSpentScriptHash(this.ctx.spentScriptHashes, unlockArgs.contractInputIndex))
     } else {
       // unlock token owned by user key
       OwnerUtils.checkUserOwner(unlockArgs.userPubKey, this.state.ownerAddr)

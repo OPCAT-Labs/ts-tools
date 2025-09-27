@@ -36,7 +36,7 @@ describe('Test the feature `incinerate` for `CAT20`', () => {
     )
 
     metadata = formatMetadata({
-      tag: ConstantsLib.OPCAT_METADATA_TAG,
+      tag: ConstantsLib.OPCAT_CAT20_METADATA_TAG,
       name: 'c',
       symbol: 'C',
       decimals: 2n,

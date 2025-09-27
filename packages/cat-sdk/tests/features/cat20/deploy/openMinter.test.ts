@@ -25,7 +25,7 @@ describe('Test the feature `deploy` for `openMinterV2`', () => {
     loadAllArtifacts()
     const address = await testSigner.getAddress()
     metadata = formatMetadata({
-      tag: ConstantsLib.OPCAT_METADATA_TAG,
+      tag: ConstantsLib.OPCAT_CAT20_METADATA_TAG,
       name: 'c',
       symbol: 'C',
       decimals: 2n,

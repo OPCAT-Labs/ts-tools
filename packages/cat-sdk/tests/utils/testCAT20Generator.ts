@@ -104,7 +104,7 @@ export async function createCat20(
   symbol: string
 ): Promise<TestCat20> {
   const metadata = formatMetadata({
-    tag: ConstantsLib.OPCAT_METADATA_TAG,
+    tag: ConstantsLib.OPCAT_CAT20_METADATA_TAG,
     name: `cat20_${symbol}`,
     symbol: `cat20_${symbol}`,
     decimals: 2n,

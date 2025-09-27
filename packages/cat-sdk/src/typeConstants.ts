@@ -13,11 +13,11 @@ export type SupportedNetwork = 'livenet' | 'testnet'
 export const SHA256_EMPTY_STRING = toByteString(sha256(''))
 
 export enum Postage {
-  METADATA_POSTAGE = 546,
-  GUARD_POSTAGE = 332,
-  MINTER_POSTAGE = 331,
-  TOKEN_POSTAGE = 330,
-  NFT_POSTAGE = 333,
+  METADATA_POSTAGE = 1,
+  GUARD_POSTAGE = 1,
+  MINTER_POSTAGE = 1,
+  TOKEN_POSTAGE = 1,
+  NFT_POSTAGE = 1,
 }
 
 /**

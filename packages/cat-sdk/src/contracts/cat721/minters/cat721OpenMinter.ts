@@ -1,0 +1,116 @@
+import { assert, BacktraceInfo, ByteString, ContextUtils, len, method, prop, PubKey, Sig, SmartContract, toByteString, TxUtils, UInt64 } from "@opcat-labs/scrypt-ts-opcat"
+import { CAT721OpenMinterState, CAT721State, MerkleProof, ProofNodePos } from "../types"
+import { ConstantsLib, OWNER_ADDR_P2PKH_BYTE_LEN } from "src/contracts/constants"
+import { CAT721StateLib } from "../cat721StateLib"
+import { OwnerUtils } from "src/contracts/utils/ownerUtils"
+import { CAT721OpenMinterMerkleTree } from "./cat721OpenMinterMerkleTree"
+import { CAT721OpenMintInfo, CAT721OpenMintInfoState } from "./cat721OpenMintInfo"
+
+
+export class CAT721OpenMinter extends SmartContract<CAT721OpenMinterState> {
+    @prop()
+    genesisOutpoint: ByteString
+
+    @prop()
+    max: bigint 
+
+    @prop()
+    premine: bigint
+
+    @prop()
+    preminerAddr: ByteString
+
+    constructor(genesisOutpoint: ByteString, max: bigint, premine: bigint, preminerAddr: ByteString) {
+        super(...arguments)
+        this.genesisOutpoint = genesisOutpoint
+        this.max = max
+        this.premine = premine
+        this.preminerAddr = preminerAddr
+    }
+
+    @method()
+    public mint(
+        // args to mint nft
+        nftMint: CAT721State,
+        openMintInfo: CAT721OpenMintInfoState,
+        proof: MerkleProof,
+        proofNodePos: ProofNodePos,
+        // premine related args
+        preminerPubKey: PubKey,
+        preminerSig: Sig,
+        // output satoshis of curTx minter output
+        minterSatoshis: UInt64,
+        // output satoshis of curTx nft output
+        nftSatoshis: UInt64,
+        // backtrace
+        backtraceInfo: BacktraceInfo,
+    ) {
+        // back to genesis
+        this.backtraceToOutpoint(backtraceInfo, this.genesisOutpoint);
+
+        assert(this.state.nextLocalId < this.max)
+
+        // minter input should be the first input in curTx
+        assert(this.ctx.inputIndex == 0n);
+
+        // input1.utxo.data store the nft contents, images, etc.
+        const input1StateHash = ContextUtils.getSpentDataHash(this.ctx.spentDataHashes, 1n);
+        assert(input1StateHash == openMintInfo.contentDataHash);
+        // input2.utxo.data store localId, the sha256(nft contents)
+        const input2StateHash = ContextUtils.getSpentDataHash(this.ctx.spentDataHashes, 2n);
+        assert(input2StateHash == CAT721OpenMintInfo.stateHash(openMintInfo));
+        assert(openMintInfo.localId == nftMint.localId);
+        
+        const merkleRoot = CAT721OpenMinterMerkleTree.updateLeaf(
+            CAT721OpenMinterMerkleTree.leafStateHash({
+                contentDataHash: openMintInfo.contentDataHash,
+                localId: openMintInfo.localId,
+                isMined: false,
+            }),
+            CAT721OpenMinterMerkleTree.leafStateHash({
+                contentDataHash: openMintInfo.contentDataHash,
+                localId: openMintInfo.localId,
+                isMined: true
+            }),
+            proof,
+            proofNodePos,
+            this.state.merkleRoot
+        )
+
+        const nextLocalId = this.state.nextLocalId + 1n;
+        let outputs = toByteString('');
+        if (nextLocalId < this.max) {
+            outputs += TxUtils.buildDataOutput(
+                this.ctx.spentScriptHash,
+                minterSatoshis,
+                CAT721OpenMinter.stateHash({
+                    tag: ConstantsLib.OPCAT_CAT721_MINTER_TAG,
+                    nftScriptHash: this.state.nftScriptHash,
+                    merkleRoot: merkleRoot,
+                    nextLocalId: nextLocalId,
+                })
+            )
+        }
+        // next nft output
+        CAT721StateLib.checkState(nftMint);
+        assert(nftMint.localId == this.state.nextLocalId)
+        outputs += TxUtils.buildDataOutput(this.state.nftScriptHash, nftSatoshis, CAT721StateLib.stateHash(nftMint));
+        if (nftMint.localId < this.premine) {
+            // preminer checkSig
+            OwnerUtils.checkUserOwner(preminerPubKey, this.preminerAddr)
+            assert(this.checkSig(preminerSig, preminerPubKey))
+        }
+        
+        // confine curTx outputs
+        outputs += this.buildChangeOutput();
+        assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
+    }
+    
+    public checkProps() {
+        assert(this.max > 0n, 'max must be greater than 0')
+        assert(this.premine >= 0n && this.premine <= this.max, 'premine must be greater or equal to 0 and less than or equal to max')
+        if (this.premine > 0n) {
+            assert(len(this.preminerAddr) == OWNER_ADDR_P2PKH_BYTE_LEN, 'preminerAddr must be set')
+        }
+    }
+}

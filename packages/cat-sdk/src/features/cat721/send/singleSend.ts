@@ -1,0 +1,242 @@
+import { ByteString, ChainProvider, ExtPsbt, fill, fromSupportedNetwork, getBackTraceInfo, PubKey, Script, toByteString, toHex, Transaction, UTXO, UtxoProvider, markSpent, Signer, sha256 } from "@opcat-labs/scrypt-ts-opcat";
+import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "src/contracts";
+import { CAT721 } from "src/contracts/cat721/cat721";
+import { CAT721Guard } from "src/contracts/cat721/cat721Guard";
+import { CAT721StateLib } from "src/contracts/cat721/cat721StateLib";
+import { CAT721State } from "src/contracts/cat721/types";
+import { Postage } from "src/typeConstants";
+import { applyFixedArray, filterFeeUtxos } from "src/utils";
+import { CAT721GuardPeripheral, ContractPeripheral } from "src/utils/contractPeripheral";
+
+
+export async function singleSendNft(
+    signer: Signer,
+    provider: UtxoProvider & ChainProvider,
+    minterScriptHash: ByteString,
+    inputNftUtxos: UTXO[],
+    nftReceivers: ByteString[],
+    feeRate: number,
+): Promise<{
+    guardPsbt: ExtPsbt,
+    sendPsbt: ExtPsbt,
+    guardTxId: string,
+    sendTxId: string,
+    newNftUtxos: UTXO[],
+}> {
+    const pubkey = await signer.getPublicKey()
+    const feeChangeAddress = await signer.getAddress()
+    let feeUtxos = await provider.getUtxos(feeChangeAddress)
+    const {guardPsbt, outputNftStates, guard} = await singleSendNftStep1(
+        provider,
+        feeUtxos,
+        inputNftUtxos,
+        nftReceivers,
+        feeChangeAddress,
+        feeRate
+    )
+    const signedGuardPsbt = ExtPsbt.fromHex(await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions()))
+    guardPsbt.combine(signedGuardPsbt).finalizeAllInputs()
+    const {sendPsbt} = await singleSendNftStep2(
+        provider,
+        minterScriptHash,
+        guard,
+        guardPsbt,
+        inputNftUtxos,
+        outputNftStates,
+        feeChangeAddress,
+        pubkey,
+        feeRate
+    )
+    const signedSendPsbt = ExtPsbt.fromHex(await signer.signPsbt(sendPsbt.toHex(), sendPsbt.psbtOptions()))
+    sendPsbt.combine(signedSendPsbt).finalizeAllInputs()
+    const {newNftUtxos} = await singleSendNftStep3(
+        provider,
+        guardPsbt,
+        sendPsbt,
+        outputNftStates
+    )
+    return {
+        guardPsbt,
+        sendPsbt,
+        guardTxId: guardPsbt.extractTransaction().id,
+        sendTxId: sendPsbt.extractTransaction().id,
+        newNftUtxos,
+    }
+}
+
+export async function singleSendNftStep1(
+    provider: UtxoProvider & ChainProvider,
+    feeUtxos: UTXO[],
+    inputNftUtxos: UTXO[],
+    receivers: ByteString[],
+    feeChangeAddress: ByteString,
+    feeRate: number,
+) {
+    if (inputNftUtxos.length + 2 > TX_INPUT_COUNT_MAX) {
+        throw new Error(
+            `Too many inputs that exceed the maximum input limit of ${TX_INPUT_COUNT_MAX}`
+        )
+    }
+    feeUtxos = filterFeeUtxos(feeUtxos).slice(0, TX_INPUT_COUNT_MAX)
+    if (feeUtxos.length === 0) {
+        throw new Error('Insufficient satoshis input amount')
+    }
+    receivers = [...receivers]
+    const inputNftStates = inputNftUtxos.map((utxo) => CAT721StateLib.deserializeState(utxo.data))
+
+    const { guardState, outputNfts: _outputNfts } = CAT721GuardPeripheral.createTransferGuard(
+        inputNftUtxos.map((utxo, index) => ({
+            nft: utxo,
+            inputIndex: index,
+        })),
+        receivers
+    )
+    const outputNfts: CAT721State[] = _outputNfts.filter((v) => v != undefined) as CAT721State[]
+    const guard = new CAT721Guard()
+    guard.state = guardState
+    const guardPsbt = new ExtPsbt({network: await provider.getNetwork()})
+        .spendUTXO(feeUtxos)
+        .addContractOutput(guard, Postage.GUARD_POSTAGE)
+        .change(feeChangeAddress, feeRate)
+        .seal()
+    return {guard, guardPsbt, outputNftStates: outputNfts}
+}
+
+export async function singleSendNftStep2(
+    provider: UtxoProvider & ChainProvider,
+    minterScriptHash: ByteString,
+    guard: CAT721Guard,
+    finalizedGuardPsbt: ExtPsbt,
+    inputNftUtxos: UTXO[],
+    outputNftStates: CAT721State[],
+    feeChangeAddress: string,
+    publicKey: string,
+    feeRate: number,
+    sendChangeData?: Buffer,
+) {
+    const network = await provider.getNetwork()
+    const guardPsbt = finalizedGuardPsbt
+    const guardUtxo = guardPsbt.getUtxo(0)
+    const feeUtxo = guardPsbt.getChangeUTXO()!
+
+    const guardScriptHash = ContractPeripheral.scriptHash(guard)
+    const backtraces = await CAT721GuardPeripheral.getBackTraceInfo(
+        minterScriptHash,
+        inputNftUtxos,
+        provider
+    )
+    const inputNfts: CAT721[] = inputNftUtxos.map(
+        (_nft, index) => new CAT721(minterScriptHash, guardScriptHash).bindToUtxo({
+            ..._nft,
+            txHashPreimage: toHex(new Transaction(backtraces[index].prevTxHex).toTxHashPreimage()),
+        })
+    )
+    const sendPsbt = new ExtPsbt({network: await provider.getNetwork()})
+    const guardInputIndex = inputNfts.length
+    const inputNftStates = inputNftUtxos.map((utxo) => CAT721StateLib.deserializeState(utxo.data))
+    const guardState = guard.state
+    // add nft inputs
+    for (let index = 0; index < inputNfts.length; index++) {
+        sendPsbt.addContractInput(
+            inputNfts[index],
+            (contract, tx) => {
+                const address = Script.fromHex(inputNftStates[index].ownerAddr).toAddress(fromSupportedNetwork(network))
+                const sig = tx.getSig(index, {address: address.toString()})
+                contract.unlock(
+                    {
+                        userPubKey: PubKey(publicKey),
+                        userSig: sig,
+                        contractInputIndex: -1n,
+                    },
+                    guardState,
+                    BigInt(guardInputIndex),
+                    getBackTraceInfo(
+                        backtraces[index].prevTxHex,
+                        backtraces[index].prevPrevTxHex,
+                        backtraces[index].prevTxInput
+                    )
+                )
+            }
+        )
+    }
+    // add token outputs
+    for (const outputNft of outputNftStates) {
+        const nft = new CAT721(minterScriptHash, guardScriptHash)
+        nft.state = outputNft
+        sendPsbt.addContractOutput(nft, Postage.NFT_POSTAGE)
+    }
+    // add guard input
+    guard.bindToUtxo(guardUtxo)
+    sendPsbt.addContractInput(guard, (contract, tx) => {
+        const nextStateHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+        applyFixedArray(
+            nextStateHashes,
+            tx.txOutputs.map((output) => sha256(toHex(output.data)))
+        )
+        const ownerAddrOrScriptHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+        applyFixedArray(
+            ownerAddrOrScriptHashes,
+            tx.txOutputs.map((output, index) => {
+                return index < outputNftStates.length
+                    ? outputNftStates[index].ownerAddr
+                    : ContractPeripheral.scriptHash(toHex(output.script))
+            })
+        )
+        const outputLocalIds = fill(BigInt(-1), TX_OUTPUT_COUNT_MAX)
+        applyFixedArray(
+            outputLocalIds,
+            tx.txOutputs.map((output, index) => {
+                return index < outputNftStates.length
+                    ? outputNftStates[index].localId
+                    : BigInt(-1)
+            })
+        )
+        const nftScriptHashIndexes = fill(-1n, TX_OUTPUT_COUNT_MAX)
+        applyFixedArray(
+            nftScriptHashIndexes,
+            outputNftStates.map(() => 0n)
+        )
+        const outputSatoshis = fill(0n, TX_OUTPUT_COUNT_MAX)
+        applyFixedArray(
+            outputSatoshis,
+            tx.txOutputs.map((output) => BigInt(output.value))
+        )
+        const inputCAT721States = fill(CAT721StateLib.create(0n, toByteString('')), TX_INPUT_COUNT_MAX)
+        applyFixedArray(inputCAT721States, inputNftStates)
+        const outputCount = BigInt(tx.txOutputs.length)
+        contract.unlock(
+            nextStateHashes,
+            ownerAddrOrScriptHashes,
+            outputLocalIds,
+            nftScriptHashIndexes,
+            outputSatoshis,
+            inputCAT721States,
+            outputCount
+        )
+    })
+    // add fee input
+    sendPsbt.spendUTXO(feeUtxo)
+    // add change output
+    sendPsbt.change(feeChangeAddress, feeRate, sendChangeData || '')
+    sendPsbt.seal()
+    return {sendPsbt}
+}
+
+export async function singleSendNftStep3(
+    provider: UtxoProvider & ChainProvider,
+    finalizedGuardPsbt: ExtPsbt,
+    finalizedSendPsbt: ExtPsbt,
+    outputNftStates: CAT721State[],
+) {
+    // broadcast
+    await provider.broadcast(finalizedGuardPsbt.extractTransaction().toHex())
+    markSpent(provider, finalizedGuardPsbt.extractTransaction())
+    await provider.broadcast(finalizedSendPsbt.extractTransaction().toHex())
+    markSpent(provider, finalizedSendPsbt.extractTransaction())
+    const newFeeUtxo = finalizedSendPsbt.getChangeUTXO()!
+    provider.addNewUTXO(newFeeUtxo)
+
+    const newNftUtxos = outputNftStates.map((_, index) => finalizedSendPsbt.getUtxo(index))
+
+    return {newNftUtxos, newFeeUtxo}
+}

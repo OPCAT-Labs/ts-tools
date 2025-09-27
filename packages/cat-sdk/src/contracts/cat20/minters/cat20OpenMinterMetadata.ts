@@ -7,7 +7,7 @@ export class CAT20OpenMinterMetadata extends StateLib<OpenMinterCAT20Meta> {
     
   static createEmptyMetadata(): OpenMinterCAT20Meta {
     return {
-      tag: ConstantsLib.OPCAT_METADATA_TAG,
+      tag: ConstantsLib.OPCAT_CAT20_METADATA_TAG,
       name: '',
       symbol: '',
       decimals: 0n,
