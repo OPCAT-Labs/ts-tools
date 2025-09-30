@@ -68,15 +68,12 @@ describe('Test the feature `deploy` for `CAT721OpenMinter`', () => {
                 const minterState = CAT721OpenMinter.deserializeState(minterUtxo.data)
                 const index = Number(minterState.nextLocalId)
                 const oldLeaf = nftOpenMinterMerkleTreeData.getLeaf(index)
-                console.log('old, leaf: ', oldLeaf, ' root: ', nftOpenMinterMerkleTreeData.merkleRoot, ' leaf hash: ', CAT721OpenMinterMerkleTree.leafStateHash(oldLeaf))
                 const newLeaf: CAT721MerkleLeaf = {
                     ...oldLeaf,
                     isMined: true,
                 }
-                console.log('new leaf: ', newLeaf, ' leaf hash: ', CAT721OpenMinterMerkleTree.leafStateHash(newLeaf))
                 const updateLeafInfo = nftOpenMinterMerkleTreeData.updateLeaf(newLeaf, index)
                 const nftStorage = getNftStorage(BigInt(index))
-                console.log('index', index)
                 
                 const mintResult = await mint(
                     testSigner,
@@ -124,9 +121,6 @@ function generateCollectionLeaf(max: bigint) {
                 }
             }
         )
-        if (i <= 1n) {
-            console.log(`nftStr: ${i} `, nftStr, 'hash: ', sha256(nftStr))
-        }
 
         nftMerkleLeafList.push({
             contentDataHash: sha256(nftStr),

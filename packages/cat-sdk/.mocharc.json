@@ -2,7 +2,7 @@
   "diff": true,
   "require": "tsx",
   "extensions": ["ts"],
-  "spec": ["./tests/features/cat721/**/cat721OpenMinter.test.ts"],
+  "spec": ["./tests/**/*.test.ts"],
   "package": "./package.json",
   "reporter": "spec",
   "slow": "75",

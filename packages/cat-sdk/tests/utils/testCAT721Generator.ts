@@ -87,6 +87,9 @@ export class TestCAT721Generator {
     async mintNftToAddress(addr: ByteString) {
         return this.mintThenTransfer(toTokenOwnerAddress(addr))
     }
+    async mintNftToScriptHash(scriptHash: ByteString) {
+        return this.mintThenTransfer(scriptHash)
+    }
 }
 
 export type TestCat721 = {

@@ -1,11 +1,11 @@
 import { ByteString, ChainProvider, ExtPsbt, fill, getBackTraceInfo, markSpent, PubKey, sha256, Sig, Signer, toByteString, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
-import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "src/contracts";
-import { CAT721 } from "src/contracts/cat721/cat721";
-import { CAT721Guard } from "src/contracts/cat721/cat721Guard";
-import { CAT721StateLib } from "src/contracts/cat721/cat721StateLib";
-import { Postage } from "src/typeConstants";
-import { applyFixedArray, filterFeeUtxos } from "src/utils";
-import { CAT721GuardPeripheral, ContractPeripheral } from "src/utils/contractPeripheral";
+import { CAT721State, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../../contracts";
+import { CAT721 } from "../../../contracts/cat721/cat721";
+import { CAT721Guard } from "../../../contracts/cat721/cat721Guard";
+import { CAT721StateLib } from "../../../contracts/cat721/cat721StateLib";
+import { Postage } from "../../../typeConstants";
+import { applyFixedArray, filterFeeUtxos } from "../../../utils";
+import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral";
 
 
 
@@ -22,7 +22,7 @@ export async function contractSendNft(
     newCAT721Utxos: UTXO[],
 }> {
     const changeAddress = await signer.getAddress()
-    
+
     let utxos = await provider.getUtxos(changeAddress)
     utxos = filterFeeUtxos(utxos).slice(0, TX_INPUT_COUNT_MAX)
     const backtraces = await CAT721GuardPeripheral.getBackTraceInfo(
@@ -38,7 +38,7 @@ export async function contractSendNft(
             txHashPreimage: toHex(new Transaction(backtraces[index].prevTxHex).toTxHashPreimage()),
         })
     )
-    const { guardState, outputNfts } = CAT721GuardPeripheral.createTransferGuard(
+    const { guardState, outputNfts: _outputNfts } = CAT721GuardPeripheral.createTransferGuard(
         inputNftUtxos.map((utxo, index) => ({
             nft: utxo,
             inputIndex: index,
@@ -47,23 +47,25 @@ export async function contractSendNft(
     )
     guard.state = guardState
 
-    const guardPsbt = new ExtPsbt({network: await provider.getNetwork()})
+    const outputNfts = _outputNfts.filter((v) => v != undefined) as CAT721State[]
+
+    const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .spendUTXO(utxos)
         .addContractOutput(guard, Postage.GUARD_POSTAGE)
         .change(changeAddress, feeRate)
         .seal()
-    
+
     const signedGuardPsbt = await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions())
     guardPsbt.combine(ExtPsbt.fromHex(signedGuardPsbt))
     guardPsbt.finalizeAllInputs()
 
-    const sendPsbt = new ExtPsbt({network: await provider.getNetwork()})
+    const sendPsbt = new ExtPsbt({ network: await provider.getNetwork() })
 
     // use fee input as contract input
     const guardInputIndex = inputNftUtxos.length;
     const contractInputIndex = inputNftUtxos.length + 1;
 
-    // add token inputs
+    // add nft inputs
     for (let index = 0; index < inputNfts.length; index++) {
         sendPsbt.addContractInput(inputNfts[index], (contract, tx) => {
             contract.unlock(
@@ -78,6 +80,12 @@ export async function contractSendNft(
             )
         })
     }
+    // add nft outputs
+    for (const outputNft of outputNfts) {
+        const nft = new CAT721(minterScriptHash, guardScriptHash)
+        nft.state = outputNft!
+        sendPsbt.addContractOutput(nft, Postage.NFT_POSTAGE)
+    }
     // add guard input
     sendPsbt.addContractInput(guard, (contract, tx) => {
         const nextStateHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
@@ -88,7 +96,7 @@ export async function contractSendNft(
         const ownerAddrOrScript = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
         applyFixedArray(
             ownerAddrOrScript,
-            tx.txOutputs.map((output, outputIndex) =>{
+            tx.txOutputs.map((output, outputIndex) => {
                 if (outputIndex < outputNfts.length) {
                     return outputNfts[outputIndex]!.ownerAddr
                 } else {
@@ -99,7 +107,7 @@ export async function contractSendNft(
         const outputLocalIds = fill(BigInt(-1), TX_OUTPUT_COUNT_MAX)
         applyFixedArray(
             outputLocalIds,
-            tx.txOutputs.map((output, outputIndex) =>{
+            tx.txOutputs.map((output, outputIndex) => {
                 if (outputIndex < outputNfts.length) {
                     return outputNfts[outputIndex]!.localId
                 } else {

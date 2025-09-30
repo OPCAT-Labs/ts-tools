@@ -29,12 +29,12 @@ import { CAT20StateLib } from '../contracts/cat20/cat20StateLib'
 import { CAT20GuardStateLib } from '../contracts/cat20/cat20GuardStateLib'
 import { ConstantsLib } from '../contracts/constants'
 import { CAT721GuardConstState, CAT721State, ClosedMinterCAT721Meta, OpenMinterCAT721Meta } from '../contracts/cat721/types'
-import { CAT721GuardStateLib } from 'src/contracts/cat721/cat721GuardStateLib'
-import { CAT721Guard } from 'src/contracts/cat721/cat721Guard'
-import { CAT721 } from 'src/contracts/cat721/cat721'
-import { CAT721OpenMinter } from 'src/contracts/cat721/minters/cat721OpenMinter'
-import { CAT721StateLib } from 'src/contracts/cat721/cat721StateLib'
-import { CAT721ClosedMinter } from 'src/contracts'
+import { CAT721GuardStateLib } from '../contracts/cat721/cat721GuardStateLib'
+import { CAT721Guard } from '../contracts/cat721/cat721Guard'
+import { CAT721 } from '../contracts/cat721/cat721'
+import { CAT721OpenMinter } from '../contracts/cat721/minters/cat721OpenMinter'
+import { CAT721StateLib } from '../contracts/cat721/cat721StateLib'
+import { CAT721ClosedMinter } from '../contracts'
 
 export class ContractPeripheral {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

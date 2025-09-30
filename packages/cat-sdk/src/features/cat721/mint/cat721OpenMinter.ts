@@ -1,10 +1,10 @@
 import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, markSpent, PubKey, Script, Sig, Signer, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721State, MerkleProof, OpenMinterCAT721Meta, ProofNodePos } from "src/contracts/cat721/types";
-import { ConstantsLib } from "src/contracts/constants";
-import { CAT721OpenMinterPeripheral, ContractPeripheral } from "src/utils/contractPeripheral";
+import { ConstantsLib } from "../../../contracts/constants";
+import { CAT721OpenMinterPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral";
 import { createNft } from "./nft";
-import { CAT721OpenMintInfo } from "src/contracts/cat721/minters/cat721OpenMintInfo";
-import { Postage } from "src/typeConstants";
+import { CAT721OpenMintInfo } from "../../../contracts/cat721/minters/cat721OpenMintInfo";
+import { Postage } from "../../../typeConstants";
 import { CAT721, CAT721Guard } from "src/contracts";
 
 

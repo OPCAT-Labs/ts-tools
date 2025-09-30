@@ -1,12 +1,8 @@
 import { ByteString, ChainProvider, ExtPsbt, fill, fromSupportedNetwork, getBackTraceInfo, PubKey, Script, toByteString, toHex, Transaction, UTXO, UtxoProvider, markSpent, Signer, sha256 } from "@opcat-labs/scrypt-ts-opcat";
-import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "src/contracts";
-import { CAT721 } from "src/contracts/cat721/cat721";
-import { CAT721Guard } from "src/contracts/cat721/cat721Guard";
-import { CAT721StateLib } from "src/contracts/cat721/cat721StateLib";
-import { CAT721State } from "src/contracts/cat721/types";
-import { Postage } from "src/typeConstants";
-import { applyFixedArray, filterFeeUtxos } from "src/utils";
-import { CAT721GuardPeripheral, ContractPeripheral } from "src/utils/contractPeripheral";
+import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, CAT721, CAT721Guard, CAT721StateLib, CAT721State } from "../../../contracts";
+import { Postage } from "../../../typeConstants";
+import { applyFixedArray, filterFeeUtxos } from "../../../utils";
+import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral";
 
 
 export async function singleSendNft(
@@ -26,7 +22,7 @@ export async function singleSendNft(
     const pubkey = await signer.getPublicKey()
     const feeChangeAddress = await signer.getAddress()
     let feeUtxos = await provider.getUtxos(feeChangeAddress)
-    const {guardPsbt, outputNftStates, guard} = await singleSendNftStep1(
+    const { guardPsbt, outputNftStates, guard } = await singleSendNftStep1(
         provider,
         feeUtxos,
         inputNftUtxos,
@@ -36,7 +32,7 @@ export async function singleSendNft(
     )
     const signedGuardPsbt = ExtPsbt.fromHex(await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions()))
     guardPsbt.combine(signedGuardPsbt).finalizeAllInputs()
-    const {sendPsbt} = await singleSendNftStep2(
+    const { sendPsbt } = await singleSendNftStep2(
         provider,
         minterScriptHash,
         guard,
@@ -49,7 +45,7 @@ export async function singleSendNft(
     )
     const signedSendPsbt = ExtPsbt.fromHex(await signer.signPsbt(sendPsbt.toHex(), sendPsbt.psbtOptions()))
     sendPsbt.combine(signedSendPsbt).finalizeAllInputs()
-    const {newNftUtxos} = await singleSendNftStep3(
+    const { newNftUtxos } = await singleSendNftStep3(
         provider,
         guardPsbt,
         sendPsbt,
@@ -94,12 +90,12 @@ export async function singleSendNftStep1(
     const outputNfts: CAT721State[] = _outputNfts.filter((v) => v != undefined) as CAT721State[]
     const guard = new CAT721Guard()
     guard.state = guardState
-    const guardPsbt = new ExtPsbt({network: await provider.getNetwork()})
+    const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .spendUTXO(feeUtxos)
         .addContractOutput(guard, Postage.GUARD_POSTAGE)
         .change(feeChangeAddress, feeRate)
         .seal()
-    return {guard, guardPsbt, outputNftStates: outputNfts}
+    return { guard, guardPsbt, outputNftStates: outputNfts }
 }
 
 export async function singleSendNftStep2(
@@ -131,7 +127,7 @@ export async function singleSendNftStep2(
             txHashPreimage: toHex(new Transaction(backtraces[index].prevTxHex).toTxHashPreimage()),
         })
     )
-    const sendPsbt = new ExtPsbt({network: await provider.getNetwork()})
+    const sendPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     const guardInputIndex = inputNfts.length
     const inputNftStates = inputNftUtxos.map((utxo) => CAT721StateLib.deserializeState(utxo.data))
     const guardState = guard.state
@@ -141,7 +137,7 @@ export async function singleSendNftStep2(
             inputNfts[index],
             (contract, tx) => {
                 const address = Script.fromHex(inputNftStates[index].ownerAddr).toAddress(fromSupportedNetwork(network))
-                const sig = tx.getSig(index, {address: address.toString()})
+                const sig = tx.getSig(index, { address: address.toString() })
                 contract.unlock(
                     {
                         userPubKey: PubKey(publicKey),
@@ -159,7 +155,7 @@ export async function singleSendNftStep2(
             }
         )
     }
-    // add token outputs
+    // add nft outputs
     for (const outputNft of outputNftStates) {
         const nft = new CAT721(minterScriptHash, guardScriptHash)
         nft.state = outputNft
@@ -219,7 +215,7 @@ export async function singleSendNftStep2(
     // add change output
     sendPsbt.change(feeChangeAddress, feeRate, sendChangeData || '')
     sendPsbt.seal()
-    return {sendPsbt}
+    return { sendPsbt }
 }
 
 export async function singleSendNftStep3(
@@ -238,5 +234,5 @@ export async function singleSendNftStep3(
 
     const newNftUtxos = outputNftStates.map((_, index) => finalizedSendPsbt.getUtxo(index))
 
-    return {newNftUtxos, newFeeUtxo}
+    return { newNftUtxos, newFeeUtxo }
 }

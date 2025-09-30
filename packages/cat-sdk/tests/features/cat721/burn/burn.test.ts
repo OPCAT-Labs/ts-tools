@@ -37,7 +37,7 @@ describe('Test the feature `burn` for `CAT721`', () => {
         cat721Generater = await TestCAT721Generator.init(metadata)
     })
 
-    const getTokenUtxos = async function (
+    const getNftUtxos = async function (
         generator: TestCAT721Generator,
         toReceiverAddr: string,
         n: number
@@ -52,11 +52,11 @@ describe('Test the feature `burn` for `CAT721`', () => {
 
     describe('When burn tokens in a single tx', () => {
         it('should burn one token utxo successfully', async () => {
-            await testBurnResult(await getTokenUtxos(cat721Generater, toReceiverAddr, 1))
+            await testBurnResult(await getNftUtxos(cat721Generater, toReceiverAddr, 1))
         })
 
         it('should burn multiple token utxos successfully', async () => {
-            await testBurnResult(await getTokenUtxos(cat721Generater, toReceiverAddr, 2))
+            await testBurnResult(await getNftUtxos(cat721Generater, toReceiverAddr, 2))
         })
     })
 
