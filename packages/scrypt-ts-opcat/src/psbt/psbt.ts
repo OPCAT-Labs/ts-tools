@@ -1456,7 +1456,7 @@ function inputFinalizeGetAmts(
   const bytes = tx.getEstimateSize();
   cache.__FEE = fee;
   cache.__EXTRACTED_TX = tx;
-  cache.__FEE_RATE = Math.floor(Number(fee / BigInt(bytes)));
+  cache.__FEE_RATE = Number(fee) / bytes;
 }
 
 

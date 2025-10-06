@@ -37,7 +37,7 @@ const { BufferWriter } = encoding;
 
 const P2PKH_SIG_LEN = 0x49; // 73 bytes signature
 const P2PKH_PUBKEY_LEN = 0x21; // 33 bytes pubkey
-const DUMMY_CHANGE_SATOSHIS = BigInt(2100e16); // use the max value to avoid change.satoshis size getting bigger when sealing
+const DUMMY_CHANGE_SATOSHIS = BigInt(21e14); // use the max value to avoid change.satoshis size getting bigger when sealing
 
 type Finalizer = (
   self: ExtPsbt,
@@ -582,7 +582,9 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       const outputs = this.unsignedTx.outputs;
       outputs[this._changeOutputIndex].satoshis = Number(changeAmount);
     } else {
-      this.txOutputs.splice(this._changeOutputIndex, 1);
+      this.data.outputs.splice(this._changeOutputIndex, 1);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (this as any).__CACHE.__TX.outputs.splice(this._changeOutputIndex, 1);
       this._changeOutputIndex = null;
     }
 
@@ -909,7 +911,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     try {
       // nonstandard script cannot derive address
       address = Script.fromBuffer(Buffer.from(this.txOutputs[outputIndex].script)).toAddress(this.network).toString();
-    } catch (error) {
+    } catch (_error) {
       address = '';
     }
 

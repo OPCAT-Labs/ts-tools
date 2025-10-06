@@ -46,4 +46,4 @@ export const TX_OUTPUT_SATOSHI_BYTE_LEN = 8n;
 /** @ignore the maximum number of flattened fields in a state object. */
 export const MAX_FLAT_FIELDS_IN_STATE = 26;
 /** @ignore the dust limit is the minimum amount of satoshis that can be sent in a transaction */
-export const DUST_LIMIT = 330;
+export const DUST_LIMIT = 1;
