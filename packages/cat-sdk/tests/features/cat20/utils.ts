@@ -23,14 +23,8 @@ export const loadAllArtifacts = function () {
   CAT20ClosedMinter.loadArtifact(
     readArtifact('artifacts/cat20/minters/cat20ClosedMinter.json')
   )
-  CAT20ClosedMinterMetadata.loadArtifact(
-    readArtifact('artifacts/cat20/minters/cat20ClosedMinterMetadata.json')
-  )
   CAT20OpenMinter.loadArtifact(
     readArtifact('artifacts/cat20/minters/cat20OpenMinter.json')
-  )
-  CAT20OpenMinterMetadata.loadArtifact(
-    readArtifact('artifacts/cat20/minters/cat20OpenMinterMetadata.json')
   )
   //
   CAT20.loadArtifact(readArtifact('artifacts/cat20/cat20.json'))

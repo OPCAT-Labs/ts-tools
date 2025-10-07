@@ -1,6 +1,6 @@
 import { hash160, Ripemd160 } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT721MerkleLeaf, MerkleProof, ProofNodePos } from "src/contracts";
-import { CAT721OpenMinterMerkleTree } from "src/contracts/cat721/minters/cat721OpenMinterMerkleTree";
+import { CAT721MerkleLeaf } from "../contracts/cat721/types";
+import { CAT721OpenMinterMerkleTree } from "../contracts/cat721/minters/cat721OpenMinterMerkleTree";
 
 
 
@@ -182,7 +182,7 @@ export class CAT721OpenMinterMerkleTreeData {
         for (let i = 1; i < this.height; i++) {
             prevHash = this.hashNodes[i - 1];
             curHash = [];
-            for (let j = 0; j < prevHash.length; ) {
+            for (let j = 0; j < prevHash.length;) {
                 if (j + 1 < prevHash.length) {
                     curHash.push(hash160(prevHash[j] + prevHash[j + 1]));
                 } else {

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { TxEntity } from '../../entities/tx.entity';
-import { DataSource, EntityManager, MoreThanOrEqual, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, MoreThanOrEqual, Repository } from 'typeorm';
 import { Transaction } from '@opcat-labs/opcat';
 import { TxOutEntity } from '../../entities/txOut.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -19,6 +19,7 @@ import { ContractLib } from '../../common/contract';
 import { RpcService } from '../rpc/rpc.service';
 import { ZmqService } from '../zmq/zmq.service';
 import { uint8ArrayToHex } from '@cat-protocol/cat-sdk-v2';
+import { MetadataSerializer } from '@opcat-labs/cat-sdk';
 
 @Injectable()
 export class TxService {
@@ -91,21 +92,23 @@ export class TxService {
       const inputTags = ContractLib.decodeInputsTag(tx);
       const outputTags = ContractLib.decodeOutputsTag(tx);
       const outputFields = ContractLib.decodeAllOutputFields(tx);
+      const inputMetadatas = ContractLib.decodeAllInputMetadata(tx);
       const tags = inputTags.concat(outputTags);
       let isSaveTx = false;
-      if (inputTags[0] === ContractLib.OPCAT_METADATA_TAG) {
-        // process genesis
-        isSaveTx = isSaveTx || (await this.processMetaTx(tx, outputTags, blockHeader));
-        this.logger.log(`[OK] genesis tx ${tx.id}`);
+      if (
+        inputMetadatas[0]?.type === 'Token' ||
+        inputMetadatas[0]?.type === 'Collection'
+      ) {
+        isSaveTx = isSaveTx || (await this.processMetaTx(tx, outputTags, inputMetadatas[0], blockHeader));
+        this.logger.log(`[OK] genesis tx ${tx.id}, type: ${inputMetadatas[0]?.type}`);
       }
       //
-      if (inputTags[0] === ContractLib.OPCAT_MINTER_TAG) {
+      if (inputTags[0] === ContractLib.OPCAT_CAT20_MINTER_TAG) {
         // search minter in inputs
-        isSaveTx = isSaveTx || (await this.processMintTx(tx, outputTags, blockHeader, outputFields));
+        isSaveTx = isSaveTx || (await this.processMintTx(tx, outputTags, inputMetadatas, blockHeader, outputFields));
         this.logger.log(`[OK] mint tx ${tx.id}`);
       }
-      //
-      if (tags.includes(ContractLib.OPCAT_CAT20_TAG)) {
+      if (tags.includes(ContractLib.OPCAT_CAT20_TAG) || tags.includes(ContractLib.OPCAT_CAT721_TAG)) {
         isSaveTx = isSaveTx || (await this.processTransferTx(tx, outputTags, blockHeader, outputFields));
         this.logger.log(`[OK] transfer tx ${tx.id}`);
       }
@@ -155,16 +158,32 @@ export class TxService {
     });
   }
 
-  private async processMetaTx(tx: Transaction, outputTags: string[], blockHeader: BlockHeader | null) {
+  private async processMetaTx(
+    tx: Transaction,
+    outputTags: string[],
+    inputMetadata: ReturnType<typeof MetadataSerializer.deserialize>,
+    blockHeader: BlockHeader | null,
+  ) {
     const promises: Promise<any>[] = [];
     const input = tx.inputs[0];
     const inputGenesis = input.output;
-    const fields = ContractLib.decodeFields(inputGenesis.data);
     const tokenId = `${input.prevTxId.toString('hex')}_${input.outputIndex}`;
-    const [, _name, _symbol, _decimals] = fields;
+    // const [, _name, _symbol, _decimals] = fields;
+    let _name = ''
+    let _symbol = ''
+    let _decimals = 0n
+    if (inputMetadata.type == 'Token') {
+      _name = inputMetadata.info.metadata.name;
+      _symbol = inputMetadata.info.metadata.symbol;
+      _decimals = BigInt(inputMetadata.info.metadata.decimals)
+    } else if (inputMetadata.type == 'Collection') {
+      _name = inputMetadata.info.metadata.name;
+      _symbol = inputMetadata.info.metadata.symbol;
+      _decimals = BigInt(Constants.CAT721_DECIMALS);
+    }
     const name = Buffer.from(_name, 'hex').toString('utf-8');
     const symbol = Buffer.from(_symbol, 'hex').toString('utf-8');
-    const decimals = Number(byteString2Int(_decimals));
+    const decimals = Number(_decimals);
     const tokenInfoEntity = this.tokenInfoEntityRepository.create({
       tokenId,
       genesisTxid: tx.hash,
@@ -178,7 +197,10 @@ export class TxService {
       const output = tx.outputs[outputIndex];
       const outputTag = outputTags[outputIndex];
       const lockingScriptHash = sha256(tx.outputs[outputIndex].script.toHex());
-      if (outputTag === ContractLib.OPCAT_MINTER_TAG) {
+      if (
+        outputTag === ContractLib.OPCAT_CAT20_MINTER_TAG ||
+        outputTag === ContractLib.OPCAT_CAT721_MINTER_TAG
+      ) {
         const txOut = this.txOutEntityRepository.create();
         tokenInfoEntity.minterScriptHash = lockingScriptHash;
         txOut.txid = tx.hash;
@@ -200,20 +222,24 @@ export class TxService {
   private async processMintTx(
     tx: Transaction,
     outputTags: string[],
+    inputMetadatas: ReturnType<typeof MetadataSerializer.deserialize>[],
     blockHeader: BlockHeader | null,
     outputFields: string[][],
   ) {
     const promises: Promise<any>[] = [];
-    const inputMinter = await this.tokenInfoEntityRepository.findOne({
+    const inputTokenInfos = await this.tokenInfoEntityRepository.find({
       where: {
-        minterScriptHash: sha256(tx.inputs[0].output.script.toHex()),
+        minterScriptHash: In(tx.inputs.map((input) => sha256(input.output.script.toHex()))),
       },
     });
     for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
       const outputTag = outputTags[outputIndex];
       const output = tx.outputs[outputIndex];
       const lockingScriptHash = sha256(tx.outputs[outputIndex].script.toHex());
-      if (outputTag === ContractLib.OPCAT_MINTER_TAG) {
+      if (
+        outputTag === ContractLib.OPCAT_CAT20_MINTER_TAG ||
+        outputTag === ContractLib.OPCAT_CAT721_MINTER_TAG
+      ) {
         const txOut = this.txOutEntityRepository.create();
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
@@ -224,10 +250,14 @@ export class TxService {
         txOut.tokenAmount = 0n;
         txOut.data = toHex(output.data);
         promises.push(this.txOutEntityRepository.save(txOut));
-      } else if (outputTag === ContractLib.OPCAT_CAT20_TAG) {
-        if (!inputMinter.tokenScriptHash) {
-          inputMinter.tokenScriptHash = lockingScriptHash;
-          promises.push(this.tokenInfoEntityRepository.save(inputMinter));
+      } else if (
+        outputTag === ContractLib.OPCAT_CAT20_TAG ||
+        outputTag === ContractLib.OPCAT_CAT721_TAG
+      ) {
+        const tokenInfoToUpdate = inputTokenInfos.find((m) => !m.tokenScriptHash);
+        if (tokenInfoToUpdate) {
+          tokenInfoToUpdate.tokenScriptHash = lockingScriptHash;
+          promises.push(this.tokenInfoEntityRepository.save(tokenInfoToUpdate));
         }
         const outputField = outputFields[outputIndex];
         const [, owner, _amount] = outputField;
@@ -243,6 +273,28 @@ export class TxService {
         txOut.tokenAmount = amount;
         txOut.data = toHex(output.data);
         promises.push(this.txOutEntityRepository.save(txOut));
+        const tokenInfo = inputTokenInfos.find((m) => m.tokenScriptHash == lockingScriptHash);
+        if (
+          outputTag === ContractLib.OPCAT_CAT721_TAG && tokenInfo
+        ) {
+          const nftMetadataIndex = inputMetadatas.findIndex((m) => m?.type == 'NFT');
+          const nftMetadata = inputMetadatas[nftMetadataIndex];
+          if (nftMetadata) {
+            const commitTxid = tx.inputs[nftMetadataIndex].prevTxId.toString('hex');
+            const nftInfoEntity = this.nftInfoEntityRepository.create({
+              collectionId: tokenInfo.tokenId,
+              localId: amount,
+              mintTxid: tx.hash,
+              mintHeight: blockHeader ? blockHeader.height : 2147483647,
+              commitTxid,
+              metadata: nftMetadata.info.metadata,
+              contentType: nftMetadata.info.contentType,
+              contentEncoding: nftMetadata.info.contentEncoding,
+              contentRaw: Buffer.from(nftMetadata.info.contentBody, 'hex'),
+            });
+            promises.push(this.nftInfoEntityRepository.save(nftInfoEntity));
+          }
+        }
       }
     }
     // save token mint
@@ -275,6 +327,23 @@ export class TxService {
         txOut.isFromMint = false;
         txOut.ownerPubKeyHash = sha256(owner);
         txOut.tokenAmount = amount;
+        txOut.data = toHex(output.data);
+        promises.push(this.txOutEntityRepository.save(txOut));
+      }
+      if (outputTag === ContractLib.OPCAT_CAT721_TAG) {
+        // Todo
+        const outputField = outputFields[outputIndex];
+        const [, owner, _localId] = outputField;
+        const localId = byteString2Int(_localId);
+        const txOut = this.txOutEntityRepository.create();
+        txOut.txid = tx.hash;
+        txOut.outputIndex = outputIndex;
+        txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;
+        txOut.satoshis = BigInt(output.satoshis);
+        txOut.lockingScriptHash = lockingScriptHash;
+        txOut.isFromMint = false;
+        txOut.ownerPubKeyHash = sha256(owner);
+        txOut.tokenAmount = localId
         txOut.data = toHex(output.data);
         promises.push(this.txOutEntityRepository.save(txOut));
       }

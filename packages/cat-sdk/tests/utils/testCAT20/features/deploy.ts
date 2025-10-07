@@ -1,5 +1,5 @@
 import { ExtPsbt, Signer, ChainProvider, UtxoProvider, hexToUint8Array, markSpent } from '@opcat-labs/scrypt-ts-opcat'
-import { CAT20TokenInfo } from '../../../../src/lib/metadata'
+import { CAT20TokenInfo, MetadataSerializer } from '../../../../src/lib/metadata'
 import { checkState } from '../../../../src/utils/check'
 import { CAT20ClosedMinter } from '../../../../src/contracts/cat20/minters/cat20ClosedMinter'
 import { outpoint2ByteString, toTokenOwnerAddress } from '../../../../src/utils'
@@ -11,7 +11,6 @@ import {
   ClosedMinterCAT20Meta,
 } from '../../../../src/contracts/cat20/types'
 import { Postage } from '../../../../src/typeConstants'
-import { CAT20ClosedMinterMetadata } from '../../../../src/contracts/cat20/minters/cat20ClosedMinterMetadata'
 import { ConstantsLib } from '../../../../src/contracts'
 export async function deploy(
   signer: Signer,
@@ -33,9 +32,9 @@ export async function deploy(
   const utxos = await provider.getUtxos(feeAddress)
   checkState(utxos.length > 0, 'Insufficient satoshis')
 
-  const genesisTx = new ExtPsbt({network: await provider.getNetwork()})
+  const genesisTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
-    .change(changeAddress, feeRate, hexToUint8Array(CAT20ClosedMinterMetadata.serializeState(metadata)))
+    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', { metadata })))
     .seal()
 
   const signedGenesisTx = await signer.signPsbt(genesisTx.toHex(), genesisTx.psbtOptions())
@@ -61,13 +60,13 @@ export async function deploy(
   }
 
   closeMinter.state = minterState
-  const deployTx = new ExtPsbt({network: await provider.getNetwork()})
+  const deployTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(genesisUtxo)
     .addContractOutput(
       closeMinter,
       Postage.MINTER_POSTAGE,
     )
-    .change(changeAddress, feeRate, hexToUint8Array(CAT20ClosedMinterMetadata.serializeState(metadata)))
+    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', { metadata })))
     .seal()
 
   const signedDeployTx = await signer.signPsbt(deployTx.toHex(), deployTx.psbtOptions())

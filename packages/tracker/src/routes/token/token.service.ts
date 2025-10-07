@@ -249,6 +249,8 @@ export class TokenService {
         tokenPubKey: tokenInfo.tokenScriptHash,
         blockHeight: LessThanOrEqual(lastProcessedHeight),
       };
+
+      // todo: fix here token_amount is not exists at tokenMint.entity.ts
       if (scope === TokenTypeScope.Fungible) {
         const r = await this.tokenMintRepository
           .createQueryBuilder()

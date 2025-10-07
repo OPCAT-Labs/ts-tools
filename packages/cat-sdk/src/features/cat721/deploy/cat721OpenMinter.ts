@@ -1,14 +1,14 @@
 import { ByteString, ChainProvider, ExtPsbt, hexToUint8Array, markSpent, Signer, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721OpenMinterState, OpenMinterCAT721Meta } from "../../../contracts/cat721/types";
-import { CAT721NftInfo, MetadataSerializer } from "src/lib/metadata";
-import { checkState } from "src/utils/check";
-import { CAT721 } from "src/contracts/cat721/cat721";
-import { CAT721OpenMinter } from "src/contracts/cat721/minters/cat721OpenMinter";
-import { CAT721OpenMinterPeripheral, ContractPeripheral } from "src/utils/contractPeripheral";
-import { CAT721Guard } from "src/contracts/cat721/cat721Guard";
-import { ConstantsLib, TX_INPUT_COUNT_MAX } from "src/contracts/constants";
-import { Postage } from "src/typeConstants";
-import { filterFeeUtxos } from "src/utils";
+import { CAT721NftInfo, MetadataSerializer } from "../../../lib/metadata";
+import { checkState } from "../../../utils/check";
+import { CAT721 } from "../../../contracts/cat721/cat721";
+import { CAT721OpenMinter } from "../../../contracts/cat721/minters/cat721OpenMinter";
+import { CAT721OpenMinterPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral";
+import { CAT721Guard } from "../../../contracts/cat721/cat721Guard";
+import { ConstantsLib, TX_INPUT_COUNT_MAX } from "../../../contracts/constants";
+import { Postage } from "../../../typeConstants";
+import { filterFeeUtxos } from "../../../utils";
 
 
 export async function deployNft(

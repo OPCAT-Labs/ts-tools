@@ -83,33 +83,9 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
     tokenSatoshis: UInt64,
     // backtrace
     backtraceInfo: BacktraceInfo,
-    metadata: OpenMinterCAT20Meta
   ) {
     // back to genesis
     this.backtraceToOutpoint(backtraceInfo, this.genesisOutpoint)
-
-    // check metadata fields are consistent with props
-    if (!this.state.hasMintedBefore) {
-      assert(metadata.premine == this.premine)
-      assert(metadata.preminerAddr == this.preminerAddr)
-      assert(metadata.limit == this.limit)
-
-      assert(this.premine == this.premineCount * this.limit)
-      assert(metadata.max == this.maxCount * this.limit)
-
-      const metadataHash = CAT20OpenMinterMetadata.stateHash(metadata)
-      const metadataOutput = TxHashPreimageUtils.getOutputByteString(backtraceInfo.prevPrevTxPreimage, backtraceInfo.prevTxInput.prevOutputIndex)
-      assert(
-        metadataHash ==
-        slice(
-          metadataOutput,
-          OUTPUT_DATA_HASH_INDEX,
-          OUTPUT_DATA_HASH_INDEX + OUTPUT_DATA_HASH_LEN
-        )
-      )
-    }
-
-    // build curTx outputs
 
     // split to multiple next openMinters
     let minterOutputs = toByteString('')

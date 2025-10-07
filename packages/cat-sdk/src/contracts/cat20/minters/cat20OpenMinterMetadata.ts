@@ -1,10 +1,9 @@
-import { StateLib } from "@opcat-labs/scrypt-ts-opcat";
 import { OpenMinterCAT20Meta } from "../types";
 import { ConstantsLib } from "../../constants";
 
 
-export class CAT20OpenMinterMetadata extends StateLib<OpenMinterCAT20Meta> {
-    
+export class CAT20OpenMinterMetadata {
+
   static createEmptyMetadata(): OpenMinterCAT20Meta {
     return {
       tag: ConstantsLib.OPCAT_CAT20_METADATA_TAG,

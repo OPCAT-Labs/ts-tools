@@ -1,4 +1,4 @@
-import { CAT20TokenInfo } from '../../../lib/metadata'
+import { CAT20TokenInfo, MetadataSerializer } from '../../../lib/metadata'
 import { CAT20OpenMinter } from '../../../contracts/cat20/minters/cat20OpenMinter'
 import { Postage } from '../../../typeConstants'
 import {
@@ -43,9 +43,14 @@ export async function deploy(
   const premineCount = metadata.premine / metadata.limit
   const remainingSupplyCount = maxCount - premineCount
 
-  const genesisPsbt = new ExtPsbt({network: await provider.getNetwork()})
+  const genesisPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
-    .change(changeAddress, feeRate, hexToUint8Array(CAT20OpenMinterMetadata.serializeState(metadata)))
+    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize(
+      'Token',
+      {
+        metadata: metadata,
+      }
+    )))
     .seal()
 
   const signedGenesisPsbt = await signer.signPsbt(genesisPsbt.toHex(), genesisPsbt.psbtOptions())
@@ -75,7 +80,7 @@ export async function deploy(
 
 
   openMinter.state = minterState
-  const deployPsbt = new ExtPsbt({network: await provider.getNetwork()})
+  const deployPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(genesisUtxo)
     .addContractOutput(openMinter, Postage.MINTER_POSTAGE)
     .change(changeAddress, feeRate)
@@ -169,7 +174,7 @@ export function buildMintPsbt(
     throw new Error('Preminer info is required for premining')
   }
 
-  const mintPsbt = new ExtPsbt({network: network})
+  const mintPsbt = new ExtPsbt({ network: network })
 
   const { nextMinterStates, splitAmountList } =
     CAT20OpenMinterPeripheral.createNextMinters(spentMinter, spentMinterState)
@@ -193,34 +198,28 @@ export function buildMintPsbt(
   )
 
   cat20.state = cat20State
-  spentMinter.bindToUtxo({...spentMinterUtxo, txHashPreimage: toHex(new Transaction(spentMinterTxHex).toTxHashPreimage())})
+  spentMinter.bindToUtxo({ ...spentMinterUtxo, txHashPreimage: toHex(new Transaction(spentMinterTxHex).toTxHashPreimage()) })
   mintPsbt
     .addContractOutput(
       cat20,
-      Postage.TOKEN_POSTAGE    
+      Postage.TOKEN_POSTAGE
     )
     .addContractInput(spentMinter, (contract, tx) => {
-        // if the minter has minted before, the metadata is empty to reduce tx size
-        const _metadata = spentMinterState.hasMintedBefore
-          ? CAT20OpenMinterMetadata.createEmptyMetadata()
-          : metadata
-
-        contract.mint(
-          cat20State,
-          splitAmountList,
-          (isPremining
-            ? PubKey(preminerPubKey!)
-            : '') as PubKey,
-          (isPremining
-            ? tx.getSig(minterInputIndex, {
-                publicKey: preminerPubKey,
-              })
-            : '') as Sig,
-          BigInt(Postage.MINTER_POSTAGE),
-          BigInt(Postage.TOKEN_POSTAGE),
-          backTraceInfo,
-          _metadata
-        )
+      contract.mint(
+        cat20State,
+        splitAmountList,
+        (isPremining
+          ? PubKey(preminerPubKey!)
+          : '') as PubKey,
+        (isPremining
+          ? tx.getSig(minterInputIndex, {
+            publicKey: preminerPubKey,
+          })
+          : '') as Sig,
+        BigInt(Postage.MINTER_POSTAGE),
+        BigInt(Postage.TOKEN_POSTAGE),
+        backTraceInfo
+      )
     })
     .spendUTXO(feeUtxos)
     .change(changeAddress, feeRate)

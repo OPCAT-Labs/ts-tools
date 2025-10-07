@@ -88,6 +88,8 @@ export class Constants {
   static readonly CONTENT_TYPE_CAT721_DELEGATE_V1 = 'application/vnd.cat721.delegate.v1+text';
 
   static readonly CONTENT_ENVELOPE = /OP_0 OP_IF 636174 (.+?) OP_ENDIF/;
+
+  static readonly CAT721_DECIMALS = -1;
 }
 
 const _network = process.env.NETWORK || 'mainnet';

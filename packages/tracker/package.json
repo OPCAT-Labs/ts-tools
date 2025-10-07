@@ -38,6 +38,7 @@
     "@nestjs/schedule": "^4.1.1",
     "@nestjs/swagger": "^7.4.0",
     "@nestjs/typeorm": "^10.0.2",
+    "@opcat-labs/cat-sdk": "1.0.3",
     "@opcat-labs/opcat": "^1.0.0",
     "axios": "^1.7.3",
     "bitcoinjs-lib": "7.0.0-rc.0",
