@@ -1,11 +1,8 @@
 import { ByteString, ChainProvider, ExtPsbt, fill, getBackTraceInfo, markSpent, PubKey, sha256, Sig, Signer, toByteString, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT721State, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../../contracts";
-import { CAT721 } from "../../../contracts/cat721/cat721";
-import { CAT721Guard } from "../../../contracts/cat721/cat721Guard";
-import { CAT721StateLib } from "../../../contracts/cat721/cat721StateLib";
-import { Postage } from "../../../typeConstants";
-import { applyFixedArray, filterFeeUtxos } from "../../../utils";
-import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral";
+import { applyFixedArray, filterFeeUtxos } from "../../../../src/utils";
+import { CAT721, CAT721Guard, CAT721State, CAT721StateLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../../../src/contracts";
+import { CAT721GuardPeripheral, ContractPeripheral } from "../../../../src/utils/contractPeripheral";
+import { Postage } from "../../../../src/typeConstants";
 
 
 

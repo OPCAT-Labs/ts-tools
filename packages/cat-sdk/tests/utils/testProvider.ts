@@ -15,7 +15,7 @@ function createTestProvider(): ChainProvider & UtxoProvider {
     }
     return provider
   }
-  const provider = new MempoolProvider('opcat-testnet')
+  const provider = new MempoolProvider(network)
 
   const getUtxosFn = provider.getUtxos.bind(provider)
   provider.getUtxos = async (...args) => {

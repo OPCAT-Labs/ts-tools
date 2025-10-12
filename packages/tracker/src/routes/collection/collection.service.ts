@@ -7,10 +7,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { LRUCache } from 'lru-cache';
 import { NftInfoEntity } from '../../entities/nftInfo.entity';
 import { Constants } from '../../common/constants';
-import { CachedContent, TokenTypeScope } from '../../common/types';
+import { CachedContent, Content, TokenTypeScope } from '../../common/types';
 import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
 import { TxService } from '../tx/tx.service';
 import { MetadataSerializer } from '@opcat-labs/cat-sdk';
+import { toHex } from '@opcat-labs/scrypt-ts-opcat';
 
 @Injectable()
 export class CollectionService {
@@ -34,48 +35,49 @@ export class CollectionService {
     private readonly tokenInfoRepository: Repository<TokenInfoEntity>,
   ) { }
 
+  private async _getCollectionContent(collectionIdOrScriptHash: string): Promise<CachedContent | null> {
+    const collectionContent = await this.tokenInfoRepository.findOne({
+      select: ['rawInfo', 'createdAt'],
+      where: { tokenId: collectionIdOrScriptHash },
+    });
+    let ret: CachedContent | null = null;
+    if (collectionContent) {
+      try {
+        const nftInfo = MetadataSerializer.deserialize(collectionContent.rawInfo);
+        if (nftInfo.type !== 'Collection') {
+          ret = null;
+        } else {
+          const isDelegate = nftInfo.info.delegate?.length > 0 && !nftInfo.info.contentBody;
+          const contentType = isDelegate ? Constants.CONTENT_TYPE_CAT721_DELEGATE_V1 : MetadataSerializer.decodeContenType(nftInfo.info.contentType);
+          const contentRaw = isDelegate ? Buffer.from(nftInfo.info.delegate, 'hex') : Buffer.from(nftInfo.info.contentBody, 'hex');
+          ret = {
+            type: contentType,
+            encoding: nftInfo.info.contentEncoding,
+            raw: contentRaw,
+            lastModified: collectionContent.createdAt,
+          };
+        }
+      } catch (e) {
+        ret = null;
+      }
+
+      if (this.isDelegateContent(ret) && ret) {
+        ret = await this.txService.getDelegateContent(toHex(ret.raw));
+      }
+    }
+    return ret;
+  }
+
   async getCollectionContent(collectionIdOrSriptHash: string): Promise<CachedContent | null> {
     const key = `${collectionIdOrSriptHash}`;
     let cached = CollectionService.nftContentCache.get(key);
     if (!cached) {
-      const collectionInfo = await this.tokenService.getTokenInfoByTokenIdOrTokenScriptHash(
-        collectionIdOrSriptHash,
-        TokenTypeScope.NonFungible,
-      );
-      if (collectionInfo) {
-        const collectionContent = await this.tokenInfoRepository.findOne({
-          select: ['rawInfo', 'createdAt'],
-          where: { tokenId: collectionInfo.tokenId },
-        });
-        if (collectionContent) {
-          try {
-            const nftInfo = MetadataSerializer.deserialize(collectionContent.rawInfo);
-            if (nftInfo.type !== 'Collection') {
-              cached = null;
-            } else {
-              cached = {
-                type: nftInfo.info.contentType,
-                encoding: nftInfo.info.contentEncoding,
-                raw: Buffer.from(nftInfo.info.contentBody, 'hex'),
-                lastModified: collectionContent.createdAt,
-              };
-            }
-          } catch (e) {
-            cached = null;
-          }
-          if (this.isDelegateContent(cached)) {
-            // parse delegate content, no need to cache here
-            return this.txService.getDelegateContent(cached.raw);
-          }
-          // const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
-          if (collectionContent) {
-            // todo: height check
-            CollectionService.nftContentCache.set(key, cached);
-          }
-        }
-      }
+      cached = await this._getCollectionContent(collectionIdOrSriptHash);
     }
-    return cached;
+    if (cached) {
+      CollectionService.nftContentCache.set(key, cached)
+    }
+    return cached
   }
 
   async getNftInfo(collectionIdOrScriptHash: string, localId: bigint) {
@@ -106,39 +108,41 @@ export class CollectionService {
     return cached;
   }
 
+  private async _getNftContent(collectionIdOrScriptHash: string, localId: bigint): Promise<CachedContent | null> {
+    const collectionInfo = await this.tokenService.getTokenInfoByTokenIdOrTokenScriptHash(
+      collectionIdOrScriptHash,
+      TokenTypeScope.NonFungible,
+    );
+    let ret: CachedContent | null = null;
+    if (collectionInfo) {
+      const nftContent = await this.nftInfoRepository.findOne({
+        select: ['mintHeight', 'contentType', 'contentEncoding', 'contentRaw', 'createdAt'],
+        where: { collectionId: collectionInfo.tokenId, localId },
+      });
+      if (nftContent) {
+        ret = {
+          type: nftContent.contentType,
+          encoding: nftContent.contentEncoding,
+          raw: nftContent.contentRaw,
+          lastModified: nftContent.createdAt,
+        };
+        if (this.isDelegateContent(ret)) {
+          // parse delegate content, no need to cache here
+          ret = await this.txService.getDelegateContent(toHex(ret.raw));
+        }
+      }
+    }
+    return ret;
+  }
+
   async getNftContent(collectionIdOrScriptHash: string, localId: bigint): Promise<CachedContent | null> {
     const key = `${collectionIdOrScriptHash}_${localId}`;
     let cached = CollectionService.nftContentCache.get(key);
     if (!cached) {
-      const collectionInfo = await this.tokenService.getTokenInfoByTokenIdOrTokenScriptHash(
-        collectionIdOrScriptHash,
-        TokenTypeScope.NonFungible,
-      );
-      if (collectionInfo) {
-        const nftContent = await this.nftInfoRepository.findOne({
-          select: ['mintHeight', 'contentType', 'contentEncoding', 'contentRaw', 'createdAt'],
-          where: { collectionId: collectionInfo.tokenId, localId },
-        });
-        if (nftContent) {
-          cached = {
-            type: nftContent.contentType,
-            encoding: nftContent.contentEncoding,
-            raw: nftContent.contentRaw,
-            lastModified: nftContent.createdAt,
-          };
-          if (this.isDelegateContent(cached)) {
-            // parse delegate content, no need to cache here
-            return this.txService.getDelegateContent(cached.raw);
-          }
-          const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
-          if (
-            lastProcessedHeight !== null &&
-            lastProcessedHeight - nftContent.mintHeight >= Constants.CACHE_AFTER_N_BLOCKS
-          ) {
-            CollectionService.nftContentCache.set(key, cached);
-          }
-        }
-      }
+      cached = await this._getNftContent(collectionIdOrScriptHash, localId);
+    }
+    if (cached) {
+      CollectionService.nftContentCache.set(key, cached);
     }
     return cached;
   }
@@ -152,7 +156,7 @@ export class CollectionService {
     let utxos = [];
     if (collectionInfo && collectionInfo.tokenScriptHash) {
       const where = {
-        tokenScriptHash: collectionInfo.tokenScriptHash,
+        lockingScriptHash: collectionInfo.tokenScriptHash,
         tokenAmount: localId,
         spendTxid: IsNull(),
         blockHeight: LessThanOrEqual(lastProcessedHeight),

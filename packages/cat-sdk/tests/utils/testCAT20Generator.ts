@@ -2,19 +2,19 @@ import { ByteString, Ripemd160 } from '@opcat-labs/scrypt-ts-opcat'
 import { toTokenOwnerAddress } from '../../src/utils'
 import { CAT20TokenInfo, formatMetadata } from '../../src/lib/metadata'
 import { ExtPsbt, UTXO } from '@opcat-labs/scrypt-ts-opcat'
-import { deploy } from './testCAT20/features/deploy'
+import { deploy } from '../../src/features/cat20/deploy/closedMinter'
 import { testSigner } from './testSigner'
 import {
   CAT20_AMOUNT,
   ClosedMinterCAT20Meta,
 } from '../../src/contracts/cat20/types'
-import { mint } from './testCAT20/features/mint'
+import { mint } from '../../src/features/cat20/mint/closedMinter'
 import { singleSend } from '../../src/features/cat20/send/singleSend'
 import { verifyTx } from '.'
 import { expect } from 'chai'
 import { testProvider } from './testProvider'
-import { CAT20GuardPeripheral } from '../../src/utils/contractPeripheral'
-import { ConstantsLib } from '../../src/contracts'
+import { CAT20GuardPeripheral, ContractPeripheral } from '../../src/utils/contractPeripheral'
+import { CAT20Guard, ConstantsLib } from '../../src/contracts'
 
 export class TestCAT20Generator {
   deployInfo: CAT20TokenInfo<ClosedMinterCAT20Meta> & {
@@ -22,6 +22,14 @@ export class TestCAT20Generator {
     deployTx: ExtPsbt
   }
   minterTx: ExtPsbt
+  
+
+  get minterScriptHash() {
+    return this.deployInfo.minterScriptHash
+  }
+  get guardScriptHash() {
+    return ContractPeripheral.scriptHash(new CAT20Guard())
+  }
 
   constructor(
     deployInfo: CAT20TokenInfo<ClosedMinterCAT20Meta> & {

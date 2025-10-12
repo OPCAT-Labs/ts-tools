@@ -6,6 +6,9 @@ import { CommonService } from '../../services/common/common.service';
 import { Constants } from '../../common/constants';
 import { parseEnvelope } from '../../common/utils';
 import { LRUCache } from 'lru-cache';
+import { Transaction as OpcatTransaction } from '@opcat-labs/opcat';
+import { toHex } from '@opcat-labs/scrypt-ts-opcat';
+import { MetadataSerializer } from '@opcat-labs/cat-sdk';
 
 @Injectable()
 export class TxService {
@@ -20,6 +23,11 @@ export class TxService {
     private readonly tokenService: TokenService,
   ) {}
 
+  /**
+   * todo: fix it to opcat layer tx parsing
+   * @param txid 
+   * @returns 
+   */
   async parseTransferTxTokenOutputs(txid: string) {
     const raw = await this.commonService.getRawTx(txid);
     const tx = Transaction.fromHex(raw);
@@ -67,6 +75,7 @@ export class TxService {
   }
 
   /**
+   * todo: remove it
    * Parse taproot input from tx input, returns null if failed
    */
   private parseTaprootInput(input: TxInput): TaprootPayment | null {
@@ -82,28 +91,32 @@ export class TxService {
     }
   }
 
-  decodeDelegate(delegate: Buffer): { txId: string; inputIndex: number } | undefined {
+  /**
+   * Decode delegate, note: unlike the ordinals spec, the delegate info is not stored in the witness, but stored in the tx output.data
+   * @param delegate 
+   * @returns 
+   */
+  decodeDelegate(delegate: Buffer): { txId: string; outputIndex: number } | undefined {
     try {
       const buf = Buffer.concat([delegate, Buffer.from([0x00, 0x00, 0x00, 0x00])]);
       const txId = buf.subarray(0, 32).reverse().toString('hex');
-      const inputIndex = buf.subarray(32, 36).readUInt32LE();
-      return { txId, inputIndex };
+      const outputIndex = buf.subarray(32, 36).readUInt32LE();
+      return { txId, outputIndex };
     } catch (e) {
       this.logger.error(`decode delegate error: ${e.message}`);
     }
     return undefined;
   }
 
-  public async getDelegateContent(delegate: Buffer): Promise<CachedContent | null> {
-    const { txId, inputIndex } = this.decodeDelegate(delegate) || {};
-    const key = `${txId}_${inputIndex}`;
+  public async getDelegateContent(delegate: string): Promise<CachedContent | null> {
+    const { txId, outputIndex } = this.decodeDelegate(Buffer.from(delegate, 'hex')) || {};
+    const key = `${txId}_${outputIndex}`;
     let cached = TxService.contentCache.get(key);
     if (!cached) {
       const raw = await this.commonService.getRawTx(txId, true);
-      const tx = Transaction.fromHex(raw['hex']);
-      if (inputIndex < tx.ins.length) {
-        const payIn = this.parseTaprootInput(tx.ins[inputIndex]);
-        const content = await this.parseContentEnvelope(payIn?.redeemScript);
+      const tx = new OpcatTransaction(raw['hex']);
+      if (outputIndex < tx.outputs.length) {
+        const content = await this.parseContentEnvelope(toHex(tx.outputs[outputIndex].data));
         if (content) {
           cached = content;
           if (Number(raw['confirmations']) >= Constants.CACHE_AFTER_N_BLOCKS) {
@@ -115,18 +128,17 @@ export class TxService {
     return cached;
   }
 
-  async parseContentEnvelope(redeemScript: Buffer): Promise<CachedContent | null> {
+  async parseContentEnvelope(data: string): Promise<CachedContent | null> {
     try {
-      const asm = script.toASM(redeemScript || Buffer.alloc(0));
-      const match = asm.match(Constants.CONTENT_ENVELOPE);
-      if (match && match[1]) {
-        const data = parseEnvelope(match[1]);
-        if (data && data.content) {
-          if (data.content.type === Constants.CONTENT_TYPE_CAT721_DELEGATE_V1) {
-            return this.getDelegateContent(data.content.raw);
-          }
-          return data.content;
-        }
+      const info = MetadataSerializer.deserialize(data);
+      const isDelegate = info?.info.delegate?.length > 0 && !info?.info.contentBody;
+      if (isDelegate) {
+        return this.getDelegateContent(info.info.delegate)
+      }
+      return {
+        type: MetadataSerializer.decodeContenType(info?.info.contentType),
+        encoding: info?.info.contentEncoding,
+        raw: Buffer.from(info?.info.contentBody, 'hex'),
       }
     } catch (e) {
       this.logger.error(`parse content envelope error, ${e.message}`);

@@ -1,10 +1,12 @@
-import { Controller, Get, Param, Query, Res } from '@nestjs/common';
+import { Controller, Get, Head, Param, Query, Res } from '@nestjs/common';
 import { CollectionService } from './collection.service';
 import { okResponse, errorResponse } from '../../common/utils';
-import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiOkResponse, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { TokenService } from '../token/token.service';
 import { Response } from 'express';
 import { TokenTypeScope } from '../../common/types';
+import { ErrorResponse } from '../token/dto/token-response.dto';
+import { CollectionInfoResponse, NftInfoResponse, CollectionUtxosResponse, NftUtxoResponse, CollectionBalanceResponse, CollectionMintAmountResponse, CollectionCirculationResponse, NftHolderResponse, CollectionNftLocalIdsResponse } from './dto/collection-response.dto';
 
 @Controller('collections')
 export class CollectionController {
@@ -23,6 +25,14 @@ export class CollectionController {
     required: true,
     type: String,
     description: 'collection id or collection address',
+  })
+  @ApiOkResponse({
+    description: 'Collection info retrieved successfully',
+    type: CollectionInfoResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid collection id or collection address',
+    type: ErrorResponse,
   })
   async getCollectionInfo(@Param('collectionIdOrAddr') collectionIdOrAddr: string) {
     try {
@@ -79,30 +89,6 @@ export class CollectionController {
     }
   }
 
-  @Get(':collectionIdOrAddr/localId/:localId')
-  @ApiTags('collection')
-  @ApiOperation({ summary: 'Get nft info' })
-  @ApiParam({
-    name: 'collectionIdOrAddr',
-    required: true,
-    type: String,
-    description: 'collection id or collection address',
-  })
-  @ApiParam({
-    name: 'localId',
-    required: true,
-    type: Number,
-    description: 'nft local id',
-  })
-  async getNftInfo(@Param('collectionIdOrAddr') collectionIdOrAddr: string, @Param('localId') localId: bigint) {
-    try {
-      const nftInfo = await this.collectionService.getNftInfo(collectionIdOrAddr, localId);
-      return okResponse(nftInfo);
-    } catch (e) {
-      return errorResponse(e);
-    }
-  }
-
   @Get(':collectionIdOrAddr/localId/:localId/content')
   @ApiTags('collection')
   @ApiOperation({ summary: 'Get nft content' })
@@ -145,6 +131,38 @@ export class CollectionController {
     }
   }
 
+  @Get(':collectionIdOrAddr/localId/:localId')
+  @ApiTags('collection')
+  @ApiOperation({ summary: 'Get nft info' })
+  @ApiParam({
+    name: 'collectionIdOrAddr',
+    required: true,
+    type: String,
+    description: 'collection id or collection address',
+  })
+  @ApiParam({
+    name: 'localId',
+    required: true,
+    type: Number,
+    description: 'nft local id',
+  })
+  @ApiOkResponse({
+    description: 'NFT info retrieved successfully',
+    type: NftInfoResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid collection id or collection address or nft local id',
+    type: ErrorResponse,
+  })
+  async getNftInfo(@Param('collectionIdOrAddr') collectionIdOrAddr: string, @Param('localId') localId: bigint) {
+    try {
+      const nftInfo = await this.collectionService.getNftInfo(collectionIdOrAddr, localId);
+      return okResponse(nftInfo);
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
+
   @Get(':collectionIdOrAddr/localId/:localId/utxo')
   @ApiTags('collection')
   @ApiOperation({ summary: 'Get nft utxo' })
@@ -159,6 +177,14 @@ export class CollectionController {
     required: true,
     type: Number,
     description: 'nft local id',
+  })
+  @ApiOkResponse({
+    description: 'NFT UTXO retrieved successfully',
+    type: NftUtxoResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid collection id or collection address or nft local id',
+    type: ErrorResponse,
   })
   async getNftUtxo(@Param('collectionIdOrAddr') collectionIdOrAddr: string, @Param('localId') localId: bigint) {
     try {
@@ -196,6 +222,14 @@ export class CollectionController {
     type: Number,
     description: 'paging limit',
   })
+  @ApiOkResponse({
+    description: 'Collection UTXOs retrieved successfully',
+    type: CollectionUtxosResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid collection id or collection address or collection owner address or public key hash',
+    type: ErrorResponse,
+  })
   async getCollectionUtxosByOwnerAddress(
     @Param('collectionIdOrAddr') collectionIdOrAddr: string,
     @Param('ownerAddrOrPkh') ownerAddrOrPkh: string,
@@ -216,6 +250,48 @@ export class CollectionController {
     }
   }
 
+  @Get(':collectionIdOrAddr/addresses/:ownerAddrOrPkh/localIds')
+  @ApiTags('collection')
+  @ApiOperation({ summary: 'Get collection nft local ids by owner address' })
+  @ApiParam({
+    name: 'collectionIdOrAddr',
+    required: true,
+    type: String,
+    description: 'collection id or collection address',
+  })
+  @ApiParam({
+    name: 'ownerAddrOrPkh',
+    required: true,
+    type: String,
+    description: 'collection owner address or public key hash',
+  })
+  @ApiOkResponse({
+    description: 'Collection NFT local IDs retrieved successfully',
+    type: CollectionNftLocalIdsResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid collection id or collection address or collection owner address or public key hash',
+    type: ErrorResponse,
+  })
+  async getCollectionNftLocalIdsByOwnerAddress(
+    @Param('collectionIdOrAddr') collectionIdOrAddr: string,
+    @Param('ownerAddrOrPkh') ownerAddrOrPkh: string,
+  ) { 
+    try {
+      const localIds = await this.tokenService.getTokenAmountsByOwnerAddress(
+        collectionIdOrAddr,
+        TokenTypeScope.NonFungible,
+        ownerAddrOrPkh,
+      );
+      return okResponse({
+        localIds: localIds.amounts,
+        trackerBlockHeight: localIds.trackerBlockHeight,
+      });
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
+
   @Get(':collectionIdOrAddr/addresses/:ownerAddrOrPkh/nftAmount')
   @ApiTags('collection')
   @ApiOperation({ summary: 'Get collection nft amount by owner address' })
@@ -230,6 +306,14 @@ export class CollectionController {
     required: true,
     type: String,
     description: 'collection owner address or public key hash',
+  })
+  @ApiOkResponse({
+    description: 'Collection NFT balance retrieved successfully',
+    type: CollectionBalanceResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid collection id or collection address or collection owner address or public key hash',
+    type: ErrorResponse,
   })
   async getCollectionBalanceByOwnerAddress(
     @Param('collectionIdOrAddr') collectionIdOrAddr: string,
@@ -264,6 +348,14 @@ export class CollectionController {
     type: String,
     description: 'collection id or collection address',
   })
+  @ApiOkResponse({
+    description: 'Collection mint amount retrieved successfully',
+    type: CollectionMintAmountResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid collection id or collection address',
+    type: ErrorResponse,
+  })
   async getCollectionMintAmount(@Param('collectionIdOrAddr') collectionIdOrAddr: string) {
     try {
       const mintCount = await this.tokenService.getTokenMintAmount(collectionIdOrAddr, TokenTypeScope.NonFungible);
@@ -283,6 +375,14 @@ export class CollectionController {
     required: true,
     type: String,
     description: 'collection id or collection address',
+  })
+  @ApiOkResponse({
+    description: 'Collection circulation retrieved successfully',
+    type: CollectionCirculationResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid collection id or collection address',
+    type: ErrorResponse,
   })
   async getCollectionCirculation(@Param('collectionIdOrAddr') collectionIdOrAddr: string) {
     try {
@@ -315,6 +415,14 @@ export class CollectionController {
     required: false,
     type: Number,
     description: 'paging limit',
+  })
+  @ApiOkResponse({
+    description: 'Collection holders retrieved successfully',
+    type: NftHolderResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid collection id or collection address',
+    type: ErrorResponse,
   })
   async getCollectionHolders(
     @Param('collectionIdOrAddr') collectionIdOrAddr: string,

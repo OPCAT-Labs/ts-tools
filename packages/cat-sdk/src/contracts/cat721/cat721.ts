@@ -1,7 +1,6 @@
 import { prop, ByteString, SmartContract, method, BacktraceInfo, assert, ContextUtils, len, sha256, SpentScriptHashes } from "@opcat-labs/scrypt-ts-opcat";
 import { ContractUnlockArgs } from "../types";
 import { CAT721GuardConstState, CAT721State } from "./types";
-import { CAT721StateLib } from "./cat721StateLib";
 import { CAT721GuardStateLib } from "./cat721GuardStateLib";
 import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN } from "../constants";
 import { OwnerUtils } from "../utils/ownerUtils";
@@ -45,11 +44,11 @@ export class CAT721 extends SmartContract<CAT721State> {
 
     if (len(this.state.ownerAddr) == OWNER_ADDR_CONTRACT_HASH_BYTE_LEN) {
       // unlock token owned by contract script
-      assert(unlockArgs.contractInputIndex >= 0n && unlockArgs.contractInputIndex < this.ctx.inputCount)
-      assert(this.state.ownerAddr == ContextUtils.getSpentScriptHash(this.ctx.spentScriptHashes, unlockArgs.contractInputIndex))
+      assert(unlockArgs.contractInputIndex >= 0n && unlockArgs.contractInputIndex < this.ctx.inputCount, 'contract input index is invalid')
+      assert(this.state.ownerAddr == ContextUtils.getSpentScriptHash(this.ctx.spentScriptHashes, unlockArgs.contractInputIndex), 'contract input script is invalid')
     } else {
       OwnerUtils.checkUserOwner(unlockArgs.userPubKey, this.state.ownerAddr);
-      assert(this.checkSig(unlockArgs.userSig, unlockArgs.userPubKey))
+      assert(this.checkSig(unlockArgs.userSig, unlockArgs.userPubKey), 'user signature check failed')
     }
   }
 
@@ -63,13 +62,13 @@ export class CAT721 extends SmartContract<CAT721State> {
     t_spentDataHashesCtx: SpentDataHashes,
   ): void {
     // guard state contains current token state hash
-    assert(ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndex) == this.guardScriptHash)
-    assert(ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndex) == CAT721GuardStateLib.stateHash(guardState))
+    assert(ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndex) == this.guardScriptHash, 'guard script hash is invalid')
+    assert(ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndex) == CAT721GuardStateLib.stateHash(guardState), 'guard state hash is invalid')
 
     // guard state contains current token script
     // and the corresponding value of array nftScriptHashes and nftScriptIndexes is correct
     const cat721ScriptIndex = guardState.nftScriptIndexes[Number(t_cat721InputIndex)];
-    assert(guardState.nftScriptHashes[Number(cat721ScriptIndex)] == t_cat721ScriptHash)
+    assert(guardState.nftScriptHashes[Number(cat721ScriptIndex)] == t_cat721ScriptHash, 'nft script hash is invalid')
   }
 
 }

@@ -2,7 +2,7 @@
   "diff": true,
   "require": "tsx",
   "extensions": ["ts"],
-  "spec": ["./tests/features/cat20/burn/burn.test.ts"],
+  "spec": ["./tests/**/multi.test.ts"],
   "package": "./package.json",
   "reporter": "spec",
   "slow": "75",

@@ -5,10 +5,10 @@ import { loadAllArtifacts } from "../utils"
 import { toTokenOwnerAddress } from "../../../../src/utils"
 import { ByteString, sha256, UTXO } from "@opcat-labs/scrypt-ts-opcat"
 import { testProvider } from "../../../utils/testProvider"
-import { contractSendNft } from "../../../../src/features/cat721/send/contractSend"
 import { verifyTx } from "../../../utils"
 import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
+import { contractSendNft } from "../../../utils/testCAT721/features/contractSend";
 use(chaiAsPromised)
 
 describe('Test the feature `send` for `CAT721`', () => {

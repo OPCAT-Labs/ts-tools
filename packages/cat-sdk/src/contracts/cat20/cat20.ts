@@ -56,12 +56,12 @@ export class CAT20 extends SmartContract<CAT20State> {
 
     if (len(this.state.ownerAddr) == OWNER_ADDR_CONTRACT_HASH_BYTE_LEN) {
       // unlock token owned by contract script
-      assert(unlockArgs.contractInputIndex >= 0n && unlockArgs.contractInputIndex < this.ctx.inputCount)
-      assert(this.state.ownerAddr == ContextUtils.getSpentScriptHash(this.ctx.spentScriptHashes, unlockArgs.contractInputIndex))
+      assert(unlockArgs.contractInputIndex >= 0n && unlockArgs.contractInputIndex < this.ctx.inputCount, 'contract input index is invalid')
+      assert(this.state.ownerAddr == ContextUtils.getSpentScriptHash(this.ctx.spentScriptHashes, unlockArgs.contractInputIndex), 'contract input script is invalid')
     } else {
       // unlock token owned by user key
       OwnerUtils.checkUserOwner(unlockArgs.userPubKey, this.state.ownerAddr)
-      assert(this.checkSig(unlockArgs.userSig, unlockArgs.userPubKey))
+      assert(this.checkSig(unlockArgs.userSig, unlockArgs.userPubKey), 'user signature check failed')
     }
   }
 
@@ -76,8 +76,8 @@ export class CAT20 extends SmartContract<CAT20State> {
   ): void {
 
     // 1. check there is a guard input by shPreimage.hashSpentScriptHashes
-    assert(ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndexVal) == this.guardScriptHash)
-    assert(ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndexVal) == CAT20GuardStateLib.stateHash(guardState))
+    assert(ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndexVal) == this.guardScriptHash, 'guard script hash is invalid')
+    assert(ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndexVal) == CAT20GuardStateLib.stateHash(guardState), 'guard state hash is invalid')
 
 
     // 2. check the guard input is validating current input by checking guard state contains current token script
@@ -86,7 +86,7 @@ export class CAT20 extends SmartContract<CAT20State> {
       guardState.tokenScriptIndexes[Number(t_cat20InputIndexVal)]
     assert(
       guardState.tokenScriptHashes[Number(tokenScriptIndex)] ==
-      t_cat20ScriptHash
+      t_cat20ScriptHash, 'token script hash is invalid'
     )
   }
 }

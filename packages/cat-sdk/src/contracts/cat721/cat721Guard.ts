@@ -49,13 +49,13 @@ export class CAT721Guard extends SmartContract<CAT721GuardConstState> {
         // ensure there are no placeholders between valid nft scripts in curState.nftScriptHashes
         for (let i = 0; i < NFT_GUARD_COLLECTION_TYPE_MAX; i++) {
             if (i < Number(inputNftTypes)) {
-                assert(this.state.nftScriptHashes[i] != nftScriptPlaceholders[i])
-                assert(len(this.state.nftScriptHashes[i]) == OUTPUT_LOCKING_SCRIPT_HASH_LEN)
+                assert(this.state.nftScriptHashes[i] != nftScriptPlaceholders[i], 'nft script hash is invalid, should not be placeholder')
+                assert(len(this.state.nftScriptHashes[i]) == OUTPUT_LOCKING_SCRIPT_HASH_LEN, 'nft script hash length is invalid')
             } else {
-                assert(this.state.nftScriptHashes[i] == nftScriptPlaceholders[i])
+                assert(this.state.nftScriptHashes[i] == nftScriptPlaceholders[i], 'nft script hash is invalid, should be placeholder')
             }
         }
-        assert(inputNftTypes > 0n);
+        assert(inputNftTypes > 0n, 'input nft types should be greater than 0');
 
         // go through input nfts;
         let nftScriptIndexMax = -1n;
@@ -70,9 +70,9 @@ export class CAT721Guard extends SmartContract<CAT721GuardConstState> {
                 if (nftScriptIndex != -1n) {
                     // this is a nft input
                     const nftScriptHash = this.state.nftScriptHashes[Number(nftScriptIndex)];
-                    assert(nftScriptHash == ContextUtils.getSpentScriptHash(this.ctx.spentScriptHashes, BigInt(i)));
+                    assert(nftScriptHash == ContextUtils.getSpentScriptHash(this.ctx.spentScriptHashes, BigInt(i)), 'nft script hash is invalid');
                     CAT721StateLib.checkState(cat721States[Number(i)]);
-                    assert(ContextUtils.getSpentDataHash(this.ctx.spentDataHashes, BigInt(i)) == CAT721StateLib.stateHash(cat721States[Number(i)]));
+                    assert(ContextUtils.getSpentDataHash(this.ctx.spentDataHashes, BigInt(i)) == CAT721StateLib.stateHash(cat721States[Number(i)]), 'nft state hash is invalid');
                     nftScriptIndexMax = nftScriptIndex > nftScriptIndexMax ? nftScriptIndex : nftScriptIndexMax;
                     if (!this.state.nftBurnMasks[Number(i)]) {
                         // this nft is not burned
@@ -81,37 +81,37 @@ export class CAT721Guard extends SmartContract<CAT721GuardConstState> {
                     }
                 } else {
                     // this is a non-nft input
-                    assert(!this.state.nftBurnMasks[Number(i)]);
+                    assert(!this.state.nftBurnMasks[Number(i)], 'nft burn mask is invalid');
                 }
             } else {
-                assert(this.state.nftScriptIndexes[Number(i)] == -1n);
+                assert(this.state.nftScriptIndexes[Number(i)] == -1n, 'nft script index is invalid');
             }
         }
-        assert(nftScriptIndexMax >= 0n && nftScriptIndexMax == inputNftTypes - 1n);
+        assert(nftScriptIndexMax >= 0n && nftScriptIndexMax == inputNftTypes - 1n, 'nft script index max is invalid');
 
         // build curTx outputs
-        assert(outputCount >= 0n && outputCount <= TX_OUTPUT_COUNT_MAX);
+        assert(outputCount >= 0n && outputCount <= TX_OUTPUT_COUNT_MAX, 'output count is invalid');
         let outputNftCount = 0n;
         let outputs = toByteString('');
         for (let i = 0n; i < TX_OUTPUT_COUNT_MAX; i++) {
             if (i < outputCount) {
                 const ownerAddrOrScriptHash = ownerAddrOrScriptHashes[Number(i)];
-                assert(len(ownerAddrOrScriptHash) > 0n);
+                assert(len(ownerAddrOrScriptHash) > 0n, 'owner addr or script hash is invalid, should not be empty');
                 const nftScriptIndex = nftScriptHashIndexes[Number(i)];
-                assert(nftScriptIndex < inputNftTypes);
+                assert(nftScriptIndex < inputNftTypes, 'nft script index is invalid');
                 if (nftScriptIndex != -1n) {
                     // this is an nft output
                     const nftScriptHash = this.state.nftScriptHashes[Number(nftScriptIndex)];
                     const localId = outputLocalIds[Number(outputNftCount)];
-                    assert(localId >= 0n);
-                    assert(nextNfts[Number(i)] == nftScriptHash + hash160(intToByteString(localId)));
+                    assert(localId >= 0n, 'local id is invalid');
+                    assert(nextNfts[Number(outputNftCount)] == nftScriptHash + hash160(intToByteString(localId)), 'next nft is invalid');
                     outputNftCount = outputNftCount + 1n;
                     const nftStateHash = CAT721StateLib.stateHash({
                         tag: ConstantsLib.OPCAT_CAT721_TAG,
                         ownerAddr: ownerAddrOrScriptHash,
                         localId: localId,
                     });
-                    assert(nextStateHashes[Number(i)] == nftStateHash);
+                    assert(nextStateHashes[Number(i)] == nftStateHash, 'next state hash is invalid');
                     outputs += TxUtils.buildDataOutput(
                         this.state.nftScriptHashes[Number(nftScriptIndex)],
                         outputSatoshis[Number(i)],
@@ -121,7 +121,7 @@ export class CAT721Guard extends SmartContract<CAT721GuardConstState> {
                     // this is a non-nft output
                     // locking script of this non-nft output cannot be the same as any nft script in curState
                     for (let j = 0; j < NFT_GUARD_COLLECTION_TYPE_MAX; j++) {
-                        assert(ownerAddrOrScriptHash != this.state.nftScriptHashes[j])
+                        assert(ownerAddrOrScriptHash != this.state.nftScriptHashes[j], 'owner addr or script hash is invalid');
                     }
                     outputs += TxUtils.buildDataOutput(
                         ownerAddrOrScriptHash,
@@ -130,22 +130,22 @@ export class CAT721Guard extends SmartContract<CAT721GuardConstState> {
                     )
                 }
             } else {
-                assert(len(ownerAddrOrScriptHashes[Number(i)]) == 0n)
+                assert(len(ownerAddrOrScriptHashes[Number(i)]) == 0n, 'owner addr or script hash is invalid, should be 0');
                 assert(nftScriptHashIndexes[Number(i)] == -1n)
-                assert(outputLocalIds[Number(i)] == -1n)
-                assert(nextStateHashes[Number(i)] == toByteString(''))
-                assert(outputSatoshis[Number(i)] == 0n)
+                assert(outputLocalIds[Number(i)] == -1n, 'output local id is invalid, should be -1');
+                assert(nextStateHashes[Number(i)] == toByteString(''), 'next state hash is invalid, should be empty');
+                assert(outputSatoshis[Number(i)] == 0n, 'output satoshis is invalid, should be 0');
             }
         }
         // ensure outputLocalIds is default value when there are no more output nfts
         for (let i = 0; i < TX_OUTPUT_COUNT_MAX; i++) {
             if (i >= outputNftCount) {
-                assert(outputLocalIds[Number(i)] == -1n);
+                assert(outputLocalIds[Number(i)] == -1n, 'output local id is invalid, should be -1');
             }
         }
 
         // check nft consistency of inputs and outputs
-        assert(nextNftCount == outputNftCount);
+        assert(nextNftCount == outputNftCount, 'next nft count is invalid');
 
         // confine curTx outputs
         assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');

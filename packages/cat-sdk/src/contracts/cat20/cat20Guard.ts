@@ -78,15 +78,15 @@ export class CAT20Guard extends SmartContract<CAT20GuardConstState> {
         // ensure there are no placeholders between valid token scripts in curState.tokenScriptHashes
         for (let i = 0; i < GUARD_TOKEN_TYPE_MAX; i++) {
             if (i < Number(inputTokenTypes)) {
-                assert(this.state.tokenScriptHashes[i] != tokenScriptPlaceholders[i])
+                assert(this.state.tokenScriptHashes[i] != tokenScriptPlaceholders[i], 'token script hash is invalid, should not be placeholder')
                 assert(
-                    len(this.state.tokenScriptHashes[i]) == OUTPUT_LOCKING_SCRIPT_HASH_LEN
+                    len(this.state.tokenScriptHashes[i]) == OUTPUT_LOCKING_SCRIPT_HASH_LEN, 'token script hash length is invalid'
                 )
             } else {
-                assert(this.state.tokenScriptHashes[i] == tokenScriptPlaceholders[i])
+                assert(this.state.tokenScriptHashes[i] == tokenScriptPlaceholders[i], 'token script hash is invalid, should be placeholder')
             }
         }
-        assert(inputTokenTypes > 0n)
+        assert(inputTokenTypes > 0n, 'input token types should be greater than 0')
 
         // inputTokenTypes here is not trustable yet
         // user could append token scripts in curState.tokenScripts that are not used in curTx inputs
@@ -98,14 +98,14 @@ export class CAT20Guard extends SmartContract<CAT20GuardConstState> {
         for (let i = 0; i < TX_INPUT_COUNT_MAX; i++) {
             const tokenScriptIndex = this.state.tokenScriptIndexes[Number(i)]
             if (i < inputCount) {
-                assert(tokenScriptIndex < inputTokenTypes)
+                assert(tokenScriptIndex < inputTokenTypes, 'token script index is invalid')
                 if (tokenScriptIndex != -1n) {
                     // this is a token input
                     const tokenScriptHash =
                         this.state.tokenScriptHashes[Number(tokenScriptIndex)]
-                    assert(tokenScriptHash == ContextUtils.getSpentScriptHash(this.ctx.spentScriptHashes, BigInt(i)))
+                    assert(tokenScriptHash == ContextUtils.getSpentScriptHash(this.ctx.spentScriptHashes, BigInt(i)), 'token script hash is invalid')
                     CAT20StateLib.checkState(cat20States[i])
-                    assert(ContextUtils.getSpentDataHash(this.ctx.spentDataHashes, BigInt(i)) == CAT20StateLib.stateHash(cat20States[i]))
+                    assert(ContextUtils.getSpentDataHash(this.ctx.spentDataHashes, BigInt(i)) == CAT20StateLib.stateHash(cat20States[i]), 'token state hash is invalid')
                     sumInputTokens[Number(tokenScriptIndex)] = SafeMath.add(
                         sumInputTokens[Number(tokenScriptIndex)],
                         cat20States[i].amount
@@ -116,31 +116,31 @@ export class CAT20Guard extends SmartContract<CAT20GuardConstState> {
                             : tokenScriptIndexMax
                 }
             } else {
-                assert(this.state.tokenScriptIndexes[i] == -1n)
+                assert(this.state.tokenScriptIndexes[i] == -1n, 'token script index is invalid')
             }
         }
         // verify inputTokenTypes by tokenScriptIndexMax
         // tokenScriptIndexMax is trustable because it is calculated after going through all the curTx inputs
         // this also ensures that there is at least one token input in curTx
         assert(
-            tokenScriptIndexMax >= 0n && tokenScriptIndexMax == inputTokenTypes - 1n
+            tokenScriptIndexMax >= 0n && tokenScriptIndexMax == inputTokenTypes - 1n, 'token script index max is invalid'
         )
 
         // sum token output amount, data comes from outputTokens passed in by the user
         // and build curTx outputs and stateRoots as well
-        assert(outputCount >= 0n && outputCount <= TX_OUTPUT_COUNT_MAX)
+        assert(outputCount >= 0n && outputCount <= TX_OUTPUT_COUNT_MAX, 'output count is invalid')
         const sumOutputTokens = fill(0n, GUARD_TOKEN_TYPE_MAX)
         let outputs = toByteString('')
         for (let i = 0; i < TX_OUTPUT_COUNT_MAX; i++) {
             if (i < outputCount) {
                 const ownerAddrOrScriptHash = ownerAddrOrScriptHashes[i]
-                assert(len(ownerAddrOrScriptHash) > 0n)
+                assert(len(ownerAddrOrScriptHash) > 0n, 'owner addr or script hash is invalid, should not be empty')
                 const tokenScriptHashIndex = tokenScriptHashIndexes[i]
-                assert(tokenScriptHashIndex < inputTokenTypes)
+                assert(tokenScriptHashIndex < inputTokenTypes, 'token script hash index is invalid')
                 if (tokenScriptHashIndex != -1n) {
                     // this is a token output
                     const tokenAmount = outputTokens[i]
-                    assert(tokenAmount > 0n)
+                    assert(tokenAmount > 0n, 'token amount is invalid')
                     sumOutputTokens[Number(tokenScriptHashIndex)] = SafeMath.add(
                         sumOutputTokens[Number(tokenScriptHashIndex)],
                         tokenAmount
@@ -150,7 +150,7 @@ export class CAT20Guard extends SmartContract<CAT20GuardConstState> {
                         ownerAddr: ownerAddrOrScriptHash,
                         amount: tokenAmount,
                     })
-                    assert(nextStateHashes[i] == tokenStateHash)
+                    assert(nextStateHashes[i] == tokenStateHash, 'next state hash is invalid')
                     const tokenScriptHash =
                         this.state.tokenScriptHashes[Number(tokenScriptHashIndex)]
                     outputs += TxUtils.buildDataOutput(
@@ -160,10 +160,10 @@ export class CAT20Guard extends SmartContract<CAT20GuardConstState> {
                     )
                 } else {
                     // this is a non-token output
-                    assert(outputTokens[i] == 0n)
+                    assert(outputTokens[i] == 0n, 'output tokens is invalid')
                     // locking script of this non-token output cannot be the same as any token script in curState
                     for (let j = 0; j < GUARD_TOKEN_TYPE_MAX; j++) {
-                        assert(ownerAddrOrScriptHash != this.state.tokenScriptHashes[j])
+                        assert(ownerAddrOrScriptHash != this.state.tokenScriptHashes[j], 'owner addr or script hash is invalid')
                     }
                     outputs += TxUtils.buildDataOutput(
                         ownerAddrOrScriptHash,
@@ -172,33 +172,34 @@ export class CAT20Guard extends SmartContract<CAT20GuardConstState> {
                     )
                 }
             } else {
-                assert(len(ownerAddrOrScriptHashes[i]) == 0n)
-                assert(tokenScriptHashIndexes[i] == -1n)
-                assert(outputTokens[i] == 0n)
-                assert(nextStateHashes[i] == toByteString(''))
-                assert(outputSatoshis[i] == 0n)
+                assert(len(ownerAddrOrScriptHashes[i]) == 0n, 'owner addr or script hash is invalid, should be 0')
+                assert(tokenScriptHashIndexes[i] == -1n, 'token script hash index is invalid, should be -1')
+                assert(outputTokens[i] == 0n, 'output tokens is invalid, should be 0')
+                assert(nextStateHashes[i] == toByteString(''), 'next state hash is invalid, should be empty')
+                assert(outputSatoshis[i] == 0n, 'output satoshis is invalid, should be 0')
             }
         }
 
         // check token amount consistency of inputs and outputs
         for (let i = 0; i < GUARD_TOKEN_TYPE_MAX; i++) {
-            assert(sumInputTokens[i] == this.state.tokenAmounts[i])
+            assert(sumInputTokens[i] == this.state.tokenAmounts[i], 'sum input tokens is invalid, should be equal to token amount')
             assert(
                 sumInputTokens[i] ==
-                SafeMath.add(sumOutputTokens[i], this.state.tokenBurnAmounts[i])
-            )
+                SafeMath.add(sumOutputTokens[i], this.state.tokenBurnAmounts[i]),
+                'sum input tokens is invalid, should be equal to sum output tokens plus sum burn tokens'
+            );
             if (i < Number(inputTokenTypes)) {
-                assert(sumInputTokens[i] > 0n)
+                assert(sumInputTokens[i] > 0n, 'sum input tokens is invalid, should be greater than 0')
             } else {
-                assert(sumInputTokens[i] == 0n)
-                assert(sumOutputTokens[i] == 0n)
+                assert(sumInputTokens[i] == 0n, 'sum input tokens is invalid, should be 0')
+                assert(sumOutputTokens[i] == 0n, 'sum output tokens is invalid, should be 0')
                 // no need to check below two lines here, but we keep them here for better readability
-                assert(this.state.tokenAmounts[i] == 0n)
-                assert(this.state.tokenBurnAmounts[i] == 0n)
+                assert(this.state.tokenAmounts[i] == 0n, 'token amount is invalid, should be 0')
+                assert(this.state.tokenBurnAmounts[i] == 0n, 'token burn amount is invalid, should be 0')
             }
         }
 
         // confine curTx outputs
-        assert(this.checkOutputs(outputs))
+        assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
     }
 }

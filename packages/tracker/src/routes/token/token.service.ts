@@ -118,6 +118,23 @@ export class TokenService {
     };
   }
 
+  async getTokenAmountsByOwnerAddress(
+    tokenIdOrTokenAddr: string,
+    scope: TokenTypeScope,
+    ownerAddrOrPkh: string,
+  ) {
+    const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
+    const tokenInfo = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenAddr, scope);
+    let amounts: TxOutEntity[] = [];
+    if (tokenInfo) {
+      amounts = await this.queryTokenAmountsByOwnerAddress(lastProcessedHeight, ownerAddrOrPkh, tokenInfo);
+    }
+    return {
+      trackerBlockHeight: lastProcessedHeight,
+      amounts: amounts.map((amount) => amount.tokenAmount.toString()),
+    }
+  }
+
   async getTokenBalanceByOwnerAddress(
     tokenIdOrTokenAddr: string,
     scope: TokenTypeScope.Fungible | TokenTypeScope.NonFungible,
@@ -144,7 +161,6 @@ export class TokenService {
     limit: number | null = null,
   ) {
     const ownerPubKeyHash = ownerAddressToPubKeyHash(ownerAddrOrPkh);
-    console.log('ownerPubKeyHash: ', ownerPubKeyHash);
     if (lastProcessedHeight === null || (tokenInfo && !tokenInfo.tokenScriptHash) || !ownerPubKeyHash) {
       return [];
     }
@@ -163,6 +179,27 @@ export class TokenService {
       take: limit,
     });
   }
+
+  async queryTokenAmountsByOwnerAddress(
+    lastProcessedHeight: number,
+    ownerAddrOrPkh: string,
+    tokenInfo: TokenInfoEntity,
+  ) {
+    const ownerPubKeyHash = ownerAddressToPubKeyHash(ownerAddrOrPkh);
+    if (lastProcessedHeight === null || (tokenInfo && !tokenInfo.tokenScriptHash) || !ownerPubKeyHash) {
+      return [];
+    }
+    const where = {
+      ownerPubKeyHash,
+      spendTxid: IsNull(),
+      lockingScriptHash: tokenInfo.tokenScriptHash,
+    };
+    return this.txOutRepository.find({
+      select: ['tokenAmount'],
+      where,
+    });
+  }
+
 
   async queryTokenBalancesByOwnerAddress(
     lastProcessedHeight: number,
@@ -281,7 +318,7 @@ export class TokenService {
     let amount = '0';
     if (tokenInfo && tokenInfo.tokenScriptHash && lastProcessedHeight) {
       const where = {
-        xOnlyPubKey: tokenInfo.tokenScriptHash,
+        lockingScriptHash: tokenInfo.tokenScriptHash,
         spendTxid: IsNull(),
       };
       if (scope === TokenTypeScope.Fungible) {

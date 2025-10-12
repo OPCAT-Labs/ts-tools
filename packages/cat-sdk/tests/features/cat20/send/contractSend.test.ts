@@ -10,13 +10,13 @@ import { testSigner } from '../../../utils/testSigner'
 import { toTokenOwnerAddress } from '../../../../src/utils'
 import { ContractPeripheral } from '../../../../src/utils/contractPeripheral'
 import { CAT20OpenMinter } from '../../../../src/contracts/cat20/minters/cat20OpenMinter'
-import { contractSend } from '../../../../src/features/cat20/send/contractSend'
 import { testProvider } from '../../../utils/testProvider'
 import { CAT20_AMOUNT } from '../../../../src/contracts/cat20/types'
 import { verifyTx } from '../../../utils'
 import { formatMetadata } from '../../../../src/lib/metadata'
 import { CAT20 } from '../../../../src/contracts/cat20/cat20'
 import { ConstantsLib } from '../../../../src/contracts'
+import {contractSend} from '../../../utils/testCAT20/features/contractSend'
 
 use(chaiAsPromised)
 

@@ -128,6 +128,9 @@ export class MetadataSerializer {
 
     this.pushOrdinalTag(res, 'CONTENT_BODY')
     const dataChunks = this.chunks(Array.from(Buffer.from(content.body, 'hex')), this.LIMIT)
+    if (dataChunks.length === 0) { 
+      throw new Error('Content body is empty or its not a hex string')
+    }
     // if the contentBody exceeds the limit of 520, it is split into multiple chunks.
     for (const chunk of dataChunks) {
       res.push(this.toPushData(Buffer.from(chunk)))
@@ -165,6 +168,18 @@ export class MetadataSerializer {
         break
     }
     return Buffer.concat(res).toString('hex')
+  }
+
+  static decodeContenType(contentType: string) {
+    if (!contentType) {
+      return ''
+    }
+    try {
+      // if the contentType is hex, return the original contentType
+      return Buffer.from(contentType, 'hex').toString('utf-8')
+    } catch (e) {
+      return contentType
+    }
   }
 
 

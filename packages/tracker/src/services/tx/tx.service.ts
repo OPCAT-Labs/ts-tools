@@ -103,7 +103,7 @@ export class TxService {
         this.logger.log(`[OK] genesis tx ${tx.id}, type: ${inputMetadatas[0]?.type}`);
       }
       //
-      if (inputTags[0] === ContractLib.OPCAT_CAT20_MINTER_TAG) {
+      if (inputTags[0] === ContractLib.OPCAT_CAT20_MINTER_TAG || inputTags[0] === ContractLib.OPCAT_CAT721_MINTER_TAG) {
         // search minter in inputs
         isSaveTx = isSaveTx || (await this.processMintTx(tx, outputTags, inputMetadatas, blockHeader, outputFields));
         this.logger.log(`[OK] mint tx ${tx.id}`);
@@ -181,14 +181,12 @@ export class TxService {
       _symbol = inputMetadata.info.metadata.symbol;
       _decimals = BigInt(Constants.CAT721_DECIMALS);
     }
-    const name = Buffer.from(_name, 'hex').toString('utf-8');
-    const symbol = Buffer.from(_symbol, 'hex').toString('utf-8');
     const decimals = Number(_decimals);
     const tokenInfoEntity = this.tokenInfoEntityRepository.create({
       tokenId,
       genesisTxid: tx.hash,
-      name: name,
-      symbol: symbol,
+      name: _name,
+      symbol: _symbol,
       decimals: decimals,
       rawInfo: toHex(inputGenesis.data),
     });
@@ -259,6 +257,11 @@ export class TxService {
           tokenInfoToUpdate.tokenScriptHash = lockingScriptHash;
           promises.push(this.tokenInfoEntityRepository.save(tokenInfoToUpdate));
         }
+        const tokenInfoToUpdateFirstMintHeight = inputTokenInfos.find((m) => m.tokenScriptHash == lockingScriptHash);
+        if (blockHeader && tokenInfoToUpdateFirstMintHeight.firstMintHeight == null) {
+          tokenInfoToUpdateFirstMintHeight.firstMintHeight = blockHeader.height;
+          promises.push(this.tokenInfoEntityRepository.save(tokenInfoToUpdateFirstMintHeight));
+        }
         const outputField = outputFields[outputIndex];
         const [, owner, _amount] = outputField;
         const amount = byteString2Int(_amount);
@@ -281,6 +284,14 @@ export class TxService {
           const nftMetadata = inputMetadatas[nftMetadataIndex];
           if (nftMetadata) {
             const commitTxid = tx.inputs[nftMetadataIndex].prevTxId.toString('hex');
+
+            // handle delegate content
+            // if the content is empty and the delegate is not empty, it's a delegate content
+            const isDelegate = nftMetadata.info.delegate?.length > 0 && !nftMetadata.info.contentBody
+            const contentType = isDelegate ? Constants.CONTENT_TYPE_CAT721_DELEGATE_V1 : MetadataSerializer.decodeContenType(nftMetadata.info.contentType)
+            const contentRaw = isDelegate ? Buffer.from(nftMetadata.info.delegate, 'hex') : Buffer.from(nftMetadata.info.contentBody, 'hex')
+
+
             const nftInfoEntity = this.nftInfoEntityRepository.create({
               collectionId: tokenInfo.tokenId,
               localId: amount,
@@ -288,9 +299,9 @@ export class TxService {
               mintHeight: blockHeader ? blockHeader.height : 2147483647,
               commitTxid,
               metadata: nftMetadata.info.metadata,
-              contentType: nftMetadata.info.contentType,
+              contentType: contentType,
               contentEncoding: nftMetadata.info.contentEncoding,
-              contentRaw: Buffer.from(nftMetadata.info.contentBody, 'hex'),
+              contentRaw: contentRaw,
             });
             promises.push(this.nftInfoEntityRepository.save(nftInfoEntity));
           }
@@ -314,7 +325,6 @@ export class TxService {
       const output = tx.outputs[outputIndex];
       const lockingScriptHash = sha256(tx.outputs[outputIndex].script.toHex());
       if (outputTag === ContractLib.OPCAT_CAT20_TAG) {
-        // Todo
         const outputField = outputFields[outputIndex];
         const [, owner, _amount] = outputField;
         const amount = byteString2Int(_amount);
@@ -331,7 +341,6 @@ export class TxService {
         promises.push(this.txOutEntityRepository.save(txOut));
       }
       if (outputTag === ContractLib.OPCAT_CAT721_TAG) {
-        // Todo
         const outputField = outputFields[outputIndex];
         const [, owner, _localId] = outputField;
         const localId = byteString2Int(_localId);

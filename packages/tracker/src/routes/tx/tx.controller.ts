@@ -8,6 +8,7 @@ import {
   TxTokenOutputsResponse,
   ErrorResponse,
 } from './dto/tx-response.dto';
+import { toHex } from '@opcat-labs/scrypt-ts-opcat';
 
 @Controller('tx')
 @UseInterceptors(ResponseHeaderInterceptor)
@@ -104,14 +105,14 @@ export class TxController {
   })
   async parseDelegateContent(
     @Param('txid') txid: string,
-    @Param('inputIndex') inputIndex: number,
+    @Param('outputIndex') outputIndex: number,
     @Res() res: Response,
   ) {
     try {
-      const inputIndexBuf = Buffer.alloc(4);
-      inputIndexBuf.writeUInt32LE(inputIndex || 0);
-      const delegate = Buffer.concat([Buffer.from(txid, 'hex').reverse(), inputIndexBuf]);
-      const content = await this.txService.getDelegateContent(delegate);
+      const outputIndexBuf = Buffer.alloc(4);
+      outputIndexBuf.writeUInt32LE(outputIndex || 0);
+      const delegate = Buffer.concat([Buffer.from(txid, 'hex').reverse(), outputIndexBuf]);
+      const content = await this.txService.getDelegateContent(toHex(delegate));
       if (content?.raw) {
         if (content?.type) {
           res.setHeader('Content-Type', content.type);

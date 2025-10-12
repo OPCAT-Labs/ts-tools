@@ -1,11 +1,16 @@
-import { ChainProvider, ExtPsbt, hexToUint8Array, markSpent, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT721, CAT721ClosedMinterMetadata, CAT721ClosedMinterState, CAT721Guard, CAT721OpenMinter, ClosedMinterCAT721Meta, ConstantsLib, TX_INPUT_COUNT_MAX } from "../../../../src/contracts";
-import { CAT721NftInfo, MetadataSerializer } from "../../../../src/lib";
-import { Postage } from "../../../../src/typeConstants";
-import { filterFeeUtxos } from "../../../../src/utils";
-import { checkState } from "../../../../src/utils/check";
-import { CAT721ClosedMinterPeripheral, ContractPeripheral } from "../../../../src/utils/contractPeripheral";
 
+import { ChainProvider, ExtPsbt, hexToUint8Array, markSpent, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
+import { ClosedMinterCAT721Meta } from "../../../contracts/cat721/types";
+import { CAT721NftInfo } from "../../../lib/metadata";
+import { filterFeeUtxos } from "../../../utils";
+import { checkState } from "../../../utils/check";
+import { CAT721ClosedMinterPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral";
+import { CAT721Guard } from "../../../contracts/cat721/cat721Guard";
+import { ConstantsLib, TX_INPUT_COUNT_MAX } from "../../../contracts/constants";
+import { Postage } from "../../../typeConstants";
+import { CAT721 } from "../../../contracts/cat721/cat721";
+import { CAT721ClosedMinterState } from "../../../contracts/cat721/types";
+import { MetadataSerializer } from "../../../lib/metadata";
 
 
 export async function deploy(
