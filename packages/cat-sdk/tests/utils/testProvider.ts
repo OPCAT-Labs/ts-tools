@@ -1,4 +1,4 @@
-import { RPCProvider, DummyProvider, ChainProvider, UtxoProvider, SupportedNetwork } from '@opcat-labs/scrypt-ts-opcat'
+import { RPCProvider, DummyProvider, ChainProvider, UtxoProvider, SupportedNetwork, MempoolProvider } from '@opcat-labs/scrypt-ts-opcat'
 import * as dotenv from 'dotenv'
 dotenv.config({
   path: '.env',
@@ -15,12 +15,8 @@ function createTestProvider(): ChainProvider & UtxoProvider {
     }
     return provider
   }
-  const provider = new RPCProvider(
-    'opcat-testnet',
-    process.env.RPC_PROVIDER_URL!,
-    process.env.RPC_PROVIDER_WALLET_NAME!,
-    process.env.RPC_PROVIDER_USERNAME!,
-    process.env.RPC_PROVIDER_PASSWORD!
+  const provider = new MempoolProvider(
+    'opcat-testnet'
   )
 
   const getUtxosFn = provider.getUtxos.bind(provider)
