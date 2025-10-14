@@ -24,7 +24,7 @@ export class OwnerUtils extends SmartContractLib {
    */
   @method()
   static checkUserOwner(pubKey: ByteString, ownerAddr: ByteString): void {
-    assert(OwnerUtils.toLockingScript(pubKey) == ownerAddr)
+    assert(OwnerUtils.toLockingScript(pubKey) == ownerAddr, 'owner address is not match to the pubkey')
   }
 
   @method()

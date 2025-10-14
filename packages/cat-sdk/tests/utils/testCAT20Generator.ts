@@ -22,7 +22,7 @@ export class TestCAT20Generator {
     deployTx: ExtPsbt
   }
   minterTx: ExtPsbt
-  
+
 
   get minterScriptHash() {
     return this.deployInfo.minterScriptHash

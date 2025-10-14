@@ -46,8 +46,8 @@ export class CAT721OpenMinterMerkleTree extends SmartContractLib {
 
     @method()
     static checkLeaf(leaf: CAT721MerkleLeaf): void {
-        assert(len(leaf.contentDataHash) == OUTPUT_DATA_HASH_LEN);
-        assert(leaf.localId >= 0);
+        assert(len(leaf.contentDataHash) == OUTPUT_DATA_HASH_LEN, 'content data hash length mismatch');
+        assert(leaf.localId >= 0, 'local id must be greater than 0');
     }
 
     @method()

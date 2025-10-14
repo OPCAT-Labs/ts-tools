@@ -88,6 +88,10 @@
     {
       "symbol": "__scrypt_ASM",
       "path": "asm.scrypt.tpl"
+    },
+    {
+      "symbol": "__scrypt_ASM",
+      "path": "asm.scrypt.tpl"
     }
   ]
 }

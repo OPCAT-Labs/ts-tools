@@ -116,30 +116,30 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
     )
     if (!this.state.hasMintedBefore && this.premine > 0n) {
       // needs to premine
-      assert(this.maxCount == this.state.remainingCount + this.premineCount)
+      assert(this.maxCount == this.state.remainingCount + this.premineCount, 'maxCount is not equal to remainingCount + premineCount')
       // preminer checksig
       OwnerUtils.checkUserOwner(preminerPubKey, this.preminerAddr)
-      assert(this.checkSig(preminerSig, preminerPubKey))
+      assert(this.checkSig(preminerSig, preminerPubKey), 'preminer sig is invalid')
       // premine dees not affect curState.remainingCount
-      assert(sumNextRemainingCount == this.state.remainingCount)
-      assert(tokenMint.amount == this.premine)
+      assert(sumNextRemainingCount == this.state.remainingCount, 'sumNextRemainingCount is not equal to remainingCount')
+      assert(tokenMint.amount == this.premine, 'token amount is not equal to premine')
     } else {
       // general mint
       if (!this.state.hasMintedBefore) {
         // this is the first time mint
-        assert(this.maxCount == this.state.remainingCount)
-        assert(this.premineCount == 0n)
-        assert(this.premine == 0n)
+        assert(this.maxCount == this.state.remainingCount, 'maxCount is not equal to remainingCount')
+        assert(this.premineCount == 0n, 'premineCount is not equal to 0')
+        assert(this.premine == 0n, 'premine is not equal to 0')
       }
-      assert(sumNextRemainingCount == this.state.remainingCount - 1n)
-      assert(tokenMint.amount == this.limit)
+      assert(sumNextRemainingCount == this.state.remainingCount - 1n, 'sumNextRemainingCount is not equal to remainingCount - 1')
+      assert(tokenMint.amount == this.limit, 'token amount is not equal to limit')
     }
 
     // change output
     const changeOutput = this.buildChangeOutput()
 
     // confine curTx outputs
-    assert(this.checkOutputs(minterOutputs + tokenOutput + changeOutput))
+    assert(this.checkOutputs(minterOutputs + tokenOutput + changeOutput), 'outputs are invalid')
   }
 
   public checkProps() {

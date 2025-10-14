@@ -12,7 +12,7 @@ export class CAT721OpenMinter extends SmartContract<CAT721OpenMinterState> {
     genesisOutpoint: ByteString
 
     @prop()
-    max: bigint 
+    max: bigint
 
     @prop()
     premine: bigint
@@ -48,19 +48,19 @@ export class CAT721OpenMinter extends SmartContract<CAT721OpenMinterState> {
         // back to genesis
         this.backtraceToOutpoint(backtraceInfo, this.genesisOutpoint);
 
-        assert(this.state.nextLocalId < this.max)
+        assert(this.state.nextLocalId < this.max, 'next local id must be less than max');
 
         // minter input should be the first input in curTx
-        assert(this.ctx.inputIndex == 0n);
+        assert(this.ctx.inputIndex == 0n, 'minter input should be the first input in curTx');
 
         // input1.utxo.data store the nft contents, images, etc.
         const input1StateHash = ContextUtils.getSpentDataHash(this.ctx.spentDataHashes, 1n);
-        assert(input1StateHash == openMintInfo.contentDataHash);
+        assert(input1StateHash == openMintInfo.contentDataHash, 'input1 state hash mismatch');
         // input2.utxo.data store localId, the sha256(nft contents)
         const input2StateHash = ContextUtils.getSpentDataHash(this.ctx.spentDataHashes, 2n);
-        assert(input2StateHash == CAT721OpenMintInfo.stateHash(openMintInfo));
-        assert(openMintInfo.localId == nftMint.localId);
-        
+        assert(input2StateHash == CAT721OpenMintInfo.stateHash(openMintInfo), 'input2 state hash mismatch');
+        assert(openMintInfo.localId == nftMint.localId, 'open mint info local id mismatch');
+
         const merkleRoot = CAT721OpenMinterMerkleTree.updateLeaf(
             CAT721OpenMinterMerkleTree.leafStateHash({
                 contentDataHash: openMintInfo.contentDataHash,
@@ -93,19 +93,19 @@ export class CAT721OpenMinter extends SmartContract<CAT721OpenMinterState> {
         }
         // next nft output
         CAT721StateLib.checkState(nftMint);
-        assert(nftMint.localId == this.state.nextLocalId)
+        assert(nftMint.localId == this.state.nextLocalId, 'nft local id mismatch');
         outputs += TxUtils.buildDataOutput(this.state.nftScriptHash, nftSatoshis, CAT721StateLib.stateHash(nftMint));
         if (nftMint.localId < this.premine) {
             // preminer checkSig
             OwnerUtils.checkUserOwner(preminerPubKey, this.preminerAddr)
-            assert(this.checkSig(preminerSig, preminerPubKey))
+            assert(this.checkSig(preminerSig, preminerPubKey), 'preminer sig check failed');
         }
-        
+
         // confine curTx outputs
         outputs += this.buildChangeOutput();
         assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
     }
-    
+
     public checkProps() {
         assert(this.max > 0n, 'max must be greater than 0')
         assert(this.premine >= 0n && this.premine <= this.max, 'premine must be greater or equal to 0 and less than or equal to max')

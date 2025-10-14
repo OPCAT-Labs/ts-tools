@@ -9,7 +9,7 @@ import { CAT721StateLib } from "../cat721StateLib";
 export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
     @prop()
     issuerAddress: ByteString
-    
+
     @prop()
     genesisOutpoint: ByteString
 
@@ -40,13 +40,13 @@ export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
 
         // check issuer
         OwnerUtils.checkUserOwner(issuerPubKey, this.issuerAddress);
-        assert(this.checkSig(issuerSig, issuerPubKey));
+        assert(this.checkSig(issuerSig, issuerPubKey), 'signature check failed');
 
         const nftRemaining = this.state.maxLocalId - this.state.nextLocalId;
-        assert(nftRemaining > 0n && nftRemaining <= this.max);
+        assert(nftRemaining > 0n && nftRemaining <= this.max, 'nftRemaining is invalid');
 
         // minter input should be the first input in curTx
-        assert(this.ctx.inputIndex == 0n);
+        assert(this.ctx.inputIndex == 0n, 'minter input should be the first input in curTx');
 
         const nextLocalId = this.state.nextLocalId + 1n;
         let outputs = toByteString('');
@@ -64,7 +64,7 @@ export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
         }
         // next nft output
         CAT721StateLib.checkState(nftMint);
-        assert(nftMint.localId == this.state.nextLocalId)
+        assert(nftMint.localId == this.state.nextLocalId, 'nft localId is invalid');
         outputs += TxUtils.buildDataOutput(this.state.nftScriptHash, nftSatoshis, CAT721StateLib.stateHash(nftMint))
 
         // confine curTx outputs
@@ -72,7 +72,7 @@ export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
         assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
     }
 
-    
+
     public checkProps() {
         assert(this.max > 0n, 'max must be greater than 0')
         assert(len(this.issuerAddress) == OWNER_ADDR_P2PKH_BYTE_LEN, 'issuerAddress must be a valid p2pkh address')
