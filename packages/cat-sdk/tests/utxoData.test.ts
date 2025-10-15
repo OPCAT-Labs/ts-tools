@@ -23,7 +23,7 @@ describe('Test the field `utxo.data`', () => {
 
     const deployTx = new ExtPsbt({network: await testProvider.getNetwork()})
       .spendUTXO(utxos[0])
-      .change(address, await testProvider.getFeeRate())
+      .change(address, await testProvider.getFeeRate(), data)
       .seal()
 
     const signedDeployTx = await testSigner.signPsbt(deployTx.toHex(), deployTx.psbtOptions())

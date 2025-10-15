@@ -12,6 +12,7 @@ import {
   Signer,
   ExtPsbt,
   getBackTraceInfo,
+  markSpent,
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
   TX_INPUT_COUNT_MAX,
@@ -205,7 +206,9 @@ export async function incinerate(
 
   // broadcast
   await provider.broadcast(guardPsbt.extractTransaction().toHex())
+  markSpent(provider, guardPsbt.extractTransaction())
   await provider.broadcast(burnPsbt.extractTransaction().toHex())
+  markSpent(provider, burnPsbt.extractTransaction())
   provider.addNewUTXO(burnPsbt.getChangeUTXO()!)
 
   return {
