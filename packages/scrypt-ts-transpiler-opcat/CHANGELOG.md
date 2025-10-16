@@ -1,5 +1,11 @@
 # @opcat-labs/scrypt-ts-transpiler-opcat
 
+## 1.0.5
+
+### Patch Changes
+
+- fix checkInputState tranpiling
+
 ## 1.0.4
 
 ### Patch Changes
