@@ -32,7 +32,17 @@ import { CAT20 } from '../../contracts/cat20/cat20'
 import { CAT20Incinerator } from '../../contracts/cat20Incinerator'
 import { CAT20StateLib } from '../../contracts/cat20/cat20StateLib'
 
-export async function incinerate(
+/**
+ * Incinerates a CAT20 token using `CAT20Incinerator` contract
+ * @category Feature
+ * @param feeSigner the signer for the fee
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param minterScriptHash the script hash of the minter contract
+ * @param tokenUtxos the UTXOs of the input tokens
+ * @param feeRate the fee rate for the transaction
+ * @returns the PSBTs for the guard and burn transactions
+ */
+export async function incinerateToken(
   feeSigner: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,

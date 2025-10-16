@@ -1,16 +1,22 @@
 import { assert, ByteString, hash160, len, method, SmartContractLib, toByteString } from "@opcat-labs/scrypt-ts-opcat";
 import {
-    OWNER_ADDR_CONTRACT_HASH_BYTE_LEN,
-    OWNER_ADDR_P2PKH_BYTE_LEN,
-    PUBKEY_BYTE_LEN,
-  } from '../constants'
+  OWNER_ADDR_CONTRACT_HASH_BYTE_LEN,
+  OWNER_ADDR_P2PKH_BYTE_LEN,
+  PUBKEY_BYTE_LEN,
+} from '../constants'
 
+/**
+ * The owner utilities for the CAT contracts
+ * @category Contract
+ * @category Utils
+ * @onchain
+ */
 export class OwnerUtils extends SmartContractLib {
-    /**
-   * Convert public key to P2PKH locking script
-   * @param pubKey user public key
-   * @returns locking script
-   */
+  /**
+ * Convert public key to P2PKH locking script
+ * @param pubKey user public key
+ * @returns locking script
+ */
   @method()
   static toLockingScript(pubKey: ByteString): ByteString {
     OwnerUtils.checkPubKey(pubKey)
@@ -37,7 +43,7 @@ export class OwnerUtils extends SmartContractLib {
     const addrLen = len(ownerAddr)
     assert(
       addrLen == OWNER_ADDR_P2PKH_BYTE_LEN || // P2PKH locking script
-        addrLen == OWNER_ADDR_CONTRACT_HASH_BYTE_LEN // contract script hash
+      addrLen == OWNER_ADDR_CONTRACT_HASH_BYTE_LEN // contract script hash
     )
   }
 

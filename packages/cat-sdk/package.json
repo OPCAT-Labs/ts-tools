@@ -1,7 +1,7 @@
 {
   "name": "@opcat-labs/cat-sdk",
   "version": "1.0.3",
-  "description": "A demo sCrypt smart contract.",
+  "description": "CAT protocol implementation",
   "author": "",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
@@ -37,7 +37,8 @@
     "genprivkey": "npx ts-node tests/utils/privateKey.ts",
     "lint": "eslint ./src --fix && prettier --write --ignore-unknown \"**/*\"",
     "lint-check": "eslint ./src && prettier --check --ignore-unknown \"**/*\"",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "doc": "typedoc --readme none --plugin typedoc-plugin-markdown"
   },
   "lint-staged": {
     "**/*": [

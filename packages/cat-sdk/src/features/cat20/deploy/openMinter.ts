@@ -17,7 +17,19 @@ import { CAT20OpenMinterMetadata } from '../../../contracts/cat20/minters/cat20O
 import { Transaction } from '@opcat-labs/opcat'
 import { ConstantsLib } from '../../../contracts/constants'
 
-export async function deploy(
+/**
+ * Deploys a CAT20 token and its metadata using `CAT20OpenMinter` contract, and premines the token if applicable.
+ * The preimner can mint the token with premined amount first, other users can mint the token with a fixed amount later
+ * @category Feature
+ * @param signer the signer for the deployer
+ * @param preminerSigner the signer for the preminer, pass the deployer signer if premine is disabled, otherwise pass the reminer signer
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param metadata the metadata for the token
+ * @param feeRate the fee rate for the transaction
+ * @param changeAddress the address for the change output
+ * @returns the token info and the PSBTs for the genesis, deploy, and premine transactions
+ */
+export async function deployOpenMinterToken(
   // signer for deployer
   signer: Signer,
   // signer for preminer

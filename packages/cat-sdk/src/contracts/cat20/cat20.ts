@@ -20,6 +20,12 @@ import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN } from '../constants'
 import { SpentDataHashes } from '@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs'
 import { CAT20GuardStateLib } from './cat20GuardStateLib'
 
+/**
+ * The CAT20 contract
+ * @category Contract
+ * @category CAT20
+ * @onchain
+ */
 export class CAT20 extends SmartContract<CAT20State> {
   @prop()
   minterScriptHash: ByteString

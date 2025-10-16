@@ -13,7 +13,19 @@ import { CAT721ClosedMinterState } from "../../../contracts/cat721/types";
 import { MetadataSerializer } from "../../../lib/metadata";
 
 
-export async function deploy(
+/**
+ * Deploys a CAT721 closed minter and its metadata using `CAT721ClosedMinter` contract
+ * Only the token issuer can mint token
+ * @category Feature
+ * @param signer the signer for the deployer
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param metadata the metadata for the collection
+ * @param feeRate the fee rate for the transaction
+ * @param content the content for the collection
+ * @param changeAddress the address for the change output
+ * @returns the collection info and the PSBTs for the genesis and deploy transactions
+ */
+export async function deployClosedMinterCollection(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
     metadata: ClosedMinterCAT721Meta,
@@ -34,8 +46,8 @@ export async function deploy(
     let utxos = await provider.getUtxos(address)
     utxos = filterFeeUtxos(utxos).slice(0, TX_INPUT_COUNT_MAX)
     checkState(utxos.length > 0, 'Insufficient satoshis')
-    
-    const genesisPsbt = new ExtPsbt({network: await provider.getNetwork()})
+
+    const genesisPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .spendUTXO(utxos)
         .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize(
             'Collection',
@@ -64,7 +76,7 @@ export async function deploy(
     }
     cat721ClosedMinter.state = minterState
 
-    const deployPsbt = new ExtPsbt({network: await provider.getNetwork()})
+    const deployPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .spendUTXO(genesisPsbt.getChangeUTXO()!)
         .addContractOutput(cat721ClosedMinter, Postage.MINTER_POSTAGE)
         .change(changeAddress, feeRate)

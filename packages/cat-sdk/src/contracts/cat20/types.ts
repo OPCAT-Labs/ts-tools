@@ -3,9 +3,13 @@ import { StateHashes } from "../types";
 import { GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants";
 import { StructObject } from "@opcat-labs/scrypt-ts-opcat";
 
-// todo: uint32 or other type?
 export type CAT20_AMOUNT = bigint;
 
+/**
+ * The CAT20 state
+ * @category CAT20
+ * @onchain
+ */
 export type CAT20State = {
   tag: ByteString
   // owner address
@@ -14,7 +18,11 @@ export type CAT20State = {
   amount: CAT20_AMOUNT
 }
 
-
+/**
+ * The CAT20 guard info
+ * @category CAT20
+ * @onchain
+ */
 export type CAT20GuardInfo = {
   // guard input index in curTx\
   inputIndex: bigint
@@ -28,6 +36,11 @@ export type CAT20GuardInfo = {
   curStateHashes: StateHashes
 }
 
+/**
+ * The CAT20 guard state
+ * @category CAT20
+ * @onchain
+ */
 export type CAT20GuardConstState = {
   // scripts of all the different types of tokens in curTx inputs
   // e.g.
@@ -64,7 +77,11 @@ export type CAT20GuardConstState = {
 }
 
 
-
+/**
+ * The CAT20 metadata
+ * @category CAT20
+ * @category Metadata
+ */
 export interface CAT20Metadata extends StructObject {
   // name of the token, length is 1~int8.max bytes
   name: ByteString
@@ -79,6 +96,11 @@ export interface CAT20Metadata extends StructObject {
 // todo: transpiler should support this
 // export interface ClosedMinterCAT20Meta extends CAT20Metadata {}
 // export type ClosedMinterCAT20Meta = CAT20Metadata
+/**
+ * The CAT20 metadata for closed minter
+ * @category CAT20
+ * @category Metadata
+ */
 export interface ClosedMinterCAT20Meta extends StructObject {
   tag: ByteString
   name: ByteString
@@ -87,6 +109,11 @@ export interface ClosedMinterCAT20Meta extends StructObject {
   minterMd5: ByteString
 }
 
+/**
+ * The CAT20 metadata for open minter
+ * @category CAT20
+ * @category Metadata
+ */
 export interface OpenMinterCAT20Meta extends StructObject {
   tag: ByteString
   // name of the token, length is 1~int8.max bytes
@@ -108,6 +135,11 @@ export interface OpenMinterCAT20Meta extends StructObject {
   preminerAddr: ByteString
 }
 
+/**
+ * The CAT20 open minter state
+ * @category CAT20
+ * @onchain
+ */
 export interface CAT20OpenMinterState extends StructObject {
   tag: ByteString
   // sha256 of tokenScript
@@ -118,9 +150,13 @@ export interface CAT20OpenMinterState extends StructObject {
   remainingCount: CAT20_AMOUNT
 }
 
+/**
+ * The CAT20 closed minter state
+ * @category CAT20
+ * @onchain
+ */
 export interface CAT20ClosedMinterState extends StructObject {
   tag: ByteString
-  // tokenScript: ByteString;
   // sha256 of tokenScript
   tokenScriptHash: ByteString
 }

@@ -29,6 +29,12 @@ import { CAT20OpenMinterMetadata } from './cat20OpenMinterMetadata'
 
 const MAX_NEXT_MINTERS = 2
 
+/**
+ * The CAT20 open minter contract
+ * @category Contract
+ * @category CAT20
+ * @onchain
+ */
 export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
   @prop()
   genesisOutpoint: ByteString

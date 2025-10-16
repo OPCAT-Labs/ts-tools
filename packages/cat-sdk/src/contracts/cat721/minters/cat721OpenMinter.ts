@@ -7,6 +7,12 @@ import { CAT721OpenMinterMerkleTree } from "./cat721OpenMinterMerkleTree"
 import { CAT721OpenMintInfo, CAT721OpenMintInfoState } from "./cat721OpenMintInfo"
 
 
+/**
+ * The CAT721 open minter contract
+ * @category Contract
+ * @category CAT721
+ * @onchain
+ */
 export class CAT721OpenMinter extends SmartContract<CAT721OpenMinterState> {
     @prop()
     genesisOutpoint: ByteString

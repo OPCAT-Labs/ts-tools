@@ -196,6 +196,7 @@
     }
   ],
   "alias": [],
+  "staticAbi": [],
   "abi": [
     {
       "type": "function",

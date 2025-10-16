@@ -1,7 +1,11 @@
 import { Bool, ByteString, FixedArray, Int32 } from "@opcat-labs/scrypt-ts-opcat"
 import { GUARD_TOKEN_TYPE_MAX, NFT_GUARD_COLLECTION_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants"
 
-
+/**
+ * The CAT721 state
+ * @category CAT721
+ * @onchain
+ */
 export type CAT721State = {
     tag: ByteString
     // owner(user/contract) address, p2pkh script or sha256(lockingScript)
@@ -10,6 +14,11 @@ export type CAT721State = {
     localId: bigint
 }
 
+/**
+ * The CAT721 guard constant state
+ * @category CAT721
+ * @onchain
+ */
 export type CAT721GuardConstState = {
     nftScriptHashes: FixedArray<ByteString, typeof NFT_GUARD_COLLECTION_TYPE_MAX>;
     // for each input of curTx
@@ -19,6 +28,11 @@ export type CAT721GuardConstState = {
     nftScriptIndexes: FixedArray<bigint, typeof TX_INPUT_COUNT_MAX>;
 }
 
+/**
+ * The CAT721 closed minter state
+ * @category CAT721
+ * @onchain
+ */
 export type CAT721ClosedMinterState = {
     tag: ByteString
     nftScriptHash: ByteString
@@ -27,15 +41,32 @@ export type CAT721ClosedMinterState = {
     nextLocalId: bigint
 }
 
+/**
+ * The height of the merkle proof for CAT721 open minter
+ * @onchain
+ */
 export const HEIGHT = 15;
 
+/**
+ * The merkle proof for CAT721 open minter
+ * @onchain
+ */
 export type MerkleProof = FixedArray<ByteString, typeof HEIGHT>;
 
-// to indicate whether the node in merkle proof is on the left or right
-// if the node is on the right, then the value is true
-// otherwise, the value is false
+
+/**
+ * The proof node position for CAT721 open minter
+ * to indicate whether the node in merkle proof is on the left or right
+ * if the node is on the right, then the value is true
+ * otherwise, the value is false
+ * @onchain
+ */
 export type ProofNodePos = FixedArray<boolean, typeof HEIGHT>;
 
+/**
+ * The merkle leaf for CAT721 open minter
+ * @onchain
+ */
 export type CAT721MerkleLeaf = {
     // content data hash of this nft
     contentDataHash: ByteString
@@ -45,6 +76,11 @@ export type CAT721MerkleLeaf = {
     isMined: boolean
 }
 
+/**
+ * The CAT721 open minter state
+ * @category CAT721
+ * @onchain
+ */
 export type CAT721OpenMinterState = {
     tag: ByteString
     nftScriptHash: ByteString
@@ -54,6 +90,11 @@ export type CAT721OpenMinterState = {
     nextLocalId: bigint
 }
 
+/**
+ * The CAT721 metadata
+ * @category CAT721
+ * @category Metadata
+ */
 export type CAT721Metadata = {
     // name of the CAT721 collection
     name: ByteString
@@ -69,6 +110,11 @@ export type CAT721Metadata = {
     minterMd5: ByteString
 }
 
+/**
+ * The CAT721 metadata for closed minter
+ * @category CAT721
+ * @category Metadata
+ */
 export type ClosedMinterCAT721Meta = {
     // tag of the CAT721 collection minter contract
     tag: ByteString
@@ -88,6 +134,11 @@ export type ClosedMinterCAT721Meta = {
     minterMd5: ByteString
 }
 
+/**
+ * The CAT721 metadata for open minter
+ * @category CAT721
+ * @category Metadata
+ */
 export type OpenMinterCAT721Meta = {
     tag: ByteString
     //  name of the CAT721 collection

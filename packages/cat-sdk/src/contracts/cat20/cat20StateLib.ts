@@ -3,6 +3,12 @@ import { CAT20_AMOUNT, CAT20State } from "./types";
 import { OwnerUtils } from "../utils/ownerUtils";
 import { ConstantsLib } from "../constants";
 
+/**
+ * The CAT20 state library
+ * @category Contract
+ * @category CAT20
+ * @onchain
+ */
 export class CAT20StateLib extends StateLib<CAT20State> {
     @method()
     static checkState(_state: CAT20State): void {

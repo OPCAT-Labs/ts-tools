@@ -1,6 +1,6 @@
 {
   "$schema": "https://typedoc.org/schema.json",
-  "name": "@opcat-labs/scrypt-ts-opcat",
+  "name": "@opcat-labs/cat-sdk",
   "entryPoints": ["./src"],
   "out": "docs",
   "searchCategoryBoosts": {

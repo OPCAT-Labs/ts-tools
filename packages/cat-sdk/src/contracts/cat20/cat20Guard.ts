@@ -25,6 +25,12 @@ import { CAT20GuardStateLib } from './cat20GuardStateLib'
 import { StateHashes } from '../types'
 import { CAT20StateLib } from './cat20StateLib'
 
+/**
+ * The CAT20 guard contract
+ * @category Contract
+ * @category CAT20
+ * @onchain
+ */
 export class CAT20Guard extends SmartContract<CAT20GuardConstState> {
     @method()
     public unlock(

@@ -11,7 +11,18 @@ import { Postage } from "../../../typeConstants";
 import { filterFeeUtxos } from "../../../utils";
 
 
-export async function deployNft(
+/**
+ * Deploys a CAT721 open minter and its metadata using `CAT721OpenMinter` contract
+ * @category Feature
+ * @param signer the signer for the deployer
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param metadata the metadata for the collection
+ * @param initMerkleRoot the initial merkle root for the collection
+ * @param feeRate the fee rate for the transaction
+ * @param changeAddress the address for the change output
+ * @returns the collection info and the PSBTs for the genesis and deploy transactions
+ */
+export async function deployOpenMinterCollection(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
     metadata: OpenMinterCAT721Meta,

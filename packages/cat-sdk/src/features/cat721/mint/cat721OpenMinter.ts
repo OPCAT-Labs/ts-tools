@@ -8,7 +8,24 @@ import { Postage } from "../../../typeConstants";
 import { CAT721, CAT721Guard } from "../../../contracts";
 
 
-export async function mintNft(
+/**
+ * Mints a CAT721 NFT using `CAT721OpenMinter` contract
+ * @category Feature
+ * @param signer the signer for the minting
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param minterUtxo the UTXO of the minter contract
+ * @param proof the proof for the merkle root
+ * @param proofNodePos the position of the proof node
+ * @param nextMerkleRoot the next merkle root
+ * @param nft the nft to mint
+ * @param collectionId the id of the collection
+ * @param metadata the metadata and content for the nft
+ * @param nftReceiver the address to receive the nft
+ * @param changeAddress the address for the change output
+ * @param feeRate the fee rate for the transaction
+ * @returns the PSBTs for the create and mint transactions
+ */
+export async function mintOpenMinterNft(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
     minterUtxo: UTXO,
@@ -40,7 +57,7 @@ export async function mintNft(
     const minterPreTxHex = await provider.getRawTransaction(
         toHex(spentMinterTx.inputs[minterInputIndex].prevTxId)
     )
-    
+
     const openMinter = CAT721OpenMinterPeripheral.createMinter(collectionId, metadata)
     openMinter.bindToUtxo(minterUtxo)
 
@@ -73,7 +90,7 @@ export async function mintNft(
     const guard = new CAT721Guard()
     const cat721 = new CAT721(ContractPeripheral.scriptHash(openMinter), ContractPeripheral.scriptHash(guard))
     cat721.state = nftState
-    const mintPsbt = new ExtPsbt({network: await provider.getNetwork()})
+    const mintPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .addContractInput(openMinter, (contract, tx) => {
             const mintInfo = CAT721OpenMintInfo.deserializeState(createNftRes.mintInfoUtxo.data)
             if (openMinter.state.nextLocalId < openMinter.premine) {
@@ -83,7 +100,7 @@ export async function mintNft(
                     proof,
                     proofNodePos,
                     PubKey(preminerPubKey),
-                    tx.getSig(0, {publicKey: preminerPubKey}),
+                    tx.getSig(0, { publicKey: preminerPubKey }),
                     BigInt(Postage.MINTER_POSTAGE),
                     BigInt(Postage.NFT_POSTAGE),
                     backtraceInfo,

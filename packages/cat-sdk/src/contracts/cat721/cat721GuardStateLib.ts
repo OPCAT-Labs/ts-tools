@@ -3,7 +3,12 @@ import { CAT721GuardConstState } from "./types";
 import { ConstantsLib, NFT_GUARD_COLLECTION_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants";
 
 
-
+/**
+ * The CAT721 guard state library
+ * @category Contract
+ * @category CAT721
+ * @onchain
+ */
 export class CAT721GuardStateLib extends StateLib<CAT721GuardConstState> {
     @method()
     static formalCheckState(_state: CAT721GuardConstState): ByteString {

@@ -5,6 +5,11 @@ import { Script } from '@opcat-labs/opcat'
 import * as cbor from 'cbor2'
 import { hexToUint8Array } from '@opcat-labs/scrypt-ts-opcat'
 
+/**
+ * The information of a CAT20 token
+ * @category Metadata
+ * @category CAT20
+ */
 export interface CAT20TokenInfo<T extends CAT20Metadata> {
   tokenId: string
   /** token p2tr address */
@@ -21,6 +26,11 @@ export interface CAT20TokenInfo<T extends CAT20Metadata> {
   metadata: T
 }
 
+/**
+ * The information of a CAT721 Collection
+ * @category Metadata
+ * @category CAT721
+ */
 export interface CAT721NftInfo<T extends CAT721Metadata> {
   metadata: T
   collectionId: string
@@ -38,6 +48,11 @@ function scaleUpAmounts(metadata: OpenMinterCAT20Meta): OpenMinterCAT20Meta {
   return clone
 }
 
+/**
+ * @category Metadata
+ * @category CAT20
+ * Convert the symbol and name in metadata from utf8 strings to hex strings
+ */
 function hexStrings<T extends CAT20Metadata>(metadata: T): T {
   return {
     ...metadata,
@@ -50,6 +65,10 @@ function scaleUpByDecimals(amount: bigint, decimals: number) {
   return amount * BigInt(Math.pow(10, decimals))
 }
 
+/**
+ * Format the metadata, scale up the amounts if scaleUpAmount is true, and convert the symbol and name from utf8 strings to hex strings
+ * @category Metadata
+ */
 export function formatMetadata<T extends CAT20Metadata>(
   metadata: T,
   scaleUpAmount: boolean = true
@@ -64,6 +83,12 @@ export function formatMetadata<T extends CAT20Metadata>(
 }
 
 
+/**
+ * Metadata serializer for CAT20 and CAT721, serialize the metadata and content or ordinals like format, deserialize the metadata and content from ordinals like format
+ * @category Metadata
+ * @category CAT20
+ * @category CAT721
+ */
 export class MetadataSerializer {
   static readonly CAT_TAG = '03636174'; // OP_PUSH_3_bytes 'cat'
   static readonly LIMIT = 520;
@@ -128,7 +153,7 @@ export class MetadataSerializer {
 
     this.pushOrdinalTag(res, 'CONTENT_BODY')
     const dataChunks = this.chunks(Array.from(Buffer.from(content.body, 'hex')), this.LIMIT)
-    if (dataChunks.length === 0) { 
+    if (dataChunks.length === 0) {
       throw new Error('Content body is empty or its not a hex string')
     }
     // if the contentBody exceeds the limit of 520, it is split into multiple chunks.
@@ -138,6 +163,12 @@ export class MetadataSerializer {
     return res;
   }
 
+  /**
+   * serialize the CAT20 or CAT721 metadata and content
+   * @param type 
+   * @param info 
+   * @returns 
+   */
   static serialize(
     type: keyof typeof this.EnvelopeMarker,
     info: {
@@ -151,8 +182,8 @@ export class MetadataSerializer {
     const res = [];
     res.push(Buffer.from(this.CAT_TAG, 'hex')) // "cat"
     res.push(Buffer.from(this.EnvelopeMarker[type], 'hex')) // envelope marker
-    
-    switch(type) {
+
+    switch (type) {
       case 'Token':
         this.pushMetadata(res, info.metadata)
         if (info.content) {
@@ -170,6 +201,11 @@ export class MetadataSerializer {
     return Buffer.concat(res).toString('hex')
   }
 
+  /**
+   * decode the contentType from hex to utf8 string
+   * @param contentType 
+   * @returns 
+   */
   static decodeContenType(contentType: string) {
     if (!contentType) {
       return ''
@@ -183,6 +219,11 @@ export class MetadataSerializer {
   }
 
 
+  /**
+   * deserialize the metadata and content from ordinals like format
+   * @param hex 
+   * @returns 
+   */
   static deserialize(hex: string): {
     type: keyof typeof MetadataSerializer.EnvelopeMarker,
     info: {
@@ -197,7 +238,7 @@ export class MetadataSerializer {
     }
   } | null {
     if (!hex.startsWith(MetadataSerializer.CAT_TAG)) return null
-    
+
     const envelopeMarker = hex.slice(MetadataSerializer.CAT_TAG.length, MetadataSerializer.CAT_TAG.length + 2)
 
     if (
@@ -233,7 +274,7 @@ export class MetadataSerializer {
     let readIndex = 0;
     // if lastTagIsContentBody, the next bytes may be a part of contentBody
     let lastTagIsContentBody = false;
-    while(readIndex < bodyAsmItems.length) {
+    while (readIndex < bodyAsmItems.length) {
       const tagOP = Script.fromASM(bodyAsmItems[readIndex]).toHex().toLowerCase();
       const tagBytes = bodyAsmItems[readIndex].toLowerCase()
 
@@ -303,7 +344,7 @@ export class MetadataSerializer {
         }
       }
     }
-    
+
     return {
       type,
       info: {
@@ -319,36 +360,36 @@ export class MetadataSerializer {
     }
   }
 
-  
+
   private static toPushData(data: Buffer): Buffer {
     const res: Array<Buffer> = [];
 
     const dLen = data.length;
     if (dLen < 0x4c) {
-        const dLenBuff = Buffer.alloc(1);
-        dLenBuff.writeUInt8(dLen);
-        res.push(dLenBuff);
+      const dLenBuff = Buffer.alloc(1);
+      dLenBuff.writeUInt8(dLen);
+      res.push(dLenBuff);
     } else if (dLen <= 0xff) {
-        // OP_PUSHDATA1
-        res.push(Buffer.from('4c', 'hex'));
+      // OP_PUSHDATA1
+      res.push(Buffer.from('4c', 'hex'));
 
-        const dLenBuff = Buffer.alloc(1);
-        dLenBuff.writeUInt8(dLen);
-        res.push(dLenBuff);
+      const dLenBuff = Buffer.alloc(1);
+      dLenBuff.writeUInt8(dLen);
+      res.push(dLenBuff);
     } else if (dLen <= 0xffff) {
-        // OP_PUSHDATA2
-        res.push(Buffer.from('4d', 'hex'));
+      // OP_PUSHDATA2
+      res.push(Buffer.from('4d', 'hex'));
 
-        const dLenBuff = Buffer.alloc(2);
-        dLenBuff.writeUint16LE(dLen);
-        res.push(dLenBuff);
+      const dLenBuff = Buffer.alloc(2);
+      dLenBuff.writeUint16LE(dLen);
+      res.push(dLenBuff);
     } else {
-        // OP_PUSHDATA4
-        res.push(Buffer.from('4e', 'hex'));
+      // OP_PUSHDATA4
+      res.push(Buffer.from('4e', 'hex'));
 
-        const dLenBuff = Buffer.alloc(4);
-        dLenBuff.writeUint32LE(dLen);
-        res.push(dLenBuff);
+      const dLenBuff = Buffer.alloc(4);
+      dLenBuff.writeUint32LE(dLen);
+      res.push(dLenBuff);
     }
 
     res.push(data);
@@ -361,11 +402,11 @@ export class MetadataSerializer {
     let offset = 0;
 
     while (offset < bin.length) {
-        // Use Buffer.slice to create a chunk. This method does not copy the memory;
-        // it creates a new Buffer that references the original memory.
-        const chunk = bin.slice(offset, offset + chunkSize);
-        chunks.push(chunk);
-        offset += chunkSize;
+      // Use Buffer.slice to create a chunk. This method does not copy the memory;
+      // it creates a new Buffer that references the original memory.
+      const chunk = bin.slice(offset, offset + chunkSize);
+      chunks.push(chunk);
+      offset += chunkSize;
     }
 
     return chunks;

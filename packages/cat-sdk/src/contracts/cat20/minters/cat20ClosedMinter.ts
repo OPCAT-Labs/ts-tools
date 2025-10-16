@@ -4,6 +4,12 @@ import { CAT20State, CAT20ClosedMinterState } from '../types'
 import { OwnerUtils } from '../../utils/ownerUtils'
 import { CAT20StateLib } from '../cat20StateLib'
 
+/**
+ * The CAT20 closed minter contract
+ * @category Contract
+ * @category CAT20
+ * @onchain
+ */
 export class CAT20ClosedMinter extends SmartContract<CAT20ClosedMinterState> {
   @prop()
   issuerAddress: ByteString

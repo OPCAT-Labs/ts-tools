@@ -5,7 +5,12 @@ import { ConstantsLib, OWNER_ADDR_P2PKH_BYTE_LEN } from "../../constants";
 import { CAT721StateLib } from "../cat721StateLib";
 
 
-
+/**
+ * The CAT721 closed minter contract
+ * @category Contract
+ * @category CAT721
+ * @onchain
+ */
 export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
     @prop()
     issuerAddress: ByteString

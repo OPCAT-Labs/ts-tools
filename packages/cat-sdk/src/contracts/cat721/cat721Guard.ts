@@ -5,6 +5,12 @@ import { CAT721StateLib } from "./cat721StateLib";
 import { CAT721GuardConstState, CAT721State } from "./types";
 import { ByteString, ContextUtils, FixedArray, SmartContract, StdUtils, TxUtils, assert, byteStringToInt, fill, hash160, intToByteString, len, method, toByteString } from "@opcat-labs/scrypt-ts-opcat";
 
+/**
+ * The CAT721 guard contract
+ * @category Contract
+ * @category CAT721
+ * @onchain
+ */
 export class CAT721Guard extends SmartContract<CAT721GuardConstState> {
     @method()
     public unlock(

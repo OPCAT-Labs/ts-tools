@@ -320,6 +320,7 @@
     }
   ],
   "alias": [],
+  "staticAbi": [],
   "abi": [
     {
       "type": "constructor",

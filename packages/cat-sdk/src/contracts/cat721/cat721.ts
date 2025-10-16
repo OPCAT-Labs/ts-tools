@@ -7,7 +7,12 @@ import { OwnerUtils } from "../utils/ownerUtils";
 import { SpentDataHashes } from "@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs";
 
 
-
+/**
+ * The CAT721 contract
+ * @category Contract
+ * @category CAT721
+ * @onchain
+ */
 export class CAT721 extends SmartContract<CAT721State> {
     
   @prop()

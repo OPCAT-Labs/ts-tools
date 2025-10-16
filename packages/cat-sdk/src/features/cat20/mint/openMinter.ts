@@ -5,7 +5,17 @@ import { Signer, UtxoProvider, ChainProvider, UTXO, ExtPsbt, markSpent, ByteStri
 import { Transaction } from '@opcat-labs/opcat'
 import { CAT20OpenMinter } from '../../../contracts'
 
-export async function mint(
+/**
+ * Mints a CAT20 token using `CAT20OpenMinter` contract
+ * The preimner can mint the token with premined amount first, other users can mint the token with a fixed amount later
+ * @category Feature
+ * @param signer the signer for the minting
+ * @param preminerSigner the signer for the preminer, pass the deployer signer if premine is disabled, otherwise pass the reminer signer
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param minterUtxo the UTXO of the minter contract
+ * @param tokenId the ID of the token
+ */
+export async function mintOpenMinterToken(
   signer: Signer,
   preminerSigner: Signer,
   provider: UtxoProvider & ChainProvider,

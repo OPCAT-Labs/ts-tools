@@ -45,7 +45,8 @@ export interface Artifact {
   /** ABI of the contract: interfaces of its public functions and constructor */
   abi: Array<ABIEntity>;
   /** ABI of the contract: interfaces of its static functions */
-  staticAbi: Array<ABIEntity>;
+  // todo, make staticAbi required
+  staticAbi?: Array<ABIEntity>;
   /** locking script of the contract in hex format, including placeholders for constructor parameters */
   hex: string;
   /** relative file uri of the main contract source code file */

@@ -7,6 +7,16 @@ import { Postage } from "../../../typeConstants";
 import { applyFixedArray, filterFeeUtxos } from "../../../utils";
 import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral";
 
+/**
+ * Burns a CAT721 NFT using `CAT721Guard` contract
+ * @category Feature
+ * @param signer the signer for the burner
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param minterScriptHash the script hash of the minter contract
+ * @param inputNftUtxos the UTXOs of the input tokens
+ * @param feeRate the fee rate for the transaction
+ * @returns the PSBTs for the guard and burn transactions
+ */
 export async function burnNft(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
@@ -16,6 +26,8 @@ export async function burnNft(
 ): Promise<{
     guardPsbt: ExtPsbt,
     burnPsbt: ExtPsbt
+    guardTxid: string
+    burnTxid: string
 }> {
     const pubkey = await signer.getPublicKey()
     const changeAddress = await signer.getAddress()
@@ -33,17 +45,17 @@ export async function burnNft(
             inputIndex: index,
         }))
     )
-    
+
     const guard = new CAT721Guard()
     guard.state = guardState
     const guardScriptHash = ContractPeripheral.scriptHash(guard)
 
-    const guardPsbt = new ExtPsbt({network: await provider.getNetwork()})
+    const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .spendUTXO(utxos)
         .addContractOutput(guard, Postage.GUARD_POSTAGE)
         .change(changeAddress, feeRate)
         .seal()
-    
+
     const signedGuardPsbt = await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions())
     guardPsbt.combine(ExtPsbt.fromHex(signedGuardPsbt))
     guardPsbt.finalizeAllInputs()
@@ -54,8 +66,8 @@ export async function burnNft(
     const inputNfts: CAT721[] = inputNftUtxos.map(
         (utxo) => new CAT721(minterScriptHash, guardScriptHash).bindToUtxo(utxo)
     )
-    const burnPsbt = new ExtPsbt({network: await provider.getNetwork()})
-    
+    const burnPsbt = new ExtPsbt({ network: await provider.getNetwork() })
+
     const guardInputIndex = inputNfts.length;
     const backtraces = await CAT721GuardPeripheral.getBackTraceInfo(
         minterScriptHash,
@@ -85,7 +97,7 @@ export async function burnNft(
             }
         )
     }
-    
+
     // add guard input
     guard.bindToUtxo(guardUtxo);
     burnPsbt.addContractInput(guard, (contract, tx) => {
@@ -140,5 +152,7 @@ export async function burnNft(
     return {
         guardPsbt,
         burnPsbt,
+        guardTxid: guardPsbt.extractTransaction().id,
+        burnTxid: burnPsbt.extractTransaction().id,
     }
 }

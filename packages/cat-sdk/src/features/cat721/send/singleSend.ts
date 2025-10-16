@@ -5,6 +5,17 @@ import { applyFixedArray, filterFeeUtxos } from "../../../utils";
 import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral";
 
 
+/**
+ * Sends a CAT721 NFT using `CAT721Guard` contract
+ * @category Feature
+ * @param signer the signer for the sender
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param minterScriptHash the script hash of the minter contract
+ * @param inputNftUtxos the UTXOs of the input tokens
+ * @param nftReceivers the receivers of the tokens
+ * @param feeRate the fee rate for the transaction
+ * @returns the PSBTs for the guard and send transactions, the UTXOs of the new tokens
+ */
 export async function singleSendNft(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
@@ -60,6 +71,17 @@ export async function singleSendNft(
     }
 }
 
+/**
+ * Helper function for singleSendNft, create the guard psbt but do not sign it
+ * @category Feature
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param feeUtxos the UTXOs for the fee
+ * @param inputNftUtxos the UTXOs of the input tokens
+ * @param receivers the receivers of the tokens
+ * @param feeChangeAddress the address for the change output
+ * @param feeRate the fee rate for the transaction
+ * @returns the guard and the output token states
+ */
 export async function singleSendNftStep1(
     provider: UtxoProvider & ChainProvider,
     feeUtxos: UTXO[],
@@ -98,6 +120,21 @@ export async function singleSendNftStep1(
     return { guard, guardPsbt, outputNftStates: outputNfts }
 }
 
+/**
+ * Helper function for singleSendNft, add the nft inputs and outputs to the psbt
+ * @category Feature
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param minterScriptHash the script hash of the minter contract
+ * @param guard the guard contract
+ * @param finalizedGuardPsbt the finalized guard psbt
+ * @param inputNftUtxos the UTXOs of the input tokens
+ * @param outputNftStates the output token states
+ * @param feeChangeAddress the address for the change output
+ * @param publicKey the public key of the sender
+ * @param feeRate the fee rate for the transaction
+ * @param sendChangeData the change data for the transaction
+ * @returns the send psbt
+ */
 export async function singleSendNftStep2(
     provider: UtxoProvider & ChainProvider,
     minterScriptHash: ByteString,
@@ -218,6 +255,15 @@ export async function singleSendNftStep2(
     return { sendPsbt }
 }
 
+/**
+ * Helper function for singleSendNft, broadcast the transactions and add the new fee UTXO
+ * @category Feature
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param finalizedGuardPsbt the finalized guard psbt
+ * @param finalizedSendPsbt the finalized send psbt
+ * @param outputNftStates the output token states
+ * @returns the new NFT UTXOs and the new fee UTXO
+ */
 export async function singleSendNftStep3(
     provider: UtxoProvider & ChainProvider,
     finalizedGuardPsbt: ExtPsbt,

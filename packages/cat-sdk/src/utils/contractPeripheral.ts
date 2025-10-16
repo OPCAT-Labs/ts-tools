@@ -36,6 +36,10 @@ import { CAT721OpenMinter } from '../contracts/cat721/minters/cat721OpenMinter'
 import { CAT721StateLib } from '../contracts/cat721/cat721StateLib'
 import { CAT721ClosedMinter } from '../contracts'
 
+/**
+ * Helper class for contract peripheral operations
+ * @category Utils
+ */
 export class ContractPeripheral {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static scriptHash(contractOrScriptBuffer: SmartContract<any> | Buffer | string) {
@@ -47,6 +51,10 @@ export class ContractPeripheral {
   }
 }
 
+/**
+ * Helper class for CAT20 open minter peripheral operations
+ * @category Utils
+ */
 export class CAT20OpenMinterPeripheral {
   static getSplitAmountList(
     preRemainingSupply: CAT20_AMOUNT,
@@ -136,6 +144,10 @@ export class CAT20OpenMinterPeripheral {
   }
 }
 
+/**
+ * Helper class for CAT20 guard peripheral operations
+ * @category Utils
+ */
 export class CAT20GuardPeripheral {
   static createTransferGuard(
     tokenInputs: {
@@ -327,6 +339,10 @@ export class CAT20GuardPeripheral {
   }
 }
 
+/**
+ * Helper class for CAT721 guard peripheral operations
+ * @category Utils
+ */
 export class CAT721GuardPeripheral {
   static createTransferGuard(
     nftInputs: {
@@ -350,7 +366,7 @@ export class CAT721GuardPeripheral {
     const guardState = CAT721GuardStateLib.createEmptyState()
     guardState.nftScriptHashes[0] = ContractPeripheral.scriptHash(nftInputs[0].nft.script)
     for (
-      let index = 0; 
+      let index = 0;
       index < nftInputs.length && index < TX_INPUT_COUNT_MAX;
       index++
     ) {
@@ -394,7 +410,7 @@ export class CAT721GuardPeripheral {
     ) {
       guardState.nftScriptIndexes[nftInputs[index].inputIndex] = 0n
     }
-    return {guardState}
+    return { guardState }
   }
 
   static async getBackTraceInfo(
@@ -461,12 +477,16 @@ export class CAT721GuardPeripheral {
   }
 }
 
+/**
+ * Helper class for CAT721 open minter peripheral operations
+ * @category Utils
+ */
 export class CAT721OpenMinterPeripheral {
   static createMinter(
     nftId: string,
     metadata: OpenMinterCAT721Meta
   ) {
-    
+
     const contract = new CAT721OpenMinter(
       outpoint2ByteString(nftId),
       metadata.max,
@@ -478,6 +498,10 @@ export class CAT721OpenMinterPeripheral {
   }
 }
 
+/**
+ * Helper class for CAT721 closed minter peripheral operations
+ * @category Utils
+ */
 export class CAT721ClosedMinterPeripheral {
   static createMinter(
     collectionId: string,

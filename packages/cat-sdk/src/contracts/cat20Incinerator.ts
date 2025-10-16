@@ -5,6 +5,12 @@ import { GUARD_TOKEN_TYPE_MAX } from "./constants";
 import { CAT20GuardStateLib } from "./cat20/cat20GuardStateLib";
 
 
+/**
+ * The CAT20 incinerator contract, used to incinerate the CAT20 token
+ * @category Contract
+ * @category CAT20
+ * @onchain
+ */
 export class CAT20Incinerator extends SmartContract {
     @prop()
     cat20GuardScriptHash: ByteString
