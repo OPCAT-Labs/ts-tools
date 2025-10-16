@@ -5513,9 +5513,9 @@ export class Transpiler {
       .append('\n')
       .append(`StateUtils.checkInputState(`)
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
-      .append(', ')
+      .append(', sha256(')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
-      .append(', ')
+      .append('), ')
       .appendWith(this, (toSec) => {
         const shouldAccessThis = this.shouldAutoAppendStateArgs(
           this.getMethodContainsTheNode(node),
