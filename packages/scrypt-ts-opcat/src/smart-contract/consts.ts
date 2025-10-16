@@ -43,7 +43,11 @@ export const TX_VERSION_BYTE_LEN = 4n;
 export const TX_INPUT_PREV_TX_HASH_BYTE_LEN = TX_HASH_BYTE_LEN;
 /** @ignore */
 export const TX_OUTPUT_SATOSHI_BYTE_LEN = 8n;
-/** @ignore the maximum number of flattened fields in a state object. */
+/** 
+ * @ignore the maximum number of flattened fields in a state object. 
+ * because the hashes of the fields are connected on the stack, so the max length is 520 / 20 = 26.
+ * 520 is the max stack size of bvm.
+ */
 export const MAX_FLAT_FIELDS_IN_STATE = 26;
 /** @ignore the dust limit is the minimum amount of satoshis that can be sent in a transaction */
 export const DUST_LIMIT = 330;

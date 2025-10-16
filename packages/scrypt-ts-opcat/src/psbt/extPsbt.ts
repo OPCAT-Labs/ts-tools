@@ -37,7 +37,7 @@ const { BufferWriter } = encoding;
 
 const P2PKH_SIG_LEN = 0x49; // 73 bytes signature
 const P2PKH_PUBKEY_LEN = 0x21; // 33 bytes pubkey
-const DUMMY_CHANGE_SATOSHIS = BigInt(2100e16); // use the max value to avoid change.satoshis size getting bigger when sealing
+const DUMMY_CHANGE_SATOSHIS = BigInt(2100e4 * 1e8); // use the max value to avoid change.satoshis size getting bigger when sealing
 
 type Finalizer = (
   self: ExtPsbt,

@@ -16,6 +16,7 @@ import {
   SigHashType,
   OpcatState,
   SupportedParamType,
+  Sha256,
 } from './types/primitives.js';
 import { hash256, sha256 } from './fns/hashes.js';
 import { slice } from './fns/byteString.js';
@@ -29,11 +30,14 @@ import { checkInputStateHashesImpl } from './methods/checkInputStateHashes.js';
 import { toTxHashPreimage } from '../utils/proof.js';
 import { assert } from './fns/assert.js';
 import { Arguments } from './types/abi.js';
+import { extractHashedMapCtx, attachToStateType } from './builtin-libs/hashedMap/utils.js';
+import { HashedMapAbiUtil } from "./builtin-libs/hashedMap/hashedMapAbiUtil.js";
 
 
 /**
  * Used to invoke public methods of a contract, corresponding to the witness of a Taproot input
  */
+
 interface MethodCallData {
   method: string;
   args: SupportedParamType[];
@@ -52,8 +56,7 @@ interface MethodCallData {
  * @category SmartContract
  */
 export class SmartContract<StateT extends OpcatState = undefined>
-  extends AbstractContract
-{
+  extends AbstractContract {
   /**
    * Bitcoin Contract Artifact
    */
@@ -81,12 +84,23 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * The state of the contract UTXO, usually committed to the first OP_RETURN output, is revealed when spending.
    * @onchain
    */
-  state: StateT;
+  _state: StateT;
+
+  get state(): StateT {
+    return this._state;
+  }
+  set state(state: StateT) {
+    attachToStateType((this.constructor as typeof SmartContract).artifact, state);
+    this._state = state;
+  }
 
   /**
    * Locking script corresponding to the SmartContract
    */
   readonly lockingScript: Script;
+  get lockingScriptHash(): Sha256 {
+    return sha256(this.lockingScript.toHex());
+  }
 
   /**
    * This function is usually called on the frontend.
@@ -126,10 +140,10 @@ export class SmartContract<StateT extends OpcatState = undefined>
     }
   }
 
-    /**
-   * @ignore
-   * @param args
-   */
+  /**
+ * @ignore
+ * @param args
+ */
   private generateLockingScript(...args: SupportedParamType[]) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this as any).lockingScript = this._abiCoder.encodeConstructorCall(args);
@@ -141,7 +155,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @param args
    * @returns
    */
-  static create<T extends { new (...args: ConstructorParameters<T>): InstanceType<T> }>(
+  static create<T extends { new(...args: ConstructorParameters<T>): InstanceType<T> }>(
     this: T,
     ...args: ConstructorParameters<T>
   ) {
@@ -173,6 +187,10 @@ export class SmartContract<StateT extends OpcatState = undefined>
     publickey: PubKey,
     errorMsg: string = 'signature check failed',
   ): boolean {
+    if (this.spentPsbt && !this.spentPsbt.isSealed) {
+      // skip signature check if the PSBT is not sealed
+      return true;
+    }
     const fSuccess = checkSigImpl(this, signature, publickey);
     if (!fSuccess && signature.length) {
       // because NULLFAIL rule, always throw if catch a wrong signature
@@ -182,7 +200,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return fSuccess;
   }
 
-  
+
   /**
    * Compares the first signature against each public key until it finds an ECDSA match. 
    * Starting with the subsequent public key, it compares the second signature against 
@@ -244,7 +262,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
     if (!stateType) {
       throw new Error(`State struct \`${stateType}\` is not defined!`);
     }
-
+    attachToStateType(artifact, state);
     return serializeState(artifact, stateType, state);
   }
 
@@ -297,7 +315,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @returns success if stateHash is valid
    */
   override checkInputState(inputIndex: Int32, serializedState: ByteString): boolean {
-    const _stateHash = slice(this.inputContext.spentDataHashes, inputIndex * 32n, (inputIndex +  1n) * 32n);
+    const _stateHash = slice(this.inputContext.spentDataHashes, inputIndex * 32n, (inputIndex + 1n) * 32n);
     assert(sha256(serializedState) == _stateHash, 'stateHash mismatch');
     return true;
   }
@@ -383,11 +401,13 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @param method - The method name to call.
    * @param args - The arguments to pass to the method.
    * @param autoCheckInputState - Whether to automatically check input state before injection.
+   * @param changedState - The state of the contract after the method is called.
+   * @param changedArgs - The arguments to pass to the method after the method is called.
    */
-  extendMethodArgs(method: string, args: SupportedParamType[], autoCheckInputState: boolean) {
-  // extend the args with the context
+  extendMethodArgs(method: string, args: SupportedParamType[], autoCheckInputState: boolean, changedState: StateT, changedArgs: SupportedParamType[]) {
+    // extend the args with the context
     if (this._shouldInjectCtx(method)) {
-      this._autoInject(method, args, autoCheckInputState);
+      this._autoInject(method, args, autoCheckInputState, changedState, changedArgs);
     }
 
     const unlockingScript = this._abiCoder.encodePubFunctionCall(method, args);
@@ -430,6 +450,8 @@ export class SmartContract<StateT extends OpcatState = undefined>
     method: string,
     args: SupportedParamType[],
     autoCheckInputState: boolean,
+    changedState: StateT,
+    changedArgs: SupportedParamType[],
   ) {
     const {
       shPreimage,
@@ -493,6 +515,19 @@ export class SmartContract<StateT extends OpcatState = undefined>
             throw new Error('utxo.txHashPreimage is required for backtrace');
           }
           args.push(toTxHashPreimage(hexToUint8Array(this.utxo!.txHashPreimage!)));
+        } else if (param.name.startsWith(HashedMapAbiUtil.SYMBOLS.SCRYPT_PREFIXERS.HASHED_MAP_CTX_VARIABLE)) {
+          // inject HashedMap ctx
+          if (param.name.startsWith(HashedMapAbiUtil.SYMBOLS.SCRYPT_PREFIXERS.HASHED_MAP_CTX_VARIABLE + HashedMapAbiUtil.SYMBOLS.SCRYPT_VARIABLES.NEXT_STATE)) {
+            args.push(extractHashedMapCtx(this._abiCoder.artifact, changedState, param.name));
+          } else {
+            const baseParamName = param.name.slice(HashedMapAbiUtil.SYMBOLS.SCRYPT_PREFIXERS.HASHED_MAP_CTX_VARIABLE.length).split(HashedMapAbiUtil.SYMBOLS.SCRYPT_SPLITTERS.DOT)[0]
+            const baseParamIndex = abiEntity.params.findIndex((p) => p.name === baseParamName);
+            if (baseParamIndex < 0) {
+              throw new Error(`Base param ${baseParamName} for hashed map context ${param.name} is not found in artifact`);
+            }
+            const baseParamValue = changedArgs[baseParamIndex];
+            args.push(extractHashedMapCtx(this._abiCoder.artifact, baseParamValue, param.name));
+          }
         }
       });
     }
@@ -696,17 +731,37 @@ export class SmartContract<StateT extends OpcatState = undefined>
 
     this.utxo = { ...utxo, script: this.lockingScript.toHex() };
     if ((this.constructor as typeof SmartContract<StateT>).isStateful()) {
-      this.state = (this.constructor as typeof SmartContract<StateT>).deserializeState(utxo.data);
+
+      if (this.state) {
+        const curentStateBytes = (this.constructor as typeof SmartContract<StateT>).serializeState(this.state);
+
+        // if the current state is not the same as the state in the UTXO, deserialize the state from the UTXO, otherwise use the current state
+        if (curentStateBytes !== utxo.data) {
+          this.state = (this.constructor as typeof SmartContract<StateT>).deserializeState(utxo.data);
+        }
+      } else {
+        this.state = (this.constructor as typeof SmartContract<StateT>).deserializeState(utxo.data);
+      }
     }
     return this;
   }
+
+  async asyncBindToUtxo(
+    utxo: Optional<ExtUtxo, 'script'> | Optional<UTXO, 'script'>, 
+    callback: (contract: this) => Promise<void>
+  ) {
+    this.bindToUtxo(utxo)
+    await callback(this);
+    return this
+  }
+
 
   /**
    * Checks if the contract has state by verifying if the state object exists and is not empty.
    * @returns {boolean} True if the contract has state, false otherwise.
    */
   static isStateful(): boolean {
-    
+
     const selfClazz = (this as any) as typeof SmartContract;
 
     const artifact = selfClazz.artifact;

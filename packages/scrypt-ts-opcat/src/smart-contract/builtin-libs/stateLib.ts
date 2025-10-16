@@ -5,6 +5,7 @@ import { ABICoder } from '../abi.js';
 import { deserializeState, serializeState } from '../stateSerializer.js';
 import { getUnRenamedSymbol } from '../abiutils.js';
 import { sha256 } from '../fns/index.js';
+import { attachToStateType } from './hashedMap/utils.js';
 
 /**
  * Library for computing the hash of a state.
@@ -42,6 +43,7 @@ export class StateLib<ST extends OpcatState> extends SmartContractLib {
     if (!library.stateType) {
       throw new Error(`State type is not defined for the library: ${this.name}`);
     }
+    attachToStateType(artifact, state)
 
     return serializeState(artifact, libraryClazz.stateType, state);
   }
