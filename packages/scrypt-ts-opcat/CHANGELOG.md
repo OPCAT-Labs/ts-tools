@@ -1,5 +1,11 @@
 # @opcat-labs/scrypt-ts-opcat
 
+## 1.0.5
+
+### Patch Changes
+
+- fix some bugs
+
 ## 1.0.4
 
 ### Patch Changes

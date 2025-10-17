@@ -1,6 +1,6 @@
 {
   "name": "@opcat-labs/cat-sdk",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A demo sCrypt smart contract.",
   "author": "",
   "main": "./dist/cjs/index.js",
@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "@opcat-labs/opcat": "1.0.3",
-    "@opcat-labs/scrypt-ts-opcat": "1.0.4",
+    "@opcat-labs/scrypt-ts-opcat": "1.0.5",
     "dotenv": "^16.0.3",
     "ts-node": "^10.9.2"
   },

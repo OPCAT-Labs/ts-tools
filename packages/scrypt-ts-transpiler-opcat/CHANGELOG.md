@@ -1,5 +1,12 @@
 # @opcat-labs/scrypt-ts-transpiler-opcat
 
+## 1.0.6
+
+### Patch Changes
+
+- Updated dependencies
+  - @opcat-labs/scrypt-ts-opcat@1.0.5
+
 ## 1.0.5
 
 ### Patch Changes
