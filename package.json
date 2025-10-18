@@ -11,11 +11,10 @@
   "scripts": {
     "lint": "eslint . --fix && prettier --write --ignore-unknown \"**/*\"",
     "lint-check": "eslint . && prettier --check --ignore-unknown \"**/*\"",
-    "build": "turbo run build --concurrency 1",
+    "build": "turbo run build",
     "test": "turbo run test",
-    "ts-patch": "ts-patch install -s",
     "husky": "husky install",
-    "prepare": "npm run ts-patch && npm run husky",
+    "prepare": "npm run husky",
     "prerelease": "yarn build",
     "release": "changeset publish --access public --no-git-checks"
   },

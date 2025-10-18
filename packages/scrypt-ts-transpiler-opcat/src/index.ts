@@ -18,6 +18,30 @@ const allContractsAST = new Map<string, ts.ClassDeclaration>();
 
 let relinker: Relinker = null;
 
+// `patchHost` code from ts-patch maintainer https://github.com/nonara/ts-patch/discussions/29
+function getPatchedHost(
+  maybeHost: ts.CompilerHost | undefined,
+  tsInstance: typeof ts,
+  compilerOptions: ts.CompilerOptions
+): ts.CompilerHost & { fileCache: Map<string, ts.SourceFile> } {
+  const fileCache = new Map();
+  const compilerHost = maybeHost ?? tsInstance.createCompilerHost(compilerOptions, true);
+  const originalGetSourceFile = compilerHost.getSourceFile;
+
+  return Object.assign(compilerHost, {
+    getSourceFile(fileName: string, languageVersion: ts.ScriptTarget) {
+      fileName = (tsInstance as any).normalizePath(fileName);
+      if (fileCache.has(fileName)) return fileCache.get(fileName);
+
+      const sourceFile = originalGetSourceFile.apply(void 0, Array.from(arguments) as any);
+      fileCache.set(fileName, sourceFile);
+
+      return sourceFile;
+    },
+    fileCache
+  });
+}
+
 /***
  * @ignore
  */
@@ -25,8 +49,22 @@ export default function transformProgram(
   program: ts.Program,
   host: ts.CompilerHost | undefined,
   pluginOptions: PluginConfig,
-  { ts: tsInstance }: ProgramTransformerExtras,
+  extras: ProgramTransformerExtras,
 ): ts.Program {
+
+  let tsInstance: typeof ts
+
+
+  // handle if host argument is missing
+  if (!extras) {
+    tsInstance = pluginOptions.ts;
+    pluginOptions = host;
+    host = getPatchedHost(undefined, tsInstance, program.getCompilerOptions());
+  } else {
+    tsInstance = extras.ts;
+    host = getPatchedHost(host, tsInstance, program.getCompilerOptions());
+  }
+
   const compilerOptions = program.getCompilerOptions();
 
   let tsconfigDir = process.env['TS_NODE_PROJECT']
@@ -65,7 +103,13 @@ export default function transformProgram(
     compilerOptions,
   );
 
-  return program;
+  // add dummy transformer to avoid ts-patch error, https://github.com/nonara/ts-patch/issues/120
+  let result: any = program;
+  result.after = result.after || []
+  result.before = result.before || []
+  result.afterDeclarations = result.afterDeclarations || []
+
+  return result
 }
 
 function transformFile(

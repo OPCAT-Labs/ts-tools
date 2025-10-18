@@ -38,7 +38,7 @@
     "postbuild:cjs": "node fixup.cjs",
     "build:esm": "tsc -p tsconfig.esm.json",
     "build": "yarn run build:cjs && yarn run build:esm",
-    "gen:assets": "tsc -p tsconfig.assets.json && node injectAsm.cjs",
+    "gen:assets": "tspc -p tsconfig.assets.json && node injectAsm.cjs",
     "prebuild": "yarn run clean",
     "beta": "yarn publish  --tag beta  --access public",
     "genkey": "tsx test/utils/privateKey.ts",

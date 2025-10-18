@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc",
     "postbuild": "cd ../scrypt-ts-opcat && yarn gen:assets",
-    "buildtest": "cd test && tsc || true",
+    "buildtest": "cd test && tspc -p tsconfig.json || true",
     "getBinary": "node ./dist/compile/getBinary.js",
     "pretest": "rimraf test/artifacts && yarn buildtest && yarn gen:spec",
     "test": "yarn mocha",
@@ -32,12 +32,14 @@
     "mlly": "^1.7.4",
     "node-fetch": "^2.7.0",
     "reflect-metadata": "^0.1.13",
-    "rimraf": "^6.0.1",
-    "ts-patch": "=3.0.1",
-    "typescript": "~5.3.0"
+    "rimraf": "^6.0.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "ts-patch": "3.3.0"
+  },
+  "peerDependencies": {
+    "typescript": "~5.3.3"
   }
 }

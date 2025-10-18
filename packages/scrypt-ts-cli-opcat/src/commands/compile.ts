@@ -58,7 +58,6 @@ export async function compile({
     // no scryptc found, auto download scryptc
     await getBinary();
   }
-
   const tsconfigScryptTSPath = path.resolve(tsconfig ? tsconfig : 'tsconfig-scryptTS.json');
   const tsconfigPath = path.resolve('tsconfig.json');
 
@@ -81,18 +80,18 @@ export async function compile({
 
       const override = containsDeprecatedOptions(parsedCommandLine.options)
         ? {
-            noEmit: true,
-            experimentalDecorators: true,
-            target: 'ESNext',
-            esModuleInterop: true,
-            ignoreDeprecations: '5.0',
-          }
+          noEmit: true,
+          experimentalDecorators: true,
+          target: 'ESNext',
+          esModuleInterop: true,
+          ignoreDeprecations: '5.0',
+        }
         : {
-            noEmit: true,
-            experimentalDecorators: true,
-            target: 'ESNext',
-            esModuleInterop: true,
-          };
+          noEmit: true,
+          experimentalDecorators: true,
+          target: 'ESNext',
+          esModuleInterop: true,
+        };
 
       writefile(tsconfigScryptTSPath, {
         extends: './tsconfig.json',
@@ -144,20 +143,18 @@ export async function compile({
     process.exit();
   });
 
-  let ts_patch_path = require.resolve('typescript').split(path.sep);
-  ts_patch_path = ts_patch_path.slice(0, ts_patch_path.length - 2);
-  ts_patch_path.push('bin');
-  ts_patch_path.push('tsc');
-
-  const tsc = ts_patch_path.join(path.sep);
-
+  let tspc_path = require.resolve('ts-patch').split(path.sep).slice(0, -1)
+  tspc_path.push('bin');
+  tspc_path.push('tspc.js');
+  const tspc = tspc_path.join(path.sep);
   // Run tsc which in turn also transpiles to sCrypt
   if (watch) {
-    await shExec(`node "${tsc}" --watch --p "${tsconfigScryptTSPath}"`);
+
+    await shExec(`node "${tspc}" --watch --p "${tsconfigScryptTSPath}"`);
   } else {
     const result = await stepCmd(
       'Building TS',
-      `node "${tsc}" --p "${tsconfigScryptTSPath}"`,
+      `node "${tspc}" --p "${tsconfigScryptTSPath}"`,
       false,
     );
 
