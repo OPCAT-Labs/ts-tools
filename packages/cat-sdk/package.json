@@ -47,12 +47,12 @@
     ]
   },
   "dependencies": {
-    "@opcat-labs/cli-opcat": "1.0.7",
     "@opcat-labs/opcat": "1.0.3",
     "@opcat-labs/scrypt-ts-opcat": "1.0.5",
     "dotenv": "^16.0.3"
   },
   "devDependencies": {
+    "@opcat-labs/cli-opcat": "1.0.7",
     "@types/chai": "^4.3.4",
     "@types/chai-as-promised": "^7.1.5",
     "@types/mocha": "^10.0.0",
