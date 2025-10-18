@@ -11,7 +11,7 @@ import {
     IExtPsbt,
     ExtPsbt,
 } from '@opcat-labs/scrypt-ts-opcat'
-import { MultiSigPayment } from '@opcat-labs/examples'
+import { MultiSigPayment } from '..'
 import { getDefaultProvider, getRandomSigner } from './utils/helper'
 
 use(chaiAsPromised)

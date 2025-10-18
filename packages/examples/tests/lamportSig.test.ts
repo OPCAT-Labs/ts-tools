@@ -13,7 +13,7 @@ import {
     LamportP2PK,
     LamportPubKey,
     LamportSig,
-} from '@opcat-labs/examples'
+} from '..'
 import { getDefaultProvider, getDefaultSigner } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'
 import { PrivateKey } from '@opcat-labs/opcat'
@@ -63,7 +63,7 @@ describe('Test SmartContract `LamportSig`', () => {
                 if (and(lshift(m, BigInt(i)), 1n) == 0n) {
                     offset = 256n * 32n
                 }
-    
+
                 const start = BigInt(i) * 32n
                 const skChunkStart = start + offset
                 sig += slice(sk, skChunkStart, skChunkStart + 32n)
@@ -94,7 +94,7 @@ describe('Test SmartContract `LamportSig`', () => {
                 if (and(lshift(m, BigInt(i)), 1n) == 0n) {
                     offset = 256n * 32n
                 }
-    
+
                 const start = BigInt(i) * 32n
                 const skChunkStart = start + offset
                 sig += slice(sk, skChunkStart, skChunkStart + 32n)

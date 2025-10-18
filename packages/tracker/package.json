@@ -1,8 +1,8 @@
 {
-  "name": "@cat-protocol/cat-tracker",
+  "name": "@opcat-labs/cat-tracker",
   "version": "0.2.0",
   "description": "",
-  "author": "catprotocol.org",
+  "author": "",
   "private": true,
   "license": "MIT",
   "scripts": {

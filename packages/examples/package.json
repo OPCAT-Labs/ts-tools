@@ -5,12 +5,14 @@
   "type": "commonjs",
   "description": "A demo sCrypt smart contract.",
   "author": "",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js",
+      "types": "./dist/types/index.d.ts"
     }
   },
   "files": [
@@ -19,7 +21,7 @@
   ],
   "scripts": {
     "prebuild": "npm run clean && npm run compile",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && npx -y cpy-cli artifacts dist/ ",
     "clean": "rimraf scrypt.index.json && rimraf dist && rimraf artifacts",
     "compile": "scrypt-cli-opcat compile",
     "pretest": "npm run build",

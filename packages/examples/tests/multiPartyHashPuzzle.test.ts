@@ -9,7 +9,7 @@ import {
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
     MultiPartyHashPuzzle
-} from '@opcat-labs/examples'
+} from '..'
 import { getDefaultProvider, getDefaultSigner } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'
 use(chaiAsPromised)

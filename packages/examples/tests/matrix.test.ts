@@ -1,5 +1,5 @@
 import { call, deploy, IExtPsbt } from '@opcat-labs/scrypt-ts-opcat';
-import { Matrix } from '@opcat-labs/examples'
+import { Matrix } from '..'
 import { getDefaultProvider, getDefaultSigner } from './utils/helper'
 import { expect } from 'chai'
 

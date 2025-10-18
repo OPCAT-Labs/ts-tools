@@ -4,7 +4,7 @@ import {
     call,
     IExtPsbt,
 } from '@opcat-labs/scrypt-ts-opcat'
-import { ArraysTest } from '@opcat-labs/examples'
+import { ArraysTest } from '..'
 import { getDefaultSigner, getDefaultProvider } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'
 use(chaiAsPromised)

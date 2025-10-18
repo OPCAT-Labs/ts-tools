@@ -7,7 +7,7 @@ import {
     PubKey,
     hash256,
 } from '@opcat-labs/scrypt-ts-opcat'
-import { CoinToss } from '@opcat-labs/examples'
+import { CoinToss } from '..'
 import { getDefaultSigner, getDefaultProvider, getRandomSigner } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'
 use(chaiAsPromised)

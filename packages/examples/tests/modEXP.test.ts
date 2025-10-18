@@ -1,5 +1,5 @@
 import { call, deploy, IExtPsbt } from '@opcat-labs/scrypt-ts-opcat';
-import { ModExp } from '@opcat-labs/examples'
+import { ModExp } from '..'
 import { getDefaultProvider, getDefaultSigner } from './utils/helper'
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
