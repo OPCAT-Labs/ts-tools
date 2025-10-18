@@ -2,7 +2,7 @@
   "name": "@opcat-labs/cat-sdk",
   "version": "1.0.4",
   "description": "A demo sCrypt smart contract.",
-  "author": "",
+  "author": "OP_CAT Labs",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",

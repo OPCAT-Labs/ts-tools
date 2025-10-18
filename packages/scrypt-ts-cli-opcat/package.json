@@ -3,7 +3,7 @@
   "version": "1.0.7",
   "description": "CLI tool for creating and managing sCrypt projects.",
   "type": "commonjs",
-  "author": "",
+  "author": "OP_CAT Labs",
   "bin": {
     "scrypt-cli-opcat": "bin/main.js"
   },

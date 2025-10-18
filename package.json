@@ -1,7 +1,7 @@
 {
   "name": "ts-tools",
   "repository": "git@github.com:OPCAT-Labs/ts-tools.git",
-  "author": "OPCAT-Labs",
+  "author": "OP_CAT Labs",
   "license": "MIT",
   "private": true,
   "workspaces": [
