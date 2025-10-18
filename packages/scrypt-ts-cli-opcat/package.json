@@ -3,7 +3,7 @@
   "version": "1.0.7",
   "description": "CLI tool for creating and managing sCrypt projects.",
   "type": "commonjs",
-  "author": "sCrypt.Inc",
+  "author": "OP_CAT Labs",
   "bin": {
     "scrypt-cli-opcat": "bin/main.js"
   },
@@ -17,7 +17,6 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "postinstall": "ts-patch install -s",
     "#testcli": "use testcli not test to run this command before publish, do not run this command in branch & pr ci",
     "testcli": "sh -x test/test-all-commands.sh",
     "build": "nest build && yarn tar",
@@ -37,7 +36,8 @@
     "nest-commander": "^3.14.0",
     "ora": "5",
     "shelljs": "^0.8.5",
-    "tar": "^7.4.3"
+    "tar": "^7.4.3",
+    "ts-patch": "3.3.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

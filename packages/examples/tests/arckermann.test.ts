@@ -4,7 +4,7 @@ import {
     call,
     IExtPsbt,
 } from '@opcat-labs/scrypt-ts-opcat'
-import { Ackermann } from '@opcat-labs/examples'
+import { Ackermann } from '..'
 import { getDefaultSigner, getDefaultProvider } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'
 use(chaiAsPromised)

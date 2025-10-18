@@ -27,7 +27,8 @@
   },
   {
    "symbol": "ArrayTest",
-   "path": "contracts/array.scrypt.tpl"
+   "path": "contracts/array.scrypt.tpl",
+   "md5": "43c730d6e7d91bbd3174e785714c2634"
   },
   {
    "symbol": "Auction",
@@ -194,7 +195,8 @@
   },
   {
    "symbol": "CtcImportLib",
-   "path": "contracts/ctcImportlib.scrypt.tpl"
+   "path": "contracts/ctcImportlib.scrypt.tpl",
+   "md5": "83f0e008bbb6bfb21757e5adcfff3f23"
   },
   {
    "symbol": "CtcParameter",
@@ -203,7 +205,8 @@
   },
   {
    "symbol": "CtorWithNonProp",
-   "path": "contracts/ctorWithNonProp.scrypt.tpl"
+   "path": "contracts/ctorWithNonProp.scrypt.tpl",
+   "md5": "369a6a0e21215586a1cd0db394fe1918"
   },
   {
    "symbol": "CTX",
@@ -237,7 +240,8 @@
   },
   {
    "symbol": "DemoBigInt",
-   "path": "contracts/demoBigInt.scrypt.tpl"
+   "path": "contracts/demoBigInt.scrypt.tpl",
+   "md5": "ad8f76129566fe52b0f6ca08dc005aa2"
   },
   {
    "symbol": "DesignatedReceivers",
@@ -292,7 +296,8 @@
   },
   {
    "symbol": "FillFixedArray",
-   "path": "contracts/fillFixedArray.scrypt.tpl"
+   "path": "contracts/fillFixedArray.scrypt.tpl",
+   "md5": "fc7b9b69216cd058d6e026c448161e28"
   },
   {
    "symbol": "St",
@@ -396,7 +401,8 @@
   },
   {
    "symbol": "TestLib",
-   "path": "contracts/libTest.scrypt.tpl"
+   "path": "contracts/libTest.scrypt.tpl",
+   "md5": "880684984e8d37d6f788e59a6bb52d58"
   },
   {
    "symbol": "Matrix",
@@ -500,7 +506,7 @@
   {
    "symbol": "StateDelegatee",
    "path": "contracts/stateDelegatee.scrypt.tpl",
-   "md5": "310dc2d33624cae15e9e014ed1d92cf7",
+   "md5": "74f2276071ecbd5453123d9e8f23ae33",
    "stateType": "DelegateeState"
   },
   {
