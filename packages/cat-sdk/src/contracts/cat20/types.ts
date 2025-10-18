@@ -1,10 +1,14 @@
-import { ByteString, FixedArray, TxHashPreimage } from "@opcat-labs/scrypt-ts-opcat"
-import { StateHashes } from "../types";
-import { GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants";
-import { StructObject } from "@opcat-labs/scrypt-ts-opcat";
+import {
+  ByteString,
+  FixedArray,
+  TxHashPreimage,
+} from '@opcat-labs/scrypt-ts-opcat'
+import { StateHashes } from '../types'
+import { GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from '../constants'
+import { StructObject } from '@opcat-labs/scrypt-ts-opcat'
 
 // todo: uint32 or other type?
-export type CAT20_AMOUNT = bigint;
+export type CAT20_AMOUNT = bigint
 
 export type CAT20State = {
   tag: ByteString
@@ -13,7 +17,6 @@ export type CAT20State = {
   // token amount
   amount: CAT20_AMOUNT
 }
-
 
 export type CAT20GuardInfo = {
   // guard input index in curTx\
@@ -62,8 +65,6 @@ export type CAT20GuardConstState = {
   // the input #2 and #3 is a token contract with script tokenScripts[1] = 'token2Script'
   tokenScriptIndexes: FixedArray<bigint, typeof TX_INPUT_COUNT_MAX>
 }
-
-
 
 export interface CAT20Metadata extends StructObject {
   // name of the token, length is 1~int8.max bytes
@@ -123,4 +124,9 @@ export interface CAT20ClosedMinterState extends StructObject {
   // tokenScript: ByteString;
   // sha256 of tokenScript
   tokenScriptHash: ByteString
+}
+
+export interface CAT20AdminState extends StructObject {
+  tag: ByteString
+  ownerAddress: ByteString
 }
