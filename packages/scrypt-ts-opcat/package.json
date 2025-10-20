@@ -68,6 +68,7 @@
     "@noble/curves": "^1.8.1",
     "@opcat-labs/opcat": "1.0.3",
     "bip174": "^3.0.0-rc.1",
+    "cbor2": "^2.0.1",
     "cross-fetch": "^4.1.0",
     "decimal.js": "^10.5.0",
     "md5": "^2.3.0",
@@ -75,5 +76,8 @@
     "uint8array-tools": "^0.0.9",
     "valibot": "^0.38.0",
     "varuint-bitcoin": "^2.0.0"
+  },
+  "peerDependencies": {
+    "cbor2": "^2.0.1"
   }
 }
