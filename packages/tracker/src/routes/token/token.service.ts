@@ -1,7 +1,7 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
-import { IsNull, LessThanOrEqual, Repository, MoreThanOrEqual, LessThan } from 'typeorm';
+import { IsNull, LessThanOrEqual, Repository, MoreThanOrEqual, LessThan, ILike } from 'typeorm';
 import { ownerAddressToPubKeyHash, xOnlyPubKeyToAddress } from '../../common/utils';
 import { TxOutEntity } from '../../entities/txOut.entity';
 import { Constants } from '../../common/constants';
@@ -33,7 +33,7 @@ export class TokenService {
     private readonly txRepository: Repository<TxEntity>,
     @InjectRepository(TokenMintEntity)
     private readonly tokenMintRepository: Repository<TokenMintEntity>,
-  ) {}
+  ) { }
 
   async getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash: string, scope: TokenTypeScope) {
     let cached = TokenService.tokenInfoCache.get(tokenIdOrTokenScriptHash);
@@ -78,6 +78,38 @@ export class TokenService {
       }
     }
     return this.renderTokenInfo(cached);
+  }
+
+  async getTokenInfosByNamePrefix(tokenName: string, limit: number, scope: TokenTypeScope) {
+    const results = [];
+    if (scope !== TokenTypeScope.Fungible) {
+      return
+    }
+    let where: object;
+    where = {
+      name: ILike(`${tokenName}%`),
+    };
+    
+    const tokenInfos = await this.tokenInfoRepository.find({
+      select: [
+        'tokenId',
+        'genesisTxid',
+        'name',
+        'symbol',
+        'decimals',
+        'rawInfo',
+        'minterScriptHash',
+        'tokenScriptHash',
+        'firstMintHeight',
+      ],
+      where,
+      take: limit,
+    });
+    for (const tokenInfo of tokenInfos) {
+      results.push(this.renderTokenInfo(tokenInfo));
+    }
+
+    return results;
   }
 
   async getTokenInfoByTokenPubKey(tokenPubKey: string, scope: TokenTypeScope) {
@@ -220,17 +252,17 @@ export class TokenService {
           renderedUtxo,
           tokenInfo && tokenInfo.decimals >= 0
             ? {
-                state: {
-                  address: utxo.ownerPubKeyHash,
-                  amount: utxo.tokenAmount,
-                },
-              }
-            : {
-                state: {
-                  address: utxo.ownerPubKeyHash,
-                  localId: utxo.tokenAmount,
-                },
+              state: {
+                address: utxo.ownerPubKeyHash,
+                amount: utxo.tokenAmount,
               },
+            }
+            : {
+              state: {
+                address: utxo.ownerPubKeyHash,
+                localId: utxo.tokenAmount,
+              },
+            },
         );
       }
       renderedUtxos.push(renderedUtxo);
