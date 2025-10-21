@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 
-import { XORPuzzle } from '@opcat-labs/examples'
+import { XORPuzzle } from '..'
 import { crypto } from '@opcat-labs/opcat'
 import { getDefaultProvider, getDefaultSigner, getRandomSigner, padLeadingZero } from './utils/helper'
 import chaiAsPromised from 'chai-as-promised'

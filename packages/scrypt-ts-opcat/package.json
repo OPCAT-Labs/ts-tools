@@ -2,6 +2,7 @@
   "name": "@opcat-labs/scrypt-ts-opcat",
   "description": "A TypeScript library for building OPCAT smart contracts with sCrypt.",
   "version": "1.0.5",
+  "author": "OP_CAT Labs",
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
@@ -38,7 +39,7 @@
     "postbuild:cjs": "node fixup.cjs",
     "build:esm": "tsc -p tsconfig.esm.json",
     "build": "yarn run build:cjs && yarn run build:esm",
-    "gen:assets": "tsc -p tsconfig.assets.json && node injectAsm.cjs",
+    "gen:assets": "tspc -p tsconfig.assets.json && node injectAsm.cjs",
     "prebuild": "yarn run clean",
     "beta": "yarn publish  --tag beta  --access public",
     "genkey": "tsx test/utils/privateKey.ts",
@@ -60,6 +61,7 @@
     "mocha": "^11.0.1",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
+    "ts-patch": "3.3.0",
     "tsx": "^4.19.2"
   },
   "dependencies": {

@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import { getDefaultProvider, getDefaultSigner, getRandomSigner } from './utils/helper'
-import { TimedCommit } from '@opcat-labs/examples'
+import { TimedCommit } from '..'
 import { PubKey, toByteString, Signer, ByteString, deploy, call, sha256, ExtPsbt } from '@opcat-labs/scrypt-ts-opcat'
 import chaiAsPromised from 'chai-as-promised'
 use(chaiAsPromised)

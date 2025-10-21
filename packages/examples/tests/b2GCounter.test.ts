@@ -1,8 +1,8 @@
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { getDefaultProvider, getDefaultSigner } from './utils/helper.js';
-import { BacktraceInfo, call,  deployGenesis, IExtPsbt, Signer } from '@opcat-labs/scrypt-ts-opcat';
-import { B2GCounter } from '@opcat-labs/examples'
+import { BacktraceInfo, call, deployGenesis, IExtPsbt, Signer } from '@opcat-labs/scrypt-ts-opcat';
+import { B2GCounter } from '..'
 use(chaiAsPromised);
 
 describe('Test B2GCounter onchain', () => {
@@ -16,7 +16,7 @@ describe('Test B2GCounter onchain', () => {
   it('should deploy successfully', async () => {
 
     const address = await signer.getAddress();
-    const {psbt, contract} = await deployGenesis(signer, provider, (genesisOutpoint) => {
+    const { psbt, contract } = await deployGenesis(signer, provider, (genesisOutpoint) => {
       const counter = new B2GCounter(genesisOutpoint);
       counter.state = { count: 0n };
       return counter;
@@ -30,7 +30,7 @@ describe('Test B2GCounter onchain', () => {
 
     for (let i = 0; i < 10; i++) {
       const newContract = counter.next({ count: counter.state.count + 1n });
-      
+
       const psbt = await call(
         signer,
         provider,
@@ -40,9 +40,9 @@ describe('Test B2GCounter onchain', () => {
         },
         { contract: newContract, satoshis: 1, withBackTraceInfo: true },
       );
-  
+
       expect(psbt.isFinalized).to.be.true;
-  
+
       const txid = psbt.extractTransaction().id;
       console.info('increased successfully, txid: ', txid);
 

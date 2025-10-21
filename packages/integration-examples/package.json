@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "author": "OP_CAT Labs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -10,8 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@opcat-labs/cat-sdk": "^1.0.1",
-    "@opcat-labs/scrypt-ts-opcat": "^1.0.3",
+    "@opcat-labs/cat-sdk": "1.0.4",
+    "@opcat-labs/scrypt-ts-opcat": "1.0.5",
     "axios": "^1.11.0",
     "jotai": "^2.12.5",
     "node-stdlib-browser": "^1.3.1",

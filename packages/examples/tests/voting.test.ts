@@ -1,7 +1,7 @@
 import { expect } from 'chai'
-import { CandidateName, Voting, Candidate } from '@opcat-labs/examples'
+import { CandidateName, Voting, Candidate } from '..'
 import { getDefaultProvider, getDefaultSigner, getRandomInt } from './utils/helper'
-import { call, cloneDeep, deploy, IExtPsbt, FixedArray,  toByteString } from '@opcat-labs/scrypt-ts-opcat'
+import { call, cloneDeep, deploy, IExtPsbt, FixedArray, toByteString } from '@opcat-labs/scrypt-ts-opcat'
 
 const N = 10
 describe('Test SmartContract `Voting`', () => {
