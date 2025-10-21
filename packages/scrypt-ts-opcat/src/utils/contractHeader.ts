@@ -2,7 +2,7 @@ import { Opcode, Script } from "@opcat-labs/opcat";
 import { ByteString } from "../smart-contract/types";
 import { OpCode } from "../smart-contract/types";
 import { byteStringToInt, intToByteString, toByteString } from "../smart-contract/fns";
-import * as cbor from 'cbor2'
+import {encode as cborEncode, decode as cborDecode} from 'cbor2'
 
 
 export type ContractHeader = {
@@ -78,7 +78,7 @@ export class ContractHeaderSerializer {
     if (value === undefined || value === null) {
       return bufs
     }
-    const data = Buffer.from(cbor.encode(value))
+    const data = Buffer.from(cborEncode(value))
     const dataChunks = this.chunks(Array.from(data), this.LIMIT)
     for (const chunk of dataChunks) {
       this.pushField(bufs, field)
@@ -143,7 +143,7 @@ export class ContractHeaderSerializer {
     header: ContractHeader | null,
     lockingScript: string,
   } {
-    if (txOutScript.startsWith(this.ENVELOPE_HEAD_HEX)) {
+    if (!txOutScript.startsWith(this.ENVELOPE_HEAD_HEX)) {
       return {
         header: null,
         lockingScript: txOutScript,
@@ -151,8 +151,8 @@ export class ContractHeaderSerializer {
     }
 
     let version: bigint
-    let md5: string
-    let tag: string
+    let md5: string = ''
+    let tag: string = ''
 
     txOutScript = txOutScript.slice(this.ENVELOPE_HEAD_HEX.length)
     version = byteStringToInt(txOutScript.slice(0, 2))
@@ -177,12 +177,12 @@ export class ContractHeaderSerializer {
       }
     }
 
-    const lockingScript = Script.fromASM(bodyAsm.slice(readIndex)).toHex()
+    const lockingScript = Script.fromASM(bodyAsmItems.slice(readIndex).join(' ')).toHex()
 
     let header: ContractHeader = {
       version,
       md5,
-      tag: tag.length > 0 ? cbor.decode(Buffer.from(tag, 'hex')) : null,
+      tag: tag.length > 0 ? cborDecode(Buffer.from(tag, 'hex')) : null,
     }
     return { header, lockingScript }
 

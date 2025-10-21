@@ -85,7 +85,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
   state: StateT;
 
   // the header the contract, prepend before contract lockingScript
-  contractHeader: ContractHeader
+  private contractHeader: ContractHeader
 
   /**
    * Locking script corresponding to the SmartContract
