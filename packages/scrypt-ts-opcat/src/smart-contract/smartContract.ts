@@ -84,7 +84,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
    */
   state: StateT;
 
-  // the header the contract, prepend before contract lockingScript
+  // the header of the contract, prepended before contract lockingScript
   private contractHeader: ContractHeader
 
   /**
@@ -718,7 +718,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
       }
     }
     this.contractHeader.tag = tag;
-    this.updateLockingScript()
+    this.updateLockingScript();
 
     if (this.utxo && this.lockingScript.toHex() !== this.utxo.script) {
       const { header } = ContractHeaderSerializer.deserialize(this.utxo.script);
@@ -737,7 +737,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
   bindToUtxo(utxo: Optional<ExtUtxo, 'script'> | Optional<UTXO, 'script'>): this {
     if (utxo.script) {
       const { header, lockingScript } = ContractHeaderSerializer.deserialize(utxo.script);
-      if (lockingScript != this._lockingScriptHexWithoutHeader) {
+      if (lockingScript !== this._lockingScriptHexWithoutHeader) {
         throw new Error(
           `Different script, can not bind contract '${this.constructor.name}' to this UTXO: ${JSON.stringify(utxo)}!`,
         );

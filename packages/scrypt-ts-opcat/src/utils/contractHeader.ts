@@ -1,7 +1,6 @@
 import { Opcode, Script } from "@opcat-labs/opcat";
-import { ByteString } from "../smart-contract/types";
-import { OpCode } from "../smart-contract/types";
-import { byteStringToInt, intToByteString, toByteString } from "../smart-contract/fns";
+import { ByteString, OpCode } from "../smart-contract/types/index.js";
+import { byteStringToInt, intToByteString, toByteString } from "../smart-contract/fns/index.js";
 import {encode as cborEncode, decode as cborDecode} from 'cbor2'
 
 
@@ -12,15 +11,15 @@ export type ContractHeader = {
 }
 
 /**
- * Fields allowd in header, like ordinals
+ * Fields allowed in header, like ordinals
  */
 export const CONTRACT_HEADER_FIELDS = {
   // 20 bytes md5 hash
   // serialize: 
-  //   seralized = CONTRACT_HEADER_FIELDS.DM5 OP_PUSH_20_bytes <hash>
+  //   serialized = CONTRACT_HEADER_FIELDS.DM5 OP_PUSH_20_bytes <hash>
   MD5: OpCode.OP_1,
   // arbitrary user defined tag
-  // seralize: 
+  // serialize: 
   //    tagParts = cbor.encode(tag)
   //    serialized = CONTRACT_HEADER_FIELDS.TAG + tagParts[0] + CONTRACT_HEADER_FIELDS.TAG + tagParts[1] + ....
   TAG: OpCode.OP_2,
