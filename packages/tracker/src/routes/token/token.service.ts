@@ -106,7 +106,7 @@ export class TokenService {
       take: limit,
     });
     for (const tokenInfo of tokenInfos) {
-      results.push(this.renderTokenInfo(tokenInfo));
+      results.push(this.renderTokenInfo(tokenInfo).name);
     }
 
     return results;
