@@ -743,7 +743,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
         );
       }
       this.contractHeader = header;
-      this.updateLockingScript()
+      this.updateLockingScript();
     }
 
     this.utxo = { ...utxo, script: this.lockingScript.toHex() };
