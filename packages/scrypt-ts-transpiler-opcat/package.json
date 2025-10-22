@@ -19,7 +19,7 @@
     "getBinary": "node ./dist/compile/getBinary.js",
     "pretest": "rimraf test/artifacts && yarn buildtest && yarn gen:spec",
     "test": "yarn mocha",
-    "mocha": "cd test && mocha --parallel --jobs 5 --no-timeouts",
+    "mocha": "cd test && mocha --parallel --jobs 1 --no-timeouts",
     "gen:spec": "npx -y tsx ./test/scripts/generateSpec.ts"
   },
   "dependencies": {
