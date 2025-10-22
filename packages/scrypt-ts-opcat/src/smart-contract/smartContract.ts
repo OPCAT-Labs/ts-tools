@@ -9,7 +9,7 @@ import { ByteString, PubKey, SHPreimage, Sig } from './types/index.js';
 import { ABICoder } from './abi.js';
 import { Script } from './types/script.js';
 import { ExtUtxo, InputIndex, Optional, UTXO } from '../globalTypes.js';
-import { uint8ArrayToHex, cloneDeep, isFinal, hexToUint8Array } from '../utils/index.js';
+import { uint8ArrayToHex, cloneDeep, isFinal, hexToUint8Array, ContractHeaderSerializer, calcArtifactHexMD5, ContractHeader } from '../utils/index.js';
 import { Contextual, InputContext, IContext } from './types/context.js';
 import {
   Int32,
@@ -52,13 +52,13 @@ interface MethodCallData {
  * @category SmartContract
  */
 export class SmartContract<StateT extends OpcatState = undefined>
-  extends AbstractContract
-{
+  extends AbstractContract {
   /**
    * Bitcoin Contract Artifact
    */
   public static artifact: Artifact;
   private static newFromCreate: boolean = false;
+  public static readonly tags: string[] = [];
 
   /**
    *
@@ -83,10 +83,14 @@ export class SmartContract<StateT extends OpcatState = undefined>
    */
   state: StateT;
 
+  // the header of the contract, prepended before contract lockingScript
+  private contractHeader: ContractHeader
+
   /**
    * Locking script corresponding to the SmartContract
    */
   readonly lockingScript: Script;
+  private _lockingScriptHexWithoutHeader: string;
 
   /**
    * This function is usually called on the frontend.
@@ -100,6 +104,10 @@ export class SmartContract<StateT extends OpcatState = undefined>
     this.artifact = artifact;
     this.stateType = artifact.stateType;
     return this;
+  }
+
+  static get artifactHexMD5(): string {
+    return calcArtifactHexMD5(this.artifact.hex);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -122,17 +130,35 @@ export class SmartContract<StateT extends OpcatState = undefined>
       }
     }
     if (!SmartContract.newFromCreate) {
-      this.generateLockingScript(...args);
+      this.initLockingScript(...args);
     }
   }
 
-    /**
-   * @ignore
-   * @param args
-   */
-  private generateLockingScript(...args: SupportedParamType[]) {
+  /**
+ * @ignore
+ * @param args
+ */
+  private initLockingScript(...args: SupportedParamType[]) {
+    this._lockingScriptHexWithoutHeader = this._abiCoder.encodeConstructorCall(args).toHex();
+
+    // default: add md5, do not add tag
+    this.contractHeader = {
+      version: ContractHeaderSerializer.VERSION,
+      tags: (this.constructor as typeof SmartContract).tags || [],
+      md5: (this.constructor as typeof SmartContract).artifactHexMD5,
+    }
+    this.updateLockingScript();
+  }
+
+  private updateLockingScript() {
+    if (!this.contractHeader) {
+      (this as any).lockingScript = Script.fromHex(this._lockingScriptHexWithoutHeader);
+      return;
+    }
+    const txOutScriptHex = ContractHeaderSerializer.serialize(this.contractHeader, this._lockingScriptHexWithoutHeader);
+    const txOutScript = Script.fromHex(txOutScriptHex);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this as any).lockingScript = this._abiCoder.encodeConstructorCall(args);
+    (this as any).lockingScript = txOutScript;
   }
 
   /**
@@ -141,14 +167,14 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @param args
    * @returns
    */
-  static create<T extends { new (...args: ConstructorParameters<T>): InstanceType<T> }>(
+  static create<T extends { new(...args: ConstructorParameters<T>): InstanceType<T> }>(
     this: T,
     ...args: ConstructorParameters<T>
   ) {
     SmartContract.newFromCreate = true;
     const instance = new this(...args);
     SmartContract.newFromCreate = false;
-    (instance as SmartContract).generateLockingScript(...(args as SupportedParamType[]));
+    (instance as SmartContract).initLockingScript(...(args as SupportedParamType[]));
     return instance;
   }
 
@@ -182,7 +208,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return fSuccess;
   }
 
-  
+
   /**
    * Compares the first signature against each public key until it finds an ECDSA match. 
    * Starting with the subsequent public key, it compares the second signature against 
@@ -297,7 +323,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @returns success if stateHash is valid
    */
   override checkInputState(inputIndex: Int32, serializedState: ByteString): boolean {
-    const _stateHash = slice(this.inputContext.spentDataHashes, inputIndex * 32n, (inputIndex +  1n) * 32n);
+    const _stateHash = slice(this.inputContext.spentDataHashes, inputIndex * 32n, (inputIndex + 1n) * 32n);
     assert(sha256(serializedState) == _stateHash, 'stateHash mismatch');
     return true;
   }
@@ -385,7 +411,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @param autoCheckInputState - Whether to automatically check input state before injection.
    */
   extendMethodArgs(method: string, args: SupportedParamType[], autoCheckInputState: boolean) {
-  // extend the args with the context
+    // extend the args with the context
     if (this._shouldInjectCtx(method)) {
       this._autoInject(method, args, autoCheckInputState);
     }
@@ -680,7 +706,6 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return next;
   }
 
-
   /**
    * Binds the smart contract to a UTXO by verifying and setting its script.
    * @param utxo - The UTXO to bind to (script field is optional)
@@ -688,7 +713,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @throws Error if the UTXO's script exists and doesn't match the contract's locking script
    */
   bindToUtxo(utxo: Optional<ExtUtxo, 'script'> | Optional<UTXO, 'script'>): this {
-    if (utxo.script && this.lockingScript.toHex() !== utxo.script) {
+    if (utxo.script && utxo.script !== this.lockingScript.toHex()) {
       throw new Error(
         `Different script, can not bind contract '${this.constructor.name}' to this UTXO: ${JSON.stringify(utxo)}!`,
       );
@@ -706,7 +731,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @returns {boolean} True if the contract has state, false otherwise.
    */
   static isStateful(): boolean {
-    
+
     const selfClazz = (this as any) as typeof SmartContract;
 
     const artifact = selfClazz.artifact;
