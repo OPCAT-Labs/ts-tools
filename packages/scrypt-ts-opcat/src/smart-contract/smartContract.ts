@@ -58,14 +58,13 @@ export class SmartContract<StateT extends OpcatState = undefined>
    */
   public static artifact: Artifact;
   private static newFromCreate: boolean = false;
+  public static readonly tags: string[] = [];
 
   /**
    *
    * @ignore
    */
   static stateType?: string;
-
-  static taggable: boolean = false;
 
   /**
    *
@@ -145,14 +144,13 @@ export class SmartContract<StateT extends OpcatState = undefined>
     // default: add md5, do not add tag
     this.contractHeader = {
       version: ContractHeaderSerializer.VERSION,
-      tags: [],
+      tags: (this.constructor as typeof SmartContract).tags || [],
       md5: (this.constructor as typeof SmartContract).artifactHexMD5,
     }
     this.updateLockingScript();
   }
 
   private updateLockingScript() {
-
     if (!this.contractHeader) {
       (this as any).lockingScript = Script.fromHex(this._lockingScriptHexWithoutHeader);
       return;
@@ -708,26 +706,6 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return next;
   }
 
-
-  setTags(tags: string[]): this {
-    if (!this.contractHeader) {
-      this.contractHeader = {
-        version: ContractHeaderSerializer.VERSION,
-        tags: tags,
-        md5: (this.constructor as typeof SmartContract).artifactHexMD5,
-      }
-    }
-    this.contractHeader.tags = tags;
-    this.updateLockingScript();
-
-    if (this.utxo && this.lockingScript.toHex() !== this.utxo.script) {
-      const { header } = ContractHeaderSerializer.deserialize(this.utxo.script);
-
-      throw new Error(`The tag ${tags} is not equal to tag in utxo ${header?.tags} `);
-    }
-    return this;
-  }
-
   /**
    * Binds the smart contract to a UTXO by verifying and setting its script.
    * @param utxo - The UTXO to bind to (script field is optional)
@@ -735,15 +713,10 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @throws Error if the UTXO's script exists and doesn't match the contract's locking script
    */
   bindToUtxo(utxo: Optional<ExtUtxo, 'script'> | Optional<UTXO, 'script'>): this {
-    if (utxo.script) {
-      const { header, lockingScript } = ContractHeaderSerializer.deserialize(utxo.script);
-      if (lockingScript !== this._lockingScriptHexWithoutHeader) {
-        throw new Error(
-          `Different script, can not bind contract '${this.constructor.name}' to this UTXO: ${JSON.stringify(utxo)}!`,
-        );
-      }
-      this.contractHeader = header;
-      this.updateLockingScript();
+    if (utxo.script && utxo.script !== this.lockingScript.toHex()) {
+      throw new Error(
+        `Different script, can not bind contract '${this.constructor.name}' to this UTXO: ${JSON.stringify(utxo)}!`,
+      );
     }
 
     this.utxo = { ...utxo, script: this.lockingScript.toHex() };

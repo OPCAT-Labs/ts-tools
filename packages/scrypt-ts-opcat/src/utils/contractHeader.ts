@@ -13,10 +13,10 @@ export type ContractHeader = {
 /**
  * Fields allowed in header, like ordinals
  */
-export const CONTRACT_HEADER_FIELDS = {
+export const CONTRACT_HEADER_FIELD_FLAGS = {
   // 20 bytes md5 hash
   // serialize: 
-  //   serialized = CONTRACT_HEADER_FIELDS.DM5 OP_PUSH_20_bytes <hash>
+  //   serialized = CONTRACT_HEADER_FIELDS.DM5 <hash>
   MD5: OpCode.OP_1,
   // arbitrary user defined tag
   // serialize: 
@@ -24,7 +24,7 @@ export const CONTRACT_HEADER_FIELDS = {
   //    serialized = CONTRACT_HEADER_FIELDS.TAG + tagParts[0] + CONTRACT_HEADER_FIELDS.TAG + tagParts[1] + ....
   TAGS: OpCode.OP_2,
 }
-export type ContractHeaderField = keyof typeof CONTRACT_HEADER_FIELDS;
+export type ContractHeaderField = keyof typeof CONTRACT_HEADER_FIELD_FLAGS;
 
 export class ContractHeaderSerializer {
 
@@ -70,7 +70,7 @@ export class ContractHeaderSerializer {
   }
 
   private static pushField(bufs: Buffer[], field: ContractHeaderField) {
-    bufs.push(Buffer.from(CONTRACT_HEADER_FIELDS[field], 'hex'))
+    bufs.push(Buffer.from(CONTRACT_HEADER_FIELD_FLAGS[field], 'hex'))
   }
 
   private static pushCbor(bufs: Buffer[], field: ContractHeaderField, value: any) {
@@ -162,10 +162,10 @@ export class ContractHeaderSerializer {
     let readIndex = 0;
     while (readIndex < bodyAsmItems.length) {
       const tagOP = Script.fromASM(bodyAsmItems[readIndex]).toHex().toLowerCase();
-      if (tagOP == CONTRACT_HEADER_FIELDS.MD5.toLowerCase()) {
+      if (tagOP == CONTRACT_HEADER_FIELD_FLAGS.MD5.toLowerCase()) {
         md5 = bodyAsmItems[readIndex + 1]
         readIndex += 2
-      } else if (tagOP == CONTRACT_HEADER_FIELDS.TAGS.toLowerCase()) {
+      } else if (tagOP == CONTRACT_HEADER_FIELD_FLAGS.TAGS.toLowerCase()) {
         tags += bodyAsmItems[readIndex + 1]
         readIndex += 2
       } else if (tagOP == OpCode.OP_ENDIF.toLowerCase()) {

@@ -1,12 +1,12 @@
 export { ExtPsbt } from './psbt/extPsbt.js';
 export { Psbt } from './psbt/psbt.js';
-export { type  OpcatUtxo } from './psbt/utxoConverter.js'
+export { type OpcatUtxo } from './psbt/utxoConverter.js'
 export { type IExtPsbt, type ContractCall } from './psbt/types.js';
 
 // smart contract core classes & interfaces
 export { SmartContract } from './smart-contract/smartContract.js';
 export { SmartContractLib } from './smart-contract/smartContractLib.js';
-export { method, prop, type MethodDecoratorOptions } from './smart-contract/decorators.js';
+export { method, prop, type MethodDecoratorOptions, tags } from './smart-contract/decorators.js';
 export {
   Address,
   Block,

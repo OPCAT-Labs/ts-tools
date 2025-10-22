@@ -84,8 +84,7 @@ export function method(options: MethodDecoratorOptions = { autoCheckInputState: 
           }
 
           throw new Error(
-            `@method decorator used on \`${
-              this.name || this.constructor.name
+            `@method decorator used on \`${this.name || this.constructor.name
             }#${methodName}\`, it should only be used in subclasses of \`SmartContract\` or \`SmartContractLib\``,
           );
         };
@@ -113,4 +112,32 @@ export function prop() {
     const props = (Reflect.getMetadata(PropsMetaKey, target) || []).concat(propertyName);
     Reflect.defineMetadata(PropsMetaKey, props, target);
   };
+}
+
+/**
+ * @ignore
+ */
+export const TagsMetaKey = 'scrypt:tags';
+
+/**
+ * tags decorator, used to set the tags of the contract, decorating the SmartContract class
+ * @param vals the tags to set
+ * 
+ */
+export function tags(vals: string[]) {
+  return function (target: any) {
+    // the tags can be retrive in the SmartContract class, and the tags are set in the constructor of the SmartContract class
+    // so we need to set the tags in the constructor of the SmartContract class
+    const constructor = target.constructor;
+    if (!constructor) {
+      throw new Error('None constructor! Please use the @tags decorator on the SmartContract class');
+    }
+    Object.defineProperty(target, 'tags', {
+      value: vals.filter((tag, index, arr) => arr.indexOf(tag) == index),
+      writable: false,
+      enumerable: false,
+      configurable: false,
+    });
+    return target;
+  }
 }
