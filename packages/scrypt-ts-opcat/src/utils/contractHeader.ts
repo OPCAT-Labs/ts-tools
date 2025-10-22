@@ -1,13 +1,13 @@
 import { Opcode, Script } from "@opcat-labs/opcat";
 import { ByteString, OpCode } from "../smart-contract/types/index.js";
 import { byteStringToInt, intToByteString, toByteString } from "../smart-contract/fns/index.js";
-import {encode as cborEncode, decode as cborDecode} from 'cbor2'
+import { encode as cborEncode, decode as cborDecode } from 'cbor2'
 
 
 export type ContractHeader = {
   version: bigint;
   md5: ByteString;
-  tag: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  tags: string[];
 }
 
 /**
@@ -22,7 +22,7 @@ export const CONTRACT_HEADER_FIELDS = {
   // serialize: 
   //    tagParts = cbor.encode(tag)
   //    serialized = CONTRACT_HEADER_FIELDS.TAG + tagParts[0] + CONTRACT_HEADER_FIELDS.TAG + tagParts[1] + ....
-  TAG: OpCode.OP_2,
+  TAGS: OpCode.OP_2,
 }
 export type ContractHeaderField = keyof typeof CONTRACT_HEADER_FIELDS;
 
@@ -134,7 +134,7 @@ export class ContractHeaderSerializer {
     bufs.push(Buffer.from(this.ENVELOPE_HEAD_HEX, 'hex'))
     bufs.push(Buffer.from(intToByteString(header.version, 1n), 'hex'))
     this.pushShortField(bufs, 'MD5', header.md5);
-    this.pushCbor(bufs, 'TAG', header.tag);
+    this.pushCbor(bufs, 'TAGS', header.tags);
     bufs.push(Buffer.from(this.ENVELOPE_TAIL_HEX, 'hex'))
     return Buffer.concat(bufs).toString('hex')
   }
@@ -151,7 +151,7 @@ export class ContractHeaderSerializer {
 
     let version: bigint
     let md5: string = ''
-    let tag: string = ''
+    let tags: string = ''
 
     txOutScript = txOutScript.slice(this.ENVELOPE_HEAD_HEX.length)
     version = byteStringToInt(txOutScript.slice(0, 2))
@@ -165,8 +165,8 @@ export class ContractHeaderSerializer {
       if (tagOP == CONTRACT_HEADER_FIELDS.MD5.toLowerCase()) {
         md5 = bodyAsmItems[readIndex + 1]
         readIndex += 2
-      } else if (tagOP == CONTRACT_HEADER_FIELDS.TAG.toLowerCase()) {
-        tag += bodyAsmItems[readIndex + 1]
+      } else if (tagOP == CONTRACT_HEADER_FIELDS.TAGS.toLowerCase()) {
+        tags += bodyAsmItems[readIndex + 1]
         readIndex += 2
       } else if (tagOP == OpCode.OP_ENDIF.toLowerCase()) {
         readIndex += 1;
@@ -181,10 +181,9 @@ export class ContractHeaderSerializer {
     let header: ContractHeader = {
       version,
       md5,
-      tag: tag.length > 0 ? cborDecode(Buffer.from(tag, 'hex')) : null,
+      tags: tags.length > 0 ? cborDecode(Buffer.from(tags, 'hex')) : [],
     }
     return { header, lockingScript }
-
   }
 
 

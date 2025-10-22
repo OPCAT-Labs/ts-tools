@@ -145,7 +145,7 @@ export class SmartContract<StateT extends OpcatState = undefined>
     // default: add md5, do not add tag
     this.contractHeader = {
       version: ContractHeaderSerializer.VERSION,
-      tag: null,
+      tags: [],
       md5: (this.constructor as typeof SmartContract).artifactHexMD5,
     }
     this.updateLockingScript();
@@ -709,21 +709,21 @@ export class SmartContract<StateT extends OpcatState = undefined>
   }
 
 
-  setTag(tag: any): this {
+  setTags(tags: string[]): this {
     if (!this.contractHeader) {
       this.contractHeader = {
         version: ContractHeaderSerializer.VERSION,
-        tag: null,
+        tags: tags,
         md5: (this.constructor as typeof SmartContract).artifactHexMD5,
       }
     }
-    this.contractHeader.tag = tag;
+    this.contractHeader.tags = tags;
     this.updateLockingScript();
 
     if (this.utxo && this.lockingScript.toHex() !== this.utxo.script) {
       const { header } = ContractHeaderSerializer.deserialize(this.utxo.script);
 
-      throw new Error(`The tag ${tag} is not equal to tag in utxo ${header?.tag} `);
+      throw new Error(`The tag ${tags} is not equal to tag in utxo ${header?.tags} `);
     }
     return this;
   }
