@@ -33,7 +33,7 @@ export class TokenService {
     private readonly txRepository: Repository<TxEntity>,
     @InjectRepository(TokenMintEntity)
     private readonly tokenMintRepository: Repository<TokenMintEntity>,
-  ) {}
+  ) { }
 
   async getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash: string, scope: TokenTypeScope) {
     let cached = TokenService.tokenInfoCache.get(tokenIdOrTokenScriptHash);
@@ -60,6 +60,16 @@ export class TokenService {
           'minterScriptHash',
           'tokenScriptHash',
           'firstMintHeight',
+          'holdersNum',
+          'totalTransNum',
+          'premine',
+          'tokenLimit',
+          'minted',
+          'supply',
+          'deployBlock',
+          'deployTxid',
+          'revealTxid',
+          'deployTime'
         ],
         where,
       });
@@ -77,6 +87,36 @@ export class TokenService {
         cached = null;
       }
     }
+
+    let holders = [];
+    if (cached && cached.tokenScriptHash) {
+      const query = this.txOutRepository
+        .createQueryBuilder()
+        .select('owner_pkh', 'ownerPubKeyHash')
+        .where('spend_txid IS NULL')
+        .andWhere('locking_script_hash = :xonlyPubkey', {
+          xonlyPubkey: cached.tokenScriptHash,
+        })
+        .groupBy('owner_pkh');
+      if (scope === TokenTypeScope.Fungible) {
+        query.addSelect('SUM(token_amount)', 'tokenAmount');
+      }
+      holders = await query.getRawMany();
+      cached.holdersNum = holders.length ?? 0;
+    }
+
+    let totalCount = [];
+    if (cached && cached.tokenScriptHash) {
+      const query = this.txOutRepository
+        .createQueryBuilder()
+        .select('txid')
+        .where('locking_script_hash = :xonlyPubkey', {
+          xonlyPubkey: cached.tokenScriptHash,
+        })
+      totalCount = await query.getRawMany();
+    }
+    cached.totalTransNum = totalCount.length ?? 0;
+
     return this.renderTokenInfo(cached);
   }
 
@@ -181,6 +221,9 @@ export class TokenService {
     const query = this.txOutRepository
       .createQueryBuilder('t1')
       .select('t2.token_id', 'tokenId')
+      .addSelect('t2.name', 'name')
+      .addSelect('t2.symbol', 'symbol')
+      .addSelect('t2.logo_url', 'logoUrl')
       .innerJoin(TokenInfoEntity, 't2', 't1.locking_script_hash = t2.token_script_hash')
       .where('t1.spend_txid IS NULL')
       .andWhere('t1.owner_pkh = :ownerPkh', { ownerPkh: ownerPubKeyHash })
@@ -196,9 +239,14 @@ export class TokenService {
       });
     }
     const results = await query.getRawMany();
+   //console.log('results: ', results);
+
     return results.map((r) => ({
       tokenId: r.tokenId,
       confirmed: r.confirmed,
+      name: r.name,
+      symbol: r.symbol,
+      logoUrl: r.logoUrl,
     }));
   }
 
@@ -220,17 +268,17 @@ export class TokenService {
           renderedUtxo,
           tokenInfo && tokenInfo.decimals >= 0
             ? {
-                state: {
-                  address: utxo.ownerPubKeyHash,
-                  amount: utxo.tokenAmount,
-                },
-              }
-            : {
-                state: {
-                  address: utxo.ownerPubKeyHash,
-                  localId: utxo.tokenAmount,
-                },
+              state: {
+                address: utxo.ownerPubKeyHash,
+                amount: utxo.tokenAmount,
               },
+            }
+            : {
+              state: {
+                address: utxo.ownerPubKeyHash,
+                localId: utxo.tokenAmount,
+              },
+            },
         );
       }
       renderedUtxos.push(renderedUtxo);
@@ -314,7 +362,9 @@ export class TokenService {
       ownerPubKeyHash: string;
       tokenAmount?: string;
       nftAmount?: number;
+      percentage: number;
     }[];
+    logoUrl: string;
     trackerBlockHeight: number;
   }> {
     const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
@@ -338,8 +388,24 @@ export class TokenService {
       }
       holders = await query.getRawMany();
     }
+
+    const totalQuery = this.txOutRepository
+      .createQueryBuilder()
+      .select('SUM(token_amount)', 'totalTokenAmount')
+      .where('spend_txid IS NULL')
+      .andWhere('locking_script_hash = :xonlyPubkey', {
+        xonlyPubkey: tokenInfo.tokenScriptHash,
+      });
+    const totalResult = await totalQuery.getRawOne();
+    const totalTokenAmount = Number(totalResult?.totalTokenAmount) || 0;
+    const holdersWithPercentage = holders.map(holder => ({
+      ...holder,
+        percentage: totalTokenAmount > 0 ? parseFloat(((Number(holder.tokenAmount) / totalTokenAmount) * 100).toFixed(2)) : 0,
+    }));
+
     return {
-      holders,
+      holders: holdersWithPercentage,
+      logoUrl: tokenInfo?.logoUrl || '',
       trackerBlockHeight: lastProcessedHeight,
     };
   }

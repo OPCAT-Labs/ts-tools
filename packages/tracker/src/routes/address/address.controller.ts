@@ -65,6 +65,9 @@ export class AddressController {
           return {
             collectionId: balance.tokenId,
             confirmed: balance.confirmed,
+            name: balance.name,
+            symbol: balance.symbol,
+            logoUrl: balance.logoUrl,
           };
         }),
         trackerBlockHeight: balances.trackerBlockHeight,
