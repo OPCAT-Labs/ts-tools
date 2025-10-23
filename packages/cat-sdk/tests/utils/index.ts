@@ -12,6 +12,10 @@ export function isOnchainTest(provider: UtxoProvider & ChainProvider) {
   return !isLocalTest
 }
 
+export function isLocalTest(provider: UtxoProvider & ChainProvider) {
+  return provider instanceof DummyProvider
+}
+
 export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }

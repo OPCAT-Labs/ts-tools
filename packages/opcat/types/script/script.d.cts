@@ -392,7 +392,7 @@ declare namespace Script {
     /**
      * Builds a standard P2PKH (Pay-to-Public-Key-Hash) script for a given recipient.
      * @param {PublicKey|Address|string} to - Recipient's public key, address, or address string
-     * @returns {Script} A P2PKH script with the format: OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
+     * @returns {Script} A P2PKH script with the format: OP_DUP OP_HASH160 \<pubKeyHash\> OP_EQUALVERIFY OP_CHECKSIG
      * @throws {Error} If 'to' argument is undefined or invalid type
      */
     function buildPublicKeyHashOut(to: string | Address | PublicKey): Script;

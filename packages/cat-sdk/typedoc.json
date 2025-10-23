@@ -1,0 +1,17 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "@opcat-labs/cat-sdk",
+  "entryPoints": ["./src"],
+  "out": "docs",
+  "searchCategoryBoosts": {
+    "Component": 2,
+    "Model": 1.2
+  },
+  "searchGroupBoosts": {
+    "Classes": 1.5
+  },
+  "visibilityFilters": {},
+  "hideGenerator": true,
+  "excludePrivate": true,
+  "includeVersion": true
+}

@@ -2,7 +2,7 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
 import { IsNull, LessThanOrEqual, Repository, MoreThanOrEqual, LessThan } from 'typeorm';
-import { ownerAddressToPubKeyHash, xOnlyPubKeyToAddress } from '../../common/utils';
+import { ownerAddressToPubKeyHash } from '../../common/utils';
 import { TxOutEntity } from '../../entities/txOut.entity';
 import { Constants } from '../../common/constants';
 import { LRUCache } from 'lru-cache';
@@ -33,7 +33,7 @@ export class TokenService {
     private readonly txRepository: Repository<TxEntity>,
     @InjectRepository(TokenMintEntity)
     private readonly tokenMintRepository: Repository<TokenMintEntity>,
-  ) {}
+  ) { }
 
   async getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash: string, scope: TokenTypeScope) {
     let cached = TokenService.tokenInfoCache.get(tokenIdOrTokenScriptHash);
@@ -80,11 +80,6 @@ export class TokenService {
     return this.renderTokenInfo(cached);
   }
 
-  async getTokenInfoByTokenPubKey(tokenPubKey: string, scope: TokenTypeScope) {
-    const tokenAddr = xOnlyPubKeyToAddress(tokenPubKey);
-    return this.getTokenInfoByTokenIdOrTokenScriptHash(tokenAddr, scope);
-  }
-
   renderTokenInfo(tokenInfo: TokenInfoEntity) {
     if (!tokenInfo) {
       return null;
@@ -119,6 +114,23 @@ export class TokenService {
     };
   }
 
+  async getTokenAmountsByOwnerAddress(
+    tokenIdOrTokenAddr: string,
+    scope: TokenTypeScope,
+    ownerAddrOrPkh: string,
+  ) {
+    const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
+    const tokenInfo = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenAddr, scope);
+    let amounts: TxOutEntity[] = [];
+    if (tokenInfo) {
+      amounts = await this.queryTokenAmountsByOwnerAddress(lastProcessedHeight, ownerAddrOrPkh, tokenInfo);
+    }
+    return {
+      trackerBlockHeight: lastProcessedHeight,
+      amounts: amounts.map((amount) => amount.tokenAmount.toString()),
+    }
+  }
+
   async getTokenBalanceByOwnerAddress(
     tokenIdOrTokenAddr: string,
     scope: TokenTypeScope.Fungible | TokenTypeScope.NonFungible,
@@ -145,7 +157,6 @@ export class TokenService {
     limit: number | null = null,
   ) {
     const ownerPubKeyHash = ownerAddressToPubKeyHash(ownerAddrOrPkh);
-    console.log('ownerPubKeyHash: ', ownerPubKeyHash);
     if (lastProcessedHeight === null || (tokenInfo && !tokenInfo.tokenScriptHash) || !ownerPubKeyHash) {
       return [];
     }
@@ -164,6 +175,27 @@ export class TokenService {
       take: limit,
     });
   }
+
+  async queryTokenAmountsByOwnerAddress(
+    lastProcessedHeight: number,
+    ownerAddrOrPkh: string,
+    tokenInfo: TokenInfoEntity,
+  ) {
+    const ownerPubKeyHash = ownerAddressToPubKeyHash(ownerAddrOrPkh);
+    if (lastProcessedHeight === null || (tokenInfo && !tokenInfo.tokenScriptHash) || !ownerPubKeyHash) {
+      return [];
+    }
+    const where = {
+      ownerPubKeyHash,
+      spendTxid: IsNull(),
+      lockingScriptHash: tokenInfo.tokenScriptHash,
+    };
+    return this.txOutRepository.find({
+      select: ['tokenAmount'],
+      where,
+    });
+  }
+
 
   async queryTokenBalancesByOwnerAddress(
     lastProcessedHeight: number,
@@ -220,17 +252,17 @@ export class TokenService {
           renderedUtxo,
           tokenInfo && tokenInfo.decimals >= 0
             ? {
-                state: {
-                  address: utxo.ownerPubKeyHash,
-                  amount: utxo.tokenAmount,
-                },
-              }
-            : {
-                state: {
-                  address: utxo.ownerPubKeyHash,
-                  localId: utxo.tokenAmount,
-                },
+              state: {
+                address: utxo.ownerPubKeyHash,
+                amount: utxo.tokenAmount,
               },
+            }
+            : {
+              state: {
+                address: utxo.ownerPubKeyHash,
+                localId: utxo.tokenAmount,
+              },
+            },
         );
       }
       renderedUtxos.push(renderedUtxo);
@@ -253,6 +285,8 @@ export class TokenService {
         tokenPubKey: tokenInfo.tokenScriptHash,
         blockHeight: LessThanOrEqual(lastProcessedHeight),
       };
+
+      // todo: fix here token_amount is not exists at tokenMint.entity.ts
       if (scope === TokenTypeScope.Fungible) {
         const r = await this.tokenMintRepository
           .createQueryBuilder()
@@ -283,7 +317,7 @@ export class TokenService {
     let amount = '0';
     if (tokenInfo && tokenInfo.tokenScriptHash && lastProcessedHeight) {
       const where = {
-        xOnlyPubKey: tokenInfo.tokenScriptHash,
+        lockingScriptHash: tokenInfo.tokenScriptHash,
         spendTxid: IsNull(),
       };
       if (scope === TokenTypeScope.Fungible) {

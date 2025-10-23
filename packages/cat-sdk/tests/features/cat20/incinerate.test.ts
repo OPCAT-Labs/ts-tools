@@ -10,7 +10,7 @@ import { toTokenOwnerAddress } from '../../../src/utils'
 import { OpenMinterCAT20Meta } from '../../../src/contracts/cat20/types'
 import { TestCAT20Generator } from '../../utils/testCAT20Generator'
 import { CAT20ClosedMinter } from '../../../src/contracts/cat20/minters/cat20ClosedMinter'
-import { incinerate } from '../../../src/features/cat20/incinerate'
+import { incinerateToken } from '../../../src/features/cat20/incinerate'
 import { CAT20Incinerator } from '../../../src/contracts/cat20Incinerator'
 import { ContractPeripheral } from '../../../src/utils/contractPeripheral'
 import { CAT20Guard } from '../../../src/contracts/cat20/cat20Guard'
@@ -36,7 +36,6 @@ describe('Test the feature `incinerate` for `CAT20`', () => {
     )
 
     metadata = formatMetadata({
-      tag: ConstantsLib.OPCAT_METADATA_TAG,
       name: 'c',
       symbol: 'C',
       decimals: 2n,
@@ -80,7 +79,7 @@ describe('Test the feature `incinerate` for `CAT20`', () => {
   })
 
   async function testIncinerateResult(cat20Utxos: UTXO[]) {
-    const { guardPsbt, burnPsbt } = await incinerate(
+    const { guardPsbt, burnPsbt } = await incinerateToken(
       testSigner,
       testProvider,
       cat20Generater.deployInfo.minterScriptHash,

@@ -1,5 +1,6 @@
 export * from './contracts/index'
-export * from './features/index'
+export * from './features/cat20/index'
+export * from './features/cat721/index'
 export * from './lib/index'
 export * from './typeConstants'
 
