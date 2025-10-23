@@ -63,11 +63,8 @@ export class TokenInfoEntity {
   @Column({ name: 'deploy_txid', nullable: true })
   deployTxid: string;
 
-  @Column({ name: 'reveal_txid', nullable: true })
-  revealTxid: string;
-
   @Column({ name: 'deploy_time', nullable: true })
-  deployTime: Date;
+  deployTime: number;
 
   @Column({ name: 'logo_url', nullable: true })
   logoUrl: string;

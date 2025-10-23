@@ -68,7 +68,6 @@ export class TokenService {
           'supply',
           'deployBlock',
           'deployTxid',
-          'revealTxid',
           'deployTime'
         ],
         where,
@@ -103,6 +102,13 @@ export class TokenService {
       }
       holders = await query.getRawMany();
       cached.holdersNum = holders.length ?? 0;
+
+      if (scope === TokenTypeScope.Fungible) {
+        cached.supply = holders.reduce(
+          (sum, h) => sum + (h.tokenAmount ? Number(h.tokenAmount) : 0),
+          0
+        );
+      }
     }
 
     let totalCount = [];
@@ -116,6 +122,27 @@ export class TokenService {
       totalCount = await query.getRawMany();
     }
     cached.totalTransNum = totalCount.length ?? 0;
+
+    const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
+    let amount = '0';
+    if (cached && cached.tokenScriptHash) {
+      const where = {
+        tokenScriptHash: cached.tokenScriptHash,
+        blockHeight: LessThanOrEqual(lastProcessedHeight),
+      };
+      if (scope === TokenTypeScope.Fungible) {
+        const r = await this.tokenMintRepository
+          .createQueryBuilder()
+          .select('SUM(token_amount)', 'count')
+          .where(where)
+          .getRawOne();
+        amount = r?.count || '0';
+      } else {
+        const r = await this.tokenMintRepository.count({ where });
+        amount = (r || 0).toString();
+      }
+    }
+    cached.minted = Number(amount);
 
     return this.renderTokenInfo(cached);
   }
@@ -239,7 +266,7 @@ export class TokenService {
       });
     }
     const results = await query.getRawMany();
-   //console.log('results: ', results);
+    //console.log('results: ', results);
 
     return results.map((r) => ({
       tokenId: r.tokenId,
@@ -298,7 +325,7 @@ export class TokenService {
     let amount = '0';
     if (tokenInfo && tokenInfo.tokenScriptHash && lastProcessedHeight) {
       const where = {
-        tokenPubKey: tokenInfo.tokenScriptHash,
+        tokenScriptHash: tokenInfo.tokenScriptHash,
         blockHeight: LessThanOrEqual(lastProcessedHeight),
       };
       if (scope === TokenTypeScope.Fungible) {
@@ -400,7 +427,7 @@ export class TokenService {
     const totalTokenAmount = Number(totalResult?.totalTokenAmount) || 0;
     const holdersWithPercentage = holders.map(holder => ({
       ...holder,
-        percentage: totalTokenAmount > 0 ? parseFloat(((Number(holder.tokenAmount) / totalTokenAmount) * 100).toFixed(2)) : 0,
+      percentage: totalTokenAmount > 0 ? parseFloat(((Number(holder.tokenAmount) / totalTokenAmount) * 100).toFixed(2)) : 0,
     }));
 
     return {

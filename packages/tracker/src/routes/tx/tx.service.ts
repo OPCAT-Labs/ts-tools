@@ -8,7 +8,7 @@ import { TxInput, payments, Transaction, script } from 'bitcoinjs-lib';
 import { CachedContent, TaprootPayment, TokenTypeScope } from '../../common/types';
 import { CommonService } from '../../services/common/common.service';
 import { Constants } from '../../common/constants';
-import { ownerAddressToPubKeyHash, parseEnvelope } from '../../common/utils';
+import { ownerAddressToPubKeyHash,xOnlyPubKeyToAddress, parseEnvelope } from '../../common/utils';
 import { LRUCache } from 'lru-cache';
 import { HttpStatusCode } from 'axios';
 
@@ -165,7 +165,7 @@ export class TxService {
         .limit(size)
         .groupBy('t1.txid, t1.created_at');
       const results = await query.getRawMany();
-    
+
       const queryFrom = this.txOutRepository
         .createQueryBuilder('t1')
         .select('t1.owner_pkh', 'address')
@@ -180,9 +180,17 @@ export class TxService {
         .andWhere('t1.owner_pkh = :ownerPkh', { ownerPkh: ownerPubKeyHash });
       const fromResults = await queryFrom.getRawMany();
 
+      const processedFromResults = fromResults.map(item => {
+        const convertedAddress = xOnlyPubKeyToAddress(item.address);
+        return {
+          ...item,
+          address: convertedAddress,
+        };
+      });
+
       // v fromResults 0 results
       results.forEach(result => {
-        result.txFrom = fromResults.filter(item => item.spendTxid === result.txid);
+        result.txFrom = processedFromResults.filter(item => item.spendTxid === result.txid);
       });
 
       const queryTo = this.txOutRepository
@@ -199,8 +207,16 @@ export class TxService {
         .andWhere('t1.owner_pkh = :ownerPkh', { ownerPkh: ownerPubKeyHash });
       const toResults = await queryTo.getRawMany();
 
+       const processedToResults = toResults.map(item => {
+        const convertedAddress = xOnlyPubKeyToAddress(item.address);
+        return {
+          ...item,
+          address: convertedAddress,
+        };
+      });
+
       results.forEach(result => {
-        result.txTo = toResults.filter(item => item.txid === result.txid);
+        result.txTo = processedToResults.filter(item => item.txid === result.txid);
       });
 
       return results;
