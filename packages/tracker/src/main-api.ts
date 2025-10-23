@@ -1,14 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { AppApiModule } from './app-api.module';
-import * as ecc from '@bitcoin-js/tiny-secp256k1-asmjs';
-import { initEccLib } from 'bitcoinjs-lib';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { LoggingInterceptor } from './logging.interceptor';
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 
 async function bootstrap() {
-  initEccLib(ecc);
 
   const app = await NestFactory.create(AppApiModule);
   const swaggerConfig = new DocumentBuilder()

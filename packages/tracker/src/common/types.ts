@@ -45,9 +45,3 @@ export interface TokenInfoEnvelope {
   marker: EnvelopeMarker;
   data: EnvelopeData;
 }
-
-export interface TaprootPayment {
-  pubkey?: Buffer;
-  redeemScript?: Buffer;
-  witness?: Buffer[];
-}

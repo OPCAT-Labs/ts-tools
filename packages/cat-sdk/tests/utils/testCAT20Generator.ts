@@ -2,39 +2,47 @@ import { ByteString, Ripemd160 } from '@opcat-labs/scrypt-ts-opcat'
 import { toTokenOwnerAddress } from '../../src/utils'
 import { CAT20TokenInfo, formatMetadata } from '../../src/lib/metadata'
 import { ExtPsbt, UTXO } from '@opcat-labs/scrypt-ts-opcat'
-import { deploy } from './testCAT20/features/deploy'
+import { deployClosedMinterToken } from '../../src/features/cat20/deploy/closedMinter'
 import { testSigner } from './testSigner'
 import {
   CAT20_AMOUNT,
   ClosedMinterCAT20Meta,
 } from '../../src/contracts/cat20/types'
-import { mint } from './testCAT20/features/mint'
+import { mintClosedMinterToken } from '../../src/features/cat20/mint/closedMinter'
 import { singleSend } from '../../src/features/cat20/send/singleSend'
 import { verifyTx } from '.'
 import { expect } from 'chai'
 import { testProvider } from './testProvider'
-import { CAT20GuardPeripheral } from '../../src/utils/contractPeripheral'
-import { ConstantsLib } from '../../src/contracts'
+import { CAT20GuardPeripheral, ContractPeripheral } from '../../src/utils/contractPeripheral'
+import { CAT20Guard, ConstantsLib } from '../../src/contracts'
 
 export class TestCAT20Generator {
   deployInfo: CAT20TokenInfo<ClosedMinterCAT20Meta> & {
-    genesisTx: ExtPsbt
-    deployTx: ExtPsbt
+    genesisPsbt: ExtPsbt
+    deployPsbt: ExtPsbt
   }
-  minterTx: ExtPsbt
+  minterPsbt: ExtPsbt
+
+
+  get minterScriptHash() {
+    return this.deployInfo.minterScriptHash
+  }
+  get guardScriptHash() {
+    return ContractPeripheral.scriptHash(new CAT20Guard())
+  }
 
   constructor(
     deployInfo: CAT20TokenInfo<ClosedMinterCAT20Meta> & {
-      genesisTx: ExtPsbt
-      deployTx: ExtPsbt
+      genesisPsbt: ExtPsbt
+      deployPsbt: ExtPsbt
     }
   ) {
     this.deployInfo = deployInfo
-    this.minterTx = deployInfo.deployTx
+    this.minterPsbt = deployInfo.deployPsbt
   }
 
   static async init(info: ClosedMinterCAT20Meta) {
-    const deployInfo = await deploy(
+    const deployInfo = await deployClosedMinterToken(
       testSigner,
       testProvider,
       info,
@@ -44,24 +52,24 @@ export class TestCAT20Generator {
   }
 
   private getCat20MinterUtxo() {
-    return this.minterTx.getUtxo(0)
+    return this.minterPsbt.getUtxo(0)
   }
 
   async mintThenTransfer(addr: ByteString, amount: CAT20_AMOUNT) {
     const signerAddr = await testSigner.getAddress()
     const signerOwnerAddr = toTokenOwnerAddress(signerAddr)
-    const mintInfo = await mint(
+    const mintInfo = await mintClosedMinterToken(
       testSigner,
       testProvider,
       this.getCat20MinterUtxo(),
-      this.deployInfo.genesisTx.extractTransaction().id,
+      this.deployInfo.genesisTxid,
       signerOwnerAddr,
       amount,
       signerAddr,
       await testProvider.getFeeRate()
     )
-    verifyTx(mintInfo.mintTx, expect)
-    this.minterTx = mintInfo.mintTx
+    verifyTx(mintInfo.mintPsbt, expect)
+    this.minterPsbt = mintInfo.mintPsbt
     const transferInfo = await singleSend(
       testSigner,
       testProvider,
@@ -104,7 +112,6 @@ export async function createCat20(
   symbol: string
 ): Promise<TestCat20> {
   const metadata = formatMetadata({
-    tag: ConstantsLib.OPCAT_METADATA_TAG,
     name: `cat20_${symbol}`,
     symbol: `cat20_${symbol}`,
     decimals: 2n,
