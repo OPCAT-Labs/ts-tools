@@ -51,7 +51,6 @@ export class TestCAT20Generator {
 
   public getCat20AdminUtxo() {
     const outputs = this.adminTx.txOutputs
-    console.log(this.adminTx.txOutputs)
     return this.adminTx.getUtxo(outputs.length - 2)
   }
 
