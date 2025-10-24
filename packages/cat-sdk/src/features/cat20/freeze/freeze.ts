@@ -221,10 +221,14 @@ export async function freeze(
   const address = await signer.getAddress()
   const spentMinterTxHex = await provider.getRawTransaction(adminUtxo.txId)
   const spentMinterTx = new Transaction(spentMinterTxHex)
-  let minterInputIndex = spentMinterTx.inputs.length - 2
-  if (minterInputIndex >= 0) {
-  } else {
-    minterInputIndex = 0
+  // Find the input index that references the genesis outpoint (adminUtxo)
+  const minterInputIndex = spentMinterTx.inputs.findIndex(
+    (input) =>
+      toHex(input.prevTxId) === adminUtxo.txId &&
+      input.outputIndex === adminUtxo.outputIndex
+  )
+  if (minterInputIndex === -1) {
+    throw new Error('Could not find input referencing the genesis outpoint (adminUtxo)')
   }
 
   const spentMinterPreTxHex = await provider.getRawTransaction(
