@@ -61,11 +61,14 @@ export class CAT20 extends SmartContract<CAT20State> {
       this.ctx.spentScriptHashes,
       this.ctx.spentDataHashes
     )
+    let spentScriptHash = toByteString('')
+    if (unlockArgs.contractInputIndex >= 0n) {
+      spentScriptHash = ContextUtils.getSpentScriptHash(
+        this.ctx.spentScriptHashes,
+        unlockArgs.contractInputIndex
+      )
+    }
 
-    let spentScriptHash = ContextUtils.getSpentScriptHash(
-      this.ctx.spentScriptHashes,
-      unlockArgs.contractInputIndex
-    )
     if (spentScriptHash == this.adminScriptHash) {
       assert(true)
     } else {
