@@ -1,18 +1,19 @@
-import { Controller, Get, Param, Res, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Param,Query, Res, UseInterceptors } from '@nestjs/common';
 import { TxService } from './tx.service';
-import { ApiOperation, ApiParam, ApiTags, ApiOkResponse, ApiBadRequestResponse, ApiHeader, ApiResponse } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery,ApiTags, ApiOkResponse, ApiBadRequestResponse, ApiHeader, ApiResponse } from '@nestjs/swagger';
 import { errorResponse, okResponse } from '../../common/utils';
 import { Response } from 'express';
 import { ResponseHeaderInterceptor } from '../../common/interceptors/response-header.interceptor';
 import {
   TxTokenOutputsResponse,
+  TransactionResponse,
   ErrorResponse,
 } from './dto/tx-response.dto';
 
 @Controller('tx')
 @UseInterceptors(ResponseHeaderInterceptor)
 export class TxController {
-  constructor(private readonly txService: TxService) {}
+  constructor(private readonly txService: TxService) { }
 
   @Get(':txid')
   @ApiTags('tx')
@@ -131,4 +132,57 @@ export class TxController {
       return res.send(errorResponse(e));
     }
   }
+
+
+  @Get(':address/transactions')
+  @ApiTags('tx')
+  @ApiOperation({
+    summary: 'Get transactions by token address',
+  })
+  @ApiParam({
+    name: 'address',
+    required: true,
+    type: String,
+    description: 'token address',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'paging page',
+  })
+  @ApiQuery({
+    name: 'size',
+    required: false,
+    type: Number,
+    description: 'paging size',
+  })
+  @ApiOkResponse({
+    description: 'Transactions retrieved successfully',
+    type: TransactionResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid token address',
+    type: ErrorResponse,
+  })
+  async getTransactions(
+    @Param('address') address: string,
+    @Query('page') page?: number,
+    @Query('size') size?: number,
+  ) {
+    try {
+      const r = await this.txService.queryTransationsByAddress(
+        address,
+        page,       
+        size
+      );
+      return okResponse(r);
+    } catch (e) {
+      return errorResponse(e);
+    }
+
+  }
+
+
+
 }

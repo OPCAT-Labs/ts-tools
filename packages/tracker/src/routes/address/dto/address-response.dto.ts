@@ -17,6 +17,16 @@ export class TokenBalance {
 
   @ApiProperty({ example: '100', description: 'Confirmed balance' })
   confirmed: string;
+
+  @ApiProperty({ example: 'cat20', description: 'token name' })
+  name: string;
+
+  @ApiProperty({ example: 'cat20', description: 'token symbol' })
+  symbol: string;
+
+  @ApiProperty({ example: 'https://2312322.com/3221.png', description: 'token logoUrl' })
+  logoUrl: string;
+
 }
 
 export class TokenBalancesData {
@@ -38,6 +48,15 @@ export class CollectionBalance {
 
   @ApiProperty({ example: '5', description: 'Confirmed NFT count' })
   confirmed: string;
+
+  @ApiProperty({ example: 'cat20', description: 'token name' })
+  name: string;
+
+  @ApiProperty({ example: 'cat20', description: 'token symbol' })
+  symbol: string;
+
+  @ApiProperty({ example: 'https://2312322.com/3221.png', description: 'token logoUrl' })
+  logoUrl: string;
 }
 
 export class CollectionBalancesData {

@@ -38,4 +38,35 @@ export class TokenInfoEntity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @Column({ name: 'holders_num', nullable: true })
+  holdersNum: number;
+
+  @Column({ name: 'total_trans_num', nullable: true })
+  totalTransNum: number;
+
+  @Column({ name: 'premine', nullable: true })
+  premine: number;
+
+  @Column({ name: 'token_limit', nullable: true })
+  tokenLimit: number;
+
+  @Column({ name: 'minted', nullable: true })
+  minted: number;
+
+  @Column({ name: 'supply', nullable: true })
+  supply: number;
+
+  @Column({ name: 'deploy_block', nullable: true })
+  deployBlock: number;
+
+  @Column({ name: 'deploy_txid', nullable: true })
+  deployTxid: string;
+
+  @Column({ name: 'deploy_time', nullable: true })
+  deployTime: number;
+
+  @Column({ name: 'logo_url', nullable: true })
+  logoUrl: string;
+
 }

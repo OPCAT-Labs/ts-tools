@@ -38,6 +38,40 @@ export class TokenInfo {
 
   @ApiProperty({ example: 'abcdef0102', description: 'Token metadata in raw hex format' })
   info: string;
+
+  @ApiProperty({ example: '1000', description: 'Token holders num' })
+  holdersNum: number;
+
+  @ApiProperty({ example: '124534', description: 'Total Transactions' })
+  totalTransNum: number;
+
+  @ApiProperty({ example: '0', description: 'premine' })
+  premine: number;
+
+  @ApiProperty({ example: '5', description: 'Token limit' })
+  tokenLimit: number;
+
+  @ApiProperty({ example: '21000000', description: 'Token minted' })
+  minted: number;
+
+  @ApiProperty({ example: '21000000', description: 'Token supply' })
+  supply: number;
+
+  @ApiProperty({ example: '1254', description: 'Deploy block' })
+  deployBlock: number;
+
+  @ApiProperty({ example: '45ee725c2c5993b3e4d308842d87e973bf1951f5f7a804b21e4dd964ecd12d6b', description: 'Deploy Txid' })
+  deployTxid: string;
+
+  @ApiProperty({ example: '9a3fcb5a8344f53f2ba580f7d488469346bff9efe7780fbbf8d3490e3a3a0cd7', description: 'Reveal Txid' })
+  revealTxid: string;
+
+  @ApiProperty({ example: '1760862542', description: 'Deploy Time' })
+  deployTime: Date;
+
+  @ApiProperty({ example: 'http://234313.com/logo.png', description: 'Token logo url' })
+  logoUrl: string;
+
 }
 
 export class TokenInfoResponse extends BaseResponse<TokenInfo> {
@@ -129,6 +163,16 @@ export class TokenHolder {
 
   @ApiProperty({ example: '100', description: 'Token balance' })
   balance: string;
+
+  @ApiProperty({ example: 'http://2423113.com/logo.png', description: 'Token logoUrl' })
+  logoUrl: string;
+
+  @ApiProperty({ example: '1', description: 'Token rank' })
+  rank: string;
+
+  @ApiProperty({ example: '0.05', description: 'Token percentage' })
+  percentage: string;
+
 }
 
 export class TokenHoldersData {
