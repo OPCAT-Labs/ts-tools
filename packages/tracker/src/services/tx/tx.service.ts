@@ -174,8 +174,9 @@ export class TxService {
       rawInfo: toHex(inputGenesis.data),
     });
     let adminScriptHash = sha256('');
-    if (outputTags[1] === ContractLib.OPCAT_CAT20_ADMIN_TAG) {
-      adminScriptHash = sha256(tx.outputs[1].script.toHex());
+    const adminIndex = outputTags.findIndex(tag => tag === ContractLib.OPCAT_CAT20_ADMIN_TAG);
+    if (adminIndex !== -1 && tx.outputs.length > adminIndex) {
+      adminScriptHash = sha256(tx.outputs[adminIndex].script.toHex());
     }
     // promises.push(p);
     for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
