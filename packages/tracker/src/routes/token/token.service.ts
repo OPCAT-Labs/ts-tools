@@ -83,7 +83,7 @@ export class TokenService {
   async getTokenInfosByNamePrefix(tokenName: string, limit: number, scope: TokenTypeScope) {
     const results = [];
     if (scope !== TokenTypeScope.Fungible) {
-      return
+      return [];
     }
     let where: object;
     where = {
