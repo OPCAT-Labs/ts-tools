@@ -281,7 +281,7 @@ export class TokenController {
     type: [TokenInfoResponse],
   })
   @ApiBadRequestResponse({
-    description: 'Invalid token ids or names',
+    description: 'Invalid token name or limit',
     type: ErrorResponse,
   })
   async getTokensByName(@Param('tokenName') tokenName: string, @Query('limit', new DefaultValuePipe(10)) limit: number){
