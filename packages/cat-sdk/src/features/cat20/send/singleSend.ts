@@ -13,6 +13,7 @@ import {
   markSpent,
   fromSupportedNetwork,
   getBackTraceInfo,
+  FixedArray,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types'
 import {
@@ -20,10 +21,7 @@ import {
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants'
-import {
-  applyFixedArray,
-  filterFeeUtxos,
-} from '../../../utils'
+import { applyFixedArray, filterFeeUtxos } from '../../../utils'
 import {
   CAT20GuardPeripheral,
   ContractPeripheral,
@@ -34,7 +32,6 @@ import { CAT20 } from '../../../contracts/cat20/cat20'
 import * as opcat from '@opcat-labs/opcat'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
 import { Transaction } from '@opcat-labs/opcat'
-
 
 export async function singleSend(
   signer: Signer,
@@ -47,7 +44,7 @@ export async function singleSend(
   }>,
   tokenChangeAddress: ByteString,
   feeRate: number,
-  sendChangeData?: Buffer,
+  sendChangeData?: Buffer
 ): Promise<{
   guardPsbt: ExtPsbt
   sendPsbt: ExtPsbt
@@ -55,11 +52,17 @@ export async function singleSend(
   guardTxId: string
   newCAT20Utxos: UTXO[]
   changeTokenOutputIndex: number
-}>  {
+}> {
   const pubkey = await signer.getPublicKey()
   const feeChangeAddress = await signer.getAddress()
   let feeUtxos = await provider.getUtxos(feeChangeAddress)
-  const {guardPsbt, outputTokenStates, changeTokenOutputIndex, guard} = await singleSendStep1(
+  const {
+    guardPsbt,
+    outputTokenStates,
+    changeTokenOutputIndex,
+    guard,
+    tokenScriptIndexes,
+  } = await singleSendStep1(
     provider,
     feeUtxos,
     inputTokenUtxos,
@@ -67,13 +70,16 @@ export async function singleSend(
     feeChangeAddress,
     tokenChangeAddress,
     feeRate
-  );
-  const signedGuardPsbt = ExtPsbt.fromHex(await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions()))
+  )
+  const signedGuardPsbt = ExtPsbt.fromHex(
+    await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions())
+  )
   guardPsbt.combine(signedGuardPsbt).finalizeAllInputs()
-  const {sendPsbt} = await singleSendStep2(
+  const { sendPsbt } = await singleSendStep2(
     provider,
     minterScriptHash,
     guard,
+    tokenScriptIndexes,
     guardPsbt,
     inputTokenUtxos,
     outputTokenStates,
@@ -81,10 +87,12 @@ export async function singleSend(
     pubkey,
     feeRate,
     sendChangeData
-  );
-  const signedSendPsbt = ExtPsbt.fromHex(await signer.signPsbt(sendPsbt.toHex(), sendPsbt.psbtOptions()))
+  )
+  const signedSendPsbt = ExtPsbt.fromHex(
+    await signer.signPsbt(sendPsbt.toHex(), sendPsbt.psbtOptions())
+  )
   sendPsbt.combine(signedSendPsbt).finalizeAllInputs()
-  const {newCAT20Utxos} = await singleSendStep3(
+  const { newCAT20Utxos } = await singleSendStep3(
     provider,
     guardPsbt,
     sendPsbt,
@@ -110,7 +118,7 @@ export async function singleSendStep1(
   }>,
   feeChangeAddress: ByteString,
   tokenChangeAddress: ByteString,
-  feeRate: number,
+  feeRate: number
 ) {
   if (inputTokenUtxos.length + 2 > TX_INPUT_COUNT_MAX) {
     throw new Error(
@@ -144,47 +152,53 @@ export async function singleSendStep1(
       amount: totalInputAmount - totalOutputAmount,
     })
   }
-  const { guardState, outputTokens: _outputTokens } =
-    CAT20GuardPeripheral.createTransferGuard(
-      inputTokenUtxos.map((utxo, index) => ({
-        token: utxo,
-        inputIndex: index,
-      })),
-      receivers.map((receiver, index) => ({
-        ...receiver,
-        outputIndex: index,
-      }))
-    )
+  const {
+    guardState,
+    outputTokens: _outputTokens,
+    tokenScriptIndexes,
+  } = CAT20GuardPeripheral.createTransferGuard(
+    inputTokenUtxos.map((utxo, index) => ({
+      token: utxo,
+      inputIndex: index,
+    })),
+    receivers.map((receiver, index) => ({
+      ...receiver,
+      outputIndex: index,
+    }))
+  )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined
   ) as CAT20State[]
   const guard = new CAT20Guard()
   guard.state = guardState
-  const guardPsbt = new ExtPsbt({network: await provider.getNetwork()})
+  const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(feeUtxos)
-    .addContractOutput(
-      guard,
-      Postage.GUARD_POSTAGE,
-    )
+    .addContractOutput(guard, Postage.GUARD_POSTAGE)
     .change(feeChangeAddress, feeRate)
     .seal()
-  
-  return {guard, guardPsbt, outputTokenStates: outputTokens, changeTokenOutputIndex}
+
+  return {
+    guard,
+    guardPsbt,
+    outputTokenStates: outputTokens,
+    changeTokenOutputIndex,
+    tokenScriptIndexes,
+  }
 }
 
 export async function singleSendStep2(
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
   guard: CAT20Guard,
+  tokenScriptIndexes: FixedArray<bigint, typeof TX_INPUT_COUNT_MAX>,
   finalizedGuardPsbt: ExtPsbt,
   inputTokenUtxos: UTXO[],
   outputTokenStates: CAT20State[],
   feeChangeAddress: string,
   publicKey: string,
   feeRate: number,
-  sendChangeData?: Buffer,
+  sendChangeData?: Buffer
 ) {
-  
   const network = await provider.getNetwork()
   const guardPsbt = finalizedGuardPsbt
   const guardUtxo = guardPsbt.getUtxo(0)
@@ -196,13 +210,15 @@ export async function singleSendStep2(
     inputTokenUtxos,
     provider
   )
-  const inputTokens: CAT20[] = inputTokenUtxos.map(
-    (_token, index) => new CAT20(minterScriptHash, guardScriptHash).bindToUtxo({
+  const inputTokens: CAT20[] = inputTokenUtxos.map((_token, index) =>
+    new CAT20(minterScriptHash, guardScriptHash).bindToUtxo({
       ..._token,
-      txHashPreimage: toHex(new Transaction(backtraces[index].prevTxHex).toTxHashPreimage()),
+      txHashPreimage: toHex(
+        new Transaction(backtraces[index].prevTxHex).toTxHashPreimage()
+      ),
     })
   )
-  const sendPsbt = new ExtPsbt({network: await provider.getNetwork()})
+  const sendPsbt = new ExtPsbt({ network: await provider.getNetwork() })
 
   const guardInputIndex = inputTokens.length
 
@@ -213,88 +229,86 @@ export async function singleSendStep2(
   // add token inputs.
   for (let index = 0; index < inputTokens.length; index++) {
     sendPsbt.addContractInput(inputTokens[index], (cat20, tx) => {
-      const address = opcat.Script.fromHex(inputTokenStates[index].ownerAddr).toAddress(fromSupportedNetwork(network))
-        const sig = tx.getSig(index, {
-          address: address.toString()
-        })
-        return cat20.unlock(
-          {
-            userPubKey: PubKey(publicKey),
-            userSig: sig,
-            contractInputIndex: -1n,
-          },
+      const address = opcat.Script.fromHex(
+        inputTokenStates[index].ownerAddr
+      ).toAddress(fromSupportedNetwork(network))
+      const sig = tx.getSig(index, {
+        address: address.toString(),
+      })
+      return cat20.unlock(
+        {
+          userPubKey: PubKey(publicKey),
+          userSig: sig,
+          contractInputIndex: -1n,
+        },
 
-          guardState,
-          BigInt(guardInputIndex),
+        guardState,
+        BigInt(guardInputIndex),
 
-          getBackTraceInfo(
-            backtraces[index].prevTxHex,
-            backtraces[index].prevPrevTxHex,
-            backtraces[index].prevTxInput
-          )
+        getBackTraceInfo(
+          backtraces[index].prevTxHex,
+          backtraces[index].prevPrevTxHex,
+          backtraces[index].prevTxInput
         )
-      },
-    )
+      )
+    })
   }
   // add token outputs
   for (const outputToken of outputTokenStates) {
     const cat20 = new CAT20(minterScriptHash, guardScriptHash)
     cat20.state = outputToken
-    sendPsbt.addContractOutput(
-      cat20,
-      Postage.TOKEN_POSTAGE
-    )
+    sendPsbt.addContractOutput(cat20, Postage.TOKEN_POSTAGE)
   }
 
   // add guard input
   guard.bindToUtxo(guardUtxo)
   sendPsbt.addContractInput(guard, (contract, tx) => {
-      const ownerAddrOrScript = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
-      applyFixedArray(
-        ownerAddrOrScript,
-        tx.txOutputs.map((output, index) => {
-          return index < outputTokenStates.length
-            ? outputTokenStates[index].ownerAddr
-            : ContractPeripheral.scriptHash(toHex(output.script))
-        })
-      )
-      const outputTokenAmts = fill(BigInt(0), TX_OUTPUT_COUNT_MAX)
-      applyFixedArray(
-        outputTokenAmts,
-        outputTokenStates.map((t) => t.amount)
-      )
-      const tokenScriptIndexArray = fill(-1n, TX_OUTPUT_COUNT_MAX)
-      applyFixedArray(
-        tokenScriptIndexArray,
-        outputTokenStates.map(() => 0n)
-      )
-      const outputSatoshis = fill(0n, TX_OUTPUT_COUNT_MAX)
-      applyFixedArray(
-        outputSatoshis,
-        tx.txOutputs.map((output) => output.value)
-      )
-      const inputCAT20States = fill(
-        CAT20StateLib.create(0n, ''),
-        TX_INPUT_COUNT_MAX
-      )
-      applyFixedArray(inputCAT20States, inputTokenStates)
-      const nextStateHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
-      applyFixedArray(
-        nextStateHashes,
-        tx.txOutputs.map((output) => sha256(toHex(output.data)))
-      )
+    const ownerAddrOrScript = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+    applyFixedArray(
+      ownerAddrOrScript,
+      tx.txOutputs.map((output, index) => {
+        return index < outputTokenStates.length
+          ? outputTokenStates[index].ownerAddr
+          : ContractPeripheral.scriptHash(toHex(output.script))
+      })
+    )
+    const outputTokenAmts = fill(BigInt(0), TX_OUTPUT_COUNT_MAX)
+    applyFixedArray(
+      outputTokenAmts,
+      outputTokenStates.map((t) => t.amount)
+    )
+    const tokenScriptIndexArray = fill(-1n, TX_OUTPUT_COUNT_MAX)
+    applyFixedArray(
+      tokenScriptIndexArray,
+      outputTokenStates.map(() => 0n)
+    )
+    const outputSatoshis = fill(0n, TX_OUTPUT_COUNT_MAX)
+    applyFixedArray(
+      outputSatoshis,
+      tx.txOutputs.map((output) => output.value)
+    )
+    const inputCAT20States = fill(
+      CAT20StateLib.create(0n, ''),
+      TX_INPUT_COUNT_MAX
+    )
+    applyFixedArray(inputCAT20States, inputTokenStates)
+    const nextStateHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+    applyFixedArray(
+      nextStateHashes,
+      tx.txOutputs.map((output) => sha256(toHex(output.data)))
+    )
 
-      contract.unlock(
-        nextStateHashes,
-        ownerAddrOrScript,
-        outputTokenAmts,
-        tokenScriptIndexArray,
-        outputSatoshis,
-        inputCAT20States,
-        BigInt(tx.txOutputs.length)
-      )
-    }
-  )
+    contract.unlock(
+      nextStateHashes,
+      ownerAddrOrScript,
+      outputTokenAmts,
+      tokenScriptIndexArray,
+      outputSatoshis,
+      inputCAT20States,
+      tokenScriptIndexes,
+      BigInt(tx.txOutputs.length)
+    )
+  })
   // add fee input
   sendPsbt.spendUTXO(feeUtxo)
   // add change output
@@ -302,14 +316,14 @@ export async function singleSendStep2(
 
   sendPsbt.seal()
 
-  return {sendPsbt}
+  return { sendPsbt }
 }
 
 export async function singleSendStep3(
   provider: UtxoProvider & ChainProvider,
   finalizedGuardPsbt: ExtPsbt,
   finalizedSendPsbt: ExtPsbt,
-  outputTokenStates: CAT20State[],
+  outputTokenStates: CAT20State[]
 ) {
   // broadcast
   await provider.broadcast(finalizedGuardPsbt.extractTransaction().toHex())
@@ -319,8 +333,9 @@ export async function singleSendStep3(
   const newFeeUtxo = finalizedSendPsbt.getChangeUTXO()!
   provider.addNewUTXO(newFeeUtxo)
 
-  
-  const newCAT20Utxos = outputTokenStates.map((_, index) => finalizedSendPsbt.getUtxo(index))
+  const newCAT20Utxos = outputTokenStates.map((_, index) =>
+    finalizedSendPsbt.getUtxo(index)
+  )
 
-  return {newCAT20Utxos, newFeeUtxo}
+  return { newCAT20Utxos, newFeeUtxo }
 }

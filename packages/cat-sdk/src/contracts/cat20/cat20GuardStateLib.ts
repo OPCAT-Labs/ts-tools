@@ -1,10 +1,18 @@
-import { StateLib, method, assert, ByteString, len, SHA256_HASH_LEN, FixedArray, toByteString, fill } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT20GuardConstState } from "./types";
-import { ConstantsLib, STATE_HASH_BYTE_LEN, GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants";
-
+import {
+  StateLib,
+  method,
+  assert,
+  ByteString,
+  len,
+  SHA256_HASH_LEN,
+  FixedArray,
+  toByteString,
+  fill,
+} from '@opcat-labs/scrypt-ts-opcat'
+import { CAT20GuardConstState } from './types'
+import { ConstantsLib, GUARD_TOKEN_TYPE_MAX } from '../constants'
 
 export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
-    
   @method()
   static formalCheckState(_state: CAT20GuardConstState): ByteString {
     CAT20GuardStateLib.checkTokenScriptsUniq(_state.tokenScriptHashes)
@@ -16,17 +24,10 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
       assert(_state.tokenAmounts[i] >= 0)
       assert(_state.tokenBurnAmounts[i] >= 0)
     }
-
-    for (let i = 0; i < TX_INPUT_COUNT_MAX; i++) {
-
-      const scriptIndex = _state.tokenScriptIndexes[i]
-      assert(scriptIndex >= -1 && scriptIndex < GUARD_TOKEN_TYPE_MAX)
-    }
     // return CAT20GuardProto.stateHash(_state)
     return toByteString('')
   }
 
-  
   /**
    * Ensure tokenScripts does not have duplicate values
    * @param tokenScripts token scripts
@@ -44,7 +45,6 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
     assert(tokenScripts[2] != tokenScripts[3])
   }
 
-  
   static createEmptyState(): CAT20GuardConstState {
     const tokenScriptHashes = fill(toByteString(''), GUARD_TOKEN_TYPE_MAX)
     // default value to ensure the uniqueness of token scripts
@@ -56,8 +56,7 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
       tokenScriptHashes: tokenScriptHashes,
       tokenAmounts: fill(0n, GUARD_TOKEN_TYPE_MAX),
       tokenBurnAmounts: fill(0n, GUARD_TOKEN_TYPE_MAX),
-      tokenScriptIndexes: fill(-1n, TX_INPUT_COUNT_MAX),
+      // tokenScriptIndexes: fill(-1n, TX_INPUT_COUNT_MAX),
     }
   }
-
 }

@@ -50,17 +50,6 @@ export type CAT20GuardConstState = {
   // the output total number of tokens for each type of token will be
   // token1: 100
   // token2: 150
-
-  // for each input of curTx
-  // if the input is a token, the value marks the index of the token script in the tokenScriptHashes array
-  // otherwise, the value is -1 by default
-  // e.g.
-  // [-1, 0, 1, 1, 0, -1]
-  // this means
-  // the input #0 and #5 is not a token contract
-  // the input #1 and #4 is a token contract with script tokenScripts[0] = 'token1Script'
-  // the input #2 and #3 is a token contract with script tokenScripts[1] = 'token2Script'
-  tokenScriptIndexes: FixedArray<bigint, typeof TX_INPUT_COUNT_MAX>
 }
 
 

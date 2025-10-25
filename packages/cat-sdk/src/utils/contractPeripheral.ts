@@ -142,6 +142,7 @@ export class CAT20GuardPeripheral {
   ): {
     guardState: CAT20GuardConstState
     outputTokens: FixedArray<CAT20State | undefined, typeof TX_OUTPUT_COUNT_MAX>
+    tokenScriptIndexes: FixedArray<bigint, typeof TX_INPUT_COUNT_MAX>
   } {
     if (tokenInputs.length === 0) {
       throw new Error('No spent tokens')
@@ -172,12 +173,13 @@ export class CAT20GuardPeripheral {
     guardState.tokenScriptHashes[0] = ContractPeripheral.scriptHash(
       tokenInputs[0].token.script
     )
+    const tokenScriptIndexes = fill(-1n, TX_INPUT_COUNT_MAX)
     for (
       let index = 0;
       index < tokenInputs.length && index < TX_INPUT_COUNT_MAX;
       index++
     ) {
-      guardState.tokenScriptIndexes[tokenInputs[index].inputIndex] = 0n
+      tokenScriptIndexes[tokenInputs[index].inputIndex] = 0n
     }
 
     guardState.tokenAmounts[0] = tokenInputs.reduce(
@@ -201,6 +203,7 @@ export class CAT20GuardPeripheral {
     return {
       guardState,
       outputTokens,
+      tokenScriptIndexes,
     }
   }
 
@@ -208,11 +211,11 @@ export class CAT20GuardPeripheral {
     tokenInputs: {
       token: UTXO
       inputIndex: number
-    }[],
-    inputStateHashes: ByteString[]
+    }[]
   ): {
     guardState: CAT20GuardConstState
     outputTokens: FixedArray<CAT20State | undefined, typeof TX_OUTPUT_COUNT_MAX>
+    tokenScriptIndexes: FixedArray<bigint, typeof TX_INPUT_COUNT_MAX>
   } {
     if (tokenInputs.length === 0) {
       throw new Error('No spent tokens')
@@ -226,12 +229,13 @@ export class CAT20GuardPeripheral {
     guardState.tokenScriptHashes[0] = ContractPeripheral.scriptHash(
       tokenInputs[0].token.script
     )
+    const tokenScriptIndexes = fill(-1n, TX_INPUT_COUNT_MAX)
     for (
       let index = 0;
       index < tokenInputs.length && index < TX_INPUT_COUNT_MAX;
       index++
     ) {
-      guardState.tokenScriptIndexes[tokenInputs[index].inputIndex] = 0n
+      tokenScriptIndexes[tokenInputs[index].inputIndex] = 0n
     }
 
     guardState.tokenAmounts[0] = tokenInputs.reduce(
@@ -242,6 +246,7 @@ export class CAT20GuardPeripheral {
     return {
       guardState,
       outputTokens,
+      tokenScriptIndexes,
     }
   }
 
