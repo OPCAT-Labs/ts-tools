@@ -238,7 +238,6 @@ export async function freeze(
     const sig = tx.getSig(inputTokens.length + 1, {
       address: address.toString(),
     })
-    // Todo
     contract.freeze(PubKey(pubkey), sig, backTraceInfo)
   })
 
