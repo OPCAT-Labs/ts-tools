@@ -13,16 +13,16 @@ import {
   ExtPsbt,
   markSpent,
   getBackTraceInfo,
+  Transaction,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20 } from '../../../contracts/cat20/cat20'
 import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
-import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types'
+import { CAT20State } from '../../../contracts/cat20/types'
 import {
-  ConstantsLib,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants'
-import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants'
+import { Postage } from '../../../typeConstants'
 import {
   applyFixedArray,
   filterFeeUtxos,
@@ -33,30 +33,28 @@ import {
   ContractPeripheral,
 } from '../../../utils/contractPeripheral'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
+import { CAT20Admin } from '../../../contracts/cat20/cat20Admin'
 
 /**
- * Send CAT20 tokens to the list of recipients.
+ * Freeze CAT20 tokens in a single transaction.
  * @param signer a signer, such as {@link DefaultSigner} or {@link WalletSigner}
+ * @param cat20Admin a CAT20Admin {@link CAT20Admin}
+ * @param adminUtxo a utxo of cat20Admin {@link UTXO}
  * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
  * @param minterScriptHash the minter script hash of the CAT20 token
  * @param adminScriptHash the admin script hash of the CAT20 token
  * @param inputTokenUtxos CAT20 token utxos to be sent
- * @param receivers the recipient's address and token amount
- * @param tokenChangeAddress the address to receive change CAT20 tokens
  * @param feeRate the fee rate for constructing transactions
- * @returns the guard transaction, the send transaction and the CAT20 token outputs
+ * @returns the guard transaction, the freeze transaction.
  */
-export async function contractSend(
+export async function freeze(
   signer: Signer,
+  cat20Admin: CAT20Admin,
+  adminUtxo: UTXO,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: string,
   adminScriptHash: string,
   inputTokenUtxos: UTXO[],
-  receivers: Array<{
-    address: ByteString
-    amount: CAT20_AMOUNT
-  }>,
-  tokenChangeAddress: ByteString,
   feeRate: number
 ): Promise<{
   guardPsbt: ExtPsbt
@@ -83,7 +81,6 @@ export async function contractSend(
     throw new Error('Insufficient satoshis input amount')
   }
 
-  receivers = [...receivers]
   const inputTokenStates = inputTokenUtxos.map((utxo) =>
     CAT20.deserializeState(utxo.data)
   )
@@ -94,38 +91,19 @@ export async function contractSend(
       )
     }
   })
-  const totalInputAmt = inputTokenStates.reduce(
-    (acc, state) => acc + state.amount,
-    0n
-  )
-  const totalOutputAmt = receivers.reduce(
-    (acc, receiver) => acc + receiver.amount,
-    0n
-  )
   let changeTokenOutputIndex = -1
-  if (totalInputAmt > totalOutputAmt) {
-    changeTokenOutputIndex = receivers.length
-    receivers.push({
-      address: tokenChangeAddress,
-      amount: totalInputAmt - totalOutputAmt,
-    })
-  }
-
   const { guardState, outputTokens: _outputTokens } =
-    CAT20GuardPeripheral.createTransferGuard(
+    CAT20GuardPeripheral.createBurnGuard(
       inputTokenUtxos.map((utxo, index) => ({
         token: utxo,
         inputIndex: index,
       })),
-      receivers.map((receiver, index) => ({
-        ...receiver,
-        outputIndex: index,
-      }))
+      []
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined
   ) as CAT20State[]
-
+  guardState.tokenBurnAmounts[0] = guardState.tokenAmounts[0]
   const guard = new CAT20Guard()
   guard.state = guardState
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
@@ -189,17 +167,6 @@ export async function contractSend(
     })
   }
 
-  // add token outputs
-  for (const outputToken of outputTokens) {
-    const outputCat20 = new CAT20(
-      minterScriptHash,
-      adminScriptHash,
-      guardScriptHash
-    )
-    outputCat20.state = outputToken
-    sendPsbt.addContractOutput(outputCat20, Postage.TOKEN_POSTAGE)
-  }
-
   // add guard input;
   guard.bindToUtxo(guardUtxo)
   sendPsbt.addContractInput(guard, (contract, tx) => {
@@ -247,6 +214,34 @@ export async function contractSend(
       BigInt(tx.data.outputs.length)
     )
   })
+
+  // add admin input
+  cat20Admin.bindToUtxo(adminUtxo)
+  const pubkey = await signer.getPublicKey()
+  const address = await signer.getAddress()
+  const spentMinterTxHex = await provider.getRawTransaction(adminUtxo.txId)
+  const spentMinterTx = new Transaction(spentMinterTxHex)
+  let minterInputIndex = spentMinterTx.inputs.length - 2
+  if (minterInputIndex < 0) {
+    minterInputIndex = 0
+  }
+
+  const spentMinterPreTxHex = await provider.getRawTransaction(
+    toHex(spentMinterTx.inputs[minterInputIndex].prevTxId)
+  )
+  const backTraceInfo = getBackTraceInfo(
+    spentMinterTxHex,
+    spentMinterPreTxHex,
+    minterInputIndex
+  )
+  sendPsbt.addContractInput(cat20Admin, (contract, tx) => {
+    const sig = tx.getSig(inputTokens.length + 1, {
+      address: address.toString(),
+    })
+    contract.freeze(PubKey(pubkey), sig, backTraceInfo)
+  })
+
+  sendPsbt.addContractOutput(cat20Admin, adminUtxo.satoshis)
 
   // add fee input, also is a contract input to unlock cat20
   sendPsbt.spendUTXO(feeUtxo)

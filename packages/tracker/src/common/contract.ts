@@ -8,11 +8,13 @@ export class ContractLib {
   static readonly OPCAT_METADATA_TAG: ByteString = toByteString('6f706361740100');
   static readonly OPCAT_MINTER_TAG: ByteString = toByteString('6f706361740101');
   static readonly OPCAT_CAT20_TAG: ByteString = toByteString('6f706361740102');
+  static readonly OPCAT_CAT20_ADMIN_TAG: ByteString = toByteString('6f706361740103');
   static readonly OPCAT_UNKNOWN_TAG: ByteString = toByteString('');
   static readonly KNOW_TAGS = {
     '6f706361740100': true,
     '6f706361740101': true,
     '6f706361740102': true,
+    '6f706361740103': true,
   };
 
   static decodeContractTag(data: Buffer): string {

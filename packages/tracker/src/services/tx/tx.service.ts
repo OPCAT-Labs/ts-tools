@@ -173,6 +173,11 @@ export class TxService {
       decimals: decimals,
       rawInfo: toHex(inputGenesis.data),
     });
+    let adminScriptHash = sha256('');
+    const adminIndex = outputTags.findIndex(tag => tag === ContractLib.OPCAT_CAT20_ADMIN_TAG);
+    if (adminIndex !== -1 && tx.outputs.length > adminIndex) {
+      adminScriptHash = sha256(tx.outputs[adminIndex].script.toHex());
+    }
     // promises.push(p);
     for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
       const output = tx.outputs[outputIndex];
@@ -181,6 +186,7 @@ export class TxService {
       if (outputTag === ContractLib.OPCAT_MINTER_TAG) {
         const txOut = this.txOutEntityRepository.create();
         tokenInfoEntity.minterScriptHash = lockingScriptHash;
+        tokenInfoEntity.adminScriptHash = adminScriptHash;
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
         txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;

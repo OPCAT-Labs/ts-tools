@@ -1,7 +1,7 @@
 import { Controller, DefaultValuePipe, Get, Param, Query, UseInterceptors } from '@nestjs/common';
 import { TokenService } from './token.service';
 import { okResponse, errorResponse } from '../../common/utils';
-import { ApiOperation, ApiParam, ApiQuery, ApiTags, ApiOkResponse, ApiBadRequestResponse, ApiHeader } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiTags, ApiOkResponse, ApiBadRequestResponse } from '@nestjs/swagger';
 import { TokenTypeScope } from '../../common/types';
 import { ResponseHeaderInterceptor } from '../../common/interceptors/response-header.interceptor';
 import {

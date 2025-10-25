@@ -25,6 +25,9 @@ export class TokenInfoEntity {
   @Index()
   minterScriptHash: string;
 
+  @Column({ name: 'admin_script_hash', length: 64, nullable: true })
+  adminScriptHash: string;
+
   @Column({ name: 'token_script_hash', length: 64, nullable: true })
   @Index()
   tokenScriptHash: string;

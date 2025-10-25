@@ -2,6 +2,7 @@ import { CAT20Guard } from '../../../src/contracts/cat20/cat20Guard'
 import { CAT20ClosedMinter } from '../../../src/contracts/cat20/minters/cat20ClosedMinter'
 import { CAT20OpenMinter } from '../../../src/contracts/cat20/minters/cat20OpenMinter'
 import { CAT20 } from '../../../src/contracts/cat20/cat20'
+import { CAT20Admin } from '../../../src/contracts/cat20/cat20Admin'
 import { readArtifact } from '../../utils/index'
 import { OpenMinterCAT20Meta } from '../../../src/contracts/cat20/types'
 import { deploy } from '../../../src/features/cat20/deploy/openMinter'
@@ -23,6 +24,7 @@ export const loadAllArtifacts = function () {
   CAT20ClosedMinter.loadArtifact(
     readArtifact('artifacts/cat20/minters/cat20ClosedMinter.json')
   )
+  CAT20Admin.loadArtifact(readArtifact('artifacts/cat20/cat20Admin.json'))
   CAT20ClosedMinterMetadata.loadArtifact(
     readArtifact('artifacts/cat20/minters/cat20ClosedMinterMetadata.json')
   )
@@ -36,10 +38,11 @@ export const loadAllArtifacts = function () {
   CAT20.loadArtifact(readArtifact('artifacts/cat20/cat20.json'))
   CAT20StateLib.loadArtifact(readArtifact('artifacts/cat20/cat20StateLib.json'))
   CAT20Guard.loadArtifact(readArtifact('artifacts/cat20/cat20Guard.json'))
-  CAT20GuardStateLib.loadArtifact(readArtifact('artifacts/cat20/cat20GuardStateLib.json'))
+  CAT20GuardStateLib.loadArtifact(
+    readArtifact('artifacts/cat20/cat20GuardStateLib.json')
+  )
 
   CAT20Incinerator.loadArtifact(readArtifact('artifacts/cat20Incinerator.json'))
-
 }
 
 export async function deployToken(info: OpenMinterCAT20Meta) {
@@ -75,6 +78,7 @@ export async function mintToken(
 
 export async function singleSendToken(
   minterScriptHash: string,
+  adminScriptHash: string,
   amount: CAT20_AMOUNT,
   inputTokenUtxos: UTXO[],
   tokenRecieverAddr: ByteString
@@ -85,6 +89,7 @@ export async function singleSendToken(
     testSigner,
     testProvider,
     minterScriptHash,
+    adminScriptHash,
     inputTokenUtxos,
     [{ address: tokenRecieverAddr, amount }],
     tokenChangeAddr,
