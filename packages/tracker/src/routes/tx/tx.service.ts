@@ -155,6 +155,9 @@ export class TxService {
     }
     try {
 
+      page = Number.isInteger(page) && page > 0 ? page : 1;
+      size = Number.isInteger(size) && size > 0 ? size : 10;
+
       const query = this.txOutRepository
         .createQueryBuilder('t1')
         .select('t1.txid', 'txid')
