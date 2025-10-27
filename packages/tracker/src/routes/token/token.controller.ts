@@ -246,12 +246,16 @@ export class TokenController {
         offset,
         limit,
       );
-      const holders = r.holders.map((holder) => {
+      const holders = r.holders.map((holder, index) => {
         return {
+          logoUrl: r.logoUrl,
           ownerPubKeyHash: holder.ownerPubKeyHash,
           balance: holder.tokenAmount!,
+          rank: Number((offset || 0) + index + 1),
+          percentage: holder.percentage
         };
       });
+      
       return okResponse({
         holders,
         trackerBlockHeight: r.trackerBlockHeight,
