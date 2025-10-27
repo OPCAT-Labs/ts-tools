@@ -1,4 +1,4 @@
-import { Controller, DefaultValuePipe, Get, Param, Query, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseInterceptors } from '@nestjs/common';
 import { TokenService } from './token.service';
 import { okResponse, errorResponse } from '../../common/utils';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags, ApiOkResponse, ApiBadRequestResponse, ApiHeader } from '@nestjs/swagger';
@@ -13,13 +13,11 @@ import {
   TokenHoldersResponse,
   ErrorResponse,
 } from './dto/token-response.dto';
-import { ok } from 'assert';
-import { IntegerType } from 'typeorm';
 
 @Controller('tokens')
 @UseInterceptors(ResponseHeaderInterceptor)
 export class TokenController {
-  constructor(private readonly tokenService: TokenService) { }
+  constructor(private readonly tokenService: TokenService) {}
 
   @Get(':tokenIdOrTokenScriptHash')
   @ApiTags('token')
@@ -246,12 +244,16 @@ export class TokenController {
         offset,
         limit,
       );
-      const holders = r.holders.map((holder) => {
+      const holders = r.holders.map((holder, index) => {
         return {
+          logoUrl: r.logoUrl,
           ownerPubKeyHash: holder.ownerPubKeyHash,
           balance: holder.tokenAmount!,
+          rank: Number(offset + index + 1),
+          percentage: holder.percentage
         };
       });
+      
       return okResponse({
         holders,
         trackerBlockHeight: r.trackerBlockHeight,
@@ -260,38 +262,5 @@ export class TokenController {
       return errorResponse(e);
     }
   }
-  @Get(':tokenName/getTokensByNamePrefix')
-  @ApiTags('token')
-  @ApiOperation({ summary: 'fuzzy search tokens by token names' })
-  @ApiParam({
-    name: 'tokenName',
-    required: true,
-    type: String,
-    description: 'token name',
-  })
 
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    schema: {type: 'number', default: 10, minimum: 1, maximum: 100},
-    description: 'number limit',
-  })
-  @ApiOkResponse({
-    description: 'Tokens retrieved successfully',
-    type: [TokenInfoResponse],
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid token name or limit',
-    type: ErrorResponse,
-  })
-  async getTokensByName(@Param('tokenName') tokenName: string, @Query('limit', new DefaultValuePipe(10)) limit: number){
-    // To be implemented
-    try {
-      const tokens = await this.tokenService.getTokenInfosByNamePrefix(tokenName, limit, TokenTypeScope.Fungible);
-      return okResponse(tokens);
-      
-    } catch (e) {
-      return errorResponse(e);
-    }
-  }
 }

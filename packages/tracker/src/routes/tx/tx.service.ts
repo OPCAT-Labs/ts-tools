@@ -1,11 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { TokenService } from '../token/token.service';
+import { TxOutEntity } from '../../entities/txOut.entity';
+import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { TxInput, payments, Transaction, script } from 'bitcoinjs-lib';
 import { CachedContent, TaprootPayment, TokenTypeScope } from '../../common/types';
 import { CommonService } from '../../services/common/common.service';
 import { Constants } from '../../common/constants';
-import { parseEnvelope } from '../../common/utils';
+import { ownerAddressToPubKeyHash,xOnlyPubKeyToAddress, parseEnvelope } from '../../common/utils';
 import { LRUCache } from 'lru-cache';
+import { HttpStatusCode } from 'axios';
+
 
 @Injectable()
 export class TxService {
@@ -18,7 +24,11 @@ export class TxService {
   constructor(
     private readonly commonService: CommonService,
     private readonly tokenService: TokenService,
-  ) {}
+
+    @InjectRepository(TxOutEntity)
+    private readonly txOutRepository: Repository<TxOutEntity>,
+
+  ) { }
 
   async parseTransferTxTokenOutputs(txid: string) {
     const raw = await this.commonService.getRawTx(txid);
@@ -50,13 +60,13 @@ export class TxService {
                 },
                 isFungible
                   ? {
-                      tokenAmount: tokenOutput.tokenAmount.toString(),
-                      tokenId: tokenInfo.tokenId,
-                    }
+                    tokenAmount: tokenOutput.tokenAmount.toString(),
+                    tokenId: tokenInfo.tokenId,
+                  }
                   : {
-                      localId: tokenOutput.tokenAmount.toString(),
-                      collectionId: tokenInfo.tokenId,
-                    },
+                    localId: tokenOutput.tokenAmount.toString(),
+                    collectionId: tokenInfo.tokenId,
+                  },
               );
             }),
           )),
@@ -133,4 +143,87 @@ export class TxService {
     }
     return null;
   }
+
+  async queryTransationsByAddress(
+    address: string,
+    page: number,
+    size: number
+  ) {
+    const ownerPubKeyHash = ownerAddressToPubKeyHash(address);
+    if (!ownerPubKeyHash) {
+      throw new HttpException('Invalid ownerAddrOrPkh', HttpStatusCode.BadRequest);
+    }
+    try {
+
+      const query = this.txOutRepository
+        .createQueryBuilder('t1')
+        .select('t1.txid', 'txid')
+        .innerJoin(TokenInfoEntity, 't2', 't1.locking_script_hash = t2.token_script_hash')
+        .where('t1.owner_pkh = :ownerPkh', { ownerPkh: ownerPubKeyHash })
+        .orderBy('t1.created_at', 'ASC')
+        .offset((page - 1) * size)
+        .limit(size)
+        .groupBy('t1.txid, t1.created_at');
+      const results = await query.getRawMany();
+
+      const queryFrom = this.txOutRepository
+        .createQueryBuilder('t1')
+        .select('t1.owner_pkh', 'address')
+        .addSelect('t1.spend_txid', 'spendTxid')
+        .addSelect('t1.satoshis', 'satoshis')
+        .addSelect('t1.token_amount', 'tokenAmount')
+        .addSelect('t2.name', 'tokenName')
+        .addSelect('t2.symbol', 'tokenSymbol')
+        .addSelect('t2.logo_url', 'tokenLogo')
+        .innerJoin(TokenInfoEntity, 't2', 't1.locking_script_hash = t2.token_script_hash')
+        .where(results.length > 0 ? 't1.spend_txid in (:...txids)' : '1=0', { txids: results.map(r => r.txid) })
+        .andWhere('t1.owner_pkh = :ownerPkh', { ownerPkh: ownerPubKeyHash });
+      const fromResults = await queryFrom.getRawMany();
+
+      const processedFromResults = fromResults.map(item => {
+        const convertedAddress = xOnlyPubKeyToAddress(item.address);
+        return {
+          ...item,
+          address: convertedAddress,
+        };
+      });
+
+      // v fromResults 0 results
+      results.forEach(result => {
+        result.txFrom = processedFromResults.filter(item => item.spendTxid === result.txid);
+      });
+
+      const queryTo = this.txOutRepository
+        .createQueryBuilder('t1')
+        .select('t1.owner_pkh', 'address')
+        .addSelect('t1.satoshis', 'satoshis')
+        .addSelect('t1.txid', 'txid')
+        .addSelect('t1.token_amount', 'tokenAmount')
+        .addSelect('t2.name', 'tokenName')
+        .addSelect('t2.symbol', 'tokenSymbol')
+        .addSelect('t2.logo_url', 'tokenLogo')
+        .innerJoin(TokenInfoEntity, 't2', 't1.locking_script_hash = t2.token_script_hash')
+        .where(results.length > 0 ? 't1.txid in (:...txids)' : '1=0', { txids: results.map(r => r.txid) })
+        .andWhere('t1.owner_pkh = :ownerPkh', { ownerPkh: ownerPubKeyHash });
+      const toResults = await queryTo.getRawMany();
+
+       const processedToResults = toResults.map(item => {
+        const convertedAddress = xOnlyPubKeyToAddress(item.address);
+        return {
+          ...item,
+          address: convertedAddress,
+        };
+      });
+
+      results.forEach(result => {
+        result.txTo = processedToResults.filter(item => item.txid === result.txid);
+      });
+
+      return results;
+    } catch (e) {
+      console.log(e);
+    }
+
+  }
+
 }

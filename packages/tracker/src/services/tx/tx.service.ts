@@ -41,8 +41,13 @@ export class TxService {
     private tokenInfoEntityRepository: Repository<TokenInfoEntity>,
     @InjectRepository(TxEntity)
     private txEntityRepository: Repository<TxEntity>,
+
     @InjectRepository(TxOutEntity)
     private txOutEntityRepository: Repository<TxOutEntity>,
+
+    @InjectRepository(TokenMintEntity)
+    private readonly tokenMintRepository: Repository<TokenMintEntity>,
+
     @InjectRepository(NftInfoEntity)
     private nftInfoEntityRepository: Repository<NftInfoEntity>,
     private zmqService: ZmqService,
@@ -159,18 +164,26 @@ export class TxService {
     const promises: Promise<any>[] = [];
     const input = tx.inputs[0];
     const inputGenesis = input.output;
+
     const fields = ContractLib.decodeFields(inputGenesis.data);
+
     const tokenId = `${input.prevTxId.toString('hex')}_${input.outputIndex}`;
     const [, _name, _symbol, _decimals] = fields;
+
     const name = Buffer.from(_name, 'hex').toString('utf-8');
     const symbol = Buffer.from(_symbol, 'hex').toString('utf-8');
     const decimals = Number(byteString2Int(_decimals));
+    const limit = 0;
+    const premine = 0;
+
     const tokenInfoEntity = this.tokenInfoEntityRepository.create({
       tokenId,
       genesisTxid: tx.hash,
       name: name,
       symbol: symbol,
       decimals: decimals,
+      tokenLimit: limit,
+      premine: premine,
       rawInfo: toHex(inputGenesis.data),
     });
     // promises.push(p);
@@ -180,7 +193,12 @@ export class TxService {
       const lockingScriptHash = sha256(tx.outputs[outputIndex].script.toHex());
       if (outputTag === ContractLib.OPCAT_MINTER_TAG) {
         const txOut = this.txOutEntityRepository.create();
+
         tokenInfoEntity.minterScriptHash = lockingScriptHash;
+        tokenInfoEntity.deployTxid = tx.hash;
+        tokenInfoEntity.deployBlock = blockHeader ? blockHeader.height : 2147483647;
+        tokenInfoEntity.deployTime = blockHeader.time;
+
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
         txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;
@@ -225,6 +243,7 @@ export class TxService {
         txOut.data = toHex(output.data);
         promises.push(this.txOutEntityRepository.save(txOut));
       } else if (outputTag === ContractLib.OPCAT_CAT20_TAG) {
+        
         if (!inputMinter.tokenScriptHash) {
           inputMinter.tokenScriptHash = lockingScriptHash;
           promises.push(this.tokenInfoEntityRepository.save(inputMinter));
@@ -243,6 +262,13 @@ export class TxService {
         txOut.tokenAmount = amount;
         txOut.data = toHex(output.data);
         promises.push(this.txOutEntityRepository.save(txOut));
+
+        const tokenMint = this.tokenMintRepository.create();
+        tokenMint.txid = tx.hash;
+        tokenMint.tokenScriptHash = lockingScriptHash
+        tokenMint.blockHeight = blockHeader ? blockHeader.height : 2147483647;
+        tokenMint.tokenAmount = amount;
+        promises.push(this.tokenMintRepository.save(tokenMint));
       }
     }
     // save token mint
@@ -367,4 +393,5 @@ export class TxService {
     });
     this.logger.log(`archived ${txOuts.length} outs in ${Math.ceil(Date.now() - startTime)} ms`);
   }
+
 }
