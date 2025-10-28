@@ -72,61 +72,9 @@ export class CollectionBalancesResponse extends BaseResponse<CollectionBalancesD
   data: CollectionBalancesData;
 }
 
-export class TransactionFromData {
-
-  @ApiProperty({ example: '47917edcd52c791c5d359616d0ea301426b5da023a366b3b5fbc9e54cf9923ea', description: 'address' })
-  address: string;
-
-  @ApiProperty({ example: 100000, description: 'satoshis' })
-  satoshis: number;
-
-  @ApiProperty({ example: 'http://www.example.com/logo.png', description: 'Token Logo' })
-  tokenLogo: string;
-
-  @ApiProperty({ example: 'cat20', description: 'Token Name' })
-  tokenName: string;
-
-  @ApiProperty({ example: 'cat20', description: 'Token Symbol' })
-  tokenSymbol: string;
-
-  @ApiProperty({ example: '229194', description: 'Token Amount' })
-  tokenAmount: string;
-
-}
-
-
-export class TransactionToData {
-
-  @ApiProperty({ example: '47917edcd52c791c5d359616d0ea301426b5da023a366b3b5fbc9e54cf9923ea', description: 'address' })
-  address: string;
-
-  @ApiProperty({ example: 100000, description: 'satoshis' })
-  satoshis: number;
-
-  @ApiProperty({ example: 'http://www.example.com/logo.png', description: 'Token Logo' })
-  tokenLogo: string;
-
-  @ApiProperty({ example: 'cat20', description: 'Token Name' })
-  tokenName: string;
-
-  @ApiProperty({ example: 'cat20', description: 'Token Symbol' })
-  tokenSymbol: string;
-
-  @ApiProperty({ example: '229194', description: 'Token Amount' })
-  tokenAmount: string;
-}
-
 export class TransactionData {
-
   @ApiProperty({ example: 'ade162290a77650375ccafe7afcad47bb81c4be4f169f77013ed106723f8b7ea', description: 'txid' })
   txid: string;
-
-  @ApiProperty({ type: [TransactionFromData], description: 'transaction from data' })
-  txFrom: TransactionFromData[];
-
-  @ApiProperty({ type: [TransactionToData], description: 'transaction to data' })
-  txTo: TransactionToData[];
-
 }
 
 export class TransactionResponse extends BaseResponse<TransactionData[]> {

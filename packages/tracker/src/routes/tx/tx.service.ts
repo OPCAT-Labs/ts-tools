@@ -8,7 +8,7 @@ import { TxInput, payments, Transaction, script } from 'bitcoinjs-lib';
 import { CachedContent, TaprootPayment, TokenTypeScope } from '../../common/types';
 import { CommonService } from '../../services/common/common.service';
 import { Constants } from '../../common/constants';
-import { ownerAddressToPubKeyHash,xOnlyPubKeyToAddress, parseEnvelope } from '../../common/utils';
+import { ownerAddressToPubKeyHash, xOnlyPubKeyToAddress, parseEnvelope } from '../../common/utils';
 import { LRUCache } from 'lru-cache';
 import { HttpStatusCode } from 'axios';
 
@@ -154,73 +154,27 @@ export class TxService {
       throw new HttpException('Invalid ownerAddrOrPkh', HttpStatusCode.BadRequest);
     }
     try {
-
-      page = Number.isInteger(page) && page > 0 ? page : 1;
-      size = Number.isInteger(size) && size > 0 ? size : 10;
-
-      const query = this.txOutRepository
-        .createQueryBuilder('t1')
-        .select('t1.txid', 'txid')
-        .innerJoin(TokenInfoEntity, 't2', 't1.locking_script_hash = t2.token_script_hash')
-        .where('t1.owner_pkh = :ownerPkh', { ownerPkh: ownerPubKeyHash })
-        .orderBy('t1.created_at', 'DESC')
-        .offset((page - 1) * size)
-        .limit(size)
-        .groupBy('t1.txid, t1.created_at');
-      const results = await query.getRawMany();
-
-      const queryFrom = this.txOutRepository
-        .createQueryBuilder('t1')
-        .select('t1.owner_pkh', 'address')
-        .addSelect('t1.spend_txid', 'spendTxid')
-        .addSelect('t1.satoshis', 'satoshis')
-        .addSelect('t1.token_amount', 'tokenAmount')
-        .addSelect('t2.name', 'tokenName')
-        .addSelect('t2.symbol', 'tokenSymbol')
-        .addSelect('t2.logo_url', 'tokenLogo')
-        .innerJoin(TokenInfoEntity, 't2', 't1.locking_script_hash = t2.token_script_hash')
-        .where(results.length > 0 ? 't1.spend_txid in (:...txids)' : '1=0', { txids: results.map(r => r.txid) })
-        .andWhere('t1.owner_pkh = :ownerPkh', { ownerPkh: ownerPubKeyHash });
-      const fromResults = await queryFrom.getRawMany();
-
-      const processedFromResults = fromResults.map(item => {
-        const convertedAddress = xOnlyPubKeyToAddress(item.address);
-        return {
-          ...item,
-          address: convertedAddress,
-        };
-      });
-
-      // v fromResults 0 results
-      results.forEach(result => {
-        result.txFrom = processedFromResults.filter(item => item.spendTxid === result.txid);
-      });
-
-      const queryTo = this.txOutRepository
-        .createQueryBuilder('t1')
-        .select('t1.owner_pkh', 'address')
-        .addSelect('t1.satoshis', 'satoshis')
-        .addSelect('t1.txid', 'txid')
-        .addSelect('t1.token_amount', 'tokenAmount')
-        .addSelect('t2.name', 'tokenName')
-        .addSelect('t2.symbol', 'tokenSymbol')
-        .addSelect('t2.logo_url', 'tokenLogo')
-        .innerJoin(TokenInfoEntity, 't2', 't1.locking_script_hash = t2.token_script_hash')
-        .where(results.length > 0 ? 't1.txid in (:...txids)' : '1=0', { txids: results.map(r => r.txid) })
-        .andWhere('t1.owner_pkh = :ownerPkh', { ownerPkh: ownerPubKeyHash });
-      const toResults = await queryTo.getRawMany();
-
-       const processedToResults = toResults.map(item => {
-        const convertedAddress = xOnlyPubKeyToAddress(item.address);
-        return {
-          ...item,
-          address: convertedAddress,
-        };
-      });
-
-      results.forEach(result => {
-        result.txTo = processedToResults.filter(item => item.txid === result.txid);
-      });
+      const offset = (page - 1) * size;
+      const sql = `
+                  SELECT txid FROM (
+                    SELECT t1.txid, t1.created_at
+                    FROM tx_out t1
+                    WHERE t1.owner_pkh = $1
+                    UNION ALL
+                    SELECT t2.txid, t2.created_at
+                    FROM tx_out_archive t2
+                    WHERE t2.owner_pkh = $2
+                  ) AS combined
+                  GROUP BY txid, created_at
+                  ORDER BY created_at DESC
+                  LIMIT $3 OFFSET $4
+                `;
+      const results = await this.txOutRepository.query(sql, [
+        ownerPubKeyHash,
+        ownerPubKeyHash,
+        size,
+        offset
+      ]);
 
       return results;
     } catch (e) {

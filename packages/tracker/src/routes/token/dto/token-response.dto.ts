@@ -39,23 +39,11 @@ export class TokenInfo {
   @ApiProperty({ example: 'abcdef0102', description: 'Token metadata in raw hex format' })
   info: string;
 
-  @ApiProperty({ example: '1000', description: 'Token holders num' })
-  holdersNum: string;
-
-  @ApiProperty({ example: '124534', description: 'Total Transactions' })
-  totalTransNum: string;
-
   @ApiProperty({ example: '0', description: 'premine' })
   premine: string;
 
   @ApiProperty({ example: '5', description: 'Token limit' })
   tokenLimit: string;
-
-  @ApiProperty({ example: '21000000', description: 'Token minted' })
-  minted: string;
-
-  @ApiProperty({ example: '21000000', description: 'Token supply' })
-  supply: string;
 
   @ApiProperty({ example: 1254, description: 'Deploy block' })
   deployBlock: number;
@@ -67,7 +55,7 @@ export class TokenInfo {
   revealTxid: string;
 
   @ApiProperty({ example: '1760862542', description: 'Deploy Time' })
-  deployTime: Date;
+  deployTime: number;
 
   @ApiProperty({ example: 'http://234313.com/logo.png', description: 'Token logo url' })
   logoUrl: string;
@@ -142,6 +130,36 @@ export class TokenMintAmountData {
 export class TokenMintAmountResponse extends BaseResponse<TokenMintAmountData> {
   @ApiProperty({ type: TokenMintAmountData })
   data: TokenMintAmountData;
+}
+
+export class HoldersNumData {
+  @ApiProperty({ example: '12000', description: 'Total holders number' })
+  holdersNum: string;
+}
+
+export class HoldersNumResponse extends BaseResponse<HoldersNumData> {
+  @ApiProperty({ type: HoldersNumData })
+  data: HoldersNumData;
+}
+
+export class SupplyData {
+  @ApiProperty({ example: '21000000', description: 'Total supply' })
+  supply: string;
+}
+
+export class SupplyResponse extends BaseResponse<SupplyData> {
+  @ApiProperty({ type: SupplyData })
+  data: SupplyData;
+}
+
+export class TotalTransNumData {
+  @ApiProperty({ example: '21000000', description: 'Total transaction number' })
+  totalTransNum: string;
+}
+
+export class TotalTransNumResponse extends BaseResponse<TotalTransNumData> {
+  @ApiProperty({ type: TotalTransNumData })
+  data: TotalTransNumData;
 }
 
 export class TokenCirculationData {

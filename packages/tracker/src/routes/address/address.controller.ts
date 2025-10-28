@@ -84,7 +84,7 @@ export class AddressController {
   }
 
 
-  @Get(':ownerAddrOrPkh/transactions')
+  @Get(':ownerAddrOrPkh/tokenTransactions')
   @ApiTags('address')
   @ApiOperation({
     summary: 'Get transactions by owner address or public key hash',
@@ -115,12 +115,16 @@ export class AddressController {
     description: 'Invalid token address',
     type: ErrorResponse,
   })
-  async getTransactions(
+  async getTokenTransactions(
     @Param('ownerAddrOrPkh') ownerAddrOrPkh: string,
     @Query('page') page?: number,
     @Query('size') size?: number,
   ) {
     try {
+
+      page = Number.isInteger(page) && page > 0 ? page : 1;
+      size = Number.isInteger(size) && size > 0 ? size : 10;
+
       const r = await this.txService.queryTransactionsByAddress(
         ownerAddrOrPkh,
         page,

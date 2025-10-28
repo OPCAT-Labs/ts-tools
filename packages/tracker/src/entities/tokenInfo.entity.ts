@@ -39,23 +39,11 @@ export class TokenInfoEntity {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ name: 'holders_num', nullable: true })
-  holdersNum: number;
-
-  @Column({ name: 'total_trans_num', nullable: true })
-  totalTransNum: number;
-
   @Column({ name: 'premine', nullable: true })
   premine: number;
 
-  @Column({ name: 'token_limit', nullable: true })
-  tokenLimit: number;
-
-  @Column({ name: 'minted', nullable: true })
-  minted: number;
-
-  @Column({ name: 'supply', nullable: true })
-  supply: number;
+  @Column({ name: 'token_limit', type: 'bigint', nullable: true })
+  tokenLimit: BigInt;
 
   @Column({ name: 'deploy_block', nullable: true })
   deployBlock: number;

@@ -5,7 +5,7 @@ export class TokenMintEntity {
   @PrimaryColumn({ length: 64 })
   txid: string;
 
-  @Column({ name: 'token_script_hash', length: 64, nullable: true })
+  @Column({ name: 'token_script_hash', length: 64, nullable: false })
   @Index()
   tokenScriptHash: string;
 
