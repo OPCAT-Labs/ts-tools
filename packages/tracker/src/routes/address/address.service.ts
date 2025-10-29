@@ -27,4 +27,5 @@ export class AddressService {
     );
     return { balances, trackerBlockHeight: lastProcessedHeight };
   }
+  
 }

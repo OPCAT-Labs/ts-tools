@@ -4,14 +4,15 @@ import { TokenController } from './token.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
 import { TxOutEntity } from '../../entities/txOut.entity';
+import { TxOutArchiveEntity } from '../../entities/txOutArchive.entity';
 import { TxEntity } from '../../entities/tx.entity';
 import { CommonModule } from '../../services/common/common.module';
 import { TokenMintEntity } from '../../entities/tokenMint.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([TokenInfoEntity, TxOutEntity, TxEntity, TokenMintEntity]), CommonModule],
+  imports: [TypeOrmModule.forFeature([TokenInfoEntity, TxOutEntity, TxOutArchiveEntity, TxEntity, TokenMintEntity]), CommonModule],
   providers: [TokenService],
   controllers: [TokenController],
   exports: [TokenService],
 })
-export class TokenModule {}
+export class TokenModule { }

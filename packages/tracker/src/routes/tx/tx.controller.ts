@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Res, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Param , Res, UseInterceptors } from '@nestjs/common';
 import { TxService } from './tx.service';
 import { ApiOperation, ApiParam, ApiTags, ApiOkResponse, ApiBadRequestResponse, ApiHeader, ApiResponse } from '@nestjs/swagger';
 import { errorResponse, okResponse } from '../../common/utils';
@@ -12,7 +12,7 @@ import {
 @Controller('tx')
 @UseInterceptors(ResponseHeaderInterceptor)
 export class TxController {
-  constructor(private readonly txService: TxService) {}
+  constructor(private readonly txService: TxService) { }
 
   @Get(':txid')
   @ApiTags('tx')
@@ -131,4 +131,5 @@ export class TxController {
       return res.send(errorResponse(e));
     }
   }
+
 }
