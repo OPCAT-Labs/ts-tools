@@ -85,6 +85,7 @@ export interface ClosedMinterCAT20Meta extends StructObject {
   name: ByteString
   symbol: ByteString
   decimals: bigint
+  hasAdmin: boolean
   minterMd5: ByteString
 }
 
@@ -96,6 +97,7 @@ export interface OpenMinterCAT20Meta extends StructObject {
   symbol: ByteString
   // decimals of the token, length is 1 byte
   decimals: bigint
+  hasAdmin: boolean
   // md5 of the token minter contract, length is 16 bytes
   minterMd5: ByteString
 
@@ -126,7 +128,18 @@ export interface CAT20ClosedMinterState extends StructObject {
   tokenScriptHash: ByteString
 }
 
+/**
+ * CAT20Admin state interface.
+ *
+ * Represents the state of a CAT20 admin contract, which manages administrative
+ * privileges for CAT20 tokens. The admin can perform privileged operations such
+ * as transferring ownership to another address via the adminSpend method.
+ *
+ * @property tag - Contract identifier tag
+ * @property adminAddress - Address of the current admin owner
+ */
+
 export interface CAT20AdminState extends StructObject {
   tag: ByteString
-  ownerAddress: ByteString
+  adminAddress: ByteString
 }

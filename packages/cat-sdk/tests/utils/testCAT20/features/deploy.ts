@@ -71,6 +71,7 @@ export async function deploy(
   const guard = new CAT20Guard()
   const cat20 = new CAT20(
     minterScriptHash,
+    metadata.hasAdmin,
     adminScriptHash,
     ContractPeripheral.scriptHash(guard)
   )
@@ -81,7 +82,7 @@ export async function deploy(
   }
   const adminState: CAT20AdminState = {
     tag: ConstantsLib.OPCAT_CAT20_ADMIN_TAG,
-    ownerAddress: toTokenOwnerAddress(address),
+    adminAddress: toTokenOwnerAddress(address),
   }
 
   closeMinter.state = minterState
@@ -111,6 +112,7 @@ export async function deploy(
   return {
     tokenId,
     tokenScriptHash,
+    hasAdmin: metadata.hasAdmin,
     adminScriptHash,
     minterScriptHash,
     genesisTx,

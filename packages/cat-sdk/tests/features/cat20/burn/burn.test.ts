@@ -31,6 +31,7 @@ describe('Test the feature `burn` for `CAT20`', () => {
       name: 'c',
       symbol: 'C',
       decimals: 2n,
+      hasAdmin: false,
       max: 21000000n,
       limit: 1000n,
       premine: 3150000n,
@@ -75,9 +76,10 @@ describe('Test the feature `burn` for `CAT20`', () => {
       testSigner,
       testProvider,
       cat20Generater.deployInfo.minterScriptHash,
-      cat20Generater.deployInfo.adminScriptHash,
       cat20Utxos,
-      await testProvider.getFeeRate()
+      await testProvider.getFeeRate(),
+      cat20Generater.deployInfo.hasAdmin,
+      cat20Generater.deployInfo.adminScriptHash
     )
 
     // check guard tx

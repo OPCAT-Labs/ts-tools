@@ -20,7 +20,11 @@ import {
   CAT20State,
   OpenMinterCAT20Meta,
 } from '../contracts/cat20/types'
-import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from '../contracts/constants'
+import {
+  EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
+  TX_INPUT_COUNT_MAX,
+  TX_OUTPUT_COUNT_MAX,
+} from '../contracts/constants'
 // import { Provider, UTXO } from '../lib/provider'
 import { emptyOutputByteStrings, outpoint2ByteString } from '.'
 // import { ExtTransaction } from '../lib/extTransaction'
@@ -112,7 +116,9 @@ export class CAT20OpenMinterPeripheral {
   static createCAT20Contract(
     minter: CAT20OpenMinter,
     state: CAT20OpenMinterState,
-    toAddr: ByteString
+    toAddr: ByteString,
+    hasAdmin: boolean = false,
+    adminScriptHash: ByteString = EMPTY_TOKEN_ADMIN_SCRIPT_HASH
   ) {
     let amount = minter.limit
     let receiverAddr = toAddr
@@ -121,9 +127,9 @@ export class CAT20OpenMinterPeripheral {
       receiverAddr = minter.preminerAddr
     }
     const guard = new CAT20Guard()
-    const adminScriptHash = sha256('')
     const cat20 = new CAT20(
       ContractPeripheral.scriptHash(minter),
+      hasAdmin,
       adminScriptHash,
       ContractPeripheral.scriptHash(guard)
     )
@@ -217,7 +223,7 @@ export class CAT20GuardPeripheral {
       token: UTXO
       inputIndex: number
     }[],
-    inputStateHashes: ByteString[]
+    _inputStateHashes: ByteString[]
   ): {
     guardState: CAT20GuardConstState
     outputTokens: FixedArray<CAT20State | undefined, typeof TX_OUTPUT_COUNT_MAX>
@@ -255,9 +261,10 @@ export class CAT20GuardPeripheral {
 
   static async getBackTraceInfo(
     minterScrtptHash: string,
-    adminScriptHash: string,
     inputTokenUtxos: UTXO[],
-    provider: UtxoProvider & ChainProvider
+    provider: UtxoProvider & ChainProvider,
+    hasAdmin: boolean = false,
+    adminScriptHash: string = EMPTY_TOKEN_ADMIN_SCRIPT_HASH
   ) {
     const results: Array<{
       prevTxHex: string
@@ -277,6 +284,7 @@ export class CAT20GuardPeripheral {
     const expectTokenScriptHash = ContractPeripheral.scriptHash(
       new CAT20(
         minterScrtptHash,
+        hasAdmin,
         adminScriptHash,
         ContractPeripheral.scriptHash(new CAT20Guard())
       )

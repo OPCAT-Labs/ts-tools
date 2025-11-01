@@ -39,6 +39,7 @@ describe('Test the feature `contractSend` for `Cat20`', () => {
       name: 'c',
       symbol: 'C',
       decimals: 2n,
+      hasAdmin: false,
       max: 21000000n,
       limit: 1000n,
       premine: 3150000n,
@@ -111,11 +112,12 @@ describe('Test the feature `contractSend` for `Cat20`', () => {
       testSigner,
       testProvider,
       cat20Generator.deployInfo.minterScriptHash,
-      cat20Generator.deployInfo.adminScriptHash,
       cat20Utxos,
       [{ address: contractScriptHash, amount: toReceiverAmount }],
       cat20ChangeAddr,
-      await testProvider.getFeeRate()
+      await testProvider.getFeeRate(),
+      cat20Generator.deployInfo.hasAdmin,
+      cat20Generator.deployInfo.adminScriptHash
     )
 
     // check guard tx

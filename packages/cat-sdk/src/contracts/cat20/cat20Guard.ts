@@ -4,7 +4,6 @@ import {
     SmartContract,
     assert,
     fill,
-    hash256,
     len,
     method,
     toByteString,
@@ -15,7 +14,6 @@ import {
     TX_INPUT_COUNT_MAX,
     GUARD_TOKEN_TYPE_MAX,
     OUTPUT_LOCKING_SCRIPT_HASH_LEN,
-    STATE_HASH_BYTE_LEN,
     ConstantsLib,
     TX_OUTPUT_COUNT_MAX,
 } from '../constants'

@@ -22,8 +22,6 @@ import {
   SupportedNetwork,
   getBackTraceInfo,
   toHex,
-  sha256,
-  DefaultSigner,
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
   CAT20OpenMinterPeripheral,
@@ -31,7 +29,10 @@ import {
 } from '../../../utils/contractPeripheral'
 import { CAT20OpenMinterMetadata } from '../../../contracts/cat20/minters/cat20OpenMinterMetadata'
 import { Transaction } from '@opcat-labs/opcat'
-import { ConstantsLib } from '../../../contracts/constants'
+import {
+  ConstantsLib,
+  EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
+} from '../../../contracts/constants'
 
 /**
  * Deploy a CAT20 token with metadata and automatically mint the pre-mined tokens, if applicable.
@@ -93,11 +94,12 @@ export async function deploy(
 
   const minterScriptHash = ContractPeripheral.scriptHash(openMinter)
 
-  const adminScriptHash = sha256('')
+  const adminScriptHash = EMPTY_TOKEN_ADMIN_SCRIPT_HASH
 
   const guard = new CAT20Guard()
   const cat20 = new CAT20(
     minterScriptHash,
+    false,
     adminScriptHash,
     ContractPeripheral.scriptHash(guard)
   )
@@ -172,6 +174,7 @@ export async function deploy(
   return {
     tokenId,
     minterScriptHash,
+    hasAdmin: false,
     adminScriptHash,
     tokenScriptHash,
 

@@ -18,11 +18,11 @@ import { CAT20 } from '../../../contracts/cat20/cat20'
 import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
 import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types'
 import {
-  ConstantsLib,
+  EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants'
-import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants'
+import { Postage } from '../../../typeConstants'
 import {
   applyFixedArray,
   filterFeeUtxos,
@@ -33,6 +33,7 @@ import {
   ContractPeripheral,
 } from '../../../utils/contractPeripheral'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
+import { SPEND_TYPE_CONTRACT_SPEND } from '../../../contracts'
 
 /**
  * Send CAT20 tokens to the list of recipients.
@@ -50,14 +51,15 @@ export async function contractSend(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: string,
-  adminScriptHash: string,
   inputTokenUtxos: UTXO[],
   receivers: Array<{
     address: ByteString
     amount: CAT20_AMOUNT
   }>,
   tokenChangeAddress: ByteString,
-  feeRate: number
+  feeRate: number,
+  hasAdmin: boolean = false,
+  adminScriptHash: string = EMPTY_TOKEN_ADMIN_SCRIPT_HASH
 ): Promise<{
   guardPsbt: ExtPsbt
   sendPsbt: ExtPsbt
@@ -145,9 +147,12 @@ export async function contractSend(
   const feeUtxo = guardPsbt.getChangeUTXO()!
   const guardScriptHash = ContractPeripheral.scriptHash(guard)
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
-    new CAT20(minterScriptHash, adminScriptHash, guardScriptHash).bindToUtxo(
-      utxo
-    )
+    new CAT20(
+      minterScriptHash,
+      hasAdmin,
+      adminScriptHash,
+      guardScriptHash
+    ).bindToUtxo(utxo)
   )
 
   /// we use the fee input as contract input;
@@ -156,25 +161,27 @@ export async function contractSend(
   const guardInputIndex = inputTokens.length
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
-    adminScriptHash,
     inputTokenUtxos,
-    provider
+    provider,
+    hasAdmin,
+    adminScriptHash
   )
 
   // add token inputs
   for (let index = 0; index < inputTokens.length; index++) {
     sendPsbt.addContractInput(inputTokens[index], (contract, tx) => {
       const contractInputIndexVal = tx.data.inputs.findIndex(
-        (input, inputIndex) =>
+        (_input, inputIndex) =>
           ContractPeripheral.scriptHash(
             toHex(tx.getInputOutput(inputIndex).script) as ByteString
           ) == inputTokenStates[index].ownerAddr
       )
       contract.unlock(
         {
+          spendType: SPEND_TYPE_CONTRACT_SPEND,
           userPubKey: '' as PubKey,
           userSig: '' as Sig,
-          contractInputIndex: BigInt(contractInputIndexVal),
+          spendScriptInputIndex: BigInt(contractInputIndexVal),
         },
 
         guardState,
@@ -193,6 +200,7 @@ export async function contractSend(
   for (const outputToken of outputTokens) {
     const outputCat20 = new CAT20(
       minterScriptHash,
+      hasAdmin,
       adminScriptHash,
       guardScriptHash
     )

@@ -29,6 +29,7 @@ describe('Test the feature `deploy` for `openMinterV2`', () => {
       name: 'c',
       symbol: 'C',
       decimals: 2n,
+      hasAdmin: false,
       max: 21000000n,
       limit: 1000n,
       premine: 3150000n,
@@ -66,6 +67,7 @@ describe('Test the feature `deploy` for `openMinterV2`', () => {
       }
       const expectTokenScript = new CAT20(
         minterScriptHash,
+        metadata.hasAdmin,
         adminScriptHash,
         ContractPeripheral.scriptHash(new CAT20Guard())
       ).lockingScript.toHex()

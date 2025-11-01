@@ -65,6 +65,7 @@ export class TestCAT20Generator {
       testSigner,
       testProvider,
       this.getCat20MinterUtxo(),
+      this.deployInfo.hasAdmin,
       this.deployInfo.adminScriptHash,
       this.deployInfo.genesisTx.extractTransaction().id,
       signerOwnerAddr,
@@ -78,7 +79,6 @@ export class TestCAT20Generator {
       testSigner,
       testProvider,
       this.deployInfo.minterScriptHash,
-      this.deployInfo.adminScriptHash,
       [mintInfo.cat20Utxo],
       [
         {
@@ -87,7 +87,9 @@ export class TestCAT20Generator {
         },
       ],
       signerAddr,
-      await testProvider.getFeeRate()
+      await testProvider.getFeeRate(),
+      this.deployInfo.hasAdmin,
+      this.deployInfo.adminScriptHash
     )
     return transferInfo.newCAT20Utxos[0]
   }
@@ -121,6 +123,7 @@ export async function createCat20(
     name: `cat20_${symbol}`,
     symbol: `cat20_${symbol}`,
     decimals: 2n,
+    hasAdmin: true,
     max: 21000000n,
     limit: 1000n,
     premine: 3150000n,
@@ -140,9 +143,10 @@ export async function createCat20(
     cat20.utxoTraces.push(
       ...(await CAT20GuardPeripheral.getBackTraceInfo(
         cat20Generater.deployInfo.minterScriptHash,
-        cat20Generater.deployInfo.adminScriptHash,
         [utxo],
-        testProvider
+        testProvider,
+        cat20Generater.deployInfo.hasAdmin,
+        cat20Generater.deployInfo.adminScriptHash
       ))
     )
   }

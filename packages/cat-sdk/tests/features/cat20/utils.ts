@@ -14,7 +14,6 @@ import { mint } from '../../../src/features/cat20/mint/openMinter'
 import { CAT20_AMOUNT } from '../../../src/contracts/cat20/types'
 import { ByteString } from '@opcat-labs/scrypt-ts-opcat'
 import { singleSend } from '../../../src/features/cat20/send/singleSend'
-import { CAT20Incinerator } from '../../../src/contracts/cat20Incinerator'
 import { CAT20ClosedMinterMetadata } from '../../../src/contracts/cat20/minters/cat20ClosedMinterMetadata'
 import { CAT20OpenMinterMetadata } from '../../../src/contracts/cat20/minters/cat20OpenMinterMetadata'
 import { CAT20StateLib } from '../../../src/contracts/cat20/cat20StateLib'
@@ -41,8 +40,6 @@ export const loadAllArtifacts = function () {
   CAT20GuardStateLib.loadArtifact(
     readArtifact('artifacts/cat20/cat20GuardStateLib.json')
   )
-
-  CAT20Incinerator.loadArtifact(readArtifact('artifacts/cat20Incinerator.json'))
 }
 
 export async function deployToken(info: OpenMinterCAT20Meta) {
@@ -78,6 +75,7 @@ export async function mintToken(
 
 export async function singleSendToken(
   minterScriptHash: string,
+  hasAdmin: boolean,
   adminScriptHash: string,
   amount: CAT20_AMOUNT,
   inputTokenUtxos: UTXO[],
@@ -89,10 +87,11 @@ export async function singleSendToken(
     testSigner,
     testProvider,
     minterScriptHash,
-    adminScriptHash,
     inputTokenUtxos,
     [{ address: tokenRecieverAddr, amount }],
     tokenChangeAddr,
-    await testProvider.getFeeRate()
+    await testProvider.getFeeRate(),
+    hasAdmin,
+    adminScriptHash
   )
 }

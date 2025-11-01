@@ -8,6 +8,7 @@ import {
   PubKey,
   BacktraceInfo,
   TxUtils,
+  PubKeyHash,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20AdminState } from './types'
 import { OwnerUtils } from '../utils/ownerUtils'
@@ -22,7 +23,7 @@ export class CAT20Admin extends SmartContract<CAT20AdminState> {
   }
 
   @method()
-  public freeze(
+  public authorizeToSpendToken(
     // args to
     adminPubKey: PubKey,
     adminSig: Sig,
@@ -30,16 +31,16 @@ export class CAT20Admin extends SmartContract<CAT20AdminState> {
     backtraceInfo: BacktraceInfo
   ) {
     // back to genesis
-    const adminScript = this.ctx.spentScriptHash
+    const adminScriptHash = this.ctx.spentScriptHash
     this.backtraceToOutpoint(backtraceInfo, this.genesisOutpoint)
 
     // check admin
-    OwnerUtils.checkUserOwner(adminPubKey, this.state.ownerAddress)
+    OwnerUtils.checkUserOwner(adminPubKey, this.state.adminAddress)
     assert(this.checkSig(adminSig, adminPubKey))
 
     // next admin output
     const adminOutput = TxUtils.buildDataOutput(
-      adminScript,
+      adminScriptHash,
       this.ctx.value,
       this.ctx.spentDataHash
     )
@@ -53,21 +54,23 @@ export class CAT20Admin extends SmartContract<CAT20AdminState> {
     // args to
     adminPubKey: PubKey,
     adminSig: Sig,
-    newAddress: ByteString,
+    newPubKeyHash: PubKeyHash,
     // backtrace
     backtraceInfo: BacktraceInfo
   ) {
     // back to genesis
-    const adminScript = this.ctx.spentScriptHash
+    const adminScriptHash = this.ctx.spentScriptHash
     this.backtraceToOutpoint(backtraceInfo, this.genesisOutpoint)
     // check admin
-    OwnerUtils.checkUserOwner(adminPubKey, this.state.ownerAddress)
+    OwnerUtils.checkUserOwner(adminPubKey, this.state.adminAddress)
     assert(this.checkSig(adminSig, adminPubKey))
+
     // update ownerAddress
-    this.state.ownerAddress = newAddress
+    this.state.adminAddress =
+      OwnerUtils.pubKeyHashtoLockingScript(newPubKeyHash)
     // next admin output
     const adminOutput = TxUtils.buildDataOutput(
-      adminScript,
+      adminScriptHash,
       this.ctx.value,
       CAT20Admin.stateHash(this.state)
     )

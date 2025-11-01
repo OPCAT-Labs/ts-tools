@@ -18,6 +18,7 @@ import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
 import {
   ConstantsLib,
+  EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants'
@@ -27,6 +28,7 @@ import {
   CAT20GuardPeripheral,
   ContractPeripheral,
 } from '../../../utils/contractPeripheral'
+import { SPEND_TYPE_USER_SPEND } from '../../../contracts'
 
 /**
  * Burn CAT20 tokens in a single transaction.
@@ -42,9 +44,10 @@ export async function burn(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
-  adminScriptHash: ByteString,
   inputTokenUtxos: UTXO[],
-  feeRate: number
+  feeRate: number,
+  hasAdmin: boolean = false,
+  adminScriptHash: ByteString = EMPTY_TOKEN_ADMIN_SCRIPT_HASH
 ): Promise<{
   guardPsbt: ExtPsbt
   burnPsbt: ExtPsbt
@@ -96,9 +99,12 @@ export async function burn(
   const feeUtxo = guardPsbt.getChangeUTXO()
 
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
-    new CAT20(minterScriptHash, adminScriptHash, guardScriptHash).bindToUtxo(
-      utxo
-    )
+    new CAT20(
+      minterScriptHash,
+      hasAdmin,
+      adminScriptHash,
+      guardScriptHash
+    ).bindToUtxo(utxo)
   )
 
   const burnPsbt = new ExtPsbt({ network: await provider.getNetwork() })
@@ -106,9 +112,10 @@ export async function burn(
   const guardInputIndex = inputTokens.length
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
-    adminScriptHash,
     inputTokenUtxos,
-    provider
+    provider,
+    hasAdmin,
+    adminScriptHash
   )
 
   // add token inputs
@@ -116,9 +123,10 @@ export async function burn(
     burnPsbt.addContractInput(inputTokens[index], (contract, tx) => {
       contract.unlock(
         {
+          spendType: SPEND_TYPE_USER_SPEND,
           userPubKey: PubKey(pubkey),
           userSig: tx.getSig(index, { address: changeAddress }),
-          contractInputIndex: BigInt(-1),
+          spendScriptInputIndex: BigInt(-1),
         },
         guardState,
         BigInt(guardInputIndex),
