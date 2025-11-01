@@ -9,11 +9,12 @@ import {
   markSpent,
   getBackTraceInfo,
   Transaction,
-  ByteString,
+  PubKeyHash,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { TX_INPUT_COUNT_MAX } from '../../../contracts/constants'
 import { filterFeeUtxos } from '../../../utils'
 import { CAT20Admin } from '../../../contracts/cat20/cat20Admin'
+import { OwnerUtils } from '../../../contracts'
 
 /**
  * Change CAT20 admin owner in a single transaction.
@@ -21,7 +22,7 @@ import { CAT20Admin } from '../../../contracts/cat20/cat20Admin'
  * @param cat20Admin a CAT20Admin {@link CAT20Admin}
  * @param adminUtxo a utxo of cat20Admin {@link UTXO}
  * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
- * @param newAddress a new admin owner address
+ * @param newPubKeyHash a new admin owner address
  * @param feeRate the fee rate for constructing transactions
  * @returns a transferOwnership transaction
  */
@@ -30,7 +31,7 @@ export async function transferOwnership(
   cat20Admin: CAT20Admin,
   adminUtxo: UTXO,
   provider: UtxoProvider & ChainProvider,
-  newAddress: ByteString,
+  newPubKeyHash: PubKeyHash,
   feeRate: number
 ): Promise<{
   sendPsbt: ExtPsbt
@@ -51,32 +52,36 @@ export async function transferOwnership(
   cat20Admin.bindToUtxo(adminUtxo)
   const pubkey = await signer.getPublicKey()
   const address = await signer.getAddress()
-  const spentMinterTxHex = await provider.getRawTransaction(adminUtxo.txId)
-  const spentMinterTx = new Transaction(spentMinterTxHex)
-  let minterInputIndex = spentMinterTx.inputs.length - 2
-  if (minterInputIndex >= 0) {
-  } else {
-    minterInputIndex = 0
+  const adminTxHex = await provider.getRawTransaction(adminUtxo.txId)
+  const adminTx = new Transaction(adminTxHex)
+  let prevAdminInputIndex = adminTx.inputs.length - 2
+  if (prevAdminInputIndex < 0) {
+    prevAdminInputIndex = 0
   }
 
-  const spentMinterPreTxHex = await provider.getRawTransaction(
-    toHex(spentMinterTx.inputs[minterInputIndex].prevTxId)
+  const spentAdminPreTxHex = await provider.getRawTransaction(
+    toHex(adminTx.inputs[prevAdminInputIndex].prevTxId)
   )
   const backTraceInfo = getBackTraceInfo(
-    spentMinterTxHex,
-    spentMinterPreTxHex,
-    minterInputIndex
+    adminTxHex,
+    spentAdminPreTxHex,
+    prevAdminInputIndex
   )
   sendPsbt.addContractInput(cat20Admin, (contract, tx) => {
+    // sign admin input
     const sig = tx.getSig(0, {
       address: address.toString(),
     })
-    // Todo
-    contract.transferOwnership(PubKey(pubkey), sig, newAddress, backTraceInfo)
+    contract.transferOwnership(
+      PubKey(pubkey),
+      sig,
+      newPubKeyHash,
+      backTraceInfo
+    )
   })
   const newCat20Admin = cat20Admin.next({
     tag: cat20Admin.state.tag,
-    ownerAddress: newAddress,
+    adminAddress: OwnerUtils.pubKeyHashtoLockingScript(newPubKeyHash),
   })
 
   sendPsbt.addContractOutput(newCat20Admin, adminUtxo.satoshis)

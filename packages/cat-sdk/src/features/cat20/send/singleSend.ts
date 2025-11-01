@@ -16,7 +16,7 @@ import {
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types'
 import {
-  ConstantsLib,
+  EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants'
@@ -25,12 +25,13 @@ import {
   CAT20GuardPeripheral,
   ContractPeripheral,
 } from '../../../utils/contractPeripheral'
-import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants'
+import { Postage } from '../../../typeConstants'
 import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
 import { CAT20 } from '../../../contracts/cat20/cat20'
 import * as opcat from '@opcat-labs/opcat'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
 import { Transaction } from '@opcat-labs/opcat'
+import { SPEND_TYPE_USER_SPEND } from '../../../contracts'
 
 /**
  * Send CAT20 tokens to the list of recipients.
@@ -49,7 +50,6 @@ export async function singleSend(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
-  adminScriptHash: ByteString,
   inputTokenUtxos: UTXO[],
   receivers: Array<{
     address: ByteString
@@ -57,6 +57,8 @@ export async function singleSend(
   }>,
   tokenChangeAddress: ByteString,
   feeRate: number,
+  hasAdmin: boolean = false,
+  adminScriptHash: ByteString = EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
   sendChangeData?: Buffer
 ): Promise<{
   guardPsbt: ExtPsbt
@@ -68,7 +70,7 @@ export async function singleSend(
 }> {
   const pubkey = await signer.getPublicKey()
   const feeChangeAddress = await signer.getAddress()
-  let feeUtxos = await provider.getUtxos(feeChangeAddress)
+  const feeUtxos = await provider.getUtxos(feeChangeAddress)
   const { guardPsbt, outputTokenStates, changeTokenOutputIndex, guard } =
     await singleSendStep1(
       provider,
@@ -86,6 +88,7 @@ export async function singleSend(
   const { sendPsbt } = await singleSendStep2(
     provider,
     minterScriptHash,
+    hasAdmin,
     adminScriptHash,
     guard,
     guardPsbt,
@@ -193,6 +196,7 @@ export async function singleSendStep1(
 export async function singleSendStep2(
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
+  hasAdmin: boolean,
   adminScriptHash: ByteString,
   guard: CAT20Guard,
   finalizedGuardPsbt: ExtPsbt,
@@ -211,12 +215,18 @@ export async function singleSendStep2(
   const guardScriptHash = ContractPeripheral.scriptHash(guard)
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
-    adminScriptHash,
     inputTokenUtxos,
-    provider
+    provider,
+    hasAdmin,
+    adminScriptHash
   )
   const inputTokens: CAT20[] = inputTokenUtxos.map((_token, index) =>
-    new CAT20(minterScriptHash, adminScriptHash, guardScriptHash).bindToUtxo({
+    new CAT20(
+      minterScriptHash,
+      hasAdmin,
+      adminScriptHash,
+      guardScriptHash
+    ).bindToUtxo({
       ..._token,
       txHashPreimage: toHex(
         new Transaction(backtraces[index].prevTxHex).toTxHashPreimage()
@@ -242,9 +252,10 @@ export async function singleSendStep2(
       })
       return cat20.unlock(
         {
+          spendType: SPEND_TYPE_USER_SPEND,
           userPubKey: PubKey(publicKey),
           userSig: sig,
-          contractInputIndex: -1n,
+          spendScriptInputIndex: -1n,
         },
 
         guardState,
@@ -260,7 +271,12 @@ export async function singleSendStep2(
   }
   // add token outputs
   for (const outputToken of outputTokenStates) {
-    const cat20 = new CAT20(minterScriptHash, adminScriptHash, guardScriptHash)
+    const cat20 = new CAT20(
+      minterScriptHash,
+      hasAdmin,
+      adminScriptHash,
+      guardScriptHash
+    )
     cat20.state = outputToken
     sendPsbt.addContractOutput(cat20, Postage.TOKEN_POSTAGE)
   }

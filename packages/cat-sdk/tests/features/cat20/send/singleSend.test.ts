@@ -36,6 +36,7 @@ describe('Test the feature `send` for `Cat20`', () => {
       name: 'c',
       symbol: 'C',
       decimals: 2n,
+      hasAdmin: false,
       max: 21000000n,
       limit: 1000n,
       premine: 3150000n,
@@ -97,6 +98,7 @@ describe('Test the feature `send` for `Cat20`', () => {
   ) {
     const { guardPsbt, sendPsbt } = await singleSendToken(
       cat20Generator.deployInfo.minterScriptHash,
+      cat20Generator.deployInfo.hasAdmin,
       cat20Generator.deployInfo.adminScriptHash,
       toReceiverAmount,
       cat20Utxos,

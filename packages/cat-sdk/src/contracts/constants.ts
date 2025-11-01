@@ -33,6 +33,8 @@ export const OUTPUT_DATA_HASH_LEN = SHA256_HASH_LEN
 export const CAT20_AMOUNT_BYTE_LEN = 4n
 export const MD5_HASH_LEN = 16n
 
+export const EMPTY_TOKEN_ADMIN_SCRIPT_HASH = toByteString('')
+
 export class ConstantsLib extends SmartContractLib {
   @prop()
   static readonly ZERO_SHA1256_HASH: ByteString = Sha256(

@@ -4,19 +4,14 @@ import {
   prop,
   method,
   assert,
-  len,
   BacktraceInfo,
-  slice,
   SpentScriptHashes,
-  TX_OUTPUT_SCRIPT_HASH_LEN,
   ContextUtils,
-  sha256,
   toByteString,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { OwnerUtils } from '../utils/ownerUtils'
 import { CAT20State, CAT20GuardConstState } from './types'
 import { ContractUnlockArgs } from '../types'
-import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN } from '../constants'
 import { SpentDataHashes } from '@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs'
 import { CAT20GuardStateLib } from './cat20GuardStateLib'
 
@@ -30,13 +25,18 @@ export class CAT20 extends SmartContract<CAT20State> {
   @prop()
   guardScriptHash: ByteString
 
+  @prop()
+  hasAdmin: boolean
+
   constructor(
     minterScriptHash: ByteString,
+    hasAdmin: boolean,
     adminScriptHash: ByteString,
     guardScriptHash: ByteString
   ) {
     super(...arguments)
     this.minterScriptHash = minterScriptHash
+    this.hasAdmin = hasAdmin
     this.adminScriptHash = adminScriptHash
     this.guardScriptHash = guardScriptHash
   }
@@ -61,25 +61,34 @@ export class CAT20 extends SmartContract<CAT20State> {
       this.ctx.spentScriptHashes,
       this.ctx.spentDataHashes
     )
+
+    assert(
+      unlockArgs.spendType >= 0n && unlockArgs.spendType <= 2n,
+      'invalid spendType'
+    )
+
     let spentScriptHash = toByteString('')
-    if (unlockArgs.contractInputIndex >= 0n) {
+    //
+    if (unlockArgs.spendScriptInputIndex >= 0n) {
       spentScriptHash = ContextUtils.getSpentScriptHash(
         this.ctx.spentScriptHashes,
-        unlockArgs.contractInputIndex
+        unlockArgs.spendScriptInputIndex
       )
     }
 
-    if (spentScriptHash == this.adminScriptHash) {
-      assert(true)
+    if (unlockArgs.spendType == 0n) {
+      // user spend
+      // unlock token owned by user key
+      OwnerUtils.checkUserOwner(unlockArgs.userPubKey, this.state.ownerAddr)
+      assert(this.checkSig(unlockArgs.userSig, unlockArgs.userPubKey))
+    } else if (unlockArgs.spendType == 1n) {
+      // contract spend
+      // unlock token owned by contract script
+      assert(this.state.ownerAddr == spentScriptHash)
     } else {
-      if (len(this.state.ownerAddr) == OWNER_ADDR_CONTRACT_HASH_BYTE_LEN) {
-        // unlock token owned by contract script
-        assert(this.state.ownerAddr == spentScriptHash)
-      } else {
-        // unlock token owned by user key
-        OwnerUtils.checkUserOwner(unlockArgs.userPubKey, this.state.ownerAddr)
-        assert(this.checkSig(unlockArgs.userSig, unlockArgs.userPubKey))
-      }
+      // admin spend
+      assert(this.hasAdmin, 'admin spend not allowed')
+      assert(spentScriptHash == this.adminScriptHash, 'invalid admin spend')
     }
   }
 

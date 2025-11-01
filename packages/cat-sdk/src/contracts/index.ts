@@ -13,6 +13,5 @@ export * from './constants'
 export * from './utils/ownerUtils'
 export * from './utils/safeMath'
 
-export * from './cat20Incinerator'
 export * from './constants'
 export * from './types'
