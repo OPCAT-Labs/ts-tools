@@ -18,12 +18,18 @@ export class TokenInfoEntity {
   @Column()
   decimals: number;
 
+  @Column()
+  hasAdmin: boolean;
+
   @Column({ name: 'raw_info' })
   rawInfo: string;
 
   @Column({ name: 'minter_script_hash', length: 64, nullable: true })
   @Index()
   minterScriptHash: string;
+
+  @Column({ name: 'admin_script_hash', length: 64, nullable: true })
+  adminScriptHash: string;
 
   @Column({ name: 'token_script_hash', length: 64, nullable: true })
   @Index()

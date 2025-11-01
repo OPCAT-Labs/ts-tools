@@ -1,10 +1,14 @@
-import { ByteString, FixedArray, TxHashPreimage } from "@opcat-labs/scrypt-ts-opcat"
-import { StateHashes } from "../types";
-import { GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants";
-import { StructObject } from "@opcat-labs/scrypt-ts-opcat";
+import {
+  ByteString,
+  FixedArray,
+  TxHashPreimage,
+} from '@opcat-labs/scrypt-ts-opcat'
+import { StateHashes } from '../types'
+import { GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from '../constants'
+import { StructObject } from '@opcat-labs/scrypt-ts-opcat'
 
 // todo: uint32 or other type?
-export type CAT20_AMOUNT = bigint;
+export type CAT20_AMOUNT = bigint
 
 export type CAT20State = {
   tag: ByteString
@@ -13,7 +17,6 @@ export type CAT20State = {
   // token amount
   amount: CAT20_AMOUNT
 }
-
 
 export type CAT20GuardInfo = {
   // guard input index in curTx\
@@ -63,8 +66,6 @@ export type CAT20GuardConstState = {
   tokenScriptIndexes: FixedArray<bigint, typeof TX_INPUT_COUNT_MAX>
 }
 
-
-
 export interface CAT20Metadata extends StructObject {
   // name of the token, length is 1~int8.max bytes
   name: ByteString
@@ -84,6 +85,7 @@ export interface ClosedMinterCAT20Meta extends StructObject {
   name: ByteString
   symbol: ByteString
   decimals: bigint
+  hasAdmin: boolean
   minterMd5: ByteString
 }
 
@@ -95,6 +97,7 @@ export interface OpenMinterCAT20Meta extends StructObject {
   symbol: ByteString
   // decimals of the token, length is 1 byte
   decimals: bigint
+  hasAdmin: boolean
   // md5 of the token minter contract, length is 16 bytes
   minterMd5: ByteString
 
@@ -123,4 +126,20 @@ export interface CAT20ClosedMinterState extends StructObject {
   // tokenScript: ByteString;
   // sha256 of tokenScript
   tokenScriptHash: ByteString
+}
+
+/**
+ * CAT20Admin state interface.
+ *
+ * Represents the state of a CAT20 admin contract, which manages administrative
+ * privileges for CAT20 tokens. The admin can perform privileged operations such
+ * as transferring ownership to another address via the adminSpend method.
+ *
+ * @property tag - Contract identifier tag
+ * @property adminAddress - Address of the current admin owner
+ */
+
+export interface CAT20AdminState extends StructObject {
+  tag: ByteString
+  adminAddress: ByteString
 }

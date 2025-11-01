@@ -4,19 +4,14 @@ import {
   prop,
   method,
   assert,
-  len,
   BacktraceInfo,
-  slice,
   SpentScriptHashes,
-  TX_OUTPUT_SCRIPT_HASH_LEN,
-  ContextUtils
+  ContextUtils,
+  toByteString,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { OwnerUtils } from '../utils/ownerUtils'
 import { CAT20State, CAT20GuardConstState } from './types'
-import {
-  ContractUnlockArgs,
-} from '../types'
-import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN } from '../constants'
+import { ContractUnlockArgs } from '../types'
 import { SpentDataHashes } from '@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs'
 import { CAT20GuardStateLib } from './cat20GuardStateLib'
 
@@ -25,11 +20,24 @@ export class CAT20 extends SmartContract<CAT20State> {
   minterScriptHash: ByteString
 
   @prop()
+  adminScriptHash: ByteString
+
+  @prop()
   guardScriptHash: ByteString
 
-  constructor(minterScriptHash: ByteString, guardScriptHash: ByteString) {
+  @prop()
+  hasAdmin: boolean
+
+  constructor(
+    minterScriptHash: ByteString,
+    hasAdmin: boolean,
+    adminScriptHash: ByteString,
+    guardScriptHash: ByteString
+  ) {
     super(...arguments)
     this.minterScriptHash = minterScriptHash
+    this.hasAdmin = hasAdmin
+    this.adminScriptHash = adminScriptHash
     this.guardScriptHash = guardScriptHash
   }
 
@@ -42,8 +50,8 @@ export class CAT20 extends SmartContract<CAT20State> {
     // backtrace
     backtraceInfo: BacktraceInfo
   ) {
-    this.backtraceToScript(backtraceInfo, this.minterScriptHash);
-   
+    this.backtraceToScript(backtraceInfo, this.minterScriptHash)
+
     // make sure tx inputs contain a valid guard
     this.checkGuard(
       guardState,
@@ -54,16 +62,33 @@ export class CAT20 extends SmartContract<CAT20State> {
       this.ctx.spentDataHashes
     )
 
-    if (len(this.state.ownerAddr) == OWNER_ADDR_CONTRACT_HASH_BYTE_LEN) {
-      // unlock token owned by contract script
-      assert(
-        this.state.ownerAddr ==
-        slice(this.ctx.spentScriptHashes, unlockArgs.contractInputIndex * TX_OUTPUT_SCRIPT_HASH_LEN, (unlockArgs.contractInputIndex + 1n) * TX_OUTPUT_SCRIPT_HASH_LEN)
+    assert(
+      unlockArgs.spendType >= 0n && unlockArgs.spendType <= 2n,
+      'invalid spendType'
+    )
+
+    let spentScriptHash = toByteString('')
+    //
+    if (unlockArgs.spendScriptInputIndex >= 0n) {
+      spentScriptHash = ContextUtils.getSpentScriptHash(
+        this.ctx.spentScriptHashes,
+        unlockArgs.spendScriptInputIndex
       )
-    } else {
+    }
+
+    if (unlockArgs.spendType == 0n) {
+      // user spend
       // unlock token owned by user key
       OwnerUtils.checkUserOwner(unlockArgs.userPubKey, this.state.ownerAddr)
       assert(this.checkSig(unlockArgs.userSig, unlockArgs.userPubKey))
+    } else if (unlockArgs.spendType == 1n) {
+      // contract spend
+      // unlock token owned by contract script
+      assert(this.state.ownerAddr == spentScriptHash)
+    } else {
+      // admin spend
+      assert(this.hasAdmin, 'admin spend not allowed')
+      assert(spentScriptHash == this.adminScriptHash, 'invalid admin spend')
     }
   }
 
@@ -76,11 +101,15 @@ export class CAT20 extends SmartContract<CAT20State> {
     t_spentScriptsCtx: SpentScriptHashes,
     t_spentDataHashesCtx: SpentDataHashes
   ): void {
-
     // 1. check there is a guard input by shPreimage.hashSpentScriptHashes
-    assert(ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndexVal) == this.guardScriptHash)
-    assert(ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndexVal) == CAT20GuardStateLib.stateHash(guardState))
-
+    assert(
+      ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndexVal) ==
+        this.guardScriptHash
+    )
+    assert(
+      ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndexVal) ==
+        CAT20GuardStateLib.stateHash(guardState)
+    )
 
     // 2. check the guard input is validating current input by checking guard state contains current token script
     // and the corresponding value of array tokenScripts and tokenScriptIndexes is correct
@@ -88,7 +117,7 @@ export class CAT20 extends SmartContract<CAT20State> {
       guardState.tokenScriptIndexes[Number(t_cat20InputIndexVal)]
     assert(
       guardState.tokenScriptHashes[Number(tokenScriptIndex)] ==
-      t_cat20ScriptHash
+        t_cat20ScriptHash
     )
   }
 }
