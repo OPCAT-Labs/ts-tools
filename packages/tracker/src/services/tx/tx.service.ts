@@ -161,20 +161,22 @@ export class TxService {
     const inputGenesis = input.output;
     const fields = ContractLib.decodeFields(inputGenesis.data);
     const tokenId = `${input.prevTxId.toString('hex')}_${input.outputIndex}`;
-    const [, _name, _symbol, _decimals] = fields;
+    const [, _name, _symbol, _decimals, _hasAdmin] = fields;
     const name = Buffer.from(_name, 'hex').toString('utf-8');
     const symbol = Buffer.from(_symbol, 'hex').toString('utf-8');
     const decimals = Number(byteString2Int(_decimals));
+    const hasAdmin = _hasAdmin == '01';
     const tokenInfoEntity = this.tokenInfoEntityRepository.create({
       tokenId,
       genesisTxid: tx.hash,
       name: name,
       symbol: symbol,
       decimals: decimals,
+      hasAdmin: hasAdmin,
       rawInfo: toHex(inputGenesis.data),
     });
     let adminScriptHash = sha256('');
-    const adminIndex = outputTags.findIndex(tag => tag === ContractLib.OPCAT_CAT20_ADMIN_TAG);
+    const adminIndex = outputTags.findIndex((tag) => tag === ContractLib.OPCAT_CAT20_ADMIN_TAG);
     if (adminIndex !== -1 && tx.outputs.length > adminIndex) {
       adminScriptHash = sha256(tx.outputs[adminIndex].script.toHex());
     }

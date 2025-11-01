@@ -70,6 +70,7 @@ export async function transferCat20(
 
   const cat20Script = new CAT20(
     token.token.minterScriptHash,
+    false,
     toByteString(''),
     sha256(new CAT20Guard().lockingScript.toHex()),
   ).lockingScript.toHex();
@@ -78,7 +79,6 @@ export async function transferCat20(
     signer,
     new MempoolProvider(network),
     token.token.minterScriptHash,
-    token.token.adminScriptHash,
     cat20Utxos.utxos.map((utxo) => ({
       txId: utxo.txId,
       outputIndex: utxo.outputIndex,
@@ -92,6 +92,8 @@ export async function transferCat20(
     })),
     Script.fromAddress(senderAddress).toHex(),
     await new MempoolProvider(network).getFeeRate(),
+    token.token.hasAdmin,
+    token.token.adminScriptHash,
   );
 
   return res.sendTxId;

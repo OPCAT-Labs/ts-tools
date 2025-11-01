@@ -18,6 +18,9 @@ export class TokenInfoEntity {
   @Column()
   decimals: number;
 
+  @Column()
+  hasAdmin: boolean;
+
   @Column({ name: 'raw_info' })
   rawInfo: string;
 

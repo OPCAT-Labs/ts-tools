@@ -10,6 +10,7 @@ export interface CatTrackerToken {
   symbol: string;
   supply: number;
   decimals: number;
+  hasAdmin: boolean;
   minterScriptHash: string;
   adminScriptHash: string;
   tokenScriptHash: string;
