@@ -24,12 +24,12 @@ jobs:
 
       - name: Validate API credentials
         run: |
-          if [[ -z "${{ vars.ANTHROPIC_AUTH_TOKEN }}" ]]; then
-            echo "::error::ANTHROPIC_AUTH_TOKEN variable not configured"
+          if [[ -z "${{ secrets.ANTHROPIC_AUTH_TOKEN }}" ]]; then
+            echo "::error::ANTHROPIC_AUTH_TOKEN secret not configured"
             exit 1
           fi
-          if [[ -z "${{ vars.ANTHROPIC_BASE_URL }}" ]]; then
-            echo "::error::ANTHROPIC_BASE_URL variable not configured"
+          if [[ -z "${{ secrets.ANTHROPIC_BASE_URL }}" ]]; then
+            echo "::error::ANTHROPIC_BASE_URL secret not configured"
             exit 1
           fi
 
@@ -80,10 +80,11 @@ jobs:
       - name: Review with Claude Code CLI
         id: claude-review
         env:
-          ANTHROPIC_AUTH_TOKEN: ${{ vars.ANTHROPIC_AUTH_TOKEN }}
-          ANTHROPIC_BASE_URL: ${{ vars.ANTHROPIC_BASE_URL }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -91,40 +92,131 @@ jobs:
           PR_TITLE_SAFE=$(echo "$PR_TITLE" | head -c 200 | tr -d '\n\r')
           PR_BODY_SAFE=$(echo "$PR_BODY" | head -c 2000 | tr -d '\n\r')
 
+          # Check for previous review comment
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          echo "Checking for previous Claude review comment in PR #${PR_NUMBER}..."
+
+          # Fix Critical Issue #2: Get the MOST RECENT comment (not first)
+          # Use .[-1] to get last element (most recent by API order)
+          EXISTING_COMMENT_ID=$(gh api \
+            "/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+            --jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains("claude-code-review")))] | .[-1].id // empty' \
+            2>/dev/null || echo "")
+
+          PREVIOUS_REVIEW=""
+          if [[ -n "$EXISTING_COMMENT_ID" ]]; then
+            echo "Found existing review comment ID: $EXISTING_COMMENT_ID"
+            echo "Fetching previous review content..."
+
+            # Fix Critical Issue #3: Add error handling for API calls
+            if ! COMMENT_BODY=$(gh api \
+              "/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}" \
+              --jq '.body' 2>/dev/null); then
+              echo "⚠️ Warning: Failed to fetch previous review comment. Treating as first review."
+              PREVIOUS_REVIEW=""
+            else
+              # Fix Critical Issue #1: Remove only the problematic sed that deletes ALL empty lines
+              # Extract the review content (remove marker, timestamp, and metadata)
+              # Remove the first line (HTML marker)
+              # Remove everything after the "---" separator (timestamp and commit info)
+              PREVIOUS_REVIEW=$(echo "$COMMENT_BODY" | sed '1d' | sed '/^---$/,$d')
+
+              if [[ -n "$PREVIOUS_REVIEW" ]]; then
+                echo "Previous review content extracted (${#PREVIOUS_REVIEW} chars)"
+                # Save to file for easier handling
+                echo "$PREVIOUS_REVIEW" > previous_review.txt
+              else
+                echo "Previous review content is empty, treating as first review"
+              fi
+            fi
+          else
+            echo "No previous review found, this is the first review"
+          fi
+
           # Create review prompt file
-          echo "You are an expert code reviewer specializing in Bitcoin/cryptocurrency codebases and C++ development. Review the following pull request changes and provide:" > prompt.txt
+          if [[ -n "$PREVIOUS_REVIEW" ]]; then
+            # Incremental review prompt
+            echo "You are an expert code reviewer specializing in Bitcoin/cryptocurrency codebases and C++ development." > prompt.txt
+            echo "" >> prompt.txt
+            echo "## Context: Incremental Review" >> prompt.txt
+            echo "This is a follow-up review of a pull request that you previously reviewed. Below is your previous review:" >> prompt.txt
+            echo "" >> prompt.txt
+            echo "### Previous Review" >> prompt.txt
+            echo '```' >> prompt.txt
+            cat previous_review.txt >> prompt.txt
+            echo '```' >> prompt.txt
+            echo "" >> prompt.txt
+            echo "## Your Task" >> prompt.txt
+            echo "Review the NEW changes in this pull request and provide an **incremental review**:" >> prompt.txt
+            echo "" >> prompt.txt
+            echo "1. **Status of Previous Issues**: Briefly indicate which previously identified issues have been:" >> prompt.txt
+            echo "   - ✅ Fixed/Resolved" >> prompt.txt
+            echo "   - ⚠️ Partially addressed" >> prompt.txt
+            echo "   - ❌ Still present/Not addressed" >> prompt.txt
+            echo "" >> prompt.txt
+            echo "2. **New Issues Found**: Identify any NEW issues in the recent changes:" >> prompt.txt
+            echo "   - Code quality problems" >> prompt.txt
+            echo "   - Bugs or logic errors" >> prompt.txt
+            echo "   - Security concerns" >> prompt.txt
+            echo "   - Performance issues" >> prompt.txt
+            echo "" >> prompt.txt
+            echo "3. **Regression Analysis**: Check if any new changes introduced regressions or broke previously working code" >> prompt.txt
+            echo "" >> prompt.txt
+            echo "4. **Overall Assessment**: Brief summary of the PR's current state and whether it's ready for merge" >> prompt.txt
+          else
+            # First review prompt
+            echo "You are an expert code reviewer specializing in Bitcoin/cryptocurrency codebases and C++ development. Review the following pull request changes and provide:" > prompt.txt
+            echo "" >> prompt.txt
+            echo "1. **Summary of Changes**: Brief overview of what this PR accomplishes" >> prompt.txt
+            echo "2. **Code Quality Assessment**:" >> prompt.txt
+            echo "   - Code style and readability" >> prompt.txt
+            echo "   - Best practices adherence" >> prompt.txt
+            echo "   - Potential maintainability concerns" >> prompt.txt
+            echo "3. **Potential Issues or Bugs**:" >> prompt.txt
+            echo "   - Logic errors" >> prompt.txt
+            echo "   - Edge cases not handled" >> prompt.txt
+            echo "   - Resource leaks or memory issues" >> prompt.txt
+            echo "4. **Security Concerns**:" >> prompt.txt
+            echo "   - Vulnerability risks" >> prompt.txt
+            echo "   - Input validation issues" >> prompt.txt
+            echo "   - Consensus-critical changes that need extra scrutiny" >> prompt.txt
+            echo "5. **Performance Considerations**:" >> prompt.txt
+            echo "   - Inefficient algorithms or data structures" >> prompt.txt
+            echo "   - Unnecessary allocations or copies" >> prompt.txt
+            echo "   - Threading or concurrency issues" >> prompt.txt
+            echo "6. **Testing Recommendations**:" >> prompt.txt
+            echo "   - What test cases should be added" >> prompt.txt
+            echo "   - Missing test coverage" >> prompt.txt
+            echo "7. **Suggestions for Improvement**: Concrete, actionable recommendations" >> prompt.txt
+          fi
+
+          # Add common PR information (for both first and incremental reviews)
           echo "" >> prompt.txt
-          echo "1. **Summary of Changes**: Brief overview of what this PR accomplishes" >> prompt.txt
-          echo "2. **Code Quality Assessment**:" >> prompt.txt
-          echo "   - Code style and readability" >> prompt.txt
-          echo "   - Best practices adherence" >> prompt.txt
-          echo "   - Potential maintainability concerns" >> prompt.txt
-          echo "3. **Potential Issues or Bugs**:" >> prompt.txt
-          echo "   - Logic errors" >> prompt.txt
-          echo "   - Edge cases not handled" >> prompt.txt
-          echo "   - Resource leaks or memory issues" >> prompt.txt
-          echo "4. **Security Concerns**:" >> prompt.txt
-          echo "   - Vulnerability risks" >> prompt.txt
-          echo "   - Input validation issues" >> prompt.txt
-          echo "   - Consensus-critical changes that need extra scrutiny" >> prompt.txt
-          echo "5. **Performance Considerations**:" >> prompt.txt
-          echo "   - Inefficient algorithms or data structures" >> prompt.txt
-          echo "   - Unnecessary allocations or copies" >> prompt.txt
-          echo "   - Threading or concurrency issues" >> prompt.txt
-          echo "6. **Testing Recommendations**:" >> prompt.txt
-          echo "   - What test cases should be added" >> prompt.txt
-          echo "   - Missing test coverage" >> prompt.txt
-          echo "7. **Suggestions for Improvement**: Concrete, actionable recommendations" >> prompt.txt
+          echo "---" >> prompt.txt
           echo "" >> prompt.txt
-          echo "PR Title: $PR_TITLE_SAFE" >> prompt.txt
-          echo "PR Description: $PR_BODY_SAFE" >> prompt.txt
+          echo "## Pull Request Information" >> prompt.txt
           echo "" >> prompt.txt
-          echo "Changes:" >> prompt.txt
+          echo "**PR Title**: $PR_TITLE_SAFE" >> prompt.txt
+          echo "" >> prompt.txt
+          echo "**PR Description**: $PR_BODY_SAFE" >> prompt.txt
+          echo "" >> prompt.txt
+          echo "## Changes in This Update" >> prompt.txt
           echo '```diff' >> prompt.txt
           cat pr.diff >> prompt.txt
           echo '```' >> prompt.txt
           echo "" >> prompt.txt
-          echo "Provide a concise, actionable review in markdown format. Focus on the most important issues first." >> prompt.txt
+
+          # Add closing instruction based on review type
+          if [[ -n "$PREVIOUS_REVIEW" ]]; then
+            echo "Provide a concise, actionable **incremental review** in markdown format." >> prompt.txt
+            echo "Focus on:" >> prompt.txt
+            echo "- Changes since the last review" >> prompt.txt
+            echo "- Resolution status of previously identified issues" >> prompt.txt
+            echo "- New issues in the recent changes" >> prompt.txt
+            echo "- Overall readiness for merge" >> prompt.txt
+          else
+            echo "Provide a concise, actionable review in markdown format. Focus on the most important issues first." >> prompt.txt
+          fi
 
           # Use Claude Code CLI in non-interactive mode
           # Pass the prompt file and capture output
