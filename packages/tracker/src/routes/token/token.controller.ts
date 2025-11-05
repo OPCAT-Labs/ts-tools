@@ -19,7 +19,56 @@ import {
 
 @Controller('tokens')
 export class TokenController {
-  constructor(private readonly tokenService: TokenService) {}
+  constructor(private readonly tokenService: TokenService) { }
+
+  @Get('/search')
+  @ApiTags('token')
+  @ApiOperation({ summary: 'Search tokens by token id or token name with pagination' })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    type: String,
+    description: 'search query (token id or token name), empty for all tokens',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'paging offset',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'paging limit',
+  })
+  @ApiOkResponse({
+    description: 'Token list retrieved successfully',
+    type: [TokenInfoResponse],
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid parameters',
+    type: ErrorResponse,
+  })
+  async searchTokens(
+    @Query('q') query?: string,
+    @Query('offset') offset?: number,
+    @Query('limit') limit?: number,
+  ) {
+    try {
+
+      const result = await this.tokenService.searchTokens(
+        query,
+        TokenTypeScope.Fungible,
+        offset,
+        limit,
+      );
+
+      return okResponse(result);
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
 
   @Get(':tokenIdOrTokenScriptHash')
   @ApiTags('token')
@@ -335,13 +384,13 @@ export class TokenController {
       );
       const holders = r.holders.map((holder, index) => {
         return {
-          ownerPubKeyHash: holder.ownerPubKeyHash,
+          ownerPubKeyHash: holder.ownerPubKeyHash,          
           balance: holder.tokenAmount!,
           rank: Number((offset || 0) + index + 1),
           percentage: holder.percentage
         };
       });
-      
+
       return okResponse({
         holders,
         trackerBlockHeight: r.trackerBlockHeight,

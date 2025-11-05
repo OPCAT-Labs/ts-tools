@@ -1,7 +1,7 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
-import { IsNull, LessThanOrEqual, Repository, MoreThanOrEqual, LessThan } from 'typeorm';
+import { IsNull, LessThanOrEqual, Repository, MoreThanOrEqual, LessThan, Like, ILike } from 'typeorm';
 import { ownerAddressToPubKeyHash, xOnlyPubKeyToAddress } from '../../common/utils';
 import { TxOutEntity } from '../../entities/txOut.entity';
 import { TxOutArchiveEntity } from '../../entities/txOutArchive.entity';
@@ -12,6 +12,7 @@ import { CommonService } from '../../services/common/common.service';
 import { TokenTypeScope } from '../../common/types';
 import { TokenMintEntity } from '../../entities/tokenMint.entity';
 import { HttpStatusCode } from 'axios';
+import { of } from 'rxjs';
 
 @Injectable()
 export class TokenService {
@@ -117,6 +118,88 @@ export class TokenService {
     }
 
     return this.renderTokenInfo(cached);
+  }
+
+  async searchTokens(
+    query: string | undefined,
+    scope: TokenTypeScope,
+    offset: number | null = null,
+    limit: number | null = null,
+  ): Promise<{
+    tokens: any[];
+    totalCount: number;
+    trackerBlockHeight: number;
+  }> {
+    const finalOffset = offset || 0;
+    const finalLimit = Math.min(limit || Constants.QUERY_PAGING_DEFAULT_LIMIT, Constants.QUERY_PAGING_MAX_LIMIT);
+    const cacheKey = `search-tokens-${query || 'all'}-${scope}-${finalOffset}-${finalLimit}`;
+
+    const cached = TokenService.holdersCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
+
+    try {
+      let whereCondition: any = {};
+
+      if (scope === TokenTypeScope.Fungible) {
+        whereCondition.decimals = MoreThanOrEqual(0);
+      } else if (scope === TokenTypeScope.NonFungible) {
+        whereCondition.decimals = LessThan(0);
+      }
+
+      if (query && query.trim()) {
+        whereCondition = [
+          {
+            ...whereCondition,
+            tokenId: ILike(`%${query.trim()}%`)
+          },
+          {
+            ...whereCondition,
+            name: ILike(`%${query.trim()}%`)
+          },
+          {
+            ...whereCondition,
+            symbol: ILike(`%${query.trim()}%`)
+          }
+        ];
+      }
+
+      const [tokens, totalCount] = await this.tokenInfoRepository.findAndCount({
+        select: [
+          'tokenId',
+          'name',
+          'symbol',
+          'decimals',
+          'logoUrl'
+        ],
+        where: whereCondition,
+        skip: finalOffset,
+        take: finalLimit,
+        order: {
+          deployTime: 'DESC'
+        }
+      });
+
+      const result = {
+        tokens: tokens.map(token => this.renderTokenInfo(token)),
+        totalCount,
+        trackerBlockHeight: lastProcessedHeight
+      };
+
+      TokenService.holdersCache.set(cacheKey, result);
+
+      return result;
+    } catch (error) {
+      console.error('Error in searchTokens:', error);
+      return {
+        tokens: [],
+        totalCount: 0,
+        trackerBlockHeight: lastProcessedHeight
+      };
+    }
   }
 
   private async queryHoldersCount(tokenScriptHash: string, repository: Repository<any>): Promise<number> {
@@ -564,7 +647,7 @@ export class TokenService {
       let unionQuery: string;
       if (scope === TokenTypeScope.Fungible) {
         unionQuery = `
-                      SELECT owner_pkh as ownerPubKeyHash, SUM(token_amount)::BIGINT as tokenAmount
+                      SELECT owner_pkh as ownerPubKeyHash,SUM(token_amount)::BIGINT as tokenAmount
                       FROM tx_out 
                       WHERE spend_txid IS NULL AND locking_script_hash = $1
                       GROUP BY owner_pkh
@@ -576,12 +659,12 @@ export class TokenService {
                   `;
       } else {
         unionQuery = `
-                      SELECT owner_pkh as ownerPubKeyHash, COUNT(1) as nftAmount
+                      SELECT owner_pkh as ownerPubKeyHash,  COUNT(1) as nftAmount
                       FROM tx_out 
                       WHERE spend_txid IS NULL AND locking_script_hash = $1
                       GROUP BY owner_pkh
                       UNION ALL
-                      SELECT owner_pkh as ownerPubKeyHash, COUNT(1) as nftAmount
+                      SELECT owner_pkh as ownerPubKeyHash,  COUNT(1) as nftAmount
                       FROM tx_out_archive 
                       WHERE spend_txid IS NULL AND locking_script_hash = $2
                       GROUP BY owner_pkh
@@ -595,7 +678,7 @@ export class TokenService {
         orderBy = 'tokenAmount DESC';
         finalQuery = `
                     SELECT 
-                      ownerPubKeyHash,
+                      ownerPubKeyHash,                    
                       SUM(tokenAmount)::BIGINT as tokenAmount
                     FROM (${unionQuery}) as combined
                     GROUP BY ownerPubKeyHash
@@ -606,7 +689,7 @@ export class TokenService {
         orderBy = 'nftAmount DESC';
         finalQuery = `
                       SELECT 
-                        ownerPubKeyHash,
+                        ownerPubKeyHash,                      
                         SUM(nftAmount)::BIGINT as nftAmount
                       FROM (${unionQuery}) as combined
                       GROUP BY ownerPubKeyHash
@@ -629,7 +712,7 @@ export class TokenService {
 
       return {
         holders: holders.map(holder => ({
-          ownerPubKeyHash: holder.ownerpubkeyhash || holder.ownerPubKeyHash,
+          ownerPubKeyHash: holder.ownerpubkeyhash || holder.ownerPubKeyHash,       
           ...(scope === TokenTypeScope.Fungible
             ? { tokenAmount: holder.tokenamount || '0' }
             : { nftAmount: parseInt(holder.nftamount || '0') }
