@@ -31,7 +31,7 @@ import { CAT20OpenMinterMetadata } from '../../../contracts/cat20/minters/cat20O
 import { Transaction } from '@opcat-labs/opcat'
 import {
   ConstantsLib,
-  EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
+  NULL_ADMIN_SCRIPT_HASH,
 } from '../../../contracts/constants'
 
 /**
@@ -94,14 +94,14 @@ export async function deploy(
 
   const minterScriptHash = ContractPeripheral.scriptHash(openMinter)
 
-  const adminScriptHash = EMPTY_TOKEN_ADMIN_SCRIPT_HASH
+  const adminScriptHash = NULL_ADMIN_SCRIPT_HASH
 
   const guard = new CAT20Guard()
   const cat20 = new CAT20(
     minterScriptHash,
+    ContractPeripheral.scriptHash(guard),
     false,
-    adminScriptHash,
-    ContractPeripheral.scriptHash(guard)
+    adminScriptHash
   )
   const tokenScriptHash = ContractPeripheral.scriptHash(cat20)
   const minterState: CAT20OpenMinterState = {

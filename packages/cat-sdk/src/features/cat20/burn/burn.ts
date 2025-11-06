@@ -18,7 +18,7 @@ import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
 import {
   ConstantsLib,
-  EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
+  NULL_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants'
@@ -47,7 +47,7 @@ export async function burn(
   inputTokenUtxos: UTXO[],
   feeRate: number,
   hasAdmin: boolean = false,
-  adminScriptHash: ByteString = EMPTY_TOKEN_ADMIN_SCRIPT_HASH
+  adminScriptHash: ByteString = NULL_ADMIN_SCRIPT_HASH
 ): Promise<{
   guardPsbt: ExtPsbt
   burnPsbt: ExtPsbt
@@ -101,9 +101,9 @@ export async function burn(
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
     new CAT20(
       minterScriptHash,
+      guardScriptHash,
       hasAdmin,
-      adminScriptHash,
-      guardScriptHash
+      adminScriptHash
     ).bindToUtxo(utxo)
   )
 

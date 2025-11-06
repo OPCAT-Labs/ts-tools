@@ -67,9 +67,9 @@ describe('Test the feature `deploy` for `openMinterV2`', () => {
       }
       const expectTokenScript = new CAT20(
         minterScriptHash,
+        ContractPeripheral.scriptHash(new CAT20Guard()),
         metadata.hasAdmin,
-        adminScriptHash,
-        ContractPeripheral.scriptHash(new CAT20Guard())
+        adminScriptHash
       ).lockingScript.toHex()
       const tokenOutputIndex = 2
 

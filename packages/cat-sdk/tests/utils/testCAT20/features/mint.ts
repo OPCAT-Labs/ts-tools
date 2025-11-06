@@ -55,9 +55,9 @@ export async function mint(
   const guardScriptHash = ContractPeripheral.scriptHash(guard)
   const cat20 = new CAT20(
     minterScriptHash,
+    guardScriptHash,
     hasAdmin,
-    adminScriptHash,
-    guardScriptHash
+    adminScriptHash
   )
   const cat20ScriptHash = ContractPeripheral.scriptHash(cat20)
 

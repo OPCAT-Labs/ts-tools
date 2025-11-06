@@ -91,7 +91,7 @@ export class CatTrackerApi {
 
 function isCat20TokenSupported(token: CatTrackerToken) {
   const guardScriptHash = sha256(new CAT20Guard().lockingScript.toHex());
-  const cat20 = new CAT20(token.minterScriptHash, false, toByteString(''), guardScriptHash);
+  const cat20 = new CAT20(token.minterScriptHash, guardScriptHash, false, toByteString(''));
   const cat20ScriptHash = sha256(cat20.lockingScript.toHex());
   return cat20ScriptHash === token.tokenScriptHash;
 }

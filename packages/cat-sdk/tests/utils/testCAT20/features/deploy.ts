@@ -71,9 +71,9 @@ export async function deploy(
   const guard = new CAT20Guard()
   const cat20 = new CAT20(
     minterScriptHash,
+    ContractPeripheral.scriptHash(guard),
     metadata.hasAdmin,
-    adminScriptHash,
-    ContractPeripheral.scriptHash(guard)
+    adminScriptHash
   )
   const tokenScriptHash = ContractPeripheral.scriptHash(cat20)
   const minterState: CAT20ClosedMinterState = {

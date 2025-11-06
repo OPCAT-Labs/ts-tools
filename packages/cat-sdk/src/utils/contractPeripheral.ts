@@ -21,7 +21,7 @@ import {
   OpenMinterCAT20Meta,
 } from '../contracts/cat20/types'
 import {
-  EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
+  NULL_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../contracts/constants'
@@ -118,7 +118,7 @@ export class CAT20OpenMinterPeripheral {
     state: CAT20OpenMinterState,
     toAddr: ByteString,
     hasAdmin: boolean = false,
-    adminScriptHash: ByteString = EMPTY_TOKEN_ADMIN_SCRIPT_HASH
+    adminScriptHash: ByteString = NULL_ADMIN_SCRIPT_HASH
   ) {
     let amount = minter.limit
     let receiverAddr = toAddr
@@ -129,9 +129,9 @@ export class CAT20OpenMinterPeripheral {
     const guard = new CAT20Guard()
     const cat20 = new CAT20(
       ContractPeripheral.scriptHash(minter),
+      ContractPeripheral.scriptHash(guard),
       hasAdmin,
-      adminScriptHash,
-      ContractPeripheral.scriptHash(guard)
+      adminScriptHash
     )
     const cat20State: CAT20State = {
       tag: ConstantsLib.OPCAT_CAT20_TAG,
@@ -264,7 +264,7 @@ export class CAT20GuardPeripheral {
     inputTokenUtxos: UTXO[],
     provider: UtxoProvider & ChainProvider,
     hasAdmin: boolean = false,
-    adminScriptHash: string = EMPTY_TOKEN_ADMIN_SCRIPT_HASH
+    adminScriptHash: string = NULL_ADMIN_SCRIPT_HASH
   ) {
     const results: Array<{
       prevTxHex: string
@@ -284,9 +284,9 @@ export class CAT20GuardPeripheral {
     const expectTokenScriptHash = ContractPeripheral.scriptHash(
       new CAT20(
         minterScrtptHash,
+        ContractPeripheral.scriptHash(new CAT20Guard()),
         hasAdmin,
-        adminScriptHash,
-        ContractPeripheral.scriptHash(new CAT20Guard())
+        adminScriptHash
       )
     )
 

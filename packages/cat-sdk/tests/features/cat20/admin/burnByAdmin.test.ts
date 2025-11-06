@@ -66,7 +66,7 @@ describe('Test the feature `burnByAdmin` for `Cat20`', () => {
         contractScriptHash,
         1
       )
-      await testFreezeResult(tokenUtxos)
+      await testBurnByAdminResult(tokenUtxos)
     })
     it('should burnByAdmin multiple token utxos successfully', async () => {
       const tokenUtxos = await getTokenUtxos(
@@ -74,11 +74,11 @@ describe('Test the feature `burnByAdmin` for `Cat20`', () => {
         contractScriptHash,
         3
       )
-      await testFreezeResult(tokenUtxos)
+      await testBurnByAdminResult(tokenUtxos)
     })
   })
 
-  async function testFreezeResult(cat20Utxos: UTXO[]) {
+  async function testBurnByAdminResult(cat20Utxos: UTXO[]) {
     const cat20Admin = new CAT20Admin(
       outpoint2ByteString(cat20Generator.deployInfo.tokenId)
     )

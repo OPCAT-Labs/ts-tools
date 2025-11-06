@@ -16,7 +16,7 @@ import {
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types'
 import {
-  EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
+  NULL_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants'
@@ -58,7 +58,7 @@ export async function singleSend(
   tokenChangeAddress: ByteString,
   feeRate: number,
   hasAdmin: boolean = false,
-  adminScriptHash: ByteString = EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
+  adminScriptHash: ByteString = NULL_ADMIN_SCRIPT_HASH,
   sendChangeData?: Buffer
 ): Promise<{
   guardPsbt: ExtPsbt
@@ -223,9 +223,9 @@ export async function singleSendStep2(
   const inputTokens: CAT20[] = inputTokenUtxos.map((_token, index) =>
     new CAT20(
       minterScriptHash,
+      guardScriptHash,
       hasAdmin,
-      adminScriptHash,
-      guardScriptHash
+      adminScriptHash
     ).bindToUtxo({
       ..._token,
       txHashPreimage: toHex(
@@ -273,9 +273,9 @@ export async function singleSendStep2(
   for (const outputToken of outputTokenStates) {
     const cat20 = new CAT20(
       minterScriptHash,
+      guardScriptHash,
       hasAdmin,
-      adminScriptHash,
-      guardScriptHash
+      adminScriptHash
     )
     cat20.state = outputToken
     sendPsbt.addContractOutput(cat20, Postage.TOKEN_POSTAGE)

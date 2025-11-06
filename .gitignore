@@ -54,3 +54,8 @@ compiler
 *.tar.gz
 
 tool.js
+# Claude Code review documents (temporary, not for commit)
+.claude/
+PR_*_REVIEW.md
+PR_*_CLAUDE_REVIEW.md
+*_REVIEW_SUMMARY*.md

@@ -18,7 +18,7 @@ import { CAT20 } from '../../../contracts/cat20/cat20'
 import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
 import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types'
 import {
-  EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
+  NULL_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants'
@@ -59,7 +59,7 @@ export async function contractSend(
   tokenChangeAddress: ByteString,
   feeRate: number,
   hasAdmin: boolean = false,
-  adminScriptHash: string = EMPTY_TOKEN_ADMIN_SCRIPT_HASH
+  adminScriptHash: string = NULL_ADMIN_SCRIPT_HASH
 ): Promise<{
   guardPsbt: ExtPsbt
   sendPsbt: ExtPsbt
@@ -149,9 +149,9 @@ export async function contractSend(
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
     new CAT20(
       minterScriptHash,
+      guardScriptHash,
       hasAdmin,
-      adminScriptHash,
-      guardScriptHash
+      adminScriptHash
     ).bindToUtxo(utxo)
   )
 
@@ -200,9 +200,9 @@ export async function contractSend(
   for (const outputToken of outputTokens) {
     const outputCat20 = new CAT20(
       minterScriptHash,
+      guardScriptHash,
       hasAdmin,
-      adminScriptHash,
-      guardScriptHash
+      adminScriptHash
     )
     outputCat20.state = outputToken
     sendPsbt.addContractOutput(outputCat20, Postage.TOKEN_POSTAGE)

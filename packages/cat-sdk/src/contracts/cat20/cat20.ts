@@ -8,19 +8,18 @@ import {
   SpentScriptHashes,
   ContextUtils,
   toByteString,
+  len,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { OwnerUtils } from '../utils/ownerUtils'
 import { CAT20State, CAT20GuardConstState } from './types'
 import { ContractUnlockArgs } from '../types'
 import { SpentDataHashes } from '@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs'
 import { CAT20GuardStateLib } from './cat20GuardStateLib'
+import { INPUT_UNLOCKING_SCRIPT_HASH_LEN } from '../constants'
 
 export class CAT20 extends SmartContract<CAT20State> {
   @prop()
   minterScriptHash: ByteString
-
-  @prop()
-  adminScriptHash: ByteString
 
   @prop()
   guardScriptHash: ByteString
@@ -28,17 +27,20 @@ export class CAT20 extends SmartContract<CAT20State> {
   @prop()
   hasAdmin: boolean
 
+  @prop()
+  adminScriptHash: ByteString
+
   constructor(
     minterScriptHash: ByteString,
+    guardScriptHash: ByteString,
     hasAdmin: boolean,
-    adminScriptHash: ByteString,
-    guardScriptHash: ByteString
+    adminScriptHash: ByteString
   ) {
     super(...arguments)
     this.minterScriptHash = minterScriptHash
+    this.guardScriptHash = guardScriptHash
     this.hasAdmin = hasAdmin
     this.adminScriptHash = adminScriptHash
-    this.guardScriptHash = guardScriptHash
   }
 
   @method()
@@ -70,6 +72,11 @@ export class CAT20 extends SmartContract<CAT20State> {
     let spentScriptHash = toByteString('')
     //
     if (unlockArgs.spendScriptInputIndex >= 0n) {
+      // Check upper bound to prevent out-of-bounds access
+      assert(
+        unlockArgs.spendScriptInputIndex < this.ctx.inputCount,
+        'script index out of bounds'
+      )
       spentScriptHash = ContextUtils.getSpentScriptHash(
         this.ctx.spentScriptHashes,
         unlockArgs.spendScriptInputIndex

@@ -1,5 +1,4 @@
 import {
-  ByteString,
   fill,
   PubKey,
   sha256,
@@ -19,7 +18,7 @@ import { CAT20 } from '../../../contracts/cat20/cat20'
 import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
 import { CAT20State } from '../../../contracts/cat20/types'
 import {
-  EMPTY_TOKEN_ADMIN_SCRIPT_HASH,
+  NULL_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants'
@@ -84,15 +83,16 @@ import { SPEND_TYPE_ADMIN_SPEND } from '../../../contracts'
  * @example
  * ```typescript
  * // Admin burns tokens from a specific address without owner approval
- * const result = await freeze(
+ * const result = await burnByAdmin(
  *   adminSigner,
  *   cat20AdminContract,
  *   adminUtxo,
  *   provider,
  *   minterScriptHash,
- *   adminScriptHash,
  *   suspiciousTokenUtxos,  // Tokens to burn
- *   1  // Fee rate
+ *   1,  // Fee rate
+ *   true,  // hasAdmin
+ *   adminScriptHash  // Admin script hash
  * );
  * console.log(`Tokens burned in tx: ${result.sendTxId}`);
  * ```
@@ -109,7 +109,7 @@ export async function burnByAdmin(
   inputTokenUtxos: UTXO[],
   feeRate: number,
   hasAdmin: boolean = false,
-  adminScriptHash: string = EMPTY_TOKEN_ADMIN_SCRIPT_HASH
+  adminScriptHash: string = NULL_ADMIN_SCRIPT_HASH
 ): Promise<{
   guardPsbt: ExtPsbt
   sendPsbt: ExtPsbt
@@ -179,9 +179,9 @@ export async function burnByAdmin(
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
     new CAT20(
       minterScriptHash,
+      guardScriptHash,
       true,
-      adminScriptHash,
-      guardScriptHash
+      adminScriptHash
     ).bindToUtxo(utxo)
   )
 
@@ -197,21 +197,22 @@ export async function burnByAdmin(
     adminScriptHash
   )
 
+  // Transaction input structure:
+  // - Token inputs: [0 to inputTokens.length - 1]
+  // - Guard input: inputTokens.length
+  // - Admin input: inputTokens.length + 1
+  // - Fee input: inputTokens.length + 2 (added later)
+  const adminInputIndex = inputTokens.length + 1
+
   // add token inputs
   for (let index = 0; index < inputTokens.length; index++) {
-    sendPsbt.addContractInput(inputTokens[index], (contract, _tx) => {
-      const _contractInputIndexVal = _tx.data.inputs.findIndex(
-        (_input, inputIndex) =>
-          ContractPeripheral.scriptHash(
-            toHex(_tx.getInputOutput(inputIndex).script) as ByteString
-          ) == inputTokenStates[index].ownerAddr
-      )
+    sendPsbt.addContractInput(inputTokens[index], (contract) => {
       contract.unlock(
         {
           spendType: SPEND_TYPE_ADMIN_SPEND,
           userPubKey: '' as PubKey,
           userSig: '' as Sig,
-          spendScriptInputIndex: BigInt(inputTokens.length + 1),
+          spendScriptInputIndex: BigInt(adminInputIndex),
         },
 
         guardState,
@@ -280,22 +281,23 @@ export async function burnByAdmin(
   const address = await signer.getAddress()
   const spentAdminTxHex = await provider.getRawTransaction(adminUtxo.txId)
   const spentAdminTx = new Transaction(spentAdminTxHex)
-  // cat20s adminInput feeInput, so pick the second last input
-  let adminInputIndex = spentAdminTx.inputs.length - 2
-  if (adminInputIndex < 0) {
-    adminInputIndex = 0
+  // For backtrace: cat20s adminInput feeInput, so pick the second last input
+  let adminBacktraceInputIndex = spentAdminTx.inputs.length - 2
+  if (adminBacktraceInputIndex < 0) {
+    adminBacktraceInputIndex = 0
   }
 
   const spentAdminPreTxHex = await provider.getRawTransaction(
-    toHex(spentAdminTx.inputs[adminInputIndex].prevTxId)
+    toHex(spentAdminTx.inputs[adminBacktraceInputIndex].prevTxId)
   )
   const backTraceInfo = getBackTraceInfo(
     spentAdminTxHex,
     spentAdminPreTxHex,
-    adminInputIndex
+    adminBacktraceInputIndex
   )
   sendPsbt.addContractInput(cat20Admin, (contract, tx) => {
-    const sig = tx.getSig(inputTokens.length + 1, {
+    // Use the dynamically calculated adminInputIndex (from line 205)
+    const sig = tx.getSig(adminInputIndex, {
       address: address.toString(),
     })
     contract.authorizeToSpendToken(PubKey(pubkey), sig, backTraceInfo)
