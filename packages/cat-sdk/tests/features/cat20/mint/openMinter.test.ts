@@ -44,6 +44,7 @@ describe('Test the feature `mint` for `CAT20OpenMinter`, premine > 0', () => {
       name: 'c',
       symbol: 'C',
       decimals: 2n,
+      hasAdmin: false,
       max: 21000000n,
       limit: 1000n,
       premine: 3150000n,

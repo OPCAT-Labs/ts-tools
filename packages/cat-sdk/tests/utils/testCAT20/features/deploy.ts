@@ -1,12 +1,22 @@
-import { ExtPsbt, Signer, ChainProvider, UtxoProvider, hexToUint8Array, markSpent } from '@opcat-labs/scrypt-ts-opcat'
+import {
+  ExtPsbt,
+  Signer,
+  ChainProvider,
+  UtxoProvider,
+  hexToUint8Array,
+  markSpent,
+  sha256,
+} from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20TokenInfo } from '../../../../src/lib/metadata'
 import { checkState } from '../../../../src/utils/check'
 import { CAT20ClosedMinter } from '../../../../src/contracts/cat20/minters/cat20ClosedMinter'
+import { CAT20Admin } from '../../../../src/contracts/cat20/cat20Admin'
 import { outpoint2ByteString, toTokenOwnerAddress } from '../../../../src/utils'
 import { CAT20Guard } from '../../../../src/contracts/cat20/cat20Guard'
 import { CAT20 } from '../../../../src/contracts/cat20/cat20'
 import { ContractPeripheral } from '../../../../src/utils/contractPeripheral'
 import {
+  CAT20AdminState,
   CAT20ClosedMinterState,
   ClosedMinterCAT20Meta,
 } from '../../../../src/contracts/cat20/types'
@@ -33,12 +43,19 @@ export async function deploy(
   const utxos = await provider.getUtxos(feeAddress)
   checkState(utxos.length > 0, 'Insufficient satoshis')
 
-  const genesisTx = new ExtPsbt({network: await provider.getNetwork()})
+  const genesisTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
-    .change(changeAddress, feeRate, hexToUint8Array(CAT20ClosedMinterMetadata.serializeState(metadata)))
+    .change(
+      changeAddress,
+      feeRate,
+      hexToUint8Array(CAT20ClosedMinterMetadata.serializeState(metadata))
+    )
     .seal()
 
-  const signedGenesisTx = await signer.signPsbt(genesisTx.toHex(), genesisTx.psbtOptions())
+  const signedGenesisTx = await signer.signPsbt(
+    genesisTx.toHex(),
+    genesisTx.psbtOptions()
+  )
   genesisTx.combine(ExtPsbt.fromHex(signedGenesisTx))
   genesisTx.finalizeAllInputs()
 
@@ -48,29 +65,43 @@ export async function deploy(
     toTokenOwnerAddress(address),
     outpoint2ByteString(tokenId)
   )
+  const admin = new CAT20Admin(outpoint2ByteString(tokenId))
   const minterScriptHash = ContractPeripheral.scriptHash(closeMinter)
+  const adminScriptHash = ContractPeripheral.scriptHash(admin)
   const guard = new CAT20Guard()
   const cat20 = new CAT20(
     minterScriptHash,
-    ContractPeripheral.scriptHash(guard)
+    ContractPeripheral.scriptHash(guard),
+    metadata.hasAdmin,
+    adminScriptHash
   )
   const tokenScriptHash = ContractPeripheral.scriptHash(cat20)
   const minterState: CAT20ClosedMinterState = {
     tag: ConstantsLib.OPCAT_MINTER_TAG,
     tokenScriptHash,
   }
+  const adminState: CAT20AdminState = {
+    tag: ConstantsLib.OPCAT_CAT20_ADMIN_TAG,
+    adminAddress: toTokenOwnerAddress(address),
+  }
 
   closeMinter.state = minterState
-  const deployTx = new ExtPsbt({network: await provider.getNetwork()})
+  admin.state = adminState
+  const deployTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(genesisUtxo)
-    .addContractOutput(
-      closeMinter,
-      Postage.MINTER_POSTAGE,
+    .addContractOutput(closeMinter, Postage.MINTER_POSTAGE)
+    .addContractOutput(admin, Postage.ADMIN_POSTAGE)
+    .change(
+      changeAddress,
+      feeRate,
+      hexToUint8Array(CAT20ClosedMinterMetadata.serializeState(metadata))
     )
-    .change(changeAddress, feeRate, hexToUint8Array(CAT20ClosedMinterMetadata.serializeState(metadata)))
     .seal()
 
-  const signedDeployTx = await signer.signPsbt(deployTx.toHex(), deployTx.psbtOptions())
+  const signedDeployTx = await signer.signPsbt(
+    deployTx.toHex(),
+    deployTx.psbtOptions()
+  )
   deployTx.combine(ExtPsbt.fromHex(signedDeployTx))
   deployTx.finalizeAllInputs()
 
@@ -81,6 +112,8 @@ export async function deploy(
   return {
     tokenId,
     tokenScriptHash,
+    hasAdmin: metadata.hasAdmin,
+    adminScriptHash,
     minterScriptHash,
     genesisTx,
     genesisTxid: genesisTx.extractTransaction().id,

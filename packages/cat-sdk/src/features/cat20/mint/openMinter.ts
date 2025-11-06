@@ -1,10 +1,32 @@
 import { buildMintPsbt } from '../deploy/openMinter'
 import { CAT20OpenMinterPeripheral } from '../../../utils/contractPeripheral'
 import { OpenMinterCAT20Meta } from '../../../contracts/cat20/types'
-import { Signer, UtxoProvider, ChainProvider, UTXO, ExtPsbt, markSpent, ByteString, toHex } from '@opcat-labs/scrypt-ts-opcat'
+import {
+  Signer,
+  UtxoProvider,
+  ChainProvider,
+  UTXO,
+  ExtPsbt,
+  markSpent,
+  ByteString,
+  toHex,
+} from '@opcat-labs/scrypt-ts-opcat'
 import { Transaction } from '@opcat-labs/opcat'
 import { CAT20OpenMinter } from '../../../contracts'
 
+/**
+ * Mint CAT20 tokens in a single transaction.
+ * @param signer a signer, such as {@link DefaultSigner} or {@link WalletSigner}
+ * @param preminerSigner a signer, such as {@link DefaultSigner}  or {@link WalletSigner}
+ * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
+ * @param minterUtxo an UTXO that contains the minter of the CAT20 token
+ * @param tokenId the id of the CAT20 token
+ * @param metadata the metadata of the CAT20 token
+ * @param tokenReceiver the recipient's address of the newly minted tokens
+ * @param changeAddress the address to receive change satoshis, use the signer address as the default
+ * @param feeRate the fee rate for constructing transactions
+ * @returns the mint transaction
+ */
 export async function mint(
   signer: Signer,
   preminerSigner: Signer,
@@ -50,11 +72,17 @@ export async function mint(
   )
 
   const state = CAT20OpenMinter.deserializeState(minterUtxo.data)
-  const signedPsbt = await signer.signPsbt(mintPsbt.toHex(), mintPsbt.psbtOptions())
+  const signedPsbt = await signer.signPsbt(
+    mintPsbt.toHex(),
+    mintPsbt.psbtOptions()
+  )
   mintPsbt.combine(ExtPsbt.fromHex(signedPsbt))
 
   if (!state!.hasMintedBefore && premineCount > 0) {
-    const signedPsbt = await preminerSigner.signPsbt(mintPsbt.toHex(), mintPsbt.psbtOptions())
+    const signedPsbt = await preminerSigner.signPsbt(
+      mintPsbt.toHex(),
+      mintPsbt.psbtOptions()
+    )
     mintPsbt.combine(ExtPsbt.fromHex(signedPsbt))
   }
 

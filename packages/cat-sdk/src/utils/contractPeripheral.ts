@@ -20,7 +20,11 @@ import {
   CAT20State,
   OpenMinterCAT20Meta,
 } from '../contracts/cat20/types'
-import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from '../contracts/constants'
+import {
+  NULL_ADMIN_SCRIPT_HASH,
+  TX_INPUT_COUNT_MAX,
+  TX_OUTPUT_COUNT_MAX,
+} from '../contracts/constants'
 // import { Provider, UTXO } from '../lib/provider'
 import { emptyOutputByteStrings, outpoint2ByteString } from '.'
 // import { ExtTransaction } from '../lib/extTransaction'
@@ -30,7 +34,9 @@ import { ConstantsLib } from '../contracts/constants'
 
 export class ContractPeripheral {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static scriptHash(contractOrScriptBuffer: SmartContract<any> | Buffer | string) {
+  static scriptHash(
+    contractOrScriptBuffer: SmartContract<any> | Buffer | string
+  ) {
     if (contractOrScriptBuffer instanceof SmartContract) {
       return sha256(contractOrScriptBuffer.lockingScript.toHex())
     } else {
@@ -110,7 +116,9 @@ export class CAT20OpenMinterPeripheral {
   static createCAT20Contract(
     minter: CAT20OpenMinter,
     state: CAT20OpenMinterState,
-    toAddr: ByteString
+    toAddr: ByteString,
+    hasAdmin: boolean = false,
+    adminScriptHash: ByteString = NULL_ADMIN_SCRIPT_HASH
   ) {
     let amount = minter.limit
     let receiverAddr = toAddr
@@ -121,9 +129,15 @@ export class CAT20OpenMinterPeripheral {
     const guard = new CAT20Guard()
     const cat20 = new CAT20(
       ContractPeripheral.scriptHash(minter),
-      ContractPeripheral.scriptHash(guard)
+      ContractPeripheral.scriptHash(guard),
+      hasAdmin,
+      adminScriptHash
     )
-    const cat20State: CAT20State = { tag: ConstantsLib.OPCAT_CAT20_TAG, amount, ownerAddr: receiverAddr }
+    const cat20State: CAT20State = {
+      tag: ConstantsLib.OPCAT_CAT20_TAG,
+      amount,
+      ownerAddr: receiverAddr,
+    }
     return [cat20, cat20State] as const
   }
 }
@@ -209,7 +223,7 @@ export class CAT20GuardPeripheral {
       token: UTXO
       inputIndex: number
     }[],
-    inputStateHashes: ByteString[]
+    _inputStateHashes: ByteString[]
   ): {
     guardState: CAT20GuardConstState
     outputTokens: FixedArray<CAT20State | undefined, typeof TX_OUTPUT_COUNT_MAX>
@@ -248,7 +262,9 @@ export class CAT20GuardPeripheral {
   static async getBackTraceInfo(
     minterScrtptHash: string,
     inputTokenUtxos: UTXO[],
-    provider: UtxoProvider & ChainProvider
+    provider: UtxoProvider & ChainProvider,
+    hasAdmin: boolean = false,
+    adminScriptHash: string = NULL_ADMIN_SCRIPT_HASH
   ) {
     const results: Array<{
       prevTxHex: string
@@ -268,7 +284,9 @@ export class CAT20GuardPeripheral {
     const expectTokenScriptHash = ContractPeripheral.scriptHash(
       new CAT20(
         minterScrtptHash,
-        ContractPeripheral.scriptHash(new CAT20Guard())
+        ContractPeripheral.scriptHash(new CAT20Guard()),
+        hasAdmin,
+        adminScriptHash
       )
     )
 

@@ -146,23 +146,66 @@ jobs:
             cat previous_review.txt >> prompt.txt
             echo '```' >> prompt.txt
             echo "" >> prompt.txt
-            echo "## Your Task" >> prompt.txt
-            echo "Review the NEW changes in this pull request and provide an **incremental review**:" >> prompt.txt
+            echo "## Your Task: Update Existing Review In-Place" >> prompt.txt
+            echo "You must UPDATE the previous review directly. Do NOT create new sections." >> prompt.txt
             echo "" >> prompt.txt
-            echo "1. **Status of Previous Issues**: Briefly indicate which previously identified issues have been:" >> prompt.txt
-            echo "   - ✅ Fixed/Resolved" >> prompt.txt
-            echo "   - ⚠️ Partially addressed" >> prompt.txt
-            echo "   - ❌ Still present/Not addressed" >> prompt.txt
+            echo "### 1. Update Status of Existing Issues" >> prompt.txt
+            echo "For EACH issue in the previous review, add a status marker at the TOP of that issue:" >> prompt.txt
             echo "" >> prompt.txt
-            echo "2. **New Issues Found**: Identify any NEW issues in the recent changes:" >> prompt.txt
-            echo "   - Code quality problems" >> prompt.txt
-            echo "   - Bugs or logic errors" >> prompt.txt
-            echo "   - Security concerns" >> prompt.txt
-            echo "   - Performance issues" >> prompt.txt
+            echo "**For RESOLVED issues:**" >> prompt.txt
+            echo '```markdown' >> prompt.txt
+            echo '#### 1. [Issue Title]' >> prompt.txt
+            echo '**Status**: ✅ RESOLVED (commit `abc1234`)' >> prompt.txt
+            echo '[Keep original problem description unchanged]' >> prompt.txt
+            echo '' >> prompt.txt
+            echo '**Resolution** (commit `abc1234`):' >> prompt.txt
+            echo '- Brief explanation of how it was fixed' >> prompt.txt
+            echo '```' >> prompt.txt
             echo "" >> prompt.txt
-            echo "3. **Regression Analysis**: Check if any new changes introduced regressions or broke previously working code" >> prompt.txt
+            echo "**For PARTIALLY RESOLVED issues:**" >> prompt.txt
+            echo '```markdown' >> prompt.txt
+            echo '#### 2. [Issue Title]' >> prompt.txt
+            echo '**Status**: ⚠️ PARTIALLY RESOLVED (commit `xyz5678`)' >> prompt.txt
+            echo '[Keep original problem description]' >> prompt.txt
+            echo '' >> prompt.txt
+            echo '**Progress** (commit `xyz5678`):' >> prompt.txt
+            echo '✅ Completed:' >> prompt.txt
+            echo '- [List what was fixed]' >> prompt.txt
+            echo '' >> prompt.txt
+            echo '❌ Still needed:' >> prompt.txt
+            echo '- [List what remains]' >> prompt.txt
+            echo '```' >> prompt.txt
             echo "" >> prompt.txt
-            echo "4. **Overall Assessment**: Brief summary of the PR's current state and whether it's ready for merge" >> prompt.txt
+            echo "**For UNRESOLVED issues:**" >> prompt.txt
+            echo '```markdown' >> prompt.txt
+            echo '#### 3. [Issue Title]' >> prompt.txt
+            echo '**Status**: ❌ NOT FIXED' >> prompt.txt
+            echo '[Keep as-is, no changes needed]' >> prompt.txt
+            echo '```' >> prompt.txt
+            echo "" >> prompt.txt
+            echo "### 2. Add New Issues in Appropriate Sections" >> prompt.txt
+            echo "If you find NEW issues in the recent changes:" >> prompt.txt
+            echo "- Add them AFTER existing issues in the same category (🔴 Critical/⚠️ Medium/📝 Minor)" >> prompt.txt
+            echo "- Mark them with: (found in commit \`abc1234\`)" >> prompt.txt
+            echo "- Add **Status**: ❌ NOT FIXED at the top" >> prompt.txt
+            echo "" >> prompt.txt
+            echo "Example:" >> prompt.txt
+            echo '```markdown' >> prompt.txt
+            echo '#### 5. New Issue: Health Check Startup Delay (found in commit `be6676b`)' >> prompt.txt
+            echo '**Status**: ❌ NOT FIXED' >> prompt.txt
+            echo '**Location**: `peg-in.service.ts:84-87`' >> prompt.txt
+            echo '' >> prompt.txt
+            echo '[Issue description...]' >> prompt.txt
+            echo '```' >> prompt.txt
+            echo "" >> prompt.txt
+            echo "### 3. Important Rules" >> prompt.txt
+            echo "❌ Do NOT create new 'Latest Review Update' or 'Update' sections" >> prompt.txt
+            echo "❌ Do NOT add 'Change History' or 'Previous Review' sections" >> prompt.txt
+            echo "❌ Do NOT duplicate issue descriptions" >> prompt.txt
+            echo "✅ Keep the same section structure as the previous review" >> prompt.txt
+            echo "✅ Only show current state (no historical tracking)" >> prompt.txt
+            echo "✅ ALWAYS mark commit IDs when status changes (✅ or ⚠️)" >> prompt.txt
+            echo "✅ Mark commit IDs when new issues are found" >> prompt.txt
           else
             # First review prompt
             echo "You are an expert code reviewer specializing in Bitcoin/cryptocurrency codebases and C++ development. Review the following pull request changes and provide:" > prompt.txt
@@ -208,12 +251,21 @@ jobs:
 
           # Add closing instruction based on review type
           if [[ -n "$PREVIOUS_REVIEW" ]]; then
-            echo "Provide a concise, actionable **incremental review** in markdown format." >> prompt.txt
+            echo "## Output Instructions" >> prompt.txt
+            echo "" >> prompt.txt
+            echo "Return the UPDATED version of the previous review with:" >> prompt.txt
+            echo "1. Status markers added to existing issues (✅ RESOLVED / ⚠️ PARTIALLY RESOLVED / ❌ NOT FIXED)" >> prompt.txt
+            echo "2. Resolution/Progress notes added where status changed" >> prompt.txt
+            echo "3. New issues appended in appropriate sections with 'found in commit' marker" >> prompt.txt
+            echo "4. Commit IDs marked for all status changes and new issues" >> prompt.txt
+            echo "5. Same structure as previous review (no new top-level sections)" >> prompt.txt
+            echo "6. No historical tracking or change logs" >> prompt.txt
+            echo "" >> prompt.txt
             echo "Focus on:" >> prompt.txt
-            echo "- Changes since the last review" >> prompt.txt
-            echo "- Resolution status of previously identified issues" >> prompt.txt
-            echo "- New issues in the recent changes" >> prompt.txt
-            echo "- Overall readiness for merge" >> prompt.txt
+            echo "- Accuracy of status updates" >> prompt.txt
+            echo "- Clear resolution explanations" >> prompt.txt
+            echo "- Proper commit ID attribution" >> prompt.txt
+            echo "- Maintaining original structure" >> prompt.txt
           else
             echo "Provide a concise, actionable review in markdown format. Focus on the most important issues first." >> prompt.txt
           fi

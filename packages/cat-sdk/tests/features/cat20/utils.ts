@@ -2,6 +2,7 @@ import { CAT20Guard } from '../../../src/contracts/cat20/cat20Guard'
 import { CAT20ClosedMinter } from '../../../src/contracts/cat20/minters/cat20ClosedMinter'
 import { CAT20OpenMinter } from '../../../src/contracts/cat20/minters/cat20OpenMinter'
 import { CAT20 } from '../../../src/contracts/cat20/cat20'
+import { CAT20Admin } from '../../../src/contracts/cat20/cat20Admin'
 import { readArtifact } from '../../utils/index'
 import { OpenMinterCAT20Meta } from '../../../src/contracts/cat20/types'
 import { deploy } from '../../../src/features/cat20/deploy/openMinter'
@@ -13,7 +14,6 @@ import { mint } from '../../../src/features/cat20/mint/openMinter'
 import { CAT20_AMOUNT } from '../../../src/contracts/cat20/types'
 import { ByteString } from '@opcat-labs/scrypt-ts-opcat'
 import { singleSend } from '../../../src/features/cat20/send/singleSend'
-import { CAT20Incinerator } from '../../../src/contracts/cat20Incinerator'
 import { CAT20ClosedMinterMetadata } from '../../../src/contracts/cat20/minters/cat20ClosedMinterMetadata'
 import { CAT20OpenMinterMetadata } from '../../../src/contracts/cat20/minters/cat20OpenMinterMetadata'
 import { CAT20StateLib } from '../../../src/contracts/cat20/cat20StateLib'
@@ -23,6 +23,7 @@ export const loadAllArtifacts = function () {
   CAT20ClosedMinter.loadArtifact(
     readArtifact('artifacts/cat20/minters/cat20ClosedMinter.json')
   )
+  CAT20Admin.loadArtifact(readArtifact('artifacts/cat20/cat20Admin.json'))
   CAT20ClosedMinterMetadata.loadArtifact(
     readArtifact('artifacts/cat20/minters/cat20ClosedMinterMetadata.json')
   )
@@ -36,10 +37,9 @@ export const loadAllArtifacts = function () {
   CAT20.loadArtifact(readArtifact('artifacts/cat20/cat20.json'))
   CAT20StateLib.loadArtifact(readArtifact('artifacts/cat20/cat20StateLib.json'))
   CAT20Guard.loadArtifact(readArtifact('artifacts/cat20/cat20Guard.json'))
-  CAT20GuardStateLib.loadArtifact(readArtifact('artifacts/cat20/cat20GuardStateLib.json'))
-
-  CAT20Incinerator.loadArtifact(readArtifact('artifacts/cat20Incinerator.json'))
-
+  CAT20GuardStateLib.loadArtifact(
+    readArtifact('artifacts/cat20/cat20GuardStateLib.json')
+  )
 }
 
 export async function deployToken(info: OpenMinterCAT20Meta) {
@@ -75,6 +75,8 @@ export async function mintToken(
 
 export async function singleSendToken(
   minterScriptHash: string,
+  hasAdmin: boolean,
+  adminScriptHash: string,
   amount: CAT20_AMOUNT,
   inputTokenUtxos: UTXO[],
   tokenRecieverAddr: ByteString
@@ -88,6 +90,8 @@ export async function singleSendToken(
     inputTokenUtxos,
     [{ address: tokenRecieverAddr, amount }],
     tokenChangeAddr,
-    await testProvider.getFeeRate()
+    await testProvider.getFeeRate(),
+    hasAdmin,
+    adminScriptHash
   )
 }

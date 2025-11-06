@@ -1,5 +1,4 @@
 import {
-  ByteString,
   fill,
   PubKey,
   sha256,
@@ -13,10 +12,11 @@ import {
   ExtPsbt,
   markSpent,
   getBackTraceInfo,
+  Transaction,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20 } from '../../../contracts/cat20/cat20'
 import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
-import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types'
+import { CAT20State } from '../../../contracts/cat20/types'
 import {
   NULL_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
@@ -33,30 +33,80 @@ import {
   ContractPeripheral,
 } from '../../../utils/contractPeripheral'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
-import { SPEND_TYPE_CONTRACT_SPEND } from '../../../contracts'
+import { CAT20Admin } from '../../../contracts/cat20/cat20Admin'
+import { SPEND_TYPE_ADMIN_SPEND } from '../../../contracts'
 
 /**
- * Send CAT20 tokens to the list of recipients.
- * @param signer a signer, such as {@link DefaultSigner} or {@link WalletSigner}
- * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
- * @param minterScriptHash the minter script hash of the CAT20 token
- * @param adminScriptHash the admin script hash of the CAT20 token
- * @param inputTokenUtxos CAT20 token utxos to be sent
- * @param receivers the recipient's address and token amount
- * @param tokenChangeAddress the address to receive change CAT20 tokens
- * @param feeRate the fee rate for constructing transactions
- * @returns the guard transaction, the send transaction and the CAT20 token outputs
+ * Burns CAT20 tokens using admin privileges without requiring owner approval.
+ *
+ * This function allows the CAT20 admin to forcibly burn (destroy) token UTXOs
+ * without obtaining approval from the current token owners. This is a privileged
+ * administrative operation that bypasses normal ownership checks.
+ *
+ * **Admin Authorization:**
+ * - The admin uses their private key to authorize the burn operation
+ * - Token owners are NOT consulted or required to sign the transaction
+ * - This enables emergency token freezing, blacklisting, or regulatory compliance
+ *
+ * **Use Cases:**
+ * - Emergency token freezing for security incidents
+ * - Regulatory compliance (e.g., sanctioned addresses)
+ * - Token blacklisting or revocation
+ * - Recovery from compromised accounts
+ *
+ * **Technical Flow:**
+ * 1. Creates a burn guard transaction to validate the burn operation
+ * 2. Burns the specified token UTXOs using admin authorization
+ * 3. Returns both the guard transaction and the burn transaction
+ *
+ * @param signer - A signer instance (e.g., {@link DefaultSigner} or {@link WalletSigner}) controlling the admin
+ * @param cat20Admin - The CAT20Admin contract instance {@link CAT20Admin}
+ * @param adminUtxo - The UTXO of the admin contract {@link UTXO}
+ * @param provider - Combined UTXO and chain provider {@link UtxoProvider} & {@link ChainProvider}
+ * @param minterScriptHash - The minter script hash of the CAT20 token
+ * @param adminScriptHash - The admin script hash of the CAT20 token
+ * @param inputTokenUtxos - Array of CAT20 token UTXOs to be burned (owner approval NOT required)
+ * @param feeRate - The fee rate in satoshis per byte for constructing transactions
+ *
+ * @returns Promise resolving to an object containing:
+ *   - `guardPsbt`: The guard transaction PSBT
+ *   - `sendPsbt`: The burn transaction PSBT
+ *   - `sendTxId`: Transaction ID of the burn transaction
+ *   - `guardTxId`: Transaction ID of the guard transaction
+ *   - `newCAT20Utxos`: Array of new token UTXOs (empty for burn operation)
+ *   - `changeTokenOutputIndex`: Index of change token output (-1 for burn)
+ *
+ * @throws {Error} If input count exceeds maximum transaction input limit
+ * @throws {Error} If insufficient satoshis for transaction fees
+ * @throws {Error} If token ownership validation fails (internal check)
+ *
+ * @example
+ * ```typescript
+ * // Admin burns tokens from a specific address without owner approval
+ * const result = await burnByAdmin(
+ *   adminSigner,
+ *   cat20AdminContract,
+ *   adminUtxo,
+ *   provider,
+ *   minterScriptHash,
+ *   suspiciousTokenUtxos,  // Tokens to burn
+ *   1,  // Fee rate
+ *   true,  // hasAdmin
+ *   adminScriptHash  // Admin script hash
+ * );
+ * console.log(`Tokens burned in tx: ${result.sendTxId}`);
+ * ```
+ *
+ * @see {@link CAT20Admin} for admin contract details
+ * @see {@link burn} for user-initiated token burning with owner approval
  */
-export async function contractSend(
+export async function burnByAdmin(
   signer: Signer,
+  cat20Admin: CAT20Admin,
+  adminUtxo: UTXO,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: string,
   inputTokenUtxos: UTXO[],
-  receivers: Array<{
-    address: ByteString
-    amount: CAT20_AMOUNT
-  }>,
-  tokenChangeAddress: ByteString,
   feeRate: number,
   hasAdmin: boolean = false,
   adminScriptHash: string = NULL_ADMIN_SCRIPT_HASH
@@ -85,7 +135,6 @@ export async function contractSend(
     throw new Error('Insufficient satoshis input amount')
   }
 
-  receivers = [...receivers]
   const inputTokenStates = inputTokenUtxos.map((utxo) =>
     CAT20.deserializeState(utxo.data)
   )
@@ -96,38 +145,19 @@ export async function contractSend(
       )
     }
   })
-  const totalInputAmt = inputTokenStates.reduce(
-    (acc, state) => acc + state.amount,
-    0n
-  )
-  const totalOutputAmt = receivers.reduce(
-    (acc, receiver) => acc + receiver.amount,
-    0n
-  )
-  let changeTokenOutputIndex = -1
-  if (totalInputAmt > totalOutputAmt) {
-    changeTokenOutputIndex = receivers.length
-    receivers.push({
-      address: tokenChangeAddress,
-      amount: totalInputAmt - totalOutputAmt,
-    })
-  }
-
+  const changeTokenOutputIndex = -1
   const { guardState, outputTokens: _outputTokens } =
-    CAT20GuardPeripheral.createTransferGuard(
+    CAT20GuardPeripheral.createBurnGuard(
       inputTokenUtxos.map((utxo, index) => ({
         token: utxo,
         inputIndex: index,
       })),
-      receivers.map((receiver, index) => ({
-        ...receiver,
-        outputIndex: index,
-      }))
+      []
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined
   ) as CAT20State[]
-
+  guardState.tokenBurnAmounts[0] = guardState.tokenAmounts[0]
   const guard = new CAT20Guard()
   guard.state = guardState
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
@@ -150,7 +180,7 @@ export async function contractSend(
     new CAT20(
       minterScriptHash,
       guardScriptHash,
-      hasAdmin,
+      true,
       adminScriptHash
     ).bindToUtxo(utxo)
   )
@@ -167,21 +197,22 @@ export async function contractSend(
     adminScriptHash
   )
 
+  // Transaction input structure:
+  // - Token inputs: [0 to inputTokens.length - 1]
+  // - Guard input: inputTokens.length
+  // - Admin input: inputTokens.length + 1
+  // - Fee input: inputTokens.length + 2 (added later)
+  const adminInputIndex = inputTokens.length + 1
+
   // add token inputs
   for (let index = 0; index < inputTokens.length; index++) {
-    sendPsbt.addContractInput(inputTokens[index], (contract, tx) => {
-      const contractInputIndexVal = tx.data.inputs.findIndex(
-        (_input, inputIndex) =>
-          ContractPeripheral.scriptHash(
-            toHex(tx.getInputOutput(inputIndex).script) as ByteString
-          ) == inputTokenStates[index].ownerAddr
-      )
+    sendPsbt.addContractInput(inputTokens[index], (contract) => {
       contract.unlock(
         {
-          spendType: SPEND_TYPE_CONTRACT_SPEND,
+          spendType: SPEND_TYPE_ADMIN_SPEND,
           userPubKey: '' as PubKey,
           userSig: '' as Sig,
-          spendScriptInputIndex: BigInt(contractInputIndexVal),
+          spendScriptInputIndex: BigInt(adminInputIndex),
         },
 
         guardState,
@@ -194,18 +225,6 @@ export async function contractSend(
         )
       )
     })
-  }
-
-  // add token outputs
-  for (const outputToken of outputTokens) {
-    const outputCat20 = new CAT20(
-      minterScriptHash,
-      guardScriptHash,
-      hasAdmin,
-      adminScriptHash
-    )
-    outputCat20.state = outputToken
-    sendPsbt.addContractOutput(outputCat20, Postage.TOKEN_POSTAGE)
   }
 
   // add guard input;
@@ -255,6 +274,36 @@ export async function contractSend(
       BigInt(tx.data.outputs.length)
     )
   })
+
+  // add admin input
+  cat20Admin.bindToUtxo(adminUtxo)
+  const pubkey = await signer.getPublicKey()
+  const address = await signer.getAddress()
+  const spentAdminTxHex = await provider.getRawTransaction(adminUtxo.txId)
+  const spentAdminTx = new Transaction(spentAdminTxHex)
+  // For backtrace: cat20s adminInput feeInput, so pick the second last input
+  let adminBacktraceInputIndex = spentAdminTx.inputs.length - 2
+  if (adminBacktraceInputIndex < 0) {
+    adminBacktraceInputIndex = 0
+  }
+
+  const spentAdminPreTxHex = await provider.getRawTransaction(
+    toHex(spentAdminTx.inputs[adminBacktraceInputIndex].prevTxId)
+  )
+  const backTraceInfo = getBackTraceInfo(
+    spentAdminTxHex,
+    spentAdminPreTxHex,
+    adminBacktraceInputIndex
+  )
+  sendPsbt.addContractInput(cat20Admin, (contract, tx) => {
+    // Use the dynamically calculated adminInputIndex (from line 205)
+    const sig = tx.getSig(adminInputIndex, {
+      address: address.toString(),
+    })
+    contract.authorizeToSpendToken(PubKey(pubkey), sig, backTraceInfo)
+  })
+
+  sendPsbt.addContractOutput(cat20Admin, adminUtxo.satoshis)
 
   // add fee input, also is a contract input to unlock cat20
   sendPsbt.spendUTXO(feeUtxo)

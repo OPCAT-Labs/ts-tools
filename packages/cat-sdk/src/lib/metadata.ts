@@ -3,9 +3,13 @@ import { CAT20Metadata, OpenMinterCAT20Meta } from '../contracts/cat20/types'
 
 export interface CAT20TokenInfo<T extends CAT20Metadata> {
   tokenId: string
-  /** token p2tr address */
+  /** token lockingScript hash */
   tokenScriptHash: string
-  /** minter p2tr address */
+  /** whether the token has admin privileges */
+  hasAdmin: boolean
+  /** admin lockingScript hash */
+  adminScriptHash: string
+  /** minter lockingScript hash */
   minterScriptHash: string
   /** genesis txid */
   genesisTxid: string
