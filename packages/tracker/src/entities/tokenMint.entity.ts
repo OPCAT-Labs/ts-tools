@@ -16,7 +16,7 @@ export class TokenMintEntity {
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @Column({ name: 'token_amount', type: 'bigint', nullable: true })
+  @Column({ name: 'token_amount', type: 'decimal', nullable: true })
   tokenAmount: BigInt;
 
 }

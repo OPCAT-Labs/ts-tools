@@ -42,7 +42,7 @@ export class TokenInfoEntity {
   @Column({ name: 'premine', nullable: true })
   premine: number;
 
-  @Column({ name: 'token_limit', type: 'bigint', nullable: true })
+  @Column({ name: 'token_limit', type: 'decimal', nullable: true })
   tokenLimit: BigInt;
 
   @Column({ name: 'deploy_block', nullable: true })

@@ -55,6 +55,12 @@ export class TokenService {
     ttlAutopurge: true
   });
 
+  private static readonly searchTokensCache = new LRUCache<string, any>({
+    max: Constants.CACHE_MAX_SIZE,
+    ttl: 5 * 60 * 1000,
+    ttlAutopurge: true
+  });
+
   constructor(
     private readonly commonService: CommonService,
     @InjectRepository(TokenInfoEntity)
@@ -134,7 +140,7 @@ export class TokenService {
     const finalLimit = Math.min(limit || Constants.QUERY_PAGING_DEFAULT_LIMIT, Constants.QUERY_PAGING_MAX_LIMIT);
     const cacheKey = `search-tokens-${query || 'all'}-${scope}-${finalOffset}-${finalLimit}`;
 
-    const cached = TokenService.holdersCache.get(cacheKey);
+    const cached = TokenService.searchTokensCache.get(cacheKey);
     if (cached) {
       return cached;
     }
@@ -154,7 +160,7 @@ export class TokenService {
         whereCondition = [
           {
             ...whereCondition,
-            tokenId: ILike(`%${query.trim()}%`)
+            tokenId: query,
           },
           {
             ...whereCondition,
@@ -170,9 +176,21 @@ export class TokenService {
       const [tokens, total] = await this.tokenInfoRepository.findAndCount({
         select: [
           'tokenId',
+          'genesisTxid',
           'name',
           'symbol',
           'decimals',
+          'minterScriptHash',
+          'tokenScriptHash',
+          'firstMintHeight',
+          'rawInfo',
+          'premine',
+          'tokenLimit',
+          'deployBlock',
+          'deployTxid',
+          // 'revealTxid',
+          // todo: revealTxid field in token-response.dto.ts should be deleted
+          'deployTime',
           'logoUrl'
         ],
         where: whereCondition,
@@ -189,7 +207,7 @@ export class TokenService {
         trackerBlockHeight: lastProcessedHeight
       };
 
-      TokenService.holdersCache.set(cacheKey, result);
+      // TokenService.searchTokensCache.set(cacheKey, result);
 
       return result;
     } catch (error) {

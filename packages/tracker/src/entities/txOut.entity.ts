@@ -27,7 +27,7 @@ export class TxOutEntity {
   @Index()
   ownerPubKeyHash: string;
 
-  @Column({ name: 'token_amount', type: 'bigint', nullable: true })
+  @Column({ name: 'token_amount', type: 'decimal', nullable: true })
   tokenAmount: bigint;
 
   @Column({ name: 'data' })
