@@ -8,6 +8,7 @@ import {
   UtxoProvider,
   ChainProvider,
   UTXO,
+  toByteString,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { Transaction } from '@opcat-labs/opcat'
 import { CAT20 } from '../contracts/cat20/cat20'
@@ -31,7 +32,18 @@ import { emptyOutputByteStrings, outpoint2ByteString } from '.'
 import { CAT20StateLib } from '../contracts/cat20/cat20StateLib'
 import { CAT20GuardStateLib } from '../contracts/cat20/cat20GuardStateLib'
 import { ConstantsLib } from '../contracts/constants'
+import { CAT721GuardConstState, CAT721State, ClosedMinterCAT721Meta, OpenMinterCAT721Meta } from '../contracts/cat721/types'
+import { CAT721GuardStateLib } from '../contracts/cat721/cat721GuardStateLib'
+import { CAT721Guard } from '../contracts/cat721/cat721Guard'
+import { CAT721 } from '../contracts/cat721/cat721'
+import { CAT721OpenMinter } from '../contracts/cat721/minters/cat721OpenMinter'
+import { CAT721StateLib } from '../contracts/cat721/cat721StateLib'
+import { CAT721ClosedMinter } from '../contracts'
 
+/**
+ * Helper class for contract peripheral operations
+ * @category Utils
+ */
 export class ContractPeripheral {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static scriptHash(
@@ -45,6 +57,10 @@ export class ContractPeripheral {
   }
 }
 
+/**
+ * Helper class for CAT20 open minter peripheral operations
+ * @category Utils
+ */
 export class CAT20OpenMinterPeripheral {
   static getSplitAmountList(
     preRemainingSupply: CAT20_AMOUNT,
@@ -77,7 +93,6 @@ export class CAT20OpenMinterPeripheral {
       .map((amount) => {
         if (amount > 0n) {
           const newState: CAT20OpenMinterState = {
-            tag: ConstantsLib.OPCAT_MINTER_TAG,
             tokenScriptHash: state.tokenScriptHash,
             hasMintedBefore: true,
             remainingCount: amount,
@@ -133,15 +148,15 @@ export class CAT20OpenMinterPeripheral {
       hasAdmin,
       adminScriptHash
     )
-    const cat20State: CAT20State = {
-      tag: ConstantsLib.OPCAT_CAT20_TAG,
-      amount,
-      ownerAddr: receiverAddr,
-    }
+    const cat20State: CAT20State = { amount, ownerAddr: receiverAddr }
     return [cat20, cat20State] as const
   }
 }
 
+/**
+ * Helper class for CAT20 guard peripheral operations
+ * @category Utils
+ */
 export class CAT20GuardPeripheral {
   static createTransferGuard(
     tokenInputs: {
@@ -334,5 +349,183 @@ export class CAT20GuardPeripheral {
       })
     }
     return results
+  }
+}
+
+/**
+ * Helper class for CAT721 guard peripheral operations
+ * @category Utils
+ */
+export class CAT721GuardPeripheral {
+  static createTransferGuard(
+    nftInputs: {
+      nft: UTXO,
+      inputIndex: number
+    }[],
+    receivers: ByteString[]
+  ): {
+    guardState: CAT721GuardConstState,
+    outputNfts: FixedArray<CAT721State | undefined, typeof TX_OUTPUT_COUNT_MAX>
+  } {
+    if (nftInputs.length === 0) {
+      throw new Error('No spent nfts')
+    }
+    if (nftInputs.length > TX_INPUT_COUNT_MAX - 1) {
+      throw new Error(`Too many nft inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
+    }
+    if (receivers.length !== nftInputs.length) {
+      throw new Error('Receivers length does not match the number of nft inputs')
+    }
+    const guardState = CAT721GuardStateLib.createEmptyState()
+    guardState.nftScriptHashes[0] = ContractPeripheral.scriptHash(nftInputs[0].nft.script)
+    for (
+      let index = 0;
+      index < nftInputs.length && index < TX_INPUT_COUNT_MAX;
+      index++
+    ) {
+      guardState.nftScriptIndexes[nftInputs[index].inputIndex] = 0n
+    }
+    const nftStates = nftInputs.map((utxo) => CAT721StateLib.deserializeState(utxo.nft.data))
+    const outputNfts = emptyOutputByteStrings().map((_, index) => {
+      const receiver = receivers[index]
+      return receiver ? CAT721StateLib.create(nftStates[index].localId, receiver) : undefined
+    }) as FixedArray<CAT721State | undefined, typeof TX_OUTPUT_COUNT_MAX>
+
+    return {
+      guardState,
+      outputNfts
+    }
+  }
+
+  static createBurnGuard(
+    nftInputs: {
+      nft: UTXO,
+      inputIndex: number
+    }[],
+  ): {
+    guardState: CAT721GuardConstState,
+  } {
+    if (nftInputs.length === 0) {
+      throw new Error('No spent nfts')
+    }
+    if (nftInputs.length > TX_INPUT_COUNT_MAX - 1) {
+      throw new Error(`Too many nft inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
+    }
+    const guardState = CAT721GuardStateLib.createEmptyState()
+    guardState.nftScriptHashes[0] = ContractPeripheral.scriptHash(nftInputs[0].nft.script)
+    for (let index = 0; index < nftInputs.length; index++) {
+      guardState.nftBurnMasks[index] = true
+    }
+    for (
+      let index = 0;
+      index < nftInputs.length && index < TX_INPUT_COUNT_MAX;
+      index++
+    ) {
+      guardState.nftScriptIndexes[nftInputs[index].inputIndex] = 0n
+    }
+    return { guardState }
+  }
+
+  static async getBackTraceInfo(
+    minterScrtptHash: string,
+    inputNftUtxos: UTXO[],
+    provider: UtxoProvider & ChainProvider
+  ) {
+    const results: Array<{
+      prevTxHex: string
+      prevTxInput: number
+      prevPrevTxHex: string
+    }> = []
+    const txCache = new Map<string, string>()
+    const getRawTx = async (txId: string): Promise<string> => {
+      if (txCache.has(txId)) {
+        return txCache.get(txId) as string
+      }
+      const txHex = await provider.getRawTransaction(txId)
+      txCache.set(txId, txHex)
+      return txHex
+    }
+    const expectNftScriptHash = ContractPeripheral.scriptHash(
+      new CAT721(
+        minterScrtptHash,
+        ContractPeripheral.scriptHash(new CAT721Guard())
+      )
+    )
+
+    for (const inputNftUtxo of inputNftUtxos) {
+      const utxoScriptHash = ContractPeripheral.scriptHash(inputNftUtxo.script)
+      if (utxoScriptHash !== expectNftScriptHash) {
+        throw new Error(`Nft utxo ${JSON.stringify(inputNftUtxo)} does not match the nft script hash ${expectNftScriptHash}`)
+      }
+    }
+
+    for (const inputNftUtxo of inputNftUtxos) {
+      const nftTxHex = await getRawTx(inputNftUtxo.txId)
+      const nftTx = new Transaction(nftTxHex)
+      let nftPrevTxHex: string | undefined
+      let nftTxInputIndex: number | undefined
+      for (let idx = 0; idx < nftTx.inputs.length; idx++) {
+        const input = nftTx.inputs[idx]
+        const prevTxId = toHex(input.prevTxId)
+        const prevTxHex = await getRawTx(prevTxId)
+        const prevTx = new Transaction(prevTxHex)
+        const out = prevTx.outputs[input.outputIndex]
+        const outScriptHash = ContractPeripheral.scriptHash(out.script.toHex())
+        if (outScriptHash === minterScrtptHash || outScriptHash === expectNftScriptHash) {
+          nftPrevTxHex = prevTxHex
+          nftTxInputIndex = idx
+          break
+        }
+      }
+      if (nftPrevTxHex == undefined || nftTxInputIndex === undefined) {
+        throw new Error(`Nft utxo ${JSON.stringify(inputNftUtxo)} can not be backtraced`)
+      }
+      results.push({
+        prevTxHex: nftTxHex,
+        prevTxInput: nftTxInputIndex!,
+        prevPrevTxHex: nftPrevTxHex!,
+      })
+    }
+    return results
+  }
+}
+
+/**
+ * Helper class for CAT721 open minter peripheral operations
+ * @category Utils
+ */
+export class CAT721OpenMinterPeripheral {
+  static createMinter(
+    nftId: string,
+    metadata: OpenMinterCAT721Meta
+  ) {
+
+    const contract = new CAT721OpenMinter(
+      outpoint2ByteString(nftId),
+      metadata.max,
+      metadata.premine,
+      metadata.preminerAddr
+    )
+    contract.checkProps()
+    return contract
+  }
+}
+
+/**
+ * Helper class for CAT721 closed minter peripheral operations
+ * @category Utils
+ */
+export class CAT721ClosedMinterPeripheral {
+  static createMinter(
+    collectionId: string,
+    metadata: ClosedMinterCAT721Meta
+  ) {
+    const contract = new CAT721ClosedMinter(
+      metadata.issuerAddress,
+      outpoint2ByteString(collectionId),
+      metadata.max
+    )
+    contract.checkProps()
+    return contract
   }
 }

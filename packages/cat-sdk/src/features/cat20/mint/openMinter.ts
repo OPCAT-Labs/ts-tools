@@ -15,19 +15,21 @@ import { Transaction } from '@opcat-labs/opcat'
 import { CAT20OpenMinter } from '../../../contracts'
 
 /**
- * Mint CAT20 tokens in a single transaction.
- * @param signer a signer, such as {@link DefaultSigner} or {@link WalletSigner}
- * @param preminerSigner a signer, such as {@link DefaultSigner}  or {@link WalletSigner}
- * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
- * @param minterUtxo an UTXO that contains the minter of the CAT20 token
- * @param tokenId the id of the CAT20 token
+ * Mints a CAT20 token using `CAT20OpenMinter` contract
+ * The preimner can mint the token with premined amount first, other users can mint the token with a fixed amount later
+ * @category Feature
+ * @param signer the signer for the minting
+ * @param preminerSigner the signer for the preminer, pass the deployer signer if premine is disabled, otherwise pass the reminer signer
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param minterUtxo the UTXO of the minter contract
+ * @param tokenId the ID of the token
  * @param metadata the metadata of the CAT20 token
  * @param tokenReceiver the recipient's address of the newly minted tokens
- * @param changeAddress the address to receive change satoshis, use the signer address as the default
+ * @param changeAddress the address to receive change satoshis
  * @param feeRate the fee rate for constructing transactions
  * @returns the mint transaction
  */
-export async function mint(
+export async function mintOpenMinterToken(
   signer: Signer,
   preminerSigner: Signer,
   provider: UtxoProvider & ChainProvider,

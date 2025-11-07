@@ -31,16 +31,18 @@ import {
 import { SPEND_TYPE_USER_SPEND } from '../../../contracts'
 
 /**
- * Burn CAT20 tokens in a single transaction.
- * @param signer a signer, such as {@link DefaultSigner} or {@link WalletSigner}
- * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
- * @param minterScriptHash the minter script hash of the CAT20 token
+ * Burns a CAT20 token using `CAT20Guard` contract
+ * @category Feature
+ * @param signer the signer for the burner
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param minterScriptHash the script hash of the minter contract
+ * @param inputTokenUtxos the UTXOs of the input tokens
+ * @param feeRate the fee rate for the transaction
+ * @param hasAdmin whether the token has admin
  * @param adminScriptHash the admin script hash of the CAT20 token
- * @param inputTokenUtxos CAT20 token utxos to be sent
- * @param feeRate the fee rate for constructing transactions
- * @returns the guard transaction, the send transaction and the CAT20 token outputs
+ * @returns the PSBTs for the guard and burn transactions
  */
-export async function burn(
+export async function burnToken(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
@@ -51,6 +53,8 @@ export async function burn(
 ): Promise<{
   guardPsbt: ExtPsbt
   burnPsbt: ExtPsbt
+  guardTxid: string
+  burnTxid: string
 }> {
   const pubkey = await signer.getPublicKey()
   const changeAddress = await signer.getAddress()
@@ -200,5 +204,7 @@ export async function burn(
   return {
     guardPsbt,
     burnPsbt,
+    guardTxid: guardPsbt.extractTransaction().id,
+    burnTxid: burnPsbt.extractTransaction().id,
   }
 }

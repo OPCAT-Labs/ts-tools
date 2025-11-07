@@ -76,6 +76,7 @@ describe('Test the feature `transferOwnership` for `Cat20`', () => {
     cat20Admin.bindToUtxo(cat20Generator.getCat20AdminUtxo())
     const { sendPsbt } = await transferOwnership(
       currentSigner,
+      testSigner,
       cat20Admin,
       cat20Admin.utxo!,
       testProvider,

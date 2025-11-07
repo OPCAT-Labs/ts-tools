@@ -25,7 +25,6 @@ describe('Test the feature `deploy` for `openMinterV2`', () => {
     loadAllArtifacts()
     const address = await testSigner.getAddress()
     metadata = formatMetadata({
-      tag: ConstantsLib.OPCAT_METADATA_TAG,
       name: 'c',
       symbol: 'C',
       decimals: 2n,
@@ -61,7 +60,6 @@ describe('Test the feature `deploy` for `openMinterV2`', () => {
       verifyTx(deployPsbt!, expect)
 
       const mintedTokenState: CAT20State = {
-        tag: ConstantsLib.OPCAT_CAT20_TAG,
         ownerAddr: metadata.preminerAddr!,
         amount: metadata.premine,
       }

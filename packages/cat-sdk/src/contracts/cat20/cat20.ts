@@ -9,14 +9,22 @@ import {
   ContextUtils,
   toByteString,
   len,
+  tags
 } from '@opcat-labs/scrypt-ts-opcat'
 import { OwnerUtils } from '../utils/ownerUtils'
 import { CAT20State, CAT20GuardConstState } from './types'
-import { ContractUnlockArgs } from '../types'
+import { CAT20ContractUnlockArgs } from '../types'
 import { SpentDataHashes } from '@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs'
 import { CAT20GuardStateLib } from './cat20GuardStateLib'
 import { INPUT_UNLOCKING_SCRIPT_HASH_LEN } from '../constants'
-
+import { CatTags } from '../catTags'
+/**
+ * The CAT20 contract
+ * @category Contract
+ * @category CAT20
+ * @onchain
+ */
+@tags([CatTags.CAT20_TAG])
 export class CAT20 extends SmartContract<CAT20State> {
   @prop()
   minterScriptHash: ByteString
@@ -45,7 +53,7 @@ export class CAT20 extends SmartContract<CAT20State> {
 
   @method()
   public unlock(
-    unlockArgs: ContractUnlockArgs,
+    unlockArgs: CAT20ContractUnlockArgs,
     // guard
     guardState: CAT20GuardConstState,
     guardInputIndex: bigint,
@@ -111,11 +119,13 @@ export class CAT20 extends SmartContract<CAT20State> {
     // 1. check there is a guard input by shPreimage.hashSpentScriptHashes
     assert(
       ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndexVal) ==
-        this.guardScriptHash
+        this.guardScriptHash,
+      'guard script hash is invalid'
     )
     assert(
       ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndexVal) ==
-        CAT20GuardStateLib.stateHash(guardState)
+        CAT20GuardStateLib.stateHash(guardState),
+      'guard state hash is invalid'
     )
 
     // 2. check the guard input is validating current input by checking guard state contains current token script
@@ -124,7 +134,8 @@ export class CAT20 extends SmartContract<CAT20State> {
       guardState.tokenScriptIndexes[Number(t_cat20InputIndexVal)]
     assert(
       guardState.tokenScriptHashes[Number(tokenScriptIndex)] ==
-        t_cat20ScriptHash
+        t_cat20ScriptHash,
+      'token script hash is invalid'
     )
   }
 }

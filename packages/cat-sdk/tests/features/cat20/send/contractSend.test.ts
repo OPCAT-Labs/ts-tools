@@ -10,13 +10,13 @@ import { testSigner } from '../../../utils/testSigner'
 import { toTokenOwnerAddress } from '../../../../src/utils'
 import { ContractPeripheral } from '../../../../src/utils/contractPeripheral'
 import { CAT20OpenMinter } from '../../../../src/contracts/cat20/minters/cat20OpenMinter'
-import { contractSend } from '../../../../src/features/cat20/send/contractSend'
 import { testProvider } from '../../../utils/testProvider'
 import { CAT20_AMOUNT } from '../../../../src/contracts/cat20/types'
 import { verifyTx } from '../../../utils'
 import { formatMetadata } from '../../../../src/lib/metadata'
 import { CAT20 } from '../../../../src/contracts/cat20/cat20'
 import { ConstantsLib } from '../../../../src/contracts'
+import {contractSend} from '../../../utils/testCAT20/features/contractSend'
 
 use(chaiAsPromised)
 
@@ -35,7 +35,6 @@ describe('Test the feature `contractSend` for `Cat20`', () => {
     cat20ChangeAddr = toTokenOwnerAddress(address)
 
     metadata = formatMetadata({
-      tag: ConstantsLib.OPCAT_METADATA_TAG,
       name: 'c',
       symbol: 'C',
       decimals: 2n,
@@ -135,7 +134,6 @@ describe('Test the feature `contractSend` for `Cat20`', () => {
     ).to.eq(cat20Generator.deployInfo.tokenScriptHash)
     expect(sendPsbt.getUtxo(toReceiverIndex).data).to.eq(
       CAT20.serializeState({
-        tag: ConstantsLib.OPCAT_CAT20_TAG,
         amount: toReceiverAmount,
         ownerAddr: contractScriptHash,
       })
@@ -151,7 +149,6 @@ describe('Test the feature `contractSend` for `Cat20`', () => {
       ).to.eq(cat20Generator.deployInfo.tokenScriptHash)
       expect(sendPsbt.getUtxo(tokenChangeOutputIndex).data).to.eq(
         CAT20.serializeState({
-          tag: ConstantsLib.OPCAT_CAT20_TAG,
           amount: tokenChangeAmount,
           ownerAddr: cat20ChangeAddr,
         })

@@ -45,27 +45,31 @@ export class TokenInfoResponse extends BaseResponse<TokenInfo> {
   data: TokenInfo;
 }
 
+export class TokenUtxoState {
+  @ApiProperty({ example: 'abc123......', description: 'The owner address, p2pkh script hex or locking script hash' })
+  address: string
+  @ApiProperty({ example: '100', description: 'Token amount' })
+  amount: string;
+}
+
 export class TokenUtxo {
   @ApiProperty({ example: 'abc123...', description: 'Transaction ID' })
-  txid: string;
+  txId: string;
 
   @ApiProperty({ example: 0, description: 'Output index' })
   outputIndex: number;
 
-  @ApiProperty({ example: '456def...', description: 'Locking script' })
-  lockingScript: string;
+  @ApiProperty({ example: '456def...', description: 'Locking script hash' })
+  script: string;
 
   @ApiProperty({ example: 10000, description: 'Satoshi amount' })
   satoshis: string;
 
-  @ApiProperty({ example: '100', description: 'Token amount' })
-  tokenAmount: string;
+  @ApiProperty({ example: 'abc123......', description: 'utxo.data' })
+  data: string;
 
-  @ApiProperty({ example: 100000, description: 'Block height' })
-  blockHeight: number;
-
-  @ApiProperty({ example: 'abc123......', description: 'Owner public key hash' })
-  ownerPubKeyHash: string;
+  @ApiProperty({ type: TokenUtxoState, description: 'Token UTXO state' })
+  state: TokenUtxoState
 }
 
 export class TokenUtxosData {

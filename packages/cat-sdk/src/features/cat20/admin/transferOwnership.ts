@@ -27,7 +27,8 @@ import { OwnerUtils } from '../../../contracts'
  * @returns a transferOwnership transaction
  */
 export async function transferOwnership(
-  signer: Signer,
+  adminSigner: Signer,
+  feeSigner: Signer,
   cat20Admin: CAT20Admin,
   adminUtxo: UTXO,
   provider: UtxoProvider & ChainProvider,
@@ -37,7 +38,7 @@ export async function transferOwnership(
   sendPsbt: ExtPsbt
   sendTxId: string
 }> {
-  const changeAddress = await signer.getAddress()
+  const changeAddress = await feeSigner.getAddress()
 
   let utxos = await provider.getUtxos(changeAddress)
   utxos = filterFeeUtxos(utxos).slice(0, TX_INPUT_COUNT_MAX)
@@ -50,8 +51,8 @@ export async function transferOwnership(
   const sendPsbt = new ExtPsbt({ network: await provider.getNetwork() })
   // add admin input
   cat20Admin.bindToUtxo(adminUtxo)
-  const pubkey = await signer.getPublicKey()
-  const address = await signer.getAddress()
+  const adminPubKey = await adminSigner.getPublicKey()
+  const adminAddress = await adminSigner.getAddress()
   const adminTxHex = await provider.getRawTransaction(adminUtxo.txId)
   const adminTx = new Transaction(adminTxHex)
   let prevAdminInputIndex = adminTx.inputs.length - 2
@@ -70,10 +71,10 @@ export async function transferOwnership(
   sendPsbt.addContractInput(cat20Admin, (contract, tx) => {
     // sign admin input
     const sig = tx.getSig(0, {
-      address: address.toString(),
+      address: adminAddress.toString(),
     })
     contract.transferOwnership(
-      PubKey(pubkey),
+      PubKey(adminPubKey),
       sig,
       newPubKeyHash,
       backTraceInfo
@@ -91,11 +92,19 @@ export async function transferOwnership(
   sendPsbt.change(changeAddress, feeRate)
   sendPsbt.seal()
 
-  const signedSendPsbt = await signer.signPsbt(
+  const signedSendPsbt = await adminSigner.signPsbt(
     sendPsbt.toHex(),
     sendPsbt.psbtOptions()
   )
   sendPsbt.combine(ExtPsbt.fromHex(signedSendPsbt))
+  if (adminAddress !== changeAddress) {
+    // admin signer is not fee signer, need sign again
+    const signedSendPsbt2 = await feeSigner.signPsbt(
+      sendPsbt.toHex(),
+      sendPsbt.psbtOptions()
+    )
+    sendPsbt.combine(ExtPsbt.fromHex(signedSendPsbt2))
+  }
   sendPsbt.finalizeAllInputs()
 
   const newFeeUtxo = sendPsbt.getChangeUTXO()!

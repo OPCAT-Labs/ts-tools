@@ -3,30 +3,31 @@ import { RpcService } from '../rpc/rpc.service';
 import { BlockEntity } from '../../entities/block.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Constants } from '../../common/constants';
-import { TaprootPayment } from '../../common/types';
-import { TxOutput } from 'bitcoinjs-lib';
-import { CAT20GuardCovenant, CAT721GuardCovenant } from '@cat-protocol/cat-sdk-v2';
+import { CAT20Guard, CAT721Guard, ContractPeripheral } from '@opcat-labs/cat-sdk';
+import { Input, Transaction } from '@opcat-labs/opcat';
+import { TxOutEntity } from 'src/entities/txOut.entity';
+import { TokenInfoEntity } from 'src/entities/tokenInfo.entity';
+import { ABICoder, ABIEntityType, sha256 } from '@opcat-labs/scrypt-ts-opcat';
 
 @Injectable()
 export class CommonService {
   private readonly logger = new Logger(CommonService.name);
 
-  public readonly FT_GUARD_PUBKEY: string;
-  public readonly NFT_GUARD_PUBKEY: string;
+  public readonly FT_GUARD_SCRIPT_HASH: string;
+  public readonly NFT_GUARD_SCRIPT_HASH: string;
 
   constructor(
     private readonly rpcService: RpcService,
     @InjectRepository(BlockEntity)
     private blockEntityRepository: Repository<BlockEntity>,
   ) {
-    const tokenGuardContractInfo = new CAT20GuardCovenant();
-    this.FT_GUARD_PUBKEY = tokenGuardContractInfo.tpubkey;
-    this.logger.log(`token guard xOnlyPubKey = ${this.FT_GUARD_PUBKEY}`);
+    const guard = new CAT20Guard();
+    this.FT_GUARD_SCRIPT_HASH = ContractPeripheral.scriptHash(guard);
+    this.logger.log(`token guard script hash = ${this.FT_GUARD_SCRIPT_HASH}`);
 
-    const nftGuardContractInfo = new CAT721GuardCovenant();
-    this.NFT_GUARD_PUBKEY = nftGuardContractInfo.tpubkey;
-    this.logger.log(`nft guard xOnlyPubKey = ${this.NFT_GUARD_PUBKEY}`);
+    const nftGuard = new CAT721Guard();
+    this.NFT_GUARD_SCRIPT_HASH = ContractPeripheral.scriptHash(nftGuard);
+    this.logger.log(`nft guard script hash = ${this.NFT_GUARD_SCRIPT_HASH}`);
   }
 
   public async getLastProcessedBlock(): Promise<BlockEntity | null> {
@@ -49,20 +50,24 @@ export class CommonService {
 
   /**
    * Parse token outputs from guard input of a transfer tx
+   * @param guardInput the cat20 guard input
+   * @returns Map of token outputs: output index -> { ownerPubKeyHash, tokenAmount }
    */
-  public parseTransferTxTokenOutputs(guardInput: TaprootPayment) {
-    const ownerPubKeyHashes = guardInput.witness.slice(
-      Constants.GUARD_ADDR_OFFSET,
-      Constants.GUARD_ADDR_OFFSET + Constants.CONTRACT_OUTPUT_MAX_COUNT,
-    );
-    const tokenAmounts = guardInput.witness.slice(
-      Constants.GUARD_AMOUNT_OFFSET,
-      Constants.GUARD_AMOUNT_OFFSET + Constants.CONTRACT_OUTPUT_MAX_COUNT,
-    );
-    const masks = guardInput.witness.slice(
-      Constants.GUARD_MASK_OFFSET,
-      Constants.GUARD_MASK_OFFSET + Constants.CONTRACT_OUTPUT_MAX_COUNT,
-    );
+  public parseTransferTxCAT20Outputs(guardInput: Input): Map<number, { ownerPubKeyHash: string, tokenAmount: bigint }> {
+    const guardInputScript = guardInput.script.toHex()
+    const abi = new ABICoder(CAT20Guard.artifact);
+    const decoded = abi.decodePubFunctionCall(guardInputScript);
+    const methodAbi = abi.artifact.abi.find(abi => abi.name === 'unlock' && abi.type === ABIEntityType.FUNCTION);
+    if (decoded.method !== methodAbi?.name) {
+      throw new Error('not a CAT20 guard input');
+    }
+    if (decoded.args.length !== methodAbi?.params?.length) {
+      throw new Error('invalid CAT20 guard input');
+    }
+
+    const ownerAddrOrScriptHashes: string[] = decoded.args[1].value as string[];
+    const outputTokens: bigint[] = decoded.args[2].value as bigint[];
+
     const tokenOutputs = new Map<
       number,
       {
@@ -70,76 +75,117 @@ export class CommonService {
         tokenAmount: bigint;
       }
     >();
-    for (let i = 0; i < Constants.CONTRACT_OUTPUT_MAX_COUNT; i++) {
-      if (masks[i].toString('hex') !== '81') {
-        const ownerPubKeyHash = ownerPubKeyHashes[i].toString('hex');
-        const tokenAmount =
-          tokenAmounts[i].length === 0 ? 0n : BigInt(tokenAmounts[i].readIntLE(0, tokenAmounts[i].length));
-        tokenOutputs.set(i + 1, {
-          ownerPubKeyHash,
-          tokenAmount,
+    outputTokens.forEach((tokenAmount, index) => {
+      if (tokenAmount > 0n) {
+        tokenOutputs.set(index, {
+          ownerPubKeyHash: ownerAddrOrScriptHashes[index],
+          tokenAmount: tokenAmount,
         });
       }
-    }
+    });
     return tokenOutputs;
   }
 
   /**
-   * Parse taproot output from tx output, returns null if failed
+   * Parse nft outputs from guard input of a transfer tx
+   * @param guardInput the cat721 guard input
+   * @returns Map of nft outputs: output index -> { ownerPubKeyHash, localId }
    */
-  public parseTaprootOutput(output: TxOutput): TaprootPayment | null {
-    try {
-      if (
-        output.script.length !== Constants.TAPROOT_LOCKING_SCRIPT_LENGTH ||
-        !Buffer.from(output.script).toString('hex').startsWith('5120')
-      ) {
-        return null;
-      }
-      return {
-        pubkey: Buffer.from(output.script.subarray(2, 34)),
-        redeemScript: null,
-        witness: null,
-      };
-    } catch {
-      return null;
+  public parseTransferTxCAT721Outputs(guardInput: Input): Map<number, { ownerPubKeyHash: string, localId: bigint }> {
+    const guardInputScript = guardInput.script.toHex()
+    const abi = new ABICoder(CAT721Guard.artifact);
+    const decoded = abi.decodePubFunctionCall(guardInputScript);
+    const methodAbi = abi.artifact.abi.find(abi => abi.name === 'unlock' && abi.type === ABIEntityType.FUNCTION);
+    if (decoded.method !== methodAbi?.name) {
+      throw new Error('not a CAT721 guard input');
     }
-  }
+    if (decoded.args.length !== methodAbi?.params?.length) {
+      throw new Error('invalid CAT721 guard input');
+    }
 
-  /**
-   * Search Guard in tx outputs
-   * @returns true if found Guard tx outputs, false otherwise
-   */
-  public searchGuardOutputs(payOuts: TaprootPayment[]): boolean {
-    for (const payOut of payOuts) {
-      if (
-        this.FT_GUARD_PUBKEY === payOut?.pubkey?.toString('hex') ||
-        this.NFT_GUARD_PUBKEY === payOut?.pubkey?.toString('hex')
-      ) {
-        return true;
+    const ownerAddrOrScriptHashes: string[] = decoded.args[1].value as string[];
+    const outputLocalIds: bigint[] = decoded.args[2].value as bigint[];
+
+    const nftOutputs = new Map<
+      number,
+      {
+        ownerPubKeyHash: string;
+        localId: bigint;
       }
-    }
-    return false;
+    >();
+    outputLocalIds.forEach((localId, index) => {
+      if (localId >= 0n) {
+        nftOutputs.set(index, {
+          ownerPubKeyHash: ownerAddrOrScriptHashes[index],
+          localId: localId,
+        });
+      }
+    });
+    return nftOutputs;
   }
 
   /**
    * Search Guard in tx inputs
    * @returns array of Guard inputs
    */
-  public searchGuardInputs(payIns: TaprootPayment[]): TaprootPayment[] {
-    return payIns.filter((payIn) => {
-      return (
-        this.FT_GUARD_PUBKEY === payIn?.pubkey?.toString('hex') ||
-        this.NFT_GUARD_PUBKEY === payIn?.pubkey?.toString('hex')
-      );
+  public searchGuardInputs(guardInputs: Input[]): Input[] {
+    return guardInputs.filter((guardInput) => {
+      return this.FT_GUARD_SCRIPT_HASH === ContractPeripheral.scriptHash(guardInput.output.script.toHex()) ||
+        this.NFT_GUARD_SCRIPT_HASH === ContractPeripheral.scriptHash(guardInput.output.script.toHex())
     });
   }
 
-  public isFungibleGuard(guardInput: TaprootPayment): boolean {
-    return this.FT_GUARD_PUBKEY === guardInput?.pubkey?.toString('hex');
+  public isFungibleGuard(guardInput: Input): boolean {
+    return this.FT_GUARD_SCRIPT_HASH === ContractPeripheral.scriptHash(guardInput.output.script.toHex())
   }
 
   public async getRawTx(txid: string, verbose: boolean = false): Promise<string | undefined> {
     const resp = await this.rpcService.getRawTx(txid, verbose);
     return resp?.data?.result;
+  }
+
+  checkMinterBacktrace(
+    txOut: TxOutEntity,
+    tokenInfo: TokenInfoEntity,
+    tx: Transaction
+  ) {
+    const txPrevouts = tx.inputs.map((input) => {
+      const prevTxid = input.prevTxId.toString('hex');
+      const outputIndex = input.outputIndex;
+      return `${prevTxid}_${outputIndex}`;
+    })
+    const txPrevScriptHashes = this.getInputScriptHashes(tx);
+    const prevHasScriptHash = txPrevScriptHashes.includes(txOut.lockingScriptHash);
+    if (prevHasScriptHash) return true;
+    const prevHasTokenId = tokenInfo && txPrevouts.includes(tokenInfo.tokenId);
+    return prevHasTokenId
+  }
+
+  checkTokenBacktrace(
+    txOut: TxOutEntity,
+    tokenInfo: TokenInfoEntity,
+    tx: Transaction
+  ) {
+    const txPrevScriptHashes = this.getInputScriptHashes(tx);
+    const prevHasTokenScriptHash = txPrevScriptHashes.includes(txOut.lockingScriptHash);
+    const prevHasMinterScriptHash = tokenInfo && txPrevScriptHashes.includes(tokenInfo.minterScriptHash);
+    return prevHasTokenScriptHash || prevHasMinterScriptHash;
+  }
+
+  private getInputScriptHashes(tx: Transaction): string[] {
+    return tx.inputs.map((input) => {
+      const script = input.output.script.toHex();
+      return sha256(script);
+    });
+  }
+
+  async txAddPrevouts(tx: Transaction) {
+    for (const input of tx.inputs) {
+      const prevTxid = input.prevTxId.toString('hex');
+      const outputIndex = input.outputIndex;
+      const resp = await this.getRawTx(prevTxid, true);
+      const preTx = new Transaction(resp['hex']);
+      input.output = preTx.outputs[outputIndex];
+    }
   }
 }

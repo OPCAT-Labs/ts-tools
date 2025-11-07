@@ -1,29 +1,33 @@
-import {
-  ExtPsbt,
-  Signer,
-  ChainProvider,
-  UtxoProvider,
-  hexToUint8Array,
-  markSpent,
-  sha256,
-} from '@opcat-labs/scrypt-ts-opcat'
-import { CAT20TokenInfo } from '../../../../src/lib/metadata'
-import { checkState } from '../../../../src/utils/check'
-import { CAT20ClosedMinter } from '../../../../src/contracts/cat20/minters/cat20ClosedMinter'
-import { CAT20Admin } from '../../../../src/contracts/cat20/cat20Admin'
-import { outpoint2ByteString, toTokenOwnerAddress } from '../../../../src/utils'
-import { CAT20Guard } from '../../../../src/contracts/cat20/cat20Guard'
-import { CAT20 } from '../../../../src/contracts/cat20/cat20'
-import { ContractPeripheral } from '../../../../src/utils/contractPeripheral'
+import { ExtPsbt, Signer, ChainProvider, UtxoProvider, hexToUint8Array, markSpent } from '@opcat-labs/scrypt-ts-opcat'
+import { ClosedMinterCAT20Meta } from '../../../contracts'
+import { CAT20TokenInfo, MetadataSerializer } from '../../../lib/metadata'
+import { checkState } from '../../../utils/check'
+import { CAT20ClosedMinter } from '../../../contracts/cat20/minters/cat20ClosedMinter'
+import { CAT20Admin } from '../../../contracts/cat20/cat20Admin'
+import { outpoint2ByteString, toTokenOwnerAddress } from '../../../utils'
+import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
+import { CAT20 } from '../../../contracts/cat20/cat20'
+import { ContractPeripheral } from '../../../utils/contractPeripheral'
 import {
   CAT20AdminState,
   CAT20ClosedMinterState,
-  ClosedMinterCAT20Meta,
-} from '../../../../src/contracts/cat20/types'
-import { Postage } from '../../../../src/typeConstants'
-import { CAT20ClosedMinterMetadata } from '../../../../src/contracts/cat20/minters/cat20ClosedMinterMetadata'
-import { ConstantsLib } from '../../../../src/contracts'
-export async function deploy(
+} from '../../../contracts/cat20/types'
+import { Postage } from '../../../typeConstants'
+import { ConstantsLib } from '../../../contracts'
+
+
+/**
+ * Deploys a CAT20 token and its metadata using `CAT20ClosedMinter` contract
+ * Only the token issuer can mint token
+ * @category Feature
+ * @param signer the signer for the deployer
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param metadata the metadata for the token
+ * @param feeRate the fee rate for the transaction
+ * @param changeAddress the address for the change output
+ * @returns the token info and the PSBTs for the genesis and deploy transactions
+ */
+export async function deployClosedMinterToken(
   signer: Signer,
   provider: ChainProvider & UtxoProvider,
   metadata: ClosedMinterCAT20Meta,
@@ -31,8 +35,8 @@ export async function deploy(
   changeAddress?: string
 ): Promise<
   CAT20TokenInfo<ClosedMinterCAT20Meta> & {
-    genesisTx: ExtPsbt
-    deployTx: ExtPsbt
+    genesisPsbt: ExtPsbt
+    deployPsbt: ExtPsbt
   }
 > {
   const address = await signer.getAddress()
@@ -45,11 +49,7 @@ export async function deploy(
 
   const genesisTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
-    .change(
-      changeAddress,
-      feeRate,
-      hexToUint8Array(CAT20ClosedMinterMetadata.serializeState(metadata))
-    )
+    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', { metadata })))
     .seal()
 
   const signedGenesisTx = await signer.signPsbt(
@@ -77,7 +77,6 @@ export async function deploy(
   )
   const tokenScriptHash = ContractPeripheral.scriptHash(cat20)
   const minterState: CAT20ClosedMinterState = {
-    tag: ConstantsLib.OPCAT_MINTER_TAG,
     tokenScriptHash,
   }
   const adminState: CAT20AdminState = {
@@ -91,11 +90,7 @@ export async function deploy(
     .spendUTXO(genesisUtxo)
     .addContractOutput(closeMinter, Postage.MINTER_POSTAGE)
     .addContractOutput(admin, Postage.ADMIN_POSTAGE)
-    .change(
-      changeAddress,
-      feeRate,
-      hexToUint8Array(CAT20ClosedMinterMetadata.serializeState(metadata))
-    )
+    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', { metadata })))
     .seal()
 
   const signedDeployTx = await signer.signPsbt(
@@ -115,9 +110,9 @@ export async function deploy(
     hasAdmin: metadata.hasAdmin,
     adminScriptHash,
     minterScriptHash,
-    genesisTx,
+    genesisPsbt: genesisTx,
     genesisTxid: genesisTx.extractTransaction().id,
-    deployTx,
+    deployPsbt: deployTx,
     deployTxid: deployTx.extractTransaction().id,
     metadata,
     timestamp: Date.now(),

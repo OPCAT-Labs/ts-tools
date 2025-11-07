@@ -5,7 +5,7 @@ import chaiAsPromised from 'chai-as-promised'
 import { OpenMinterCAT20Meta } from '../../../../src/contracts/cat20/types'
 import { testSigner } from '../../../utils/testSigner'
 import { TestCAT20Generator } from '../../../utils/testCAT20Generator'
-import { burn } from '../../../../src/features/cat20/burn/burn'
+import { burnToken } from '../../../../src/features/cat20/burn/burn'
 import { testProvider } from '../../../utils/testProvider'
 import { loadAllArtifacts } from '../utils'
 import { ByteString, UTXO } from '@opcat-labs/scrypt-ts-opcat'
@@ -27,7 +27,6 @@ describe('Test the feature `burn` for `CAT20`', () => {
     toReceiverAddr = toTokenOwnerAddress(address)
 
     metadata = formatMetadata({
-      tag: ConstantsLib.OPCAT_METADATA_TAG,
       name: 'c',
       symbol: 'C',
       decimals: 2n,
@@ -72,7 +71,7 @@ describe('Test the feature `burn` for `CAT20`', () => {
   })
 
   async function testBurnResult(cat20Utxos: UTXO[]) {
-    const { guardPsbt, burnPsbt } = await burn(
+    const { guardPsbt, burnPsbt } = await burnToken(
       testSigner,
       testProvider,
       cat20Generater.deployInfo.minterScriptHash,

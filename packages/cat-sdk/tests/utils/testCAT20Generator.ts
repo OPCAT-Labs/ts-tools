@@ -2,41 +2,48 @@ import { ByteString, Ripemd160 } from '@opcat-labs/scrypt-ts-opcat'
 import { toTokenOwnerAddress } from '../../src/utils'
 import { CAT20TokenInfo, formatMetadata } from '../../src/lib/metadata'
 import { ExtPsbt, UTXO } from '@opcat-labs/scrypt-ts-opcat'
-import { deploy } from './testCAT20/features/deploy'
+import { deployClosedMinterToken } from '../../src/features/cat20/deploy/closedMinter'
 import { testSigner } from './testSigner'
 import {
   CAT20_AMOUNT,
   ClosedMinterCAT20Meta,
 } from '../../src/contracts/cat20/types'
-import { mint } from './testCAT20/features/mint'
+import { mintClosedMinterToken } from '../../src/features/cat20/mint/closedMinter'
 import { singleSend } from '../../src/features/cat20/send/singleSend'
 import { verifyTx } from '.'
 import { expect } from 'chai'
 import { testProvider } from './testProvider'
-import { CAT20GuardPeripheral } from '../../src/utils/contractPeripheral'
-import { ConstantsLib } from '../../src/contracts'
+import { CAT20GuardPeripheral, ContractPeripheral } from '../../src/utils/contractPeripheral'
+import { CAT20Guard, ConstantsLib } from '../../src/contracts'
 
 export class TestCAT20Generator {
   deployInfo: CAT20TokenInfo<ClosedMinterCAT20Meta> & {
-    genesisTx: ExtPsbt
-    deployTx: ExtPsbt
+    genesisPsbt: ExtPsbt
+    deployPsbt: ExtPsbt
   }
-  minterTx: ExtPsbt
-  adminTx: ExtPsbt
+  minterPsbt: ExtPsbt
+  adminPsbt?: ExtPsbt
+
+
+  get minterScriptHash() {
+    return this.deployInfo.minterScriptHash
+  }
+  get guardScriptHash() {
+    return ContractPeripheral.scriptHash(new CAT20Guard())
+  }
 
   constructor(
     deployInfo: CAT20TokenInfo<ClosedMinterCAT20Meta> & {
-      genesisTx: ExtPsbt
-      deployTx: ExtPsbt
+      genesisPsbt: ExtPsbt
+      deployPsbt: ExtPsbt
     }
   ) {
     this.deployInfo = deployInfo
-    this.minterTx = deployInfo.deployTx
-    this.adminTx = deployInfo.deployTx
+    this.minterPsbt = deployInfo.deployPsbt
   }
 
   static async init(info: ClosedMinterCAT20Meta) {
-    const deployInfo = await deploy(
+    const deployInfo = await deployClosedMinterToken(
       testSigner,
       testProvider,
       info,
@@ -46,35 +53,42 @@ export class TestCAT20Generator {
   }
 
   private getCat20MinterUtxo() {
-    return this.minterTx.getUtxo(0)
+    return this.minterPsbt.getUtxo(0)
   }
 
-  public getCat20AdminUtxo() {
-    const outputs = this.adminTx.txOutputs
-    return this.adminTx.getUtxo(outputs.length - 2)
+  getCat20AdminUtxo() {
+    // If adminPsbt is set (after admin operations), use it to get the updated admin UTXO
+    // Otherwise, use the original admin UTXO from the deploy transaction
+    if (this.adminPsbt) {
+      return this.adminPsbt.getUtxo(0)
+    }
+    // Admin UTXO is the second output (index 1) in the deploy transaction
+    return this.deployInfo.deployPsbt.getUtxo(1)
   }
 
-  public updateAdminTx(adminTx: ExtPsbt) {
-    this.adminTx = adminTx
+  updateAdminTx(psbt: ExtPsbt) {
+    // Update the admin PSBT reference after admin operations (burnByAdmin, transferOwnership)
+    // The new admin UTXO is always at output index 0 in these transactions
+    this.adminPsbt = psbt
   }
 
   async mintThenTransfer(addr: ByteString, amount: CAT20_AMOUNT) {
     const signerAddr = await testSigner.getAddress()
     const signerOwnerAddr = toTokenOwnerAddress(signerAddr)
-    const mintInfo = await mint(
+    const mintInfo = await mintClosedMinterToken(
       testSigner,
       testProvider,
       this.getCat20MinterUtxo(),
       this.deployInfo.hasAdmin,
       this.deployInfo.adminScriptHash,
-      this.deployInfo.genesisTx.extractTransaction().id,
+      this.deployInfo.genesisTxid,
       signerOwnerAddr,
       amount,
       signerAddr,
       await testProvider.getFeeRate()
     )
-    verifyTx(mintInfo.mintTx, expect)
-    this.minterTx = mintInfo.mintTx
+    verifyTx(mintInfo.mintPsbt, expect)
+    this.minterPsbt = mintInfo.mintPsbt
     const transferInfo = await singleSend(
       testSigner,
       testProvider,
@@ -119,7 +133,6 @@ export async function createCat20(
   symbol: string
 ): Promise<TestCat20> {
   const metadata = formatMetadata({
-    tag: ConstantsLib.OPCAT_METADATA_TAG,
     name: `cat20_${symbol}`,
     symbol: `cat20_${symbol}`,
     decimals: 2n,

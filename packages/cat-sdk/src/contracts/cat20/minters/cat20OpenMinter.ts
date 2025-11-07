@@ -13,7 +13,8 @@ import {
   UInt64,
   sha256,
   BacktraceInfo,
-  TxHashPreimageUtils
+  TxHashPreimageUtils,
+  tags
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
   CAT20State,
@@ -26,9 +27,18 @@ import { ConstantsLib } from '../../constants'
 import { OwnerUtils } from '../../utils/ownerUtils'
 import { CAT20StateLib } from '../cat20StateLib'
 import { CAT20OpenMinterMetadata } from './cat20OpenMinterMetadata'
-
+import { CatTags } from '../../catTags'
 const MAX_NEXT_MINTERS = 2
 
+/**
+ * The CAT20 open minter contract
+ * @category Contract
+ * @category CAT20
+ * @notice Premine tokens are controlled by preminer's signature
+ * @notice Preminer can mint to any address during premine phase
+ * @onchain
+ */
+@tags([CatTags.CAT20_MINTER_TAG])
 export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
   @prop()
   genesisOutpoint: ByteString
@@ -83,33 +93,9 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
     tokenSatoshis: UInt64,
     // backtrace
     backtraceInfo: BacktraceInfo,
-    metadata: OpenMinterCAT20Meta
   ) {
     // back to genesis
     this.backtraceToOutpoint(backtraceInfo, this.genesisOutpoint)
-
-    // check metadata fields are consistent with props
-    if (!this.state.hasMintedBefore) {
-      assert(metadata.premine == this.premine)
-      assert(metadata.preminerAddr == this.preminerAddr)
-      assert(metadata.limit == this.limit)
-
-      assert(this.premine == this.premineCount * this.limit)
-      assert(metadata.max == this.maxCount * this.limit)
-
-      const metadataHash = CAT20OpenMinterMetadata.stateHash(metadata)
-      const metadataOutput = TxHashPreimageUtils.getOutputByteString(backtraceInfo.prevPrevTxPreimage, backtraceInfo.prevTxInput.prevOutputIndex)
-      assert(
-        metadataHash ==
-        slice(
-          metadataOutput,
-          OUTPUT_DATA_HASH_INDEX,
-          OUTPUT_DATA_HASH_INDEX + OUTPUT_DATA_HASH_LEN
-        )
-      )
-    }
-
-    // build curTx outputs
 
     // split to multiple next openMinters
     let minterOutputs = toByteString('')
@@ -122,7 +108,6 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
           this.ctx.spentScriptHash,
           minterSatoshis,
           sha256(CAT20OpenMinter.serializeState({
-            tag: ConstantsLib.OPCAT_MINTER_TAG,
             tokenScriptHash: this.state.tokenScriptHash,
             hasMintedBefore: true,
             remainingCount,
@@ -140,30 +125,30 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
     )
     if (!this.state.hasMintedBefore && this.premine > 0n) {
       // needs to premine
-      assert(this.maxCount == this.state.remainingCount + this.premineCount)
+      assert(this.maxCount == this.state.remainingCount + this.premineCount, 'maxCount is not equal to remainingCount + premineCount')
       // preminer checksig
       OwnerUtils.checkUserOwner(preminerPubKey, this.preminerAddr)
-      assert(this.checkSig(preminerSig, preminerPubKey))
+      assert(this.checkSig(preminerSig, preminerPubKey), 'preminer sig is invalid')
       // premine dees not affect curState.remainingCount
-      assert(sumNextRemainingCount == this.state.remainingCount)
-      assert(tokenMint.amount == this.premine)
+      assert(sumNextRemainingCount == this.state.remainingCount, 'sumNextRemainingCount is not equal to remainingCount')
+      assert(tokenMint.amount == this.premine, 'token amount is not equal to premine')
     } else {
       // general mint
       if (!this.state.hasMintedBefore) {
         // this is the first time mint
-        assert(this.maxCount == this.state.remainingCount)
-        assert(this.premineCount == 0n)
-        assert(this.premine == 0n)
+        assert(this.maxCount == this.state.remainingCount, 'maxCount is not equal to remainingCount')
+        assert(this.premineCount == 0n, 'premineCount is not equal to 0')
+        assert(this.premine == 0n, 'premine is not equal to 0')
       }
-      assert(sumNextRemainingCount == this.state.remainingCount - 1n)
-      assert(tokenMint.amount == this.limit)
+      assert(sumNextRemainingCount == this.state.remainingCount - 1n, 'sumNextRemainingCount is not equal to remainingCount - 1')
+      assert(tokenMint.amount == this.limit, 'token amount is not equal to limit')
     }
 
     // change output
     const changeOutput = this.buildChangeOutput()
 
     // confine curTx outputs
-    assert(this.checkOutputs(minterOutputs + tokenOutput + changeOutput))
+    assert(this.checkOutputs(minterOutputs + tokenOutput + changeOutput), 'outputs are invalid')
   }
 
   public checkProps() {

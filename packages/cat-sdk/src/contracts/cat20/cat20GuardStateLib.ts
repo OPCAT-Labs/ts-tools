@@ -2,7 +2,12 @@ import { StateLib, method, assert, ByteString, len, SHA256_HASH_LEN, FixedArray,
 import { CAT20GuardConstState } from "./types";
 import { ConstantsLib, GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants";
 
-
+/**
+ * The CAT20 guard state library
+ * @category Contract
+ * @category CAT20
+ * @onchain
+ */
 export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
     
   @method()
@@ -59,5 +64,4 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
       tokenScriptIndexes: fill(-1n, TX_INPUT_COUNT_MAX),
     }
   }
-
 }
