@@ -127,7 +127,7 @@ export class TokenService {
     limit: number | null = null,
   ): Promise<{
     tokens: any[];
-    totalCount: number;
+    total: number;
     trackerBlockHeight: number;
   }> {
     const finalOffset = offset || 0;
@@ -167,7 +167,7 @@ export class TokenService {
         ];
       }
 
-      const [tokens, totalCount] = await this.tokenInfoRepository.findAndCount({
+      const [tokens, total] = await this.tokenInfoRepository.findAndCount({
         select: [
           'tokenId',
           'name',
@@ -185,7 +185,7 @@ export class TokenService {
 
       const result = {
         tokens: tokens.map(token => this.renderTokenInfo(token)),
-        totalCount,
+        total: total,
         trackerBlockHeight: lastProcessedHeight
       };
 
@@ -196,7 +196,7 @@ export class TokenService {
       console.error('Error in searchTokens:', error);
       return {
         tokens: [],
-        totalCount: 0,
+        total: 0,
         trackerBlockHeight: lastProcessedHeight
       };
     }
@@ -568,7 +568,7 @@ export class TokenService {
       nftAmount?: number;
       percentage: number;
     }[];
-    totalCount: number;
+    total: number;
     trackerBlockHeight: number;
   }> {
 
@@ -587,7 +587,7 @@ export class TokenService {
     if (!tokenInfo?.tokenScriptHash || !lastProcessedHeight) {
       return {
         holders: [],
-        totalCount: 0,
+        total: 0,
         trackerBlockHeight: lastProcessedHeight
       };
     }
@@ -612,7 +612,7 @@ export class TokenService {
 
       const result = {
         holders: holdersWithPercentage,
-        totalCount: holdersData.totalCount,
+        total: holdersData.total,
         trackerBlockHeight: lastProcessedHeight
       };
 
@@ -623,7 +623,7 @@ export class TokenService {
       console.error('Error in getTokenHolders:', error);
       return {
         holders: [],
-        totalCount: 0,
+        total: 0,
         trackerBlockHeight: lastProcessedHeight
       };
     }
@@ -641,7 +641,7 @@ export class TokenService {
       tokenAmount?: string;
       nftAmount?: number;
     }>;
-    totalCount: number;
+    total: number;
   }> {
     try {
       let unionQuery: string;
@@ -698,7 +698,7 @@ export class TokenService {
                     `;
       }
       const countQuery = `
-                          SELECT COUNT(DISTINCT combined.ownerPubKeyHash) as totalCount
+                          SELECT COUNT(DISTINCT combined.ownerPubKeyHash) as total
                           FROM (${unionQuery}) as combined
                         `;
 
@@ -718,7 +718,7 @@ export class TokenService {
             : { nftAmount: parseInt(holder.nftamount || '0') }
           )
         })),
-        totalCount: parseInt(countResult[0]?.totalcount || '0')
+        total: parseInt(countResult[0]?.total || '0')
       };
     } catch (error) {
       console.error('Error querying holders from both tables:', error);

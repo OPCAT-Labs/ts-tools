@@ -54,3 +54,5 @@ compiler
 *.tar.gz
 
 tool.js
+
+.history/
