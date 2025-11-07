@@ -20,7 +20,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Validate API credentials
         run: |
@@ -59,7 +59,20 @@ jobs:
         run: |
           set -euo pipefail
 
-          if ! gh pr diff ${{ github.event.pull_request.number }} > pr.diff; then
+          # Fetch PR branch and get diff excluding lock files
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          BASE_REF=${{ github.event.pull_request.base.ref }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+
+          # Fetch the base branch and PR head to ensure we have the merge base
+          echo "Fetching base branch: ${BASE_REF}"
+          git fetch origin ${BASE_REF}
+
+          echo "Fetching PR head: ${HEAD_SHA}"
+          git fetch origin pull/${PR_NUMBER}/head:pr-${PR_NUMBER}
+
+          # Get diff excluding lock files (using two-dot syntax for direct comparison)
+          if ! git diff origin/${BASE_REF}...${HEAD_SHA} -- ':!package-lock.json' ':!yarn.lock' ':!pnpm-lock.yaml' > pr.diff; then
             echo "::error::Failed to get PR diff"
             exit 1
           fi
@@ -68,8 +81,8 @@ jobs:
           echo "diff-size=$DIFF_LINES" >> $GITHUB_OUTPUT
 
           # Check diff size and warn about costs
-          if [[ $DIFF_LINES -gt 10000 ]]; then
-            echo "::error::PR too large for automated review (>10k lines: $DIFF_LINES lines)"
+          if [[ $DIFF_LINES -gt 50000 ]]; then
+            echo "::error::PR too large for automated review (>50k lines: $DIFF_LINES lines)"
             exit 1
           elif [[ $DIFF_LINES -gt 5000 ]]; then
             echo "::warning::Large PR detected ($DIFF_LINES lines). Estimated cost: \$2-5"
