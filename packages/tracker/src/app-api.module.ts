@@ -9,6 +9,7 @@ import { HealthCheckModule } from './routes/healthCheck/healthCheck.module';
 import { TokenModule } from './routes/token/token.module';
 import { MinterModule } from './routes/minter/minter.module';
 import { AddressModule } from './routes/address/address.module';
+import { CollectionModule } from './routes/collection/collection.module';
 // serivces
 import { CommonModule } from './services/common/common.module';
 import { TxModule } from './routes/tx/tx.module';
@@ -29,11 +30,12 @@ require('dotenv').config();
     TokenModule,
     MinterModule,
     AddressModule,
-    TxModule,
+    CollectionModule,
 
+    TxModule,
     CommonModule,
   ],
   controllers: [],
   providers: [],
 })
-export class AppApiModule {}
+export class AppApiModule { }

@@ -32,7 +32,6 @@ describe('Test the feature `send` for `Cat20`', () => {
     tokenChangeAddr = toTokenOwnerAddress(address)
 
     metadata = formatMetadata({
-      tag: ConstantsLib.OPCAT_METADATA_TAG,
       name: 'c',
       symbol: 'C',
       decimals: 2n,
@@ -122,7 +121,6 @@ describe('Test the feature `send` for `Cat20`', () => {
     ).to.eq(cat20Generator.deployInfo.tokenScriptHash)
     expect(sendPsbt.getUtxo(toReceiverOutputIndex).data).to.eq(
       CAT20.serializeState({
-        tag: ConstantsLib.OPCAT_CAT20_TAG,
         amount: toReceiverAmount,
         ownerAddr: tokenReceiverAddr,
       })
@@ -138,7 +136,6 @@ describe('Test the feature `send` for `Cat20`', () => {
       ).to.eq(cat20Generator.deployInfo.tokenScriptHash)
       expect(sendPsbt.getUtxo(tokenChangeOutputIndex).data).to.eq(
         CAT20.serializeState({
-          tag: ConstantsLib.OPCAT_CAT20_TAG,
           amount: toChangeAmount,
           ownerAddr: tokenChangeAddr,
         })

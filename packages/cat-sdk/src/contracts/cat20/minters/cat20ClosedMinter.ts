@@ -1,9 +1,16 @@
-import { SmartContract, method, prop, assert, ByteString, toByteString, Sig, PubKey, BacktraceInfo, TxUtils, UInt64, len, SHA256_HASH_LEN } from '@opcat-labs/scrypt-ts-opcat'
+import { SmartContract, method, prop, assert, ByteString, toByteString, Sig, PubKey, BacktraceInfo, TxUtils, UInt64, len, SHA256_HASH_LEN, tags } from '@opcat-labs/scrypt-ts-opcat'
 
 import { CAT20State, CAT20ClosedMinterState } from '../types'
 import { OwnerUtils } from '../../utils/ownerUtils'
 import { CAT20StateLib } from '../cat20StateLib'
-
+import { CatTags } from '../../catTags'
+/**
+ * The CAT20 closed minter contract
+ * @category Contract
+ * @category CAT20
+ * @onchain
+ */
+@tags([CatTags.CAT20_MINTER_TAG])
 export class CAT20ClosedMinter extends SmartContract<CAT20ClosedMinterState> {
   @prop()
   issuerAddress: ByteString

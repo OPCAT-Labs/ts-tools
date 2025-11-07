@@ -14,6 +14,12 @@ import {
   PUBKEY_BYTE_LEN,
 } from '../constants'
 
+/**
+ * The owner utilities for the CAT contracts
+ * @category Contract
+ * @category Utils
+ * @onchain
+ */
 export class OwnerUtils extends SmartContractLib {
   /**
    * Convert publicKeyHash to P2PKH locking script
@@ -44,7 +50,7 @@ export class OwnerUtils extends SmartContractLib {
    */
   @method()
   static checkUserOwner(pubKey: ByteString, ownerAddr: ByteString): void {
-    assert(OwnerUtils.toLockingScript(pubKey) == ownerAddr)
+    assert(OwnerUtils.toLockingScript(pubKey) == ownerAddr, 'owner address is not match to the pubkey')
   }
 
   @method()
@@ -57,7 +63,7 @@ export class OwnerUtils extends SmartContractLib {
     const addrLen = len(ownerAddr)
     assert(
       addrLen == OWNER_ADDR_P2PKH_BYTE_LEN || // P2PKH locking script
-        addrLen == OWNER_ADDR_CONTRACT_HASH_BYTE_LEN // contract script hash
+      addrLen == OWNER_ADDR_CONTRACT_HASH_BYTE_LEN // contract script hash
     )
   }
 

@@ -1,11 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { TokenService } from '../token/token.service';
-import { TxInput, payments, Transaction, script } from 'bitcoinjs-lib';
-import { CachedContent, TaprootPayment, TokenTypeScope } from '../../common/types';
+import { CachedContent, TokenTypeScope } from '../../common/types';
 import { CommonService } from '../../services/common/common.service';
 import { Constants } from '../../common/constants';
-import { parseEnvelope } from '../../common/utils';
 import { LRUCache } from 'lru-cache';
+import { Transaction } from '@opcat-labs/opcat';
+import { toHex } from '@opcat-labs/scrypt-ts-opcat';
+import { ContractPeripheral, MetadataSerializer } from '@opcat-labs/cat-sdk';
 
 @Injectable()
 export class TxService {
@@ -18,45 +19,65 @@ export class TxService {
   constructor(
     private readonly commonService: CommonService,
     private readonly tokenService: TokenService,
-  ) {}
+  ) { }
 
+  /**
+   * todo: fix it to opcat layer tx parsing
+   * @param txid 
+   * @returns 
+   */
   async parseTransferTxTokenOutputs(txid: string) {
     const raw = await this.commonService.getRawTx(txid);
-    const tx = Transaction.fromHex(raw);
-    const payIns = tx.ins.map((input) => this.parseTaprootInput(input));
-    const payOuts = tx.outs.map((output) => this.commonService.parseTaprootOutput(output));
-    const guardInputs = this.commonService.searchGuardInputs(payIns);
+    const tx = new Transaction(raw);
+    await this.commonService.txAddPrevouts(tx);
+    const guardInputs = this.commonService.searchGuardInputs(tx.inputs);
     if (guardInputs.length === 0) {
       throw new Error('not a token transfer tx');
     }
     const outputs = [];
     for (const guardInput of guardInputs) {
-      const tokenOutputs = this.commonService.parseTransferTxTokenOutputs(guardInput);
-      if (tokenOutputs.size > 0) {
-        const isFungible = this.commonService.isFungibleGuard(guardInput);
+      const isFungible = this.commonService.isFungibleGuard(guardInput);
+
+      if (isFungible) {
+        const tokenOutputs = this.commonService.parseTransferTxCAT20Outputs(guardInput);
         outputs.push(
           ...(await Promise.all(
             [...tokenOutputs.keys()].map(async (i) => {
-              const tokenInfo = await this.tokenService.getTokenInfoByTokenPubKey(
-                payOuts[i].pubkey.toString('hex'),
-                isFungible ? TokenTypeScope.Fungible : TokenTypeScope.NonFungible,
+              const outputScript = tx.outputs[i].script.toHex();
+              const tokenInfo = await this.tokenService.getTokenInfoByTokenIdOrTokenScriptHash(
+                ContractPeripheral.scriptHash(outputScript),
+                TokenTypeScope.Fungible,
               );
               const tokenOutput = tokenOutputs.get(i);
               return Object.assign(
-                {},
                 {
                   outputIndex: i,
                   ownerPubKeyHash: tokenOutput.ownerPubKeyHash,
+                  tokenAmount: tokenOutput.tokenAmount.toString(),
+                  tokenId: tokenInfo.tokenId,
                 },
-                isFungible
-                  ? {
-                      tokenAmount: tokenOutput.tokenAmount.toString(),
-                      tokenId: tokenInfo.tokenId,
-                    }
-                  : {
-                      localId: tokenOutput.tokenAmount.toString(),
-                      collectionId: tokenInfo.tokenId,
-                    },
+              );
+            }),
+          )),
+        );
+      } else {
+        const tokenOutputs = this.commonService.parseTransferTxCAT721Outputs(guardInput);
+        outputs.push(
+          ...(await Promise.all(
+            [...tokenOutputs.keys()].map(async (i) => {
+              const outputScript = tx.outputs[i].script.toHex();
+              const tokenInfo = await this.tokenService.getTokenInfoByTokenIdOrTokenScriptHash(
+                ContractPeripheral.scriptHash(outputScript),
+                TokenTypeScope.NonFungible,
+              );
+              const tokenOutput = tokenOutputs.get(i);
+              return Object.assign(
+                {
+                  outputIndex: i,
+                  ownerPubKeyHash: tokenOutput.ownerPubKeyHash,
+                  localId: tokenOutput.localId.toString(),
+                  collectionId: tokenInfo.tokenId,
+                },
               );
             }),
           )),
@@ -66,44 +87,33 @@ export class TxService {
     return { outputs };
   }
 
-  /**
-   * Parse taproot input from tx input, returns null if failed
-   */
-  private parseTaprootInput(input: TxInput): TaprootPayment | null {
-    try {
-      const taproot = payments.p2tr({ witness: input.witness });
-      return {
-        pubkey: taproot.pubkey ? Buffer.from(taproot.pubkey) : undefined,
-        redeemScript: taproot?.redeem?.output ? Buffer.from(taproot.redeem.output) : undefined,
-        witness: input.witness.map((w) => Buffer.from(w)),
-      };
-    } catch {
-      return null;
-    }
-  }
 
-  decodeDelegate(delegate: Buffer): { txId: string; inputIndex: number } | undefined {
+  /**
+   * Decode delegate, note: unlike the ordinals spec, the delegate info is not stored in the witness, but stored in the tx output.data
+   * @param delegate 
+   * @returns 
+   */
+  decodeDelegate(delegate: Buffer): { txId: string; outputIndex: number } | undefined {
     try {
       const buf = Buffer.concat([delegate, Buffer.from([0x00, 0x00, 0x00, 0x00])]);
       const txId = buf.subarray(0, 32).reverse().toString('hex');
-      const inputIndex = buf.subarray(32, 36).readUInt32LE();
-      return { txId, inputIndex };
+      const outputIndex = buf.subarray(32, 36).readUInt32LE();
+      return { txId, outputIndex };
     } catch (e) {
       this.logger.error(`decode delegate error: ${e.message}`);
     }
     return undefined;
   }
 
-  public async getDelegateContent(delegate: Buffer): Promise<CachedContent | null> {
-    const { txId, inputIndex } = this.decodeDelegate(delegate) || {};
-    const key = `${txId}_${inputIndex}`;
+  public async getDelegateContent(delegate: string): Promise<CachedContent | null> {
+    const { txId, outputIndex } = this.decodeDelegate(Buffer.from(delegate, 'hex')) || {};
+    const key = `${txId}_${outputIndex}`;
     let cached = TxService.contentCache.get(key);
     if (!cached) {
       const raw = await this.commonService.getRawTx(txId, true);
-      const tx = Transaction.fromHex(raw['hex']);
-      if (inputIndex < tx.ins.length) {
-        const payIn = this.parseTaprootInput(tx.ins[inputIndex]);
-        const content = await this.parseContentEnvelope(payIn?.redeemScript);
+      const tx = new Transaction(raw['hex']);
+      if (outputIndex < tx.outputs.length) {
+        const content = await this.parseContentEnvelope(toHex(tx.outputs[outputIndex].data));
         if (content) {
           cached = content;
           if (Number(raw['confirmations']) >= Constants.CACHE_AFTER_N_BLOCKS) {
@@ -115,18 +125,17 @@ export class TxService {
     return cached;
   }
 
-  async parseContentEnvelope(redeemScript: Buffer): Promise<CachedContent | null> {
+  async parseContentEnvelope(data: string): Promise<CachedContent | null> {
     try {
-      const asm = script.toASM(redeemScript || Buffer.alloc(0));
-      const match = asm.match(Constants.CONTENT_ENVELOPE);
-      if (match && match[1]) {
-        const data = parseEnvelope(match[1]);
-        if (data && data.content) {
-          if (data.content.type === Constants.CONTENT_TYPE_CAT721_DELEGATE_V1) {
-            return this.getDelegateContent(data.content.raw);
-          }
-          return data.content;
-        }
+      const info = MetadataSerializer.deserialize(data);
+      const isDelegate = info?.info.delegate?.length > 0 && !info?.info.contentBody;
+      if (isDelegate) {
+        return this.getDelegateContent(info.info.delegate)
+      }
+      return {
+        type: MetadataSerializer.decodeContenType(info?.info.contentType),
+        encoding: info?.info.contentEncoding,
+        raw: Buffer.from(info?.info.contentBody, 'hex'),
       }
     } catch (e) {
       this.logger.error(`parse content envelope error, ${e.message}`);

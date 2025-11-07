@@ -163,10 +163,10 @@ export class BlockService implements OnModuleInit {
   private async processBlock(blockHeader: BlockHeader) {
     const _tsGetRawBlock = Date.now();
     const rawBlock = await this.getRawBlock(blockHeader.hash);
-    this.logger.debug(`get raw block cost ${Math.ceil(Date.now() - _tsGetRawBlock)} ms`);
+    this.logger.debug(`get raw block(${blockHeader.height}) cost ${Math.ceil(Date.now() - _tsGetRawBlock)} ms`);
     const _tsParseBlock = Date.now();
     const block = new Block(Buffer.from(rawBlock, 'hex'));
-    this.logger.debug(`parse block cost ${Math.ceil(Date.now() - _tsParseBlock)} ms`);
+    this.logger.debug(`parse block(${blockHeader.height}) cost ${Math.ceil(Date.now() - _tsParseBlock)} ms`);
     if (block.transactions.length === 0) {
       throw new Error('no txs in block');
     }
@@ -187,7 +187,7 @@ export class BlockService implements OnModuleInit {
       ...blockHeader,
       previousHash: blockHeader.previousblockhash,
     });
-    this.logger.debug(`save block cost ${Math.ceil(Date.now() - _tsSaveBlock)} ms`);
+    this.logger.debug(`save block(${blockHeader.height}) cost ${Math.ceil(Date.now() - _tsSaveBlock)} ms`);
 
     let _percentage = '';
     const latestBlockHeight = (await this.commonService.getBlockchainInfo())?.headers;

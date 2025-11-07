@@ -246,7 +246,7 @@ Object.defineProperty(Script.prototype, 'length', {
 /**
  * Converts a script chunk to a string representation based on the given type.
  * Handles both data chunks and opcode chunks, with special formatting for ASM output.
- * 
+ *
  * @param {Object} chunk - The script chunk to convert, containing opcodenum and optional buf/len
  * @param {string} type - The output type ('asm' or other)
  * @returns {string} The formatted string representation of the chunk
@@ -356,7 +356,6 @@ Script.prototype.inspect = function () {
 
 // script classification methods
 
-
 /**
  * Checks if the script is a standard public key hash output script (P2PKH).
  * @returns {boolean} True if the script matches the P2PKH pattern:
@@ -377,7 +376,6 @@ Script.prototype.isPublicKeyHashOut = function () {
     this.chunks[4].opcodenum === Opcode.OP_CHECKSIG
   );
 };
-
 
 /**
  * Checks if the script contains a valid public key hash.
@@ -427,7 +425,6 @@ Script.prototype.getPublicKeyHash = function () {
   return this.chunks[2].buf;
 };
 
-
 /**
  * Checks if the script is a standard public key output script.
  * @returns {boolean} True if the script matches the standard public key output format:
@@ -457,7 +454,6 @@ Script.prototype.isPublicKeyOut = function () {
   return false;
 };
 
-
 /**
  * Checks if the script contains a valid public key signature.
  * @returns {boolean} True if the script has exactly one chunk that starts with 0x30 (DER signature marker), false otherwise.
@@ -471,7 +467,6 @@ Script.prototype.isPublicKeyIn = function () {
   }
   return false;
 };
-
 
 /**
  * Checks if the script is a multisig output script.
@@ -494,7 +489,6 @@ Script.prototype.isMultisigOut = function () {
   );
 };
 
-
 /**
  * Decodes a multisig output script into its components.
  * @returns {Object} An object containing:
@@ -505,17 +499,16 @@ Script.prototype.isMultisigOut = function () {
 Script.prototype.decodeMultisigOut = function () {
   $.checkState(this.isMultisigOut(), "Can't decode a non-multisig output script");
   const OP_INT_BASE = Opcode.OP_RESERVED; // OP_1 - 1
-  const m = this.chunks[0].opcodenum - OP_INT_BASE
-  const n = (this.chunks[0][this.chunks[0].length - 2]) - OP_INT_BASE;
+  const m = this.chunks[0].opcodenum - OP_INT_BASE;
+  const n = this.chunks[0][this.chunks[0].length - 2] - OP_INT_BASE;
   const pubkeys = this.chunks.slice(1, -2).map((chunk) => chunk.buf);
 
   return {
     m,
     n,
-    pubkeys
+    pubkeys,
   };
 };
-
 
 /**
  * Checks if the script is a multisig input script.
@@ -530,7 +523,6 @@ Script.prototype.isMultisigIn = function () {
     })
   );
 };
-
 
 /**
  * Checks if the script is a data-only output script (OP_RETURN followed by push-only data).
@@ -587,7 +579,6 @@ Script.prototype.getData = function () {
   throw new Error('Unrecognized script type to get data from');
 };
 
-
 /**
  * Checks if the script consists only of push operations (OP_0 to OP_16) or data push operations (OP_PUSHDATA1/2/4).
  * @returns {boolean} True if all chunks are push operations, false otherwise.
@@ -604,7 +595,7 @@ Script.prototype.isPushOnly = function () {
 };
 
 /**
- * Registry for script types. 
+ * Registry for script types.
  * @namespace
  */
 Script.types = {};
@@ -662,7 +653,6 @@ Script.types.DATA_OUT = 'Data push';
  * @type {string}
  */
 Script.types.SAFE_DATA_OUT = 'Safe data push';
-
 
 /**
  * @returns {object} The Script type if it is a known form,
@@ -737,7 +727,6 @@ Script.prototype.prepend = function (obj) {
   return this;
 };
 
-
 /**
  * Compares this script with another script for equality.
  * @param {Script} script - The script to compare with.
@@ -757,7 +746,6 @@ Script.prototype.equals = function (script) {
   }
   return true;
 };
-
 
 /**
  * Adds a script element to the end of the script.
@@ -938,7 +926,6 @@ Script.prototype.subScript = function (n) {
   return this;
 };
 
-
 /**
  * Builds a multisig output script from given public keys and threshold.
  * @param {Array} publicKeys - Array of public keys to include in the multisig
@@ -999,11 +986,10 @@ Script.buildMultisigIn = function (pubkeys, threshold, signatures, opts) {
   return s;
 };
 
-
 /**
  * Builds a standard P2PKH (Pay-to-Public-Key-Hash) script for a given recipient.
  * @param {PublicKey|Address|string} to - Recipient's public key, address, or address string
- * @returns {Script} A P2PKH script with the format: OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
+ * @returns {Script} A P2PKH script with the format: OP_DUP OP_HASH160 \<pubKeyHash\> OP_EQUALVERIFY OP_CHECKSIG
  * @throws {Error} If 'to' argument is undefined or invalid type
  */
 Script.buildPublicKeyHashOut = function (to) {
@@ -1023,7 +1009,6 @@ Script.buildPublicKeyHashOut = function (to) {
   s._network = to.network;
   return s;
 };
-
 
 /**
  * Builds a standard P2PK (Pay-to-Public-Key) script output.
@@ -1077,7 +1062,6 @@ Script.buildSafeDataOut = function (data, encoding) {
   return s1;
 };
 
-
 /**
  * Builds a scriptSig (a script for an input) that signs a public key output script.
  *
@@ -1115,7 +1099,6 @@ Script.buildPublicKeyHashIn = function (publicKey, signature, sigtype) {
   return script;
 };
 
-
 /**
  * Creates and returns an empty Script instance.
  * @returns {Script} A new empty Script object.
@@ -1123,7 +1106,6 @@ Script.buildPublicKeyHashIn = function (publicKey, signature, sigtype) {
 Script.empty = function () {
   return new Script();
 };
-
 
 /**
  * Creates a Script from an address.
@@ -1138,7 +1120,6 @@ Script.fromAddress = function (address) {
   }
   throw new errors.Script.UnrecognizedAddress(address);
 };
-
 
 /**
  * Gets address information for the script.
@@ -1160,7 +1141,6 @@ Script.prototype.getAddressInfo = function () {
     return info;
   }
 };
-
 
 /**
  * Gets the output address information from the script.
@@ -1195,7 +1175,6 @@ Script.prototype._getInputAddressInfo = function () {
   }
   return info;
 };
-
 
 /**
  * Converts the script to an Address object for the specified network.
@@ -1239,13 +1218,12 @@ Script.prototype.findAndDelete = function (script) {
   return this;
 };
 
-
 /**
  * Checks if a script chunk uses the minimal push operation possible.
- * 
+ *
  * @param {number} i - Index of the chunk to check
  * @returns {boolean} True if the chunk uses minimal push operation, false otherwise
- * 
+ *
  * The function verifies if the chunk could have been represented with:
  * - OP_0 for empty buffer
  * - OP_1 to OP_16 for single-byte values 1-16
@@ -1298,7 +1276,6 @@ Script.prototype._decodeOP_N = function (opcode) {
     throw new Error('Invalid opcode: ' + JSON.stringify(opcode));
   }
 };
-
 
 /**
  * Counts the number of signature operations in the script.

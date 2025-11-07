@@ -32,11 +32,12 @@
     "compile": "rimraf artifacts && scrypt-cli-opcat compile",
     "test": "npm run test:local",
     "test:local": "mocha",
-    "test:testnet": "cross-env NETWORK=opcat-testnet mocha --no-timeouts",
+    "test:testnet": "cross-env NETWORK=opcat-testnet mocha --no-timeouts --bail",
     "genprivkey": "npx ts-node tests/utils/privateKey.ts",
     "lint": "eslint ./src --fix && prettier --write --ignore-unknown \"**/*\"",
     "lint-check": "eslint ./src && prettier --check --ignore-unknown \"**/*\"",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "doc": "typedoc --readme none --plugin typedoc-plugin-markdown"
   },
   "lint-staged": {
     "**/*": [
@@ -49,7 +50,9 @@
   "dependencies": {
     "@opcat-labs/opcat": "1.0.3",
     "@opcat-labs/scrypt-ts-opcat": "1.0.5",
-    "dotenv": "^16.0.3"
+    "cbor2": "^2.0.1",
+    "dotenv": "^16.0.3",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@opcat-labs/cli-opcat": "1.0.7",

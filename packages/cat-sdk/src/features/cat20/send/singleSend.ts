@@ -34,17 +34,19 @@ import { Transaction } from '@opcat-labs/opcat'
 import { SPEND_TYPE_USER_SPEND } from '../../../contracts'
 
 /**
- * Send CAT20 tokens to the list of recipients.
- * @param signer a signer, such as {@link DefaultSigner} or {@link WalletSigner}
- * @param provider a  {@link UtxoProvider} & {@link ChainProvider}
- * @param minterScriptHash the minter script hash of the CAT20 token
+ * Sends a CAT20 token using `CAT20Guard` contract
+ * @category Feature
+ * @param signer the signer for the sender
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param minterScriptHash the script hash of the minter contract
+ * @param inputTokenUtxos the UTXOs of the input tokens
+ * @param receivers the receivers of the tokens and the amounts
+ * @param tokenChangeAddress the address for the change output
+ * @param feeRate the fee rate for the transaction
+ * @param hasAdmin whether the token has admin
  * @param adminScriptHash the admin script hash of the CAT20 token
- * @param inputTokenUtxos CAT20 token utxos to be sent
- * @param receivers the recipient's address and token amount
- * @param tokenChangeAddress the address to receive change CAT20 tokens
- * @param feeRate the fee rate for constructing transactions
- * @param sendChangeData change utxo data
- * @returns the guard transaction, the send transaction and the CAT20 token outputs
+ * @param sendChangeData the change data for the transaction
+ * @returns the PSBTs for the guard and send transactions, the UTXOs of the new tokens, and the index of the change token output
  */
 export async function singleSend(
   signer: Signer,
@@ -70,20 +72,17 @@ export async function singleSend(
 }> {
   const pubkey = await signer.getPublicKey()
   const feeChangeAddress = await signer.getAddress()
-  const feeUtxos = await provider.getUtxos(feeChangeAddress)
-  const { guardPsbt, outputTokenStates, changeTokenOutputIndex, guard } =
-    await singleSendStep1(
-      provider,
-      feeUtxos,
-      inputTokenUtxos,
-      receivers,
-      feeChangeAddress,
-      tokenChangeAddress,
-      feeRate
-    )
-  const signedGuardPsbt = ExtPsbt.fromHex(
-    await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions())
-  )
+  let feeUtxos = await provider.getUtxos(feeChangeAddress)
+  const { guardPsbt, outputTokenStates, changeTokenOutputIndex, guard } = await singleSendStep1(
+    provider,
+    feeUtxos,
+    inputTokenUtxos,
+    receivers,
+    feeChangeAddress,
+    tokenChangeAddress,
+    feeRate
+  );
+  const signedGuardPsbt = ExtPsbt.fromHex(await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions()))
   guardPsbt.combine(signedGuardPsbt).finalizeAllInputs()
   const { sendPsbt } = await singleSendStep2(
     provider,
@@ -119,6 +118,18 @@ export async function singleSend(
   }
 }
 
+/**
+ * Helper function for singleSend, create the send psbt but do not sign it
+ * @category Feature
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param feeUtxos the UTXOs for the fee
+ * @param inputTokenUtxos the UTXOs of the input tokens
+ * @param receivers the receivers of the tokens and the amounts
+ * @param feeChangeAddress the address for the change output
+ * @param tokenChangeAddress the address for the change output
+ * @param feeRate the fee rate for the transaction
+ * @returns the guard and the output token states
+ */
 export async function singleSendStep1(
   provider: UtxoProvider & ChainProvider,
   feeUtxos: UTXO[],
@@ -185,14 +196,26 @@ export async function singleSendStep1(
     .change(feeChangeAddress, feeRate)
     .seal()
 
-  return {
-    guard,
-    guardPsbt,
-    outputTokenStates: outputTokens,
-    changeTokenOutputIndex,
-  }
+  return { guard, guardPsbt, outputTokenStates: outputTokens, changeTokenOutputIndex }
 }
 
+/**
+ * Helper function for singleSend, add the token inputs and outputs to the psbt
+ * @category Feature
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param minterScriptHash the script hash of the minter contract
+ * @param hasAdmin whether the token has admin
+ * @param adminScriptHash the admin script hash
+ * @param guard the guard contract
+ * @param finalizedGuardPsbt the finalized guard psbt
+ * @param inputTokenUtxos the UTXOs of the input tokens
+ * @param outputTokenStates the output token states
+ * @param feeChangeAddress the address for the change output
+ * @param publicKey the public key of the sender
+ * @param feeRate the fee rate for the transaction
+ * @param sendChangeData the change data for the transaction
+ * @returns the send psbt
+ */
 export async function singleSendStep2(
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
@@ -207,6 +230,7 @@ export async function singleSendStep2(
   feeRate: number,
   sendChangeData?: Buffer
 ) {
+
   const network = await provider.getNetwork()
   const guardPsbt = finalizedGuardPsbt
   const guardUtxo = guardPsbt.getUtxo(0)
@@ -244,11 +268,9 @@ export async function singleSendStep2(
   // add token inputs.
   for (let index = 0; index < inputTokens.length; index++) {
     sendPsbt.addContractInput(inputTokens[index], (cat20, tx) => {
-      const address = opcat.Script.fromHex(
-        inputTokenStates[index].ownerAddr
-      ).toAddress(fromSupportedNetwork(network))
+      const address = opcat.Script.fromHex(inputTokenStates[index].ownerAddr).toAddress(fromSupportedNetwork(network))
       const sig = tx.getSig(index, {
-        address: address.toString(),
+        address: address.toString()
       })
       return cat20.unlock(
         {
@@ -267,7 +289,8 @@ export async function singleSendStep2(
           backtraces[index].prevTxInput
         )
       )
-    })
+    },
+    )
   }
   // add token outputs
   for (const outputToken of outputTokenStates) {
@@ -284,9 +307,9 @@ export async function singleSendStep2(
   // add guard input
   guard.bindToUtxo(guardUtxo)
   sendPsbt.addContractInput(guard, (contract, tx) => {
-    const ownerAddrOrScript = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+    const ownerAddrOrScriptHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
     applyFixedArray(
-      ownerAddrOrScript,
+      ownerAddrOrScriptHashes,
       tx.txOutputs.map((output, index) => {
         return index < outputTokenStates.length
           ? outputTokenStates[index].ownerAddr
@@ -321,14 +344,15 @@ export async function singleSendStep2(
 
     contract.unlock(
       nextStateHashes,
-      ownerAddrOrScript,
+      ownerAddrOrScriptHashes,
       outputTokenAmts,
       tokenScriptIndexArray,
       outputSatoshis,
       inputCAT20States,
       BigInt(tx.txOutputs.length)
     )
-  })
+  }
+  )
   // add fee input
   sendPsbt.spendUTXO(feeUtxo)
   // add change output
@@ -339,6 +363,15 @@ export async function singleSendStep2(
   return { sendPsbt }
 }
 
+/**
+ * Helper function for singleSend, broadcast the transactions and add the new fee UTXO
+ * @category Feature
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param finalizedGuardPsbt the finalized guard psbt
+ * @param finalizedSendPsbt the finalized send psbt
+ * @param outputTokenStates the output token states
+ * @returns the new CAT20 UTXOs and the new fee UTXO
+ */
 export async function singleSendStep3(
   provider: UtxoProvider & ChainProvider,
   finalizedGuardPsbt: ExtPsbt,
@@ -353,9 +386,8 @@ export async function singleSendStep3(
   const newFeeUtxo = finalizedSendPsbt.getChangeUTXO()!
   provider.addNewUTXO(newFeeUtxo)
 
-  const newCAT20Utxos = outputTokenStates.map((_, index) =>
-    finalizedSendPsbt.getUtxo(index)
-  )
+
+  const newCAT20Utxos = outputTokenStates.map((_, index) => finalizedSendPsbt.getUtxo(index))
 
   return { newCAT20Utxos, newFeeUtxo }
 }

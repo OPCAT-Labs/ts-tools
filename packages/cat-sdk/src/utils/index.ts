@@ -63,6 +63,12 @@ export function proxySmartContract<T extends SmartContract>(
   return proxyClass(targetInstance, instancePublicMethods)
 }
 
+/**
+ * @category Utils
+ * @param txid the transaction id
+ * @param outputIndex the output index
+ * @returns the outpoint
+ */
 export function toTxOutpoint(txid: string, outputIndex: number): Outpoint {
   const outputBuf = Buffer.alloc(4, 0)
   outputBuf.writeUInt32LE(outputIndex)
@@ -77,83 +83,23 @@ export function outpoint2TxOutpoint(outpoint: string): Outpoint {
   return toTxOutpoint(txid, parseInt(vout))
 }
 
+/**
+ * @category Utils
+ * @param outpoint the outpoint, txid_vout
+ * @returns the outpoint in byte string
+ */
 export const outpoint2ByteString = function (outpoint: string) {
   const txOutpoint = outpoint2TxOutpoint(outpoint)
   return txOutpoint.txHash + txOutpoint.outputIndex
 }
 
-// export const getBackTraceInfo = function (
-//   prevTxHex: string,
-//   prevPrevTxHex: string,
-//   prevTxInputIndex: number
-// ): BacktraceInfo {
-//   const prevTx = new Transaction(prevTxHex)
-//   const prevPrevTx = new Transaction(prevPrevTxHex)
 
-//   const prevTxPreimage = txHashBufToObj(prevTx.toTxHashPreimage())
-//   const prevPrevTxPreimage = txHashBufToObj(prevPrevTx.toTxHashPreimage())
-
-//   let index = 0n
-//   // txinput prevout(36) + sha256(unlockingScript)(32) + sequence(4)
-//   const prevTxInput: TxIn = {
-//     prevTxHash: slice(
-//       prevTxPreimage.inputList[prevTxInputIndex],
-//       index,
-//       (index += 32n)
-//     ),
-//     prevOutputIndex: StdUtils.fromLEUnsigned(slice(prevTxPreimage.inputList[prevTxInputIndex], index, (index += 4n))),
-//     scriptHash: slice(
-//       prevTxPreimage.inputList[prevTxInputIndex],
-//       index,
-//       (index += 32n)
-//     ),
-//     sequence: StdUtils.fromLEUnsigned(slice(prevTxPreimage.inputList[prevTxInputIndex], index, (index += 4n))),
-//   }
-//   return {
-//     prevTxPreimage,
-//     prevTxInput,
-//     prevTxInputIndexVal: BigInt(prevTxInputIndex),
-//     prevPrevTxPreimage,
-//   }
-// }
-
-// export function satoshiToHex(value: bigint | number): ByteString {
-//   const bw = new opcat.encoding.BufferWriter()
-//   bw.writeUInt64LEBN(opcat.crypto.BN.fromNumber(Number(value)))
-//   return toByteString(toHex(bw.toBuffer()))
-// }
-
-// export function txHashBufToObj(buf: Buffer): TxHashPreimage {
-//   const br = new opcat.encoding.BufferReader(buf)
-//   const version = toHex(br.read(4))
-//   const inputCountVal = BigInt(br.readVarintNum())
-//   const inputList = fill(toByteString(''), TX_INPUT_COUNT_MAX)
-
-//   for (let i = 0; i < inputCountVal; i++) {
-//     // prevout + unlockingScriptHash + sequence
-//     inputList[i] = toHex(br.read(36 + 32 + 4))
-//   }
-
-//   const outputCountVal = BigInt(br.readVarintNum())
-//   const outputList = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
-//   for (let i = 0; i < outputCountVal; i++) {
-//     // satoshis + scriptHash + dataHash
-//     outputList[i] = toHex(br.read(8 + 32 + 32))
-//   }
-//   const locktime = toHex(br.read(4))
-
-//   checkState(br.eof(), 'txHashBufToObj error, buf length greater than expect')
-
-//   return {
-//     version,
-//     inputCountVal,
-//     inputList,
-//     outputCountVal,
-//     outputList,
-//     locktime,
-//   }
-// }
-
+/**
+ * @category Utils
+ * @param addressOrScriptHex the address or script hex
+ * @param forceContractAddress whether to force the contract address, default is false
+ * @returns the token owner address, p2pkh script hex or contract script hash
+ */
 export function toTokenOwnerAddress(
   addressOrScriptHex: string,
   forceContractAddress = false
@@ -163,6 +109,10 @@ export function toTokenOwnerAddress(
     scriptHex = addressOrScriptHex
   } else {
     scriptHex = opcat.Script.fromAddress(addressOrScriptHex).toHex()
+  }
+
+  if (len(scriptHex) === 32n) {
+    return scriptHex
   }
 
   if (forceContractAddress) {
@@ -208,6 +158,11 @@ export function applyFixedArray<T, L extends number>(
   }
 }
 
+/**
+ * @category Utils
+ * @param str the string
+ * @returns the hex string
+ */
 export function stringToHex(str: string): string {
   let hex = ''
   const utf8Bytes: Uint8Array = new TextEncoder().encode(str)
@@ -218,6 +173,11 @@ export function stringToHex(str: string): string {
   return hex
 }
 
+/**
+ * @category Utils
+ * @param str the hex string
+ * @returns the string
+ */
 export function hexToString(str: string): string {
   const bytes = new Uint8Array(
     str.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16))
@@ -225,6 +185,13 @@ export function hexToString(str: string): string {
   return new TextDecoder().decode(bytes)
 }
 
+/**
+ * @category Utils
+ * @param _address the address of the utxo
+ * @param satoshis the satoshis of the utxo
+ * @param data the data of the utxo
+ * @returns the dummy utxo
+ */
 export function getDummyUtxo(
   _address?: string,
   satoshis?: number,

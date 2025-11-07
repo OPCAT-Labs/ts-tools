@@ -5,6 +5,7 @@
   "md5": "c5af93cb4966b9a0201c93e84ac386be",
   "structs": [],
   "alias": [],
+  "staticAbi": [],
   "abi": [
     {
       "type": "function",

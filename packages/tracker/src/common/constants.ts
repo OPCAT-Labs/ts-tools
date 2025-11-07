@@ -1,4 +1,4 @@
-import { Network, networks } from 'bitcoinjs-lib';
+import { SupportedNetwork } from '@opcat-labs/scrypt-ts-opcat';
 
 export class Constants {
   static readonly BLOCK_PROCESSING_INTERVAL = 1000;
@@ -88,19 +88,23 @@ export class Constants {
   static readonly CONTENT_TYPE_CAT721_DELEGATE_V1 = 'application/vnd.cat721.delegate.v1+text';
 
   static readonly CONTENT_ENVELOPE = /OP_0 OP_IF 636174 (.+?) OP_ENDIF/;
+
+  static readonly CAT721_DECIMALS = -1;
 }
 
 const _network = process.env.NETWORK || 'mainnet';
 
-export let network: Network;
+export let network: SupportedNetwork;
 switch (_network) {
   case 'mainnet':
-    network = networks.bitcoin;
+  case 'opcat-mainnet':
+    network = 'opcat-mainnet';
     break;
   case 'regtest':
-    network = networks.regtest;
+  case 'opcat-regtest':
+    network = 'opcat-regtest';
     break;
   default:
-    network = networks.testnet;
+    network = 'opcat-testnet';
     break;
 }

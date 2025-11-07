@@ -6,7 +6,7 @@ import { DefaultSigner, ExtPsbt } from '@opcat-labs/scrypt-ts-opcat';
 import { getDummyUtxo } from '../utils/index.js';
 import { serializeState, deserializeState } from '../../src/smart-contract/stateSerializer.js';
 
-import { MultiDimArray, MultiDimArrayStateLib } from '../contracts/MultiDimArray.js';
+import { MultiDimArray, MultiDimArrayState, MultiDimArrayStateLib } from '../contracts/MultiDimArray.js';
 import artifact from '../fixtures/MultiDimArray.json' with { type: 'json' };
 
 describe('Test MultiDimArray', () => {
@@ -32,7 +32,7 @@ describe('Test MultiDimArray', () => {
     const multiDimArray = new MultiDimArray();
     multiDimArray.state = { board: [[1n, 2n, 3n], [4n, 5n, 6n], [7n, 8n, 9n]] };
     const serializedState = serializeState(artifact, 'multidimarray_0_1_0__rs__MultiDimArrayState', multiDimArray.state);
-    const deserializedState= deserializeState(artifact, 'multidimarray_0_1_0__rs__MultiDimArrayState', serializedState);
+    const deserializedState= deserializeState<MultiDimArrayState>(artifact, 'multidimarray_0_1_0__rs__MultiDimArrayState', serializedState);
     expect(deepEqualArrays(deserializedState.board, multiDimArray.state.board)).to.be.true;
   });
 

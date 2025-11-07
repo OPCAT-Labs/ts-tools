@@ -1,6 +1,6 @@
-export { burn } from './cat20/burn/burn'
-export { deploy as deployOpenMinter } from './cat20/deploy/openMinter'
-export { mint as openMinterMint } from './cat20/mint/openMinter'
+export { burnToken } from './cat20/burn/burn'
+export { deployOpenMinterToken } from './cat20/deploy/openMinter'
+export { mintOpenMinterToken } from './cat20/mint/openMinter'
 export { contractSend } from './cat20/send/contractSend'
 export {
   singleSend,

@@ -132,8 +132,13 @@ export function tags(vals: string[]) {
     if (!constructor) {
       throw new Error('None constructor! Please use the @tags decorator on the SmartContract class');
     }
+    const uniqueTags = vals.filter((tag, index, arr) => arr.indexOf(tag) == index);
+    const hasDuplicateTags = uniqueTags.length !== vals.length;
+    if (hasDuplicateTags) {
+      throw new Error(`tags(${JSON.stringify(vals)}) has duplicate tags`)
+    }
     Object.defineProperty(target, 'tags', {
-      value: vals.filter((tag, index, arr) => arr.indexOf(tag) == index),
+      value: vals,
       writable: false,
       enumerable: false,
       configurable: false,

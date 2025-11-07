@@ -1,29 +1,36 @@
-import { ByteString, PubKey, sha256, toHex } from '@opcat-labs/scrypt-ts-opcat'
-import {
-  ExtPsbt,
-  Signer,
-  ChainProvider,
-  UtxoProvider,
-  UTXO,
-  getBackTraceInfo,
-  markSpent,
-} from '@opcat-labs/scrypt-ts-opcat'
-import {
-  CAT20_AMOUNT,
-  CAT20ClosedMinterState,
-  CAT20State,
-} from '../../../../src/contracts/cat20/types'
-import { ContractPeripheral } from '../../../../src/utils/contractPeripheral'
-import { CAT20Guard } from '../../../../src/contracts/cat20/cat20Guard'
-import { CAT20 } from '../../../../src/contracts/cat20/cat20'
-import { checkArgument } from '../../../../src/utils/check'
-import { CAT20ClosedMinter } from '../../../../src/contracts/cat20/minters/cat20ClosedMinter'
-import { outpoint2ByteString, toTokenOwnerAddress } from '../../../../src/utils'
-import { Postage } from '../../../../src/typeConstants'
-import { Transaction } from '@opcat-labs/opcat'
-import { ConstantsLib } from '../../../../src/contracts'
 
-export async function mint(
+import { ByteString, PubKey, toHex } from '@opcat-labs/scrypt-ts-opcat'
+import { ExtPsbt, Signer, ChainProvider, UtxoProvider, UTXO, getBackTraceInfo, markSpent } from '@opcat-labs/scrypt-ts-opcat'
+import { CAT20_AMOUNT } from '../../../contracts/cat20/types'
+import { CAT20ClosedMinterState, CAT20State } from '../../../contracts/cat20/types'
+import { ContractPeripheral } from '../../../utils/contractPeripheral'
+import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
+import { CAT20 } from '../../../contracts/cat20/cat20'
+import { checkArgument } from '../../../utils/check'
+import { CAT20ClosedMinter } from '../../../contracts/cat20/minters/cat20ClosedMinter'
+import { outpoint2ByteString, toTokenOwnerAddress } from '../../../utils'
+import { Postage } from '../../../typeConstants'
+import { Transaction } from '@opcat-labs/opcat'
+import { ConstantsLib } from '../../../contracts'
+
+
+/**
+ * Mints a CAT20 token using `CAT20ClosedMinter` contract
+ * Only the token issuer can mint token
+ * @category Feature
+ * @param signer the signer for the issuer
+ * @param provider the provider for the blockchain and UTXO operations
+ * @param minterUtxo the UTXO of the minter contract
+ * @param hasAdmin whether the token has admin
+ * @param adminScriptHash the admin script hash
+ * @param tokenId the ID of the token
+ * @param tokenReceiver the address to receive the token
+ * @param tokenAmount the amount of the token to mint
+ * @param changeAddress the address for the change output
+ * @param feeRate the fee rate for the transaction
+ * @returns the mint Psbt and the UTXO of the minted token
+ */
+export async function mintClosedMinterToken(
   signer: Signer,
   provider: ChainProvider & UtxoProvider,
   minterUtxo: UTXO,
@@ -35,7 +42,7 @@ export async function mint(
   changeAddress: string,
   feeRate: number
 ): Promise<{
-  mintTx: ExtPsbt
+  mintPsbt: ExtPsbt
   cat20Utxo: UTXO
   mintTxId: string
 }> {
@@ -80,7 +87,6 @@ export async function mint(
   )
 
   const cat20State: CAT20State = {
-    tag: ConstantsLib.OPCAT_CAT20_TAG,
     ownerAddr: tokenReceiver,
     amount: tokenAmount,
   }
@@ -112,7 +118,8 @@ export async function mint(
         BigInt(Postage.TOKEN_POSTAGE),
         backtraceInfo
       )
-    })
+    }
+    )
     .spendUTXO(utxos)
     .addContractOutput(nextMinter, Postage.MINTER_POSTAGE)
     .addContractOutput(cat20, Postage.TOKEN_POSTAGE)
@@ -130,7 +137,7 @@ export async function mint(
   markSpent(provider, mintTx.extractTransaction())
 
   return {
-    mintTx,
+    mintPsbt: mintTx,
     cat20Utxo: mintTx.getUtxo(1),
     mintTxId: mintTx.extractTransaction().id,
   }
