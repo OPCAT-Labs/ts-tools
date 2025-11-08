@@ -3,7 +3,7 @@ import { CAT20Metadata, OpenMinterCAT20Meta } from '../contracts/cat20/types'
 import { CAT721Metadata } from '../contracts/cat721/types'
 import { Script } from '@opcat-labs/opcat'
 import {encode as cborEncode, decode as cborDecode} from 'cbor2'
-import { hexToUint8Array } from '@opcat-labs/scrypt-ts-opcat'
+import { hexToUint8Array , pushData, splitChunks, MAX_OP_PUSH_DATA_SIZE} from '@opcat-labs/scrypt-ts-opcat'
 
 /**
  * The information of a CAT20 token
@@ -95,7 +95,7 @@ export function formatMetadata<T extends CAT20Metadata>(
  */
 export class MetadataSerializer {
   static readonly CAT_TAG = '03636174'; // OP_PUSH_3_bytes 'cat'
-  static readonly LIMIT = 520;
+  static readonly LIMIT = MAX_OP_PUSH_DATA_SIZE;
   static readonly EnvelopeMarker = {
     Token: '51', // OP_1
     Collection: '52', // OP_2
@@ -135,12 +135,12 @@ export class MetadataSerializer {
       m.set(key, metadata[key])
     }
     const data = Buffer.from(cborEncode(m))
-    const dataChunks = this.chunks(Array.from(data), this.LIMIT)
+    const dataChunks = splitChunks(Array.from(data), this.LIMIT)
 
-    // if the metadata exceeds the limit of 520, it is split into multiple chunks.
+    // if the metadata exceeds the limit of MetadataSerializer.LIMIT, it is split into multiple chunks.
     for (const chunk of dataChunks) {
       this.pushOrdinalTag(res, 'METADATA')
-      res.push(this.toPushData(Buffer.from(chunk)));
+      res.push(pushData(Buffer.from(chunk)));
     }
     return res;
   }
@@ -153,16 +153,16 @@ export class MetadataSerializer {
     }
   ) {
     this.pushOrdinalTag(res, 'CONTENT_TYPE')
-    res.push(this.toPushData(Buffer.from(content.type, 'utf-8')))
+    res.push(pushData(Buffer.from(content.type, 'utf-8')))
 
     this.pushOrdinalTag(res, 'CONTENT_BODY')
-    const dataChunks = this.chunks(Array.from(Buffer.from(content.body, 'hex')), this.LIMIT)
+    const dataChunks = splitChunks(Array.from(Buffer.from(content.body, 'hex')), this.LIMIT)
     if (dataChunks.length === 0) {
       throw new Error('Content body is empty or its not a hex string')
     }
-    // if the contentBody exceeds the limit of 520, it is split into multiple chunks.
+    // if the contentBody exceeds the limit of MetadataSerializer.LIMIT, it is split into multiple chunks.
     for (const chunk of dataChunks) {
-      res.push(this.toPushData(Buffer.from(chunk)))
+      res.push(pushData(Buffer.from(chunk)))
     }
     return res;
   }
@@ -362,43 +362,6 @@ export class MetadataSerializer {
         delegate
       }
     }
-  }
-
-
-  private static toPushData(data: Buffer): Buffer {
-    const res: Array<Buffer> = [];
-
-    const dLen = data.length;
-    if (dLen < 0x4c) {
-      const dLenBuff = Buffer.alloc(1);
-      dLenBuff.writeUInt8(dLen);
-      res.push(dLenBuff);
-    } else if (dLen <= 0xff) {
-      // OP_PUSHDATA1
-      res.push(Buffer.from('4c', 'hex'));
-
-      const dLenBuff = Buffer.alloc(1);
-      dLenBuff.writeUInt8(dLen);
-      res.push(dLenBuff);
-    } else if (dLen <= 0xffff) {
-      // OP_PUSHDATA2
-      res.push(Buffer.from('4d', 'hex'));
-
-      const dLenBuff = Buffer.alloc(2);
-      dLenBuff.writeUint16LE(dLen);
-      res.push(dLenBuff);
-    } else {
-      // OP_PUSHDATA4
-      res.push(Buffer.from('4e', 'hex'));
-
-      const dLenBuff = Buffer.alloc(4);
-      dLenBuff.writeUint32LE(dLen);
-      res.push(dLenBuff);
-    }
-
-    res.push(data);
-
-    return Buffer.concat(res);
   }
 
   private static chunks<T>(bin: T[], chunkSize: number): T[][] {
