@@ -3,12 +3,11 @@ import { RpcService } from '../rpc/rpc.service';
 import { BlockEntity } from '../../entities/block.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CAT20Guard_12_12_2, CAT20Guard_12_12_4, CAT20Guard_6_6_2, CAT20Guard_6_6_4, CAT20GuardPeripheral, CAT721Guard_12_12_2, CAT721Guard_12_12_4, CAT721Guard_6_6_2, CAT721Guard_6_6_4, CatTags, ContractPeripheral } from '@opcat-labs/cat-sdk';
+import { CAT20Guard_12_12_2, CAT20Guard_12_12_4, CAT20Guard_6_6_2, CAT20Guard_6_6_4, CAT20GuardPeripheral, CAT721Guard_12_12_2, CAT721Guard_12_12_4, CAT721Guard_6_6_2, CAT721Guard_6_6_4, CAT721GuardPeripheral, CatTags, ContractPeripheral } from '@opcat-labs/cat-sdk';
 import { Input, Transaction } from '@opcat-labs/opcat';
 import { TxOutEntity } from 'src/entities/txOut.entity';
 import { TokenInfoEntity } from 'src/entities/tokenInfo.entity';
 import { ABICoder, ABIEntityType, ContractHeaderSerializer, sha256 } from '@opcat-labs/scrypt-ts-opcat';
-import { CAT721GuardPeripheral } from '@opcat-labs/cat-sdk/dist/types/utils/contractPeripheral';
 
 @Injectable()
 export class CommonService {
