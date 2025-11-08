@@ -3,67 +3,67 @@ import {dirname, join, resolve, sep} from 'path'
 
 const templateVariables = [
     {
-        TIM: 6,
-        TOM: 6,
-        GTT: 2,
+        TI_COUNT: 6,
+        TO_COUNT: 6,
+        GTT_COUNT: 2,
     },
     {
-        TIM: 6,
-        TOM: 6,
-        GTT: 4,
+        TI_COUNT: 6,
+        TO_COUNT: 6,
+        GTT_COUNT: 4,
     },
     {
-        TIM: 12,
-        TOM: 12,
-        GTT: 2,
+        TI_COUNT: 12,
+        TO_COUNT: 12,
+        GTT_COUNT: 2,
     },
     {
-        TIM: 12,
-        TOM: 12,
-        GTT: 4,
+        TI_COUNT: 12,
+        TO_COUNT: 12,
+        GTT_COUNT: 4,
     }
 ]
 
 function generateGuardTemplateContent(
     sourceFilePath: string,
-    TIM: number, 
-    TOM: number, 
-    GTT: number
+    TI_COUNT: number,
+    TO_COUNT: number,
+    GTT_COUNT: number
 ) {
     let content = fs.readFileSync(sourceFilePath, 'utf8')
 
     const fileName = sourceFilePath.split(sep).pop()!
     const dirName_ = dirname(sourceFilePath)
-    const targetFileName = fileName.replaceAll('TIM', TIM.toString()).replaceAll('TOM', TOM.toString()).replaceAll('GTT', GTT.toString()).replaceAll('.template', '.ts')
+    const targetFileName = fileName.replaceAll('TI_COUNT', TI_COUNT.toString()).replaceAll('TO_COUNT', TO_COUNT.toString()).replaceAll('GTT_COUNT', GTT_COUNT.toString()).replaceAll('.template', '.ts')
     const targetFilePath = join(dirName_, targetFileName)
 
     console.log("generate: ", targetFilePath)
 
-    content = content.replaceAll('TIM', `${TIM}`)
-    content = content.replaceAll('TOM', `${TOM}`)
-    content = content.replaceAll('GTT', `${GTT}`)
+    content = content.replaceAll('$TI_COUNT$', `${TI_COUNT}`)
+    content = content.replaceAll('$TO_COUNT$', `${TO_COUNT}`)
+    content = content.replaceAll('$GTT_COUNT$', `${GTT_COUNT}`)
 
     fs.writeFileSync(targetFilePath, content, 'utf8')
     console.log(`Generated guard template: ${targetFilePath}`)
 }
 
 async function main() {
-    const sourceFilePathCat20 = resolve(__dirname, '../src/contracts/cat20/cat20Guard_TIM_TOM_GTT.template')
-    const sourceFilePathCat721 = resolve(__dirname, '../src/contracts/cat721/cat721Guard_TIM_TOM_GTT.template')
+    const sourceFilePathCat20 = resolve(__dirname, '../src/contracts/cat20/cat20Guard_TI_COUNT_TO_COUNT_GTT_COUNT.template')
+    const sourceFilePathCat721 = resolve(__dirname, '../src/contracts/cat721/cat721Guard_TI_COUNT_TO_COUNT_GTT_COUNT.template')
 
     for (const vars of templateVariables) {
 
         generateGuardTemplateContent(
             sourceFilePathCat20,
-            vars.TIM,
-            vars.TOM,
-            vars.GTT
+            vars.TI_COUNT,
+            vars.TO_COUNT,
+            vars.GTT_COUNT
         )
         generateGuardTemplateContent(
             sourceFilePathCat721,
-            vars.TIM,
-            vars.TOM,
-            vars.GTT
+            vars.TI_COUNT,
+            vars.TO_COUNT,
+            vars.GTT_COUNT
         )
     }
 }
