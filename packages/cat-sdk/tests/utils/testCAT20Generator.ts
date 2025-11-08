@@ -14,7 +14,7 @@ import { verifyTx } from '.'
 import { expect } from 'chai'
 import { testProvider } from './testProvider'
 import { CAT20GuardPeripheral, ContractPeripheral } from '../../src/utils/contractPeripheral'
-import { CAT20Guard, ConstantsLib } from '../../src/contracts'
+import { ConstantsLib } from '../../src/contracts'
 
 export class TestCAT20Generator {
   deployInfo: CAT20TokenInfo<ClosedMinterCAT20Meta> & {
@@ -28,8 +28,8 @@ export class TestCAT20Generator {
   get minterScriptHash() {
     return this.deployInfo.minterScriptHash
   }
-  get guardScriptHash() {
-    return ContractPeripheral.scriptHash(new CAT20Guard())
+  get guardScriptHashes() {
+    return CAT20GuardPeripheral.getGuardScriptHashes()
   }
 
   constructor(

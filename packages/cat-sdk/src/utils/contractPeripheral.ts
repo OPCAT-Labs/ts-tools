@@ -9,10 +9,12 @@ import {
   ChainProvider,
   UTXO,
   toByteString,
+  Sha256,
+  intToByteString,
+  slice,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { Transaction } from '@opcat-labs/opcat'
 import { CAT20 } from '../contracts/cat20/cat20'
-import { CAT20Guard } from '../contracts/cat20/cat20Guard'
 import { CAT20OpenMinter } from '../contracts/cat20/minters/cat20OpenMinter'
 import {
   CAT20_AMOUNT,
@@ -25,20 +27,36 @@ import {
   NULL_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
+  GUARD_CONTRACT_COUNT,
+  NFT_GUARD_CONTRACT_COUNT,
+  TX_INPUT_COUNT_MAX_6,
+  TX_INPUT_COUNT_MAX_12,
+  TX_OUTPUT_COUNT_MAX_6,
+  TX_OUTPUT_COUNT_MAX_12,
+  GUARD_TOKEN_TYPE_MAX_2,
+  NFT_GUARD_COLLECTION_TYPE_MAX_2,
+  GUARD_TOKEN_TYPE_MAX,
+  NFT_GUARD_COLLECTION_TYPE_MAX
 } from '../contracts/constants'
 // import { Provider, UTXO } from '../lib/provider'
 import { emptyOutputByteStrings, outpoint2ByteString } from '.'
 // import { ExtTransaction } from '../lib/extTransaction'
 import { CAT20StateLib } from '../contracts/cat20/cat20StateLib'
 import { CAT20GuardStateLib } from '../contracts/cat20/cat20GuardStateLib'
-import { ConstantsLib } from '../contracts/constants'
 import { CAT721GuardConstState, CAT721State, ClosedMinterCAT721Meta, OpenMinterCAT721Meta } from '../contracts/cat721/types'
 import { CAT721GuardStateLib } from '../contracts/cat721/cat721GuardStateLib'
-import { CAT721Guard } from '../contracts/cat721/cat721Guard'
 import { CAT721 } from '../contracts/cat721/cat721'
 import { CAT721OpenMinter } from '../contracts/cat721/minters/cat721OpenMinter'
 import { CAT721StateLib } from '../contracts/cat721/cat721StateLib'
-import { CAT721ClosedMinter } from '../contracts'
+import { CAT721ClosedMinter, CAT20GuardType, CAT721GuardType } from '../contracts'
+import { CAT20Guard_6_6_2 } from '../contracts/cat20/cat20Guard_6_6_2'
+import { CAT20Guard_6_6_4 } from '../contracts/cat20/cat20Guard_6_6_4'
+import { CAT20Guard_12_12_2 } from '../contracts/cat20/cat20Guard_12_12_2'
+import { CAT20Guard_12_12_4 } from '../contracts/cat20/cat20Guard_12_12_4'
+import { CAT721Guard_6_6_2 } from '../contracts/cat721/cat721Guard_6_6_2'
+import { CAT721Guard_6_6_4 } from '../contracts/cat721/cat721Guard_6_6_4'
+import { CAT721Guard_12_12_2 } from '../contracts/cat721/cat721Guard_12_12_2'
+import { CAT721Guard_12_12_4 } from '../contracts/cat721/cat721Guard_12_12_4'
 
 /**
  * Helper class for contract peripheral operations
@@ -141,10 +159,9 @@ export class CAT20OpenMinterPeripheral {
       amount = minter.premine
       receiverAddr = minter.preminerAddr
     }
-    const guard = new CAT20Guard()
     const cat20 = new CAT20(
       ContractPeripheral.scriptHash(minter),
-      ContractPeripheral.scriptHash(guard),
+      CAT20GuardPeripheral.getGuardScriptHashes(),
       hasAdmin,
       adminScriptHash
     )
@@ -158,6 +175,135 @@ export class CAT20OpenMinterPeripheral {
  * @category Utils
  */
 export class CAT20GuardPeripheral {
+  static getGuardScriptHashes() {
+    const guardScriptHashes: FixedArray<Sha256, typeof GUARD_CONTRACT_COUNT> = fill(
+      '' as Sha256,
+      GUARD_CONTRACT_COUNT
+    )
+    guardScriptHashes[0] = ContractPeripheral.scriptHash(new CAT20Guard_6_6_2())
+    guardScriptHashes[1] = ContractPeripheral.scriptHash(new CAT20Guard_6_6_4())
+    guardScriptHashes[2] = ContractPeripheral.scriptHash(new CAT20Guard_12_12_2())
+    guardScriptHashes[3] = ContractPeripheral.scriptHash(new CAT20Guard_12_12_4())
+    return guardScriptHashes;
+  }
+
+  /**
+   * Select appropriate CAT20 guard based on input/output token count and token types
+   * @param inputTokenCount - Number of token inputs (excluding guard input)
+   * @param outputTokenCount - Number of token outputs
+   * @param guardTokenTypes - Number of unique token types
+   * @returns guard - The selected guard contract instance
+   * @returns txInputCountMax - Maximum input count for the selected guard
+   * @returns txOutputCountMax - Maximum output count for the selected guard
+   */
+  private static selectCAT20Guard(
+    txInputCount: number,
+    txOutputCount: number,
+    guardTokenTypes: number
+  ): {
+    guard: CAT20GuardType
+    txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
+    txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
+  } {
+    
+    if (txInputCount >= TX_INPUT_COUNT_MAX) {
+      throw new Error(`Too many transaction inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
+    }
+    if (txOutputCount > TX_OUTPUT_COUNT_MAX) {
+      throw new Error(`Too many transaction outputs that exceed the maximum limit of ${TX_OUTPUT_COUNT_MAX}`)
+    }
+
+    let guard: CAT20GuardType
+    let txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
+    let txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
+
+    if (txInputCount <= TX_INPUT_COUNT_MAX_6 && txOutputCount <= TX_OUTPUT_COUNT_MAX_6) {
+      txInputCountMax = TX_INPUT_COUNT_MAX_6
+      txOutputCountMax = TX_OUTPUT_COUNT_MAX_6
+      if (guardTokenTypes <= GUARD_TOKEN_TYPE_MAX_2) {
+        guard = new CAT20Guard_6_6_2()
+      } else {
+        guard = new CAT20Guard_6_6_4()
+      }
+    } else {
+      txInputCountMax = TX_INPUT_COUNT_MAX_12
+      txOutputCountMax = TX_OUTPUT_COUNT_MAX_12
+      if (guardTokenTypes <= GUARD_TOKEN_TYPE_MAX_2) {
+        guard = new CAT20Guard_12_12_2()
+      } else {
+        guard = new CAT20Guard_12_12_4()
+      }
+    }
+
+    return { guard, txInputCountMax, txOutputCountMax }
+  }
+
+  /**
+   * Process token inputs and extract token amounts, script hashes mapping
+   * @returns tokenAmounts - Map of token type index to total amount
+   * @returns tokenScriptHashes - Map of token type index to script hash
+   * @returns scriptHashToIndex - Map of script hash to token type index (derived from tokenScriptHashes.size)
+   */
+  private static processTokenInputs(
+    tokenInputs: { token: UTXO; inputIndex: number }[],
+    initialTokenScriptIndexes: ByteString
+  ): {
+    tokenAmounts: Map<number, bigint>
+    tokenScriptHashes: Map<number, string>
+    tokenScriptIndexes: ByteString,
+    guardTokenTypes: number
+  } {
+    const scriptHashToIndex = new Map<string, number>()
+    const tokenAmounts = new Map<number, bigint>()
+    const tokenScriptHashes = new Map<number, string>()
+
+    // Map each unique token script hash to an index
+    for (const input of tokenInputs) {
+      const scriptHash = ContractPeripheral.scriptHash(input.token.script)
+      if (!scriptHashToIndex.has(scriptHash)) {
+        const index = scriptHashToIndex.size
+        scriptHashToIndex.set(scriptHash, index)
+        tokenScriptHashes.set(index, scriptHash)
+        tokenAmounts.set(index, 0n)
+      }
+      const typeIndex = scriptHashToIndex.get(scriptHash)!
+      const currentAmount = tokenAmounts.get(typeIndex)!
+      tokenAmounts.set(
+        typeIndex,
+        currentAmount + CAT20.deserializeState(input.token.data).amount
+      )
+    }
+
+    // Build tokenScriptIndexes by modifying individual bytes
+    let tokenScriptIndexes = initialTokenScriptIndexes
+    for (
+      let index = 0;
+      index < tokenInputs.length && index < TX_INPUT_COUNT_MAX;
+      index++
+    ) {
+      const inputIndex = tokenInputs[index].inputIndex
+      const scriptHash = ContractPeripheral.scriptHash(
+        tokenInputs[index].token.script
+      )
+      const typeIndex = scriptHashToIndex.get(scriptHash)!
+      const before = slice(tokenScriptIndexes, 0n, BigInt(inputIndex))
+      const after = slice(tokenScriptIndexes, BigInt(inputIndex + 1))
+      tokenScriptIndexes =
+        before + intToByteString(BigInt(typeIndex), 1n) + after
+    }
+
+    const guardTokenTypes = tokenScriptHashes.size;
+    if (guardTokenTypes > GUARD_TOKEN_TYPE_MAX) {
+      throw new Error(`Too many token types that exceed the maximum limit of ${GUARD_TOKEN_TYPE_MAX}`)
+    }
+
+    return {
+      tokenAmounts,
+      tokenScriptHashes,
+      tokenScriptIndexes,
+      guardTokenTypes,
+    }
+  }
   static createTransferGuard(
     tokenInputs: {
       token: UTXO
@@ -167,20 +313,32 @@ export class CAT20GuardPeripheral {
       address: ByteString
       amount: CAT20_AMOUNT
       outputIndex: number
-    }[]
+    }[],
+    txInputCount: number,
+    txOutputCount: number,
   ): {
+    guard: CAT20GuardType
     guardState: CAT20GuardConstState
     outputTokens: FixedArray<CAT20State | undefined, typeof TX_OUTPUT_COUNT_MAX>
+    txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
+    txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
   } {
+    if (txInputCount >= TX_INPUT_COUNT_MAX) {
+      throw new Error(`Too many transaction inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
+    }
+    if (txOutputCount > TX_OUTPUT_COUNT_MAX) {
+      throw new Error(`Too many transaction outputs that exceed the maximum limit of ${TX_OUTPUT_COUNT_MAX}`)
+    }
+    if (tokenInputs.length + 1 > TX_INPUT_COUNT_MAX) {
+      throw new Error(`Too many token inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX - 1}`)
+    }
+    if (receivers.length > TX_OUTPUT_COUNT_MAX) { 
+      throw new Error(`Too many token outputs that exceed the maximum limit of ${TX_OUTPUT_COUNT_MAX}`)
+    }
     if (tokenInputs.length === 0) {
       throw new Error('No spent tokens')
     }
 
-    if (tokenInputs.length > TX_INPUT_COUNT_MAX - 1) {
-      throw new Error(
-        `Too many token inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`
-      )
-    }
 
     const totalTokenInputAmount = tokenInputs.reduce((acc, info) => {
       const state = CAT20.deserializeState(info.token.data)
@@ -196,22 +354,32 @@ export class CAT20GuardPeripheral {
       throw new Error('Unbalanced token output amount')
     }
 
-    const guardState = CAT20GuardStateLib.createEmptyState()
+    // Determine which size guard to use based on input count
+    const txInputCountMax = txInputCount <= TX_INPUT_COUNT_MAX_6 ? TX_INPUT_COUNT_MAX_6 : TX_INPUT_COUNT_MAX_12
 
-    guardState.tokenScriptHashes[0] = ContractPeripheral.scriptHash(
-      tokenInputs[0].token.script
+    // Create guard state based on the selected guard size
+    const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax)
+
+    // Process token inputs to get token amounts and script hash mapping
+    const { tokenAmounts, tokenScriptHashes, tokenScriptIndexes, guardTokenTypes } = this.processTokenInputs(
+      tokenInputs,
+      guardState.tokenScriptIndexes
     )
-    for (
-      let index = 0;
-      index < tokenInputs.length && index < TX_INPUT_COUNT_MAX;
-      index++
-    ) {
-      guardState.tokenScriptIndexes[tokenInputs[index].inputIndex] = 0n
-    }
 
-    guardState.tokenAmounts[0] = tokenInputs.reduce(
-      (p, c) => p + CAT20.deserializeState(c.token.data).amount,
-      0n
+    // Set the processed data to guardState
+    tokenScriptHashes.forEach((scriptHash, index) => {
+      guardState.tokenScriptHashes[index] = scriptHash
+    })
+    tokenAmounts.forEach((amount, index) => {
+      guardState.tokenAmounts[index] = amount
+    })
+    guardState.tokenScriptIndexes = tokenScriptIndexes
+
+    // Auto-detect guardTokenTypes and select final guard
+    const { guard, txInputCountMax: finalTxInputCountMax, txOutputCountMax } = this.selectCAT20Guard(
+      txInputCount,
+      txOutputCount,
+      guardTokenTypes
     )
     const outputTokens = emptyOutputByteStrings().map((_, index) => {
       const receiver = receivers.find((r) => r.outputIndex === index)
@@ -228,8 +396,11 @@ export class CAT20GuardPeripheral {
     }) as FixedArray<CAT20State | undefined, typeof TX_OUTPUT_COUNT_MAX>
 
     return {
+      guard,
       guardState,
       outputTokens,
+      txInputCountMax: finalTxInputCountMax,
+      txOutputCountMax,
     }
   }
 
@@ -237,40 +408,70 @@ export class CAT20GuardPeripheral {
     tokenInputs: {
       token: UTXO
       inputIndex: number
-    }[],
-    _inputStateHashes: ByteString[]
+    }[]
   ): {
+    guard: CAT20GuardType
     guardState: CAT20GuardConstState
     outputTokens: FixedArray<CAT20State | undefined, typeof TX_OUTPUT_COUNT_MAX>
+    txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
+    txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
   } {
     if (tokenInputs.length === 0) {
       throw new Error('No spent tokens')
     }
-    if (tokenInputs.length > TX_INPUT_COUNT_MAX - 1) {
+
+    // Validate counts first
+    const inputTokenCount = tokenInputs.length
+    const outputTokenCount = 0 // No token outputs for burn
+
+    // Validate input token count
+    if (inputTokenCount > TX_INPUT_COUNT_MAX - 1) {
       throw new Error(
-        `Too many token inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`
+        `Too many token inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX - 1}`
       )
     }
-    const guardState = CAT20GuardStateLib.createEmptyState()
-    guardState.tokenScriptHashes[0] = ContractPeripheral.scriptHash(
-      tokenInputs[0].token.script
-    )
-    for (
-      let index = 0;
-      index < tokenInputs.length && index < TX_INPUT_COUNT_MAX;
-      index++
-    ) {
-      guardState.tokenScriptIndexes[tokenInputs[index].inputIndex] = 0n
-    }
 
-    guardState.tokenAmounts[0] = tokenInputs.reduce(
-      (p, c) => p + CAT20.deserializeState(c.token.data).amount,
-      0n
+    // Determine which size guard to use based on input count
+    const txInputCountMax = (inputTokenCount + 1) <= TX_INPUT_COUNT_MAX_6 ? TX_INPUT_COUNT_MAX_6 : TX_INPUT_COUNT_MAX_12
+
+    // Create guard state based on the selected guard size
+    const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax)
+
+    // Process token inputs to get token amounts and script hash mapping
+    const { tokenAmounts, tokenScriptHashes, tokenScriptIndexes } = this.processTokenInputs(
+      tokenInputs,
+      guardState.tokenScriptIndexes
     )
+
+    // Set the processed data to guardState
+    tokenScriptHashes.forEach((scriptHash, index) => {
+      guardState.tokenScriptHashes[index] = scriptHash
+    })
+    tokenAmounts.forEach((amount, index) => {
+      guardState.tokenAmounts[index] = amount
+    })
+    guardState.tokenScriptIndexes = tokenScriptIndexes
+
+    // Auto-detect guardTokenTypes and select final guard
+    const guardTokenTypes = tokenScriptHashes.size
+    // For burn transactions: tokenInputs + guardInput + adminInput + feeInput
+    const totalTxInputCount = inputTokenCount + 3
+    // For burn transactions: adminOutput + changeOutput (typically 1-2 outputs)
+    const totalTxOutputCount = 2 // Conservative estimate for admin output + change
+    const { guard, txInputCountMax: finalTxInputCountMax, txOutputCountMax } = this.selectCAT20Guard(
+      totalTxInputCount,
+      totalTxOutputCount,
+      guardTokenTypes
+    )
+
     const outputTokens = fill(undefined, TX_OUTPUT_COUNT_MAX)
+
     return {
+      guard,
       guardState,
       outputTokens,
+      txInputCountMax: finalTxInputCountMax,
+      txOutputCountMax,
     }
   }
 
@@ -299,7 +500,7 @@ export class CAT20GuardPeripheral {
     const expectTokenScriptHash = ContractPeripheral.scriptHash(
       new CAT20(
         minterScrtptHash,
-        ContractPeripheral.scriptHash(new CAT20Guard()),
+        CAT20GuardPeripheral.getGuardScriptHashes(),
         hasAdmin,
         adminScriptHash
       )
@@ -357,34 +558,181 @@ export class CAT20GuardPeripheral {
  * @category Utils
  */
 export class CAT721GuardPeripheral {
-  static createTransferGuard(
-    nftInputs: {
-      nft: UTXO,
-      inputIndex: number
-    }[],
-    receivers: ByteString[]
+  static getGuardScriptHashes() {
+    const guardScriptHashes: FixedArray<Sha256, typeof NFT_GUARD_CONTRACT_COUNT> = fill(
+      '' as Sha256,
+      NFT_GUARD_CONTRACT_COUNT
+    )
+    guardScriptHashes[0] = ContractPeripheral.scriptHash(new CAT721Guard_6_6_2())
+    guardScriptHashes[1] = ContractPeripheral.scriptHash(new CAT721Guard_6_6_4())
+    guardScriptHashes[2] = ContractPeripheral.scriptHash(new CAT721Guard_12_12_2())
+    guardScriptHashes[3] = ContractPeripheral.scriptHash(new CAT721Guard_12_12_4())
+    return guardScriptHashes;
+  }
+
+  /**
+   * Select appropriate CAT721 guard based on input/output count and collection types
+   * @param txInputCount - Total number of transaction inputs
+   * @param txOutputCount - Total number of transaction outputs
+   * @param guardCollectionTypes - Number of unique NFT collection types
+   * @returns guard - The selected guard contract instance
+   * @returns txInputCountMax - Maximum input count for the selected guard
+   * @returns txOutputCountMax - Maximum output count for the selected guard
+   */
+  private static selectCAT721Guard(
+    txInputCount: number,
+    txOutputCount: number,
+    guardCollectionTypes: number
   ): {
-    guardState: CAT721GuardConstState,
-    outputNfts: FixedArray<CAT721State | undefined, typeof TX_OUTPUT_COUNT_MAX>
+    guard: CAT721GuardType
+    txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
+    txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
   } {
-    if (nftInputs.length === 0) {
-      throw new Error('No spent nfts')
+
+    if (txInputCount >= TX_INPUT_COUNT_MAX) {
+      throw new Error(`Too many transaction inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
     }
-    if (nftInputs.length > TX_INPUT_COUNT_MAX - 1) {
-      throw new Error(`Too many nft inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
+    if (txOutputCount > TX_OUTPUT_COUNT_MAX) {
+      throw new Error(`Too many transaction outputs that exceed the maximum limit of ${TX_OUTPUT_COUNT_MAX}`)
     }
-    if (receivers.length !== nftInputs.length) {
-      throw new Error('Receivers length does not match the number of nft inputs')
+
+    let guard: CAT721GuardType
+    let txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
+    let txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
+
+    if (txInputCount <= TX_INPUT_COUNT_MAX_6 && txOutputCount <= TX_OUTPUT_COUNT_MAX_6) {
+      txInputCountMax = TX_INPUT_COUNT_MAX_6
+      txOutputCountMax = TX_OUTPUT_COUNT_MAX_6
+      if (guardCollectionTypes <= NFT_GUARD_COLLECTION_TYPE_MAX_2) {
+        guard = new CAT721Guard_6_6_2()
+      } else {
+        guard = new CAT721Guard_6_6_4()
+      }
+    } else {
+      txInputCountMax = TX_INPUT_COUNT_MAX_12
+      txOutputCountMax = TX_OUTPUT_COUNT_MAX_12
+      if (guardCollectionTypes <= NFT_GUARD_COLLECTION_TYPE_MAX_2) {
+        guard = new CAT721Guard_12_12_2()
+      } else {
+        guard = new CAT721Guard_12_12_4()
+      }
     }
-    const guardState = CAT721GuardStateLib.createEmptyState()
-    guardState.nftScriptHashes[0] = ContractPeripheral.scriptHash(nftInputs[0].nft.script)
+
+    return { guard, txInputCountMax, txOutputCountMax }
+  }
+
+  /**
+   * Process NFT inputs and extract script hashes mapping
+   * @returns nftScriptHashes - Map of NFT type index to script hash
+   * @returns nftScriptIndexes - ByteString with indexed NFT script types
+   * @returns guardCollectionTypes - Number of unique NFT collection types
+   */
+  private static processNftInputs(
+    nftInputs: { nft: UTXO; inputIndex: number }[],
+    initialNftScriptIndexes: ByteString
+  ): {
+    nftScriptHashes: Map<number, string>
+    nftScriptIndexes: ByteString
+    guardCollectionTypes: number
+  } {
+    const scriptHashToIndex = new Map<string, number>()
+    const nftScriptHashes = new Map<number, string>()
+
+    // Map each unique NFT script hash to an index
+    for (const input of nftInputs) {
+      const scriptHash = ContractPeripheral.scriptHash(input.nft.script)
+      if (!scriptHashToIndex.has(scriptHash)) {
+        const index = scriptHashToIndex.size
+        scriptHashToIndex.set(scriptHash, index)
+        nftScriptHashes.set(index, scriptHash)
+      }
+    }
+
+    // Build nftScriptIndexes by modifying individual bytes
+    let nftScriptIndexes = initialNftScriptIndexes
     for (
       let index = 0;
       index < nftInputs.length && index < TX_INPUT_COUNT_MAX;
       index++
     ) {
-      guardState.nftScriptIndexes[nftInputs[index].inputIndex] = 0n
+      const inputIndex = nftInputs[index].inputIndex
+      const scriptHash = ContractPeripheral.scriptHash(nftInputs[index].nft.script)
+      const typeIndex = scriptHashToIndex.get(scriptHash)!
+      const before = slice(nftScriptIndexes, 0n, BigInt(inputIndex))
+      const after = slice(nftScriptIndexes, BigInt(inputIndex + 1))
+      nftScriptIndexes = before + intToByteString(BigInt(typeIndex), 1n) + after
     }
+
+    const guardCollectionTypes = nftScriptHashes.size;
+    if (guardCollectionTypes > NFT_GUARD_COLLECTION_TYPE_MAX) {
+      throw new Error(`Too many NFT collection types that exceed the maximum limit of ${NFT_GUARD_COLLECTION_TYPE_MAX}`)
+    }
+
+    return {
+      nftScriptHashes,
+      nftScriptIndexes,
+      guardCollectionTypes,
+    }
+  }
+  static createTransferGuard(
+    nftInputs: {
+      nft: UTXO,
+      inputIndex: number
+    }[],
+    receivers: ByteString[],
+    txInputCount: number,
+    txOutputCount: number,
+  ): {
+    guard: CAT721GuardType
+    guardState: CAT721GuardConstState,
+    outputNfts: FixedArray<CAT721State | undefined, typeof TX_OUTPUT_COUNT_MAX>
+    txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
+    txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
+  } {
+    if (txInputCount >= TX_INPUT_COUNT_MAX) {
+      throw new Error(`Too many transaction inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
+    }
+    if (txOutputCount > TX_OUTPUT_COUNT_MAX) {
+      throw new Error(`Too many transaction outputs that exceed the maximum limit of ${TX_OUTPUT_COUNT_MAX}`)
+    }
+    if (nftInputs.length + 1 > TX_INPUT_COUNT_MAX) {
+      throw new Error(`Too many nft inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX - 1}`)
+    }
+    if (receivers.length > TX_OUTPUT_COUNT_MAX) {
+      throw new Error(`Too many nft outputs that exceed the maximum limit of ${TX_OUTPUT_COUNT_MAX}`)
+    }
+    if (nftInputs.length === 0) {
+      throw new Error('No spent nfts')
+    }
+    if (receivers.length !== nftInputs.length) {
+      throw new Error('Receivers length does not match the number of nft inputs')
+    }
+
+    // Determine which size guard to use based on input count
+    const txInputCountMax = txInputCount <= TX_INPUT_COUNT_MAX_6 ? TX_INPUT_COUNT_MAX_6 : TX_INPUT_COUNT_MAX_12
+
+    // Create guard state to get the initial nftScriptIndexes
+    const guardState = CAT721GuardStateLib.createEmptyState(txInputCountMax)
+
+    // Process NFT inputs to get script hash mapping
+    const { nftScriptHashes, nftScriptIndexes, guardCollectionTypes } = this.processNftInputs(
+      nftInputs,
+      guardState.nftScriptIndexes
+    )
+
+    // Select guard based on counts and collection types
+    const { guard, txInputCountMax: finalTxInputCountMax, txOutputCountMax } = this.selectCAT721Guard(
+      txInputCount,
+      txOutputCount,
+      guardCollectionTypes
+    )
+
+    // Set the processed data to guardState
+    nftScriptHashes.forEach((scriptHash, index) => {
+      guardState.nftScriptHashes[index] = scriptHash
+    })
+    guardState.nftScriptIndexes = nftScriptIndexes
+
     const nftStates = nftInputs.map((utxo) => CAT721StateLib.deserializeState(utxo.nft.data))
     const outputNfts = emptyOutputByteStrings().map((_, index) => {
       const receiver = receivers[index]
@@ -392,8 +740,11 @@ export class CAT721GuardPeripheral {
     }) as FixedArray<CAT721State | undefined, typeof TX_OUTPUT_COUNT_MAX>
 
     return {
+      guard,
       guardState,
-      outputNfts
+      outputNfts,
+      txInputCountMax: finalTxInputCountMax,
+      txOutputCountMax,
     }
   }
 
@@ -401,29 +752,68 @@ export class CAT721GuardPeripheral {
     nftInputs: {
       nft: UTXO,
       inputIndex: number
-    }[],
+    }[]
   ): {
+    guard: CAT721GuardType
     guardState: CAT721GuardConstState,
+    txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
+    txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
   } {
     if (nftInputs.length === 0) {
       throw new Error('No spent nfts')
     }
-    if (nftInputs.length > TX_INPUT_COUNT_MAX - 1) {
-      throw new Error(`Too many nft inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
+
+    // Validate counts first
+    const inputNftCount = nftInputs.length
+    const outputNftCount = 0 // No NFT outputs for burn
+
+    // Validate input NFT count
+    if (inputNftCount > TX_INPUT_COUNT_MAX - 1) {
+      throw new Error(
+        `Too many nft inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX - 1}`
+      )
     }
-    const guardState = CAT721GuardStateLib.createEmptyState()
-    guardState.nftScriptHashes[0] = ContractPeripheral.scriptHash(nftInputs[0].nft.script)
+
+    // Determine which size guard to use based on input count
+    const txInputCountMax = (inputNftCount + 1) <= TX_INPUT_COUNT_MAX_6 ? TX_INPUT_COUNT_MAX_6 : TX_INPUT_COUNT_MAX_12
+
+    // Create guard state to get the initial nftScriptIndexes
+    const guardState = CAT721GuardStateLib.createEmptyState(txInputCountMax)
+
+    // Process NFT inputs to get script hash mapping
+    const { nftScriptHashes, nftScriptIndexes, guardCollectionTypes } = this.processNftInputs(
+      nftInputs,
+      guardState.nftScriptIndexes
+    )
+
+    // Select guard based on counts and collection types
+    const { guard, txInputCountMax: finalTxInputCountMax, txOutputCountMax } = this.selectCAT721Guard(
+      inputNftCount + 1,
+      outputNftCount,
+      guardCollectionTypes
+    )
+
+    // Set the processed data to guardState
+    nftScriptHashes.forEach((scriptHash, index) => {
+      guardState.nftScriptHashes[index] = scriptHash
+    })
+    guardState.nftScriptIndexes = nftScriptIndexes
+
+    // Build nftBurnMasks by setting each byte to '01' for true
+    let nftBurnMasks = guardState.nftBurnMasks
     for (let index = 0; index < nftInputs.length; index++) {
-      guardState.nftBurnMasks[index] = true
+      const before = slice(nftBurnMasks, 0n, BigInt(index))
+      const after = slice(nftBurnMasks, BigInt(index + 1))
+      nftBurnMasks = before + toByteString('01') + after
     }
-    for (
-      let index = 0;
-      index < nftInputs.length && index < TX_INPUT_COUNT_MAX;
-      index++
-    ) {
-      guardState.nftScriptIndexes[nftInputs[index].inputIndex] = 0n
+    guardState.nftBurnMasks = nftBurnMasks
+
+    return {
+      guard,
+      guardState,
+      txInputCountMax: finalTxInputCountMax,
+      txOutputCountMax
     }
-    return { guardState }
   }
 
   static async getBackTraceInfo(
@@ -448,7 +838,7 @@ export class CAT721GuardPeripheral {
     const expectNftScriptHash = ContractPeripheral.scriptHash(
       new CAT721(
         minterScrtptHash,
-        ContractPeripheral.scriptHash(new CAT721Guard())
+        CAT721GuardPeripheral.getGuardScriptHashes()
       )
     )
 

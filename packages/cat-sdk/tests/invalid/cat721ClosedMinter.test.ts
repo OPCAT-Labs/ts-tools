@@ -1,4 +1,4 @@
-import { CAT20ClosedMinter, CAT20, CAT20Guard, CAT20ClosedMinterState, ConstantsLib, CAT20_AMOUNT, CAT721ClosedMinter, CAT721, CAT721Guard, CAT721ClosedMinterState } from "../../src/contracts";
+import { CAT20ClosedMinter, CAT20, CAT20ClosedMinterState, ConstantsLib, CAT20_AMOUNT, CAT721ClosedMinter, CAT721, CAT721ClosedMinterState } from "../../src/contracts";
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { isLocalTest } from '../utils';
@@ -7,7 +7,7 @@ import { loadAllArtifacts } from '../features/cat721/utils';
 import { assert, DefaultSigner, ExtPsbt, fill, getBackTraceInfo, IExtPsbt, PubKey, sha256, Signer, toByteString, toHex, uint8ArrayToHex, UTXO } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from '../utils/testSigner';
 import { getDummyUtxo, outpoint2ByteString, toTokenOwnerAddress } from "../../src/utils";
-import { ContractPeripheral } from "../../src/utils/contractPeripheral";
+import { ContractPeripheral, CAT721GuardPeripheral } from "../../src/utils/contractPeripheral";
 import { Postage } from "../../src/typeConstants";
 
 
@@ -241,7 +241,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721ClosedMinter'
         const minterScriptHash = ContractPeripheral.scriptHash(cat721ClosedMinter)
         const cat721 = new CAT721(
             minterScriptHash,
-            ContractPeripheral.scriptHash(new CAT721Guard())
+            CAT721GuardPeripheral.getGuardScriptHashes()
         )
         const nftScriptHash = ContractPeripheral.scriptHash(cat721)
         const minterState: CAT721ClosedMinterState = {
@@ -280,7 +280,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721ClosedMinter'
             nextLocalId: minter.state.nextLocalId + 1n,
         }
         const nextMinter = minter.next(nextMinterState);
-        const cat721 = new CAT721(ContractPeripheral.scriptHash(nextMinter), ContractPeripheral.scriptHash(new CAT721Guard()));
+        const cat721 = new CAT721(ContractPeripheral.scriptHash(nextMinter), CAT721GuardPeripheral.getGuardScriptHashes());
         cat721.state = {
             localId: mintLocalId,
             ownerAddr: toTokenOwnerAddress(mainAddress),

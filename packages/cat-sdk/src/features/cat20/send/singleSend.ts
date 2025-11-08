@@ -25,8 +25,7 @@ import {
   CAT20GuardPeripheral,
   ContractPeripheral,
 } from '../../../utils/contractPeripheral'
-import { Postage } from '../../../typeConstants'
-import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
+import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants'
 import { CAT20 } from '../../../contracts/cat20/cat20'
 import * as opcat from '@opcat-labs/opcat'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
@@ -73,7 +72,7 @@ export async function singleSend(
   const pubkey = await signer.getPublicKey()
   const feeChangeAddress = await signer.getAddress()
   let feeUtxos = await provider.getUtxos(feeChangeAddress)
-  const { guardPsbt, outputTokenStates, changeTokenOutputIndex, guard } = await singleSendStep1(
+  const { guardPsbt, outputTokenStates, changeTokenOutputIndex, guard, txInputCountMax, txOutputCountMax } = await singleSendStep1(
     provider,
     feeUtxos,
     inputTokenUtxos,
@@ -96,11 +95,11 @@ export async function singleSend(
     feeChangeAddress,
     pubkey,
     feeRate,
-    sendChangeData
-  )
-  const signedSendPsbt = ExtPsbt.fromHex(
-    await signer.signPsbt(sendPsbt.toHex(), sendPsbt.psbtOptions())
-  )
+    sendChangeData,
+    txInputCountMax,
+    txOutputCountMax
+  );
+  const signedSendPsbt = ExtPsbt.fromHex(await signer.signPsbt(sendPsbt.toHex(), sendPsbt.psbtOptions()))
   sendPsbt.combine(signedSendPsbt).finalizeAllInputs()
   const { newCAT20Utxos } = await singleSendStep3(
     provider,
@@ -174,7 +173,14 @@ export async function singleSendStep1(
       amount: totalInputAmount - totalOutputAmount,
     })
   }
-  const { guardState, outputTokens: _outputTokens } =
+
+  // Calculate transaction input/output counts for send transaction
+  // Inputs: token inputs + guard input + fee input
+  const txInputCount = inputTokenUtxos.length + 2
+  // Outputs: token outputs + satoshi change output
+  const txOutputCount = receivers.length + 1
+
+  const { guard, guardState, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
     CAT20GuardPeripheral.createTransferGuard(
       inputTokenUtxos.map((utxo, index) => ({
         token: utxo,
@@ -183,12 +189,13 @@ export async function singleSendStep1(
       receivers.map((receiver, index) => ({
         ...receiver,
         outputIndex: index,
-      }))
+      })),
+      txInputCount,
+      txOutputCount
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined
   ) as CAT20State[]
-  const guard = new CAT20Guard()
   guard.state = guardState
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(feeUtxos)
@@ -196,7 +203,7 @@ export async function singleSendStep1(
     .change(feeChangeAddress, feeRate)
     .seal()
 
-  return { guard, guardPsbt, outputTokenStates: outputTokens, changeTokenOutputIndex }
+  return { guard, guardPsbt, outputTokenStates: outputTokens, changeTokenOutputIndex, txInputCountMax, txOutputCountMax }
 }
 
 /**
@@ -221,14 +228,16 @@ export async function singleSendStep2(
   minterScriptHash: ByteString,
   hasAdmin: boolean,
   adminScriptHash: ByteString,
-  guard: CAT20Guard,
+  guard: any,
   finalizedGuardPsbt: ExtPsbt,
   inputTokenUtxos: UTXO[],
   outputTokenStates: CAT20State[],
   feeChangeAddress: string,
   publicKey: string,
   feeRate: number,
-  sendChangeData?: Buffer
+  sendChangeData: Buffer | undefined,
+  txInputCountMax: number,
+  txOutputCountMax: number
 ) {
 
   const network = await provider.getNetwork()
@@ -236,7 +245,7 @@ export async function singleSendStep2(
   const guardUtxo = guardPsbt.getUtxo(0)
   const feeUtxo = guardPsbt.getChangeUTXO()!
 
-  const guardScriptHash = ContractPeripheral.scriptHash(guard)
+  const guardScriptHashes = CAT20GuardPeripheral.getGuardScriptHashes()
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
     inputTokenUtxos,
@@ -247,7 +256,7 @@ export async function singleSendStep2(
   const inputTokens: CAT20[] = inputTokenUtxos.map((_token, index) =>
     new CAT20(
       minterScriptHash,
-      guardScriptHash,
+      guardScriptHashes,
       hasAdmin,
       adminScriptHash
     ).bindToUtxo({
@@ -296,7 +305,7 @@ export async function singleSendStep2(
   for (const outputToken of outputTokenStates) {
     const cat20 = new CAT20(
       minterScriptHash,
-      guardScriptHash,
+      guardScriptHashes,
       hasAdmin,
       adminScriptHash
     )
@@ -307,7 +316,7 @@ export async function singleSendStep2(
   // add guard input
   guard.bindToUtxo(guardUtxo)
   sendPsbt.addContractInput(guard, (contract, tx) => {
-    const ownerAddrOrScriptHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+    const ownerAddrOrScriptHashes = fill(toByteString(''), txOutputCountMax)
     applyFixedArray(
       ownerAddrOrScriptHashes,
       tx.txOutputs.map((output, index) => {
@@ -316,39 +325,39 @@ export async function singleSendStep2(
           : ContractPeripheral.scriptHash(toHex(output.script))
       })
     )
-    const outputTokenAmts = fill(BigInt(0), TX_OUTPUT_COUNT_MAX)
+    const outputTokenAmts = fill(BigInt(0), txOutputCountMax)
     applyFixedArray(
       outputTokenAmts,
       outputTokenStates.map((t) => t.amount)
     )
-    const tokenScriptIndexArray = fill(-1n, TX_OUTPUT_COUNT_MAX)
+    const tokenScriptIndexArray = fill(-1n, txOutputCountMax)
     applyFixedArray(
       tokenScriptIndexArray,
       outputTokenStates.map(() => 0n)
     )
-    const outputSatoshis = fill(0n, TX_OUTPUT_COUNT_MAX)
+    const outputSatoshis = fill(0n, txOutputCountMax)
     applyFixedArray(
       outputSatoshis,
       tx.txOutputs.map((output) => output.value)
     )
     const inputCAT20States = fill(
       CAT20StateLib.create(0n, ''),
-      TX_INPUT_COUNT_MAX
+      txInputCountMax
     )
     applyFixedArray(inputCAT20States, inputTokenStates)
-    const nextStateHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+    const nextStateHashes = fill(toByteString(''), txOutputCountMax)
     applyFixedArray(
       nextStateHashes,
       tx.txOutputs.map((output) => sha256(toHex(output.data)))
     )
 
     contract.unlock(
-      nextStateHashes,
-      ownerAddrOrScriptHashes,
-      outputTokenAmts,
-      tokenScriptIndexArray,
-      outputSatoshis,
-      inputCAT20States,
+      nextStateHashes as any,
+      ownerAddrOrScriptHashes as any,
+      outputTokenAmts as any,
+      tokenScriptIndexArray as any,
+      outputSatoshis as any,
+      inputCAT20States as any,
       BigInt(tx.txOutputs.length)
     )
   }

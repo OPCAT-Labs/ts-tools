@@ -1,11 +1,7 @@
-import {
-  ByteString,
-  FixedArray,
-  TxHashPreimage,
-} from '@opcat-labs/scrypt-ts-opcat'
+import { ByteString, FixedArray, TxHashPreimage } from "@opcat-labs/scrypt-ts-opcat"
 import { StateHashes } from '../types'
-import { GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from '../constants'
-import { StructObject } from '@opcat-labs/scrypt-ts-opcat'
+import { GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants";
+import { StructObject } from "@opcat-labs/scrypt-ts-opcat";
 
 export type CAT20_AMOUNT = bigint
 
@@ -19,24 +15,6 @@ export type CAT20State = {
   ownerAddr: ByteString
   // token amount
   amount: CAT20_AMOUNT
-}
-
-/**
- * The CAT20 guard info
- * @category CAT20
- * @onchain
- */
-export type CAT20GuardInfo = {
-  // guard input index in curTx\
-  inputIndex: bigint
-
-  // guard prevTx
-  prevTxPreimage: TxHashPreimage
-  prevOutIndex: bigint
-
-  // guard state
-  curState: CAT20GuardConstState
-  curStateHashes: StateHashes
 }
 
 /**
@@ -72,7 +50,8 @@ export type CAT20GuardConstState = {
   // the input #0 and #5 is not a token contract
   // the input #1 and #4 is a token contract with script tokenScripts[0] = 'token1Script'
   // the input #2 and #3 is a token contract with script tokenScripts[1] = 'token2Script'
-  tokenScriptIndexes: FixedArray<bigint, typeof TX_INPUT_COUNT_MAX>
+  // each index occupys 1 byte
+  tokenScriptIndexes: ByteString
 }
 
 /**

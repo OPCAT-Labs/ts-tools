@@ -10,3 +10,7 @@ tsconfig-scryptTS.json
 !.vscode/launch.json
 !.vscode/tasks.json
 !.vscode/settings.json
+
+
+cat20Guard_*.ts
+cat721Guard_*.ts

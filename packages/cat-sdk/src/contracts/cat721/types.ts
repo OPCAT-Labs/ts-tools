@@ -1,5 +1,5 @@
 import { Bool, ByteString, FixedArray, Int32 } from "@opcat-labs/scrypt-ts-opcat"
-import { GUARD_TOKEN_TYPE_MAX, NFT_GUARD_COLLECTION_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants"
+import { GUARD_TOKEN_TYPE_MAX, NFT_GUARD_COLLECTION_TYPE_MAX } from "../constants"
 
 /**
  * The CAT721 state
@@ -23,8 +23,8 @@ export type CAT721GuardConstState = {
     // for each input of curTx
     // if the input is an nft and it will be burned, then the value is true
     // otherwise, the value is false by default
-    nftBurnMasks: FixedArray<Bool, typeof TX_INPUT_COUNT_MAX>;
-    nftScriptIndexes: FixedArray<bigint, typeof TX_INPUT_COUNT_MAX>;
+    nftBurnMasks: ByteString;
+    nftScriptIndexes: ByteString;
 }
 
 /**

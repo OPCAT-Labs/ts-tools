@@ -25,11 +25,12 @@
   ],
   "scripts": {
     "clean": "rimraf scrypt.index.json && rimraf dist && rimraf artifacts",
+    "gen:guard": "ts-node ./scripts/generateGuard.ts",
     "build": "npm run compile && rimraf dist && npm run build:cjs && npm run build:esm && npx -y cpy-cli artifacts dist/ ",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:esm": "tsc -p tsconfig.esm.json",
     "deploy": "npx ts-node ./deploy.ts",
-    "compile": "rimraf artifacts && scrypt-cli-opcat compile",
+    "compile": "rimraf artifacts && npm run gen:guard && scrypt-cli-opcat compile",
     "test": "npm run test:local",
     "test:local": "mocha",
     "test:testnet": "cross-env NETWORK=opcat-testnet mocha --no-timeouts --bail",

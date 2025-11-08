@@ -1,4 +1,7 @@
-import { CAT20Guard } from '../../../src/contracts/cat20/cat20Guard'
+import { CAT20Guard_6_6_2 } from '../../../src/contracts/cat20/cat20Guard_6_6_2'
+import { CAT20Guard_6_6_4 } from '../../../src/contracts/cat20/cat20Guard_6_6_4'
+import { CAT20Guard_12_12_2 } from '../../../src/contracts/cat20/cat20Guard_12_12_2'
+import { CAT20Guard_12_12_4 } from '../../../src/contracts/cat20/cat20Guard_12_12_4'
 import { CAT20ClosedMinter } from '../../../src/contracts/cat20/minters/cat20ClosedMinter'
 import { CAT20OpenMinter } from '../../../src/contracts/cat20/minters/cat20OpenMinter'
 import { CAT20 } from '../../../src/contracts/cat20/cat20'
@@ -28,10 +31,11 @@ export const loadAllArtifacts = function () {
   //
   CAT20.loadArtifact(readArtifact('artifacts/cat20/cat20.json'))
   CAT20StateLib.loadArtifact(readArtifact('artifacts/cat20/cat20StateLib.json'))
-  CAT20Guard.loadArtifact(readArtifact('artifacts/cat20/cat20Guard.json'))
-  CAT20GuardStateLib.loadArtifact(
-    readArtifact('artifacts/cat20/cat20GuardStateLib.json')
-  )
+  CAT20Guard_6_6_2.loadArtifact(readArtifact('artifacts/cat20/cat20Guard_6_6_2.json'))
+  CAT20Guard_6_6_4.loadArtifact(readArtifact('artifacts/cat20/cat20Guard_6_6_4.json'))
+  CAT20Guard_12_12_2.loadArtifact(readArtifact('artifacts/cat20/cat20Guard_12_12_2.json'))
+  CAT20Guard_12_12_4.loadArtifact(readArtifact('artifacts/cat20/cat20Guard_12_12_4.json'))
+  CAT20GuardStateLib.loadArtifact(readArtifact('artifacts/cat20/cat20GuardStateLib.json'))
 }
 
 export async function deployToken(info: OpenMinterCAT20Meta) {

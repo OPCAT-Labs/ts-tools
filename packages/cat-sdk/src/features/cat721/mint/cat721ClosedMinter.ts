@@ -1,7 +1,7 @@
 
 import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, markSpent, PubKey, Signer, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT721, CAT721Guard, CAT721State, ClosedMinterCAT721Meta, ConstantsLib } from "../../../contracts";
-import { CAT721ClosedMinterPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral";
+import { CAT721, CAT721State, ClosedMinterCAT721Meta, ConstantsLib } from "../../../contracts";
+import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral";
 import { CAT721ClosedMinter } from "../../../contracts/cat721/minters/cat721ClosedMinter";
 import { createNft } from "./nft";
 import { Postage } from "../../../typeConstants";
@@ -81,8 +81,7 @@ export async function mintClosedMinterNft(
         // minter is always the first input
         0
     )
-    const guard = new CAT721Guard()
-    const cat721 = new CAT721(ContractPeripheral.scriptHash(closedMinter), ContractPeripheral.scriptHash(guard))
+    const cat721 = new CAT721(ContractPeripheral.scriptHash(closedMinter), CAT721GuardPeripheral.getGuardScriptHashes())
     cat721.state = nftState
     const minterPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .addContractInput(closedMinter, (contract, tx) => {

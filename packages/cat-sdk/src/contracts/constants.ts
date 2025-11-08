@@ -50,27 +50,41 @@ export const OWNER_ADDR_CONTRACT_HASH_BYTE_LEN = SHA256_HASH_LEN // contract scr
  * @category Constants
  * @onchain
  */
-export const TX_INPUT_COUNT_MAX = 10
+export const TX_INPUT_COUNT_MAX_6 = 6;
+export const TX_INPUT_COUNT_MAX_12 = 12;
+export const TX_INPUT_COUNT_MAX = TX_INPUT_COUNT_MAX_12;
 /**
  * The maximum number of outputs in a transaction
  * @category Constants
  * @onchain
  */
-export const TX_OUTPUT_COUNT_MAX = 10
+// export const TX_OUTPUT_COUNT_MAX = 10
+export const TX_OUTPUT_COUNT_MAX_6 = 6;
+export const TX_OUTPUT_COUNT_MAX_12 = 12;
+export const TX_OUTPUT_COUNT_MAX = TX_OUTPUT_COUNT_MAX_12;
 
 /**
  * The maximum number of different tokens in a guard
  * @category Constants
  * @onchain
  */
-export const GUARD_TOKEN_TYPE_MAX = 4
+export const GUARD_TOKEN_TYPE_MAX = 4;
+export const GUARD_TOKEN_TYPE_MAX_2 = 2;
+export const GUARD_TOKEN_TYPE_MAX_4 = 4;
+export const GUARD_CONTRACT_COUNT = 4;
 
 /**
  * The maximum number of different nft collections in a guard
  * @category Constants
  * @onchain
  */
-export const NFT_GUARD_COLLECTION_TYPE_MAX = 4
+export const NFT_GUARD_COLLECTION_TYPE_MAX = 4;
+export const NFT_GUARD_COLLECTION_TYPE_MAX_2 = 2;
+export const NFT_GUARD_COLLECTION_TYPE_MAX_4 = 4;
+export const NFT_GUARD_CONTRACT_COUNT = 4;
+
+
+
 
 // txHashPreimage
 // output: satoshis(8) + lockingScriptHash(32) + dataHash(32)

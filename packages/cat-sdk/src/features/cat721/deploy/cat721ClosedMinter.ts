@@ -4,8 +4,7 @@ import { ClosedMinterCAT721Meta } from "../../../contracts/cat721/types";
 import { CAT721NftInfo } from "../../../lib/metadata";
 import { filterFeeUtxos } from "../../../utils";
 import { checkState } from "../../../utils/check";
-import { CAT721ClosedMinterPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral";
-import { CAT721Guard } from "../../../contracts/cat721/cat721Guard";
+import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral";
 import { ConstantsLib, TX_INPUT_COUNT_MAX } from "../../../contracts/constants";
 import { Postage } from "../../../typeConstants";
 import { CAT721 } from "../../../contracts/cat721/cat721";
@@ -65,8 +64,7 @@ export async function deployClosedMinterCollection(
     const collectionId = `${genesisPsbt.getChangeUTXO()!.txId}_${genesisPsbt.getChangeUTXO()!.outputIndex}`
     const cat721ClosedMinter = CAT721ClosedMinterPeripheral.createMinter(collectionId, metadata)
     const minterScriptHash = ContractPeripheral.scriptHash(cat721ClosedMinter)
-    const guard = new CAT721Guard()
-    const cat721 = new CAT721(minterScriptHash, ContractPeripheral.scriptHash(guard))
+    const cat721 = new CAT721(minterScriptHash, CAT721GuardPeripheral.getGuardScriptHashes())
     const nftScriptHash = ContractPeripheral.scriptHash(cat721)
     const minterState: CAT721ClosedMinterState = {
         nftScriptHash,

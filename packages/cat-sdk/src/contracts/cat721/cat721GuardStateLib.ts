@@ -1,6 +1,6 @@
-import { assert, ByteString, fill, FixedArray, len, method, Ripemd160, sha1, SHA256_HASH_LEN, StateLib, toByteString } from "@opcat-labs/scrypt-ts-opcat";
+import { assert, ByteString, byteStringToInt, fill, FixedArray, intToByteString, len, method, Ripemd160, sha1, SHA256_HASH_LEN, slice, StateLib, toByteString } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721GuardConstState } from "./types";
-import { ConstantsLib, NFT_GUARD_COLLECTION_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants";
+import { ConstantsLib, NFT_GUARD_COLLECTION_TYPE_MAX, TX_INPUT_COUNT_MAX_12, TX_INPUT_COUNT_MAX_6 } from "../constants";
 
 
 /**
@@ -11,7 +11,7 @@ import { ConstantsLib, NFT_GUARD_COLLECTION_TYPE_MAX, TX_INPUT_COUNT_MAX } from 
  */
 export class CAT721GuardStateLib extends StateLib<CAT721GuardConstState> {
     @method()
-    static formalCheckState(_state: CAT721GuardConstState): ByteString {
+    static formalCheckState6(_state: CAT721GuardConstState): ByteString {
         CAT721GuardStateLib.checkNftScriptsUniq(_state.nftScriptHashes)
 
         for (let i = 0; i < NFT_GUARD_COLLECTION_TYPE_MAX; i++) {
@@ -19,8 +19,24 @@ export class CAT721GuardStateLib extends StateLib<CAT721GuardConstState> {
             assert(scriptLen == SHA256_HASH_LEN);
         }
 
-        for (let i = 0; i < TX_INPUT_COUNT_MAX; i++) {
-            const scriptIndex = _state.nftScriptIndexes[i];
+        for (let i = 0; i < TX_INPUT_COUNT_MAX_6; i++) {
+            const scriptIndex = byteStringToInt(slice(_state.nftScriptIndexes, BigInt(i), BigInt(i + 1)));
+            assert(scriptIndex >= -1 && scriptIndex < NFT_GUARD_COLLECTION_TYPE_MAX);
+        }
+        return toByteString('')
+    }
+    
+    @method()
+    static formalCheckState12(_state: CAT721GuardConstState): ByteString {
+        CAT721GuardStateLib.checkNftScriptsUniq(_state.nftScriptHashes)
+
+        for (let i = 0; i < NFT_GUARD_COLLECTION_TYPE_MAX; i++) {
+            const scriptLen = len(_state.nftScriptHashes[i]);
+            assert(scriptLen == SHA256_HASH_LEN);
+        }
+
+        for (let i = 0; i < TX_INPUT_COUNT_MAX_12; i++) {
+            const scriptIndex = byteStringToInt(slice(_state.nftScriptIndexes, BigInt(i), BigInt(i + 1)));
             assert(scriptIndex >= -1 && scriptIndex < NFT_GUARD_COLLECTION_TYPE_MAX);
         }
         return toByteString('')
@@ -37,17 +53,22 @@ export class CAT721GuardStateLib extends StateLib<CAT721GuardConstState> {
         assert(nftScripts[2] != nftScripts[3]);
     }
 
-    static createEmptyState(): CAT721GuardConstState {
+    static createEmptyState(txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12): CAT721GuardConstState {
         const nftScriptHashes = fill(toByteString(''), NFT_GUARD_COLLECTION_TYPE_MAX)
         // default value to ensure the uniqueness of nft scripts
         nftScriptHashes[0] = ConstantsLib.TOKEN_SCRIPT_HASH_PLACEHOLDER_FF
         nftScriptHashes[1] = ConstantsLib.TOKEN_SCRIPT_HASH_PLACEHOLDER_FE
         nftScriptHashes[2] = ConstantsLib.TOKEN_SCRIPT_HASH_PLACEHOLDER_FD
         nftScriptHashes[3] = ConstantsLib.TOKEN_SCRIPT_HASH_PLACEHOLDER_FC
+
+        
+        let nftScriptIndexesArray = fill(-1n, txInputCountMax)
+        const nftScriptIndexes = nftScriptIndexesArray.map(index => intToByteString(index, 1n)).join('')
+
         return {
             nftScriptHashes: nftScriptHashes,
-            nftBurnMasks: fill(false, TX_INPUT_COUNT_MAX),
-            nftScriptIndexes: fill(-1n, TX_INPUT_COUNT_MAX),
+            nftBurnMasks: '00'.repeat(txInputCountMax),
+            nftScriptIndexes,
         }
     }
 }

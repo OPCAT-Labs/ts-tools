@@ -10,9 +10,9 @@ import { deployToken } from '../utils'
 import { CAT20State } from '../../../../src/contracts/cat20/types'
 import { ContractPeripheral } from '../../../../src/utils/contractPeripheral'
 import { CAT20 } from '../../../../src/contracts/cat20/cat20'
-import { CAT20Guard } from '../../../../src/contracts/cat20/cat20Guard'
 import { toHex } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20OpenMinter } from '../../../../src/contracts/cat20/minters/cat20OpenMinter'
+import { CAT20GuardPeripheral } from '../../../../src/utils/contractPeripheral'
 import { verifyTx } from '../../../utils'
 import { formatMetadata } from '../../../../src/lib/metadata'
 import { ConstantsLib } from '../../../../src/contracts'
@@ -65,7 +65,7 @@ describe('Test the feature `deploy` for `openMinterV2`', () => {
       }
       const expectTokenScript = new CAT20(
         minterScriptHash,
-        ContractPeripheral.scriptHash(new CAT20Guard()),
+        CAT20GuardPeripheral.getGuardScriptHashes(),
         metadata.hasAdmin,
         adminScriptHash
       ).lockingScript.toHex()

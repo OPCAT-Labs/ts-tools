@@ -1,12 +1,11 @@
-import { prop, ByteString, SmartContract, method, BacktraceInfo, assert, ContextUtils, len, sha256, SpentScriptHashes, tags } from "@opcat-labs/scrypt-ts-opcat";
+import { prop, ByteString, SmartContract, method, BacktraceInfo, assert, ContextUtils, len, sha256, SpentScriptHashes, tags, slice, byteStringToInt, FixedArray, Sha256 } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721ContractUnlockArgs } from "../types";
 import { CAT721GuardConstState, CAT721State } from "./types";
 import { CAT721GuardStateLib } from "./cat721GuardStateLib";
-import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN } from "../constants";
+import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN, NFT_GUARD_CONTRACT_COUNT } from "../constants";
 import { OwnerUtils } from "../utils/ownerUtils";
 import { SpentDataHashes } from "@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs";
 import { CatTags } from "../catTags";
-
 
 /**
  * The CAT721 contract
@@ -21,12 +20,12 @@ export class CAT721 extends SmartContract<CAT721State> {
   minterScriptHash: ByteString
 
   @prop()
-  guardScriptHash: ByteString
+  guardScriptHashes: FixedArray<Sha256, typeof NFT_GUARD_CONTRACT_COUNT>;
 
-  constructor(minterScriptHash: ByteString, guardScriptHash: ByteString) {
+  constructor(minterScriptHash: ByteString, guardScriptHashes: FixedArray<Sha256, typeof NFT_GUARD_CONTRACT_COUNT>) {
     super(...arguments)
     this.minterScriptHash = minterScriptHash
-    this.guardScriptHash = guardScriptHash
+    this.guardScriptHashes = guardScriptHashes
   }
 
   @method()
@@ -69,12 +68,17 @@ export class CAT721 extends SmartContract<CAT721State> {
     t_spentDataHashesCtx: SpentDataHashes,
   ): void {
     // guard state contains current token state hash
-    assert(ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndex) == this.guardScriptHash, 'guard script hash is invalid')
+    const guardScriptHash = ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndex);
+    assert(
+      guardScriptHash == this.guardScriptHashes[0] || guardScriptHash == this.guardScriptHashes[1] ||
+      guardScriptHash == this.guardScriptHashes[2] || guardScriptHash == this.guardScriptHashes[3],
+      'guard script hash is invalid'
+    );
     assert(ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndex) == CAT721GuardStateLib.stateHash(guardState), 'guard state hash is invalid')
 
     // guard state contains current token script
     // and the corresponding value of array nftScriptHashes and nftScriptIndexes is correct
-    const cat721ScriptIndex = guardState.nftScriptIndexes[Number(t_cat721InputIndex)];
+    const cat721ScriptIndex = byteStringToInt(slice(guardState.nftScriptIndexes, t_cat721InputIndex, t_cat721InputIndex + 1n));
     assert(guardState.nftScriptHashes[Number(cat721ScriptIndex)] == t_cat721ScriptHash, 'nft script hash is invalid')
   }
 

@@ -6,18 +6,26 @@ import {
   assert,
   BacktraceInfo,
   SpentScriptHashes,
+  tags,
   ContextUtils,
+  byteStringToInt,
+  FixedArray,
+  Sha256,
   toByteString,
   len,
-  tags
+  slice
 } from '@opcat-labs/scrypt-ts-opcat'
 import { OwnerUtils } from '../utils/ownerUtils'
 import { CAT20State, CAT20GuardConstState } from './types'
-import { CAT20ContractUnlockArgs } from '../types'
+import {
+  CAT20ContractUnlockArgs,
+} from '../types'
+import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN, GUARD_CONTRACT_COUNT } from '../constants'
 import { SpentDataHashes } from '@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs'
 import { CAT20GuardStateLib } from './cat20GuardStateLib'
 import { INPUT_UNLOCKING_SCRIPT_HASH_LEN } from '../constants'
 import { CatTags } from '../catTags'
+
 /**
  * The CAT20 contract
  * @category Contract
@@ -30,7 +38,7 @@ export class CAT20 extends SmartContract<CAT20State> {
   minterScriptHash: ByteString
 
   @prop()
-  guardScriptHash: ByteString
+  guardScriptHashes: FixedArray<Sha256, typeof GUARD_CONTRACT_COUNT>;
 
   @prop()
   hasAdmin: boolean
@@ -40,13 +48,13 @@ export class CAT20 extends SmartContract<CAT20State> {
 
   constructor(
     minterScriptHash: ByteString,
-    guardScriptHash: ByteString,
+    guardScriptHashes: FixedArray<Sha256, typeof GUARD_CONTRACT_COUNT>,
     hasAdmin: boolean,
     adminScriptHash: ByteString
   ) {
     super(...arguments)
     this.minterScriptHash = minterScriptHash
-    this.guardScriptHash = guardScriptHash
+    this.guardScriptHashes = guardScriptHashes
     this.hasAdmin = hasAdmin
     this.adminScriptHash = adminScriptHash
   }
@@ -117,21 +125,17 @@ export class CAT20 extends SmartContract<CAT20State> {
     t_spentDataHashesCtx: SpentDataHashes
   ): void {
     // 1. check there is a guard input by shPreimage.hashSpentScriptHashes
+    const guardScriptHash = ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndexVal);
     assert(
-      ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndexVal) ==
-        this.guardScriptHash,
+      guardScriptHash == this.guardScriptHashes[0] || guardScriptHash == this.guardScriptHashes[1] ||
+      guardScriptHash == this.guardScriptHashes[2] || guardScriptHash == this.guardScriptHashes[3],
       'guard script hash is invalid'
-    )
-    assert(
-      ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndexVal) ==
-        CAT20GuardStateLib.stateHash(guardState),
-      'guard state hash is invalid'
-    )
+    );
+    assert(ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndexVal) == CAT20GuardStateLib.stateHash(guardState), 'guard state hash is invalid');
 
     // 2. check the guard input is validating current input by checking guard state contains current token script
     // and the corresponding value of array tokenScripts and tokenScriptIndexes is correct
-    const tokenScriptIndex =
-      guardState.tokenScriptIndexes[Number(t_cat20InputIndexVal)]
+    const tokenScriptIndex = byteStringToInt(slice(guardState.tokenScriptIndexes, t_cat20InputIndexVal, t_cat20InputIndexVal + 1n))
     assert(
       guardState.tokenScriptHashes[Number(tokenScriptIndex)] ==
         t_cat20ScriptHash,

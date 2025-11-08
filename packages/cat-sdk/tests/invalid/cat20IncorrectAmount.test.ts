@@ -3,11 +3,11 @@ import chaiAsPromised from 'chai-as-promised';
 import { isLocalTest } from '../utils';
 import { testProvider } from '../utils/testProvider';
 import { loadAllArtifacts } from '../features/cat20/utils';
-import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, uint8ArrayToHex } from '@opcat-labs/scrypt-ts-opcat';
+import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, uint8ArrayToHex, slice, intToByteString } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from '../utils/testSigner';
 import {createCat20, TestCat20} from '../utils/testCAT20Generator';
-import { CAT20, CAT20Guard, CAT20GuardStateLib, CAT20State, CAT20StateLib, ConstantsLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from '../../src/contracts';
-import { ContractPeripheral } from '../../src/utils/contractPeripheral';
+import { CAT20, CAT20State, CAT20StateLib, CAT20GuardStateLib } from '../../src/contracts';
+import { ContractPeripheral, CAT20GuardPeripheral } from '../../src/utils/contractPeripheral';
 import { applyFixedArray, getDummyUtxo } from '../../src/utils';
 import { Postage } from '../../src/typeConstants';
 use(chaiAsPromised)
@@ -72,13 +72,6 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
     });
 
     async function testCase(cat20: TestCat20, outputAmountList: bigint[], burnAmountList: bigint[]) {
-        const guardState = CAT20GuardStateLib.createEmptyState();
-
-        // only 1 type token
-        guardState.tokenScriptHashes[0] = ContractPeripheral.scriptHash(cat20.utxos[0].script);
-        guardState.tokenAmounts[0] = cat20.utxos.reduce((acc, utxo) => acc + CAT20.deserializeState(utxo.data).amount, 0n);
-        guardState.tokenBurnAmounts[0] = burnAmountList.reduce((acc, amount) => acc + amount, 0n);
-
         const outputStates: CAT20State[] = outputAmountList
             .filter((amount) => amount > 0n)
             .map((amount) => ({
@@ -86,12 +79,43 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
                 amount,
             }));
         const outputHasCat20 = outputStates.length > 0;
-        cat20.utxos.forEach((utxo, i) => {
-            guardState.tokenScriptIndexes[i] = 0n;
-        });
 
-        const guard = new CAT20Guard();
+        // For incorrectAmount tests, we need to manually create the guard with incorrect amounts
+        // First get the txInputCountMax and txOutputCountMax by creating a dummy guard
+        const totalInputAmount = cat20.utxos.reduce((acc, utxo) => acc + CAT20.deserializeState(utxo.data).amount, 0n);
+        const totalOutputAmount = outputAmountList.reduce((acc, amount) => acc + amount, 0n);
+        const totalBurnAmount = burnAmountList.reduce((acc, amount) => acc + amount, 0n);
+
+        // Calculate transaction counts
+        const receivers = totalInputAmount > 0n ? [{ address: CAT20.deserializeState(cat20.utxos[0].data).ownerAddr, amount: totalInputAmount, outputIndex: 0 }] : [];
+        const txInputCount = cat20.utxos.length + 2;
+        const txOutputCount = receivers.length + 1;
+
+        // Create guard with correct structure (use input amount for now to pass validation)
+        const { guard, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
+            cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
+            receivers,
+            txInputCount,
+            txOutputCount
+        );
+
+        // Now manually construct the guardState with incorrect amounts for testing
+        const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax);
+        guardState.tokenScriptHashes[0] = ContractPeripheral.scriptHash(cat20.utxos[0].script);
+        guardState.tokenAmounts[0] = totalInputAmount;
+        guardState.tokenBurnAmounts[0] = totalBurnAmount;
+
+        // Build tokenScriptIndexes
+        let tokenScriptIndexes = guardState.tokenScriptIndexes;
+        for (let index = 0; index < cat20.utxos.length; index++) {
+            const before = slice(tokenScriptIndexes, 0n, BigInt(index));
+            const after = slice(tokenScriptIndexes, BigInt(index + 1));
+            tokenScriptIndexes = before + intToByteString(0n, 1n) + after;
+        }
+        guardState.tokenScriptIndexes = tokenScriptIndexes;
+
         guard.state = guardState;
+        const guardScriptHashes = CAT20GuardPeripheral.getGuardScriptHashes();
         {
             const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8}).spendUTXO(getDummyUtxo(mainAddress)).addContractOutput(guard, 1e8);
             const signedPsbtHex = await testSigner.signPsbt(psbt.seal().toHex(), psbt.psbtOptions());
@@ -101,7 +125,7 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
         const guardInputIndex = cat20.utxos.length;
         const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8});
         cat20.utxos.forEach((utxo, inputIndex) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.guardScriptHash, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
             psbt.addContractInput(cat20Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
@@ -119,7 +143,7 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
         psbt.addContractInput(guard, (contract, curPsbt) => {
             const cat20OutputStartIndex = 0;
             const cat20InputStartIndex = 0;
-            const ownerAddrOrScripts = fill(toByteString(''), TX_OUTPUT_COUNT_MAX);
+            const ownerAddrOrScripts = fill(toByteString(''), txOutputCountMax);
             {
                 const outputScriptHashes = curPsbt.txOutputs
                     .map((output) => toByteString(sha256(uint8ArrayToHex(output.script))));
@@ -128,7 +152,7 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
                 applyFixedArray(ownerAddrOrScripts, cat20OwnerAddrs, cat20OutputStartIndex);
             }
 
-            const outputTokens = fill(0n, TX_OUTPUT_COUNT_MAX);
+            const outputTokens = fill(0n, txOutputCountMax);
             {
                 const cat20OutputAmounts = outputStates.map((state) => state.amount);
                 if (outputHasCat20) {
@@ -136,7 +160,7 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
                 }
             }
 
-            const tokenScriptIndexes = fill(-1n, TX_OUTPUT_COUNT_MAX);
+            const tokenScriptIndexes = fill(-1n, txOutputCountMax);
             {
                 const cat20ScriptOutputIndexes = outputStates.map(() => 0n);
                 if (outputHasCat20) {
@@ -144,17 +168,17 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
                 }
             }
 
-            const outputSatoshis = fill(0n, TX_OUTPUT_COUNT_MAX);
+            const outputSatoshis = fill(0n, txOutputCountMax);
             {
                 applyFixedArray(outputSatoshis, curPsbt.txOutputs.map((output) => BigInt(output.value)));
             }
-            const cat20States = fill(CAT20StateLib.create(0n, toByteString('')), TX_INPUT_COUNT_MAX);
+            const cat20States = fill(CAT20StateLib.create(0n, toByteString('')), txInputCountMax);
             {
                 const inputCat20States = cat20.utxos.map((utxo) => CAT20.deserializeState(utxo.data));
                 applyFixedArray(cat20States, inputCat20States, cat20InputStartIndex);
             }
             const outputCount = curPsbt.txOutputs.length;
-            const nextStateHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+            const nextStateHashes = fill(toByteString(''), txOutputCountMax)
             applyFixedArray(
               nextStateHashes,
               curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
@@ -170,7 +194,7 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
             );
         });
         outputStates.forEach((state) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.guardScriptHash, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash)
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash)
             cat20Contract.state = state;
             psbt.addContractOutput(
                 cat20Contract,

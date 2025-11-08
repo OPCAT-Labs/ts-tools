@@ -27,5 +27,5 @@
     "emitDecoratorMetadata": true,
     "useUnknownInCatchVariables": false
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "src/contracts/cat721/cat721Guard_TIM_TOM_GTT.template"]
 }
