@@ -50,7 +50,6 @@ export class MinterService {
       const where = {
         lockingScriptHash: tokenInfo.minterScriptHash,
         spendTxid: IsNull(),
-        blockHeight: LessThanOrEqual(lastProcessedHeight),
       };
       if (isCountQuery) {
         count = await this.txOutRepository.count({

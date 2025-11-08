@@ -196,7 +196,6 @@ export class TokenService {
     const where = {
       ownerPubKeyHash,
       spendTxid: IsNull(),
-      // blockHeight: LessThanOrEqual(lastProcessedHeight),
     };
     if (tokenInfo) {
       Object.assign(where, { lockingScriptHash: tokenInfo.tokenScriptHash });
@@ -316,7 +315,6 @@ export class TokenService {
     if (tokenInfo && tokenInfo.tokenScriptHash && lastProcessedHeight) {
       const where = {
         tokenPubKey: tokenInfo.tokenScriptHash,
-        blockHeight: LessThanOrEqual(lastProcessedHeight),
       };
 
       // todo: fix here token_amount is not exists at tokenMint.entity.ts
