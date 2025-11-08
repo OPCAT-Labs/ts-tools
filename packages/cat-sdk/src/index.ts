@@ -17,6 +17,7 @@ export {
   ContractPeripheral,
   CAT20OpenMinterPeripheral,
   CAT20GuardPeripheral,
+  CAT721GuardPeripheral,
 } from './utils/contractPeripheral'
 
 import { loadAllArtifacts } from './utils/loadAllArtifacts'
