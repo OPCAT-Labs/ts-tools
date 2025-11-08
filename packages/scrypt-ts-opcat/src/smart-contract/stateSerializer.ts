@@ -2,7 +2,6 @@ import { ABICoder } from './abi.js';
 import { assert, hash160, intToByteString, len, slice, toByteString, byteStringToInt } from './fns/index.js';
 import { OpcatState, ByteString } from './types/primitives.js';
 import { Artifact } from './types/artifact.js';
-import { MAX_FLAT_FIELDS_IN_STATE } from './consts.js';
 import { getUnRenamedSymbol } from './abiutils.js';
 import { Argument } from './types/abi.js';
 
@@ -35,13 +34,6 @@ export function serializeState(
   }
 
   const fields = abiCoder.flattenStruct(state, stateType);
-
-  if (fields.length > MAX_FLAT_FIELDS_IN_STATE) {
-    // the hashes of the fields are connected on the stack, so the max length is 520 / 20 = 26.
-    throw new Error(
-      `Too many flattened fields in the state object ${stateType}, the max is ${MAX_FLAT_FIELDS_IN_STATE}`,
-    );
-  }
 
   let data = toByteString('');
 
