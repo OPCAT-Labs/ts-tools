@@ -122,7 +122,9 @@ export class TokenController {
         tokenIdOrTokenScriptHash,
         TokenTypeScope.Fungible,
       );
-      return okResponse(holdersNum);
+      return okResponse({
+        holdersNum: holdersNum.toString()
+      });
     } catch (e) {
       return errorResponse(e);
     }
