@@ -11,5 +11,6 @@
     "resolveJsonModule": true,
     "strict": false /* Enable all strict type-checking options. */
   },
-  "include": ["./src/**/*"]
+  "include": ["./src/**/*"],
+  "exclude": ["src/**/*.template.ts"]
 }
