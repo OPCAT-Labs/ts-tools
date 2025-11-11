@@ -1,6 +1,36 @@
 import fs from 'fs'
 import {dirname, join, resolve, sep} from 'path'
 
+/**
+ * Generate guard contract templates with different configurations.
+ *
+ * Template Parameters:
+ * - TI_COUNT: Transaction Inputs count - maximum number of inputs the guard can handle
+ * - TO_COUNT: Transaction Outputs count - maximum number of outputs the guard can handle
+ * - GTT_COUNT: Guard Type Tag count - maximum number of different token types or NFT types
+ *              that can be transferred in a single transaction
+ *
+ * Configuration Rationale:
+ * We balance transaction size vs functionality by providing multiple template variants:
+ *
+ * - 6_6_2: Basic transfers with minimal transaction size
+ *   Optimized for simple token transfers, keeping transactions as small as possible
+ *   to reduce fees and blockchain footprint. Supports up to 2 different token/NFT types.
+ *
+ * - 6_6_4: Basic transfers with multi-token support
+ *   Same input/output limits as 6_6_2 but supports up to 4 different token/NFT types
+ *   in a single transaction, enabling more complex token swaps while maintaining
+ *   relatively small transaction size.
+ *
+ * - 12_12_2: Extended I/O capacity for complex operations
+ *   Supports more inputs and outputs to handle batch operations and multi-party
+ *   transactions, with support for up to 2 different token/NFT types.
+ *
+ * - 12_12_4: Maximum flexibility for complex contract interactions
+ *   Provides the highest capacity for I/O and supports up to 4 different token/NFT types,
+ *   enabling complex multi-contract scenarios with multiple token types and contract
+ *   interactions in a single transaction.
+ */
 const templateVariables = [
     {
         TI_COUNT: 6,
@@ -34,7 +64,7 @@ function generateGuardTemplateContent(
 
     const fileName = sourceFilePath.split(sep).pop()!
     const dirName_ = dirname(sourceFilePath)
-    const targetFileName = fileName.replaceAll('TI_COUNT', TI_COUNT.toString()).replaceAll('TO_COUNT', TO_COUNT.toString()).replaceAll('GTT_COUNT', GTT_COUNT.toString()).replaceAll('.template', '.ts')
+    const targetFileName = fileName.replaceAll('TI_COUNT', TI_COUNT.toString()).replaceAll('TO_COUNT', TO_COUNT.toString()).replaceAll('GTT_COUNT', GTT_COUNT.toString()).replaceAll('.template.ts', '.ts')
     const targetFilePath = join(dirName_, targetFileName)
 
     console.log("generate: ", targetFilePath)
@@ -48,8 +78,8 @@ function generateGuardTemplateContent(
 }
 
 async function main() {
-    const sourceFilePathCat20 = resolve(__dirname, '../src/contracts/cat20/cat20Guard_TI_COUNT_TO_COUNT_GTT_COUNT.template')
-    const sourceFilePathCat721 = resolve(__dirname, '../src/contracts/cat721/cat721Guard_TI_COUNT_TO_COUNT_GTT_COUNT.template')
+    const sourceFilePathCat20 = resolve(__dirname, '../src/contracts/cat20/cat20Guard_TI_COUNT_TO_COUNT_GTT_COUNT.template.ts')
+    const sourceFilePathCat721 = resolve(__dirname, '../src/contracts/cat721/cat721Guard_TI_COUNT_TO_COUNT_GTT_COUNT.template.ts')
 
     for (const vars of templateVariables) {
 
