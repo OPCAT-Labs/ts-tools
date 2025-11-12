@@ -27,14 +27,16 @@ import {
   NULL_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
-  GUARD_CONTRACT_COUNT,
-  NFT_GUARD_CONTRACT_COUNT,
+  GUARD_VARIANTS_COUNT,
+  NFT_GUARD_VARIANTS_COUNT,
   TX_INPUT_COUNT_MAX_6,
   TX_INPUT_COUNT_MAX_12,
   TX_OUTPUT_COUNT_MAX_6,
   TX_OUTPUT_COUNT_MAX_12,
   GUARD_TOKEN_TYPE_MAX_2,
   NFT_GUARD_COLLECTION_TYPE_MAX_2,
+  GUARD_TOKEN_TYPE_MAX_4,
+  NFT_GUARD_COLLECTION_TYPE_MAX_4,
   GUARD_TOKEN_TYPE_MAX,
   NFT_GUARD_COLLECTION_TYPE_MAX
 } from '../contracts/constants'
@@ -175,16 +177,21 @@ export class CAT20OpenMinterPeripheral {
  * @category Utils
  */
 export class CAT20GuardPeripheral {
-  static getGuardScriptHashes() {
-    const guardScriptHashes: FixedArray<Sha256, typeof GUARD_CONTRACT_COUNT> = fill(
+  static getGuardVariantScriptHashes() {
+    const guardVariantScriptHashes: FixedArray<Sha256, typeof GUARD_VARIANTS_COUNT> = fill(
       '' as Sha256,
-      GUARD_CONTRACT_COUNT
+      GUARD_VARIANTS_COUNT
     )
-    guardScriptHashes[0] = ContractPeripheral.scriptHash(new CAT20Guard_6_6_2())
-    guardScriptHashes[1] = ContractPeripheral.scriptHash(new CAT20Guard_6_6_4())
-    guardScriptHashes[2] = ContractPeripheral.scriptHash(new CAT20Guard_12_12_2())
-    guardScriptHashes[3] = ContractPeripheral.scriptHash(new CAT20Guard_12_12_4())
-    return guardScriptHashes;
+    guardVariantScriptHashes[0] = ContractPeripheral.scriptHash(new CAT20Guard_6_6_2())
+    guardVariantScriptHashes[1] = ContractPeripheral.scriptHash(new CAT20Guard_6_6_4())
+    guardVariantScriptHashes[2] = ContractPeripheral.scriptHash(new CAT20Guard_12_12_2())
+    guardVariantScriptHashes[3] = ContractPeripheral.scriptHash(new CAT20Guard_12_12_4())
+    return guardVariantScriptHashes;
+  }
+
+  // Deprecated: Use getGuardVariantScriptHashes() instead
+  static getGuardScriptHashes() {
+    return CAT20GuardPeripheral.getGuardVariantScriptHashes();
   }
 
   /**
@@ -558,16 +565,21 @@ export class CAT20GuardPeripheral {
  * @category Utils
  */
 export class CAT721GuardPeripheral {
-  static getGuardScriptHashes() {
-    const guardScriptHashes: FixedArray<Sha256, typeof NFT_GUARD_CONTRACT_COUNT> = fill(
+  static getGuardVariantScriptHashes() {
+    const guardVariantScriptHashes: FixedArray<Sha256, typeof NFT_GUARD_VARIANTS_COUNT> = fill(
       '' as Sha256,
-      NFT_GUARD_CONTRACT_COUNT
+      NFT_GUARD_VARIANTS_COUNT
     )
-    guardScriptHashes[0] = ContractPeripheral.scriptHash(new CAT721Guard_6_6_2())
-    guardScriptHashes[1] = ContractPeripheral.scriptHash(new CAT721Guard_6_6_4())
-    guardScriptHashes[2] = ContractPeripheral.scriptHash(new CAT721Guard_12_12_2())
-    guardScriptHashes[3] = ContractPeripheral.scriptHash(new CAT721Guard_12_12_4())
-    return guardScriptHashes;
+    guardVariantScriptHashes[0] = ContractPeripheral.scriptHash(new CAT721Guard_6_6_2())
+    guardVariantScriptHashes[1] = ContractPeripheral.scriptHash(new CAT721Guard_6_6_4())
+    guardVariantScriptHashes[2] = ContractPeripheral.scriptHash(new CAT721Guard_12_12_2())
+    guardVariantScriptHashes[3] = ContractPeripheral.scriptHash(new CAT721Guard_12_12_4())
+    return guardVariantScriptHashes;
+  }
+
+  // Deprecated: Use getGuardVariantScriptHashes() instead
+  static getGuardScriptHashes() {
+    return CAT721GuardPeripheral.getGuardVariantScriptHashes();
   }
 
   /**

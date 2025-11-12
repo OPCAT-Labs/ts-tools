@@ -26,7 +26,7 @@ export class CommonService {
     this.logger.log(`token guard script hashes = ${this.FT_GUARD_SCRIPT_HASHES.join(', ')}`);
 
     // Initialize all NFT guard script hashes
-    this.NFT_GUARD_SCRIPT_HASHES = CAT721GuardPeripheral.getGuardScriptHashes()
+    this.NFT_GUARD_SCRIPT_HASHES = CAT721GuardPeripheral.getGuardScriptHashes();
     this.logger.log(`nft guard script hashes = ${this.NFT_GUARD_SCRIPT_HASHES.join(', ')}`);
   }
 

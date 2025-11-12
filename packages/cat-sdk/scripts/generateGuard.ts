@@ -77,6 +77,14 @@ function generateGuardTemplateContent(
     console.log(`Generated guard template: ${targetFilePath}`)
 }
 
+/**
+ * Main function to generate all guard contract variants
+ * Generates 4 variants each for CAT20 and CAT721:
+ * - 6x6x2: 6 inputs, 6 outputs, 2 token/collection types
+ * - 6x6x4: 6 inputs, 6 outputs, 4 token/collection types
+ * - 12x12x2: 12 inputs, 12 outputs, 2 token/collection types
+ * - 12x12x4: 12 inputs, 12 outputs, 4 token/collection types
+ */
 async function main() {
     const sourceFilePathCat20 = resolve(__dirname, '../src/contracts/cat20/cat20Guard_TI_COUNT_TO_COUNT_GTT_COUNT.template.ts')
     const sourceFilePathCat721 = resolve(__dirname, '../src/contracts/cat721/cat721Guard_TI_COUNT_TO_COUNT_GTT_COUNT.template.ts')

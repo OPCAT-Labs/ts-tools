@@ -2,7 +2,7 @@ import { prop, ByteString, SmartContract, method, BacktraceInfo, assert, Context
 import { CAT721ContractUnlockArgs } from "../types";
 import { CAT721GuardConstState, CAT721State } from "./types";
 import { CAT721GuardStateLib } from "./cat721GuardStateLib";
-import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN, NFT_GUARD_CONTRACT_COUNT } from "../constants";
+import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN, NFT_GUARD_VARIANTS_COUNT } from "../constants";
 import { OwnerUtils } from "../utils/ownerUtils";
 import { SpentDataHashes } from "@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs";
 import { CatTags } from "../catTags";
@@ -20,12 +20,12 @@ export class CAT721 extends SmartContract<CAT721State> {
   minterScriptHash: ByteString
 
   @prop()
-  guardScriptHashes: FixedArray<Sha256, typeof NFT_GUARD_CONTRACT_COUNT>;
+  guardVariantScriptHashes: FixedArray<Sha256, typeof NFT_GUARD_VARIANTS_COUNT>;
 
-  constructor(minterScriptHash: ByteString, guardScriptHashes: FixedArray<Sha256, typeof NFT_GUARD_CONTRACT_COUNT>) {
+  constructor(minterScriptHash: ByteString, guardVariantScriptHashes: FixedArray<Sha256, typeof NFT_GUARD_VARIANTS_COUNT>) {
     super(...arguments)
     this.minterScriptHash = minterScriptHash
-    this.guardScriptHashes = guardScriptHashes
+    this.guardVariantScriptHashes = guardVariantScriptHashes
   }
 
   @method()
@@ -70,8 +70,8 @@ export class CAT721 extends SmartContract<CAT721State> {
     // guard state contains current token state hash
     const guardScriptHash = ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndex);
     assert(
-      guardScriptHash == this.guardScriptHashes[0] || guardScriptHash == this.guardScriptHashes[1] ||
-      guardScriptHash == this.guardScriptHashes[2] || guardScriptHash == this.guardScriptHashes[3],
+      guardScriptHash == this.guardVariantScriptHashes[0] || guardScriptHash == this.guardVariantScriptHashes[1] ||
+      guardScriptHash == this.guardVariantScriptHashes[2] || guardScriptHash == this.guardVariantScriptHashes[3],
       'guard script hash is invalid'
     );
     assert(ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndex) == CAT721GuardStateLib.stateHash(guardState), 'guard state hash is invalid')

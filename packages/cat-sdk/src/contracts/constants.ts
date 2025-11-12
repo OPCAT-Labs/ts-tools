@@ -71,7 +71,7 @@ export const TX_OUTPUT_COUNT_MAX = TX_OUTPUT_COUNT_MAX_12;
 export const GUARD_TOKEN_TYPE_MAX = 4;
 export const GUARD_TOKEN_TYPE_MAX_2 = 2;
 export const GUARD_TOKEN_TYPE_MAX_4 = 4;
-export const GUARD_CONTRACT_COUNT = 4;
+export const GUARD_VARIANTS_COUNT = 4;
 
 /**
  * The maximum number of different nft collections in a guard
@@ -81,7 +81,7 @@ export const GUARD_CONTRACT_COUNT = 4;
 export const NFT_GUARD_COLLECTION_TYPE_MAX = 4;
 export const NFT_GUARD_COLLECTION_TYPE_MAX_2 = 2;
 export const NFT_GUARD_COLLECTION_TYPE_MAX_4 = 4;
-export const NFT_GUARD_CONTRACT_COUNT = 4;
+export const NFT_GUARD_VARIANTS_COUNT = 4;
 
 
 
