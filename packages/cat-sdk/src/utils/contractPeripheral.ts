@@ -206,7 +206,7 @@ export class CAT20GuardPeripheral {
     txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
   } {
     
-    if (txInputCount >= TX_INPUT_COUNT_MAX) {
+    if (txInputCount > TX_INPUT_COUNT_MAX) {
       throw new Error(`Too many transaction inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
     }
     if (txOutputCount > TX_OUTPUT_COUNT_MAX) {
@@ -323,7 +323,7 @@ export class CAT20GuardPeripheral {
     txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
     txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
   } {
-    if (txInputCount >= TX_INPUT_COUNT_MAX) {
+    if (txInputCount > TX_INPUT_COUNT_MAX) {
       throw new Error(`Too many transaction inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
     }
     if (txOutputCount > TX_OUTPUT_COUNT_MAX) {
@@ -579,7 +579,7 @@ export class CAT721GuardPeripheral {
    * @returns txInputCountMax - Maximum input count for the selected guard
    * @returns txOutputCountMax - Maximum output count for the selected guard
    */
-  private static selectCAT721Guard(
+  public static selectCAT721Guard(
     txInputCount: number,
     txOutputCount: number,
     guardCollectionTypes: number
@@ -589,7 +589,7 @@ export class CAT721GuardPeripheral {
     txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
   } {
 
-    if (txInputCount >= TX_INPUT_COUNT_MAX) {
+    if (txInputCount > TX_INPUT_COUNT_MAX) {
       throw new Error(`Too many transaction inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
     }
     if (txOutputCount > TX_OUTPUT_COUNT_MAX) {
