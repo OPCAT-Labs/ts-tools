@@ -11,7 +11,7 @@ import { ConstantsLib, GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX, TX_INPUT_COUNT_
 export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
 
   @method()
-  static formalCheckState6(_state: CAT20GuardConstState): ByteString {
+  static formalCheckState6(_state: CAT20GuardConstState): void {
     CAT20GuardStateLib.checkTokenScriptsUniq(_state.tokenScriptHashes)
 
     for (let i = 0; i < GUARD_TOKEN_TYPE_MAX; i++) {
@@ -27,12 +27,10 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
       const scriptIndex = byteStringToInt(slice(_state.tokenScriptIndexes, BigInt(i), BigInt(i + 1)))
       assert(scriptIndex >= -1 && scriptIndex < GUARD_TOKEN_TYPE_MAX)
     }
-    // return CAT20GuardProto.stateHash(_state)
-    return toByteString('')
   }
 
   @method()
-  static formalCheckState12(_state: CAT20GuardConstState): ByteString {
+  static formalCheckState12(_state: CAT20GuardConstState): void {
     CAT20GuardStateLib.checkTokenScriptsUniq(_state.tokenScriptHashes)
 
     for (let i = 0; i < GUARD_TOKEN_TYPE_MAX; i++) {
@@ -48,8 +46,6 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
       const scriptIndex = byteStringToInt(slice(_state.tokenScriptIndexes, BigInt(i), BigInt(i + 1)))
       assert(scriptIndex >= -1 && scriptIndex < GUARD_TOKEN_TYPE_MAX)
     }
-    // return CAT20GuardProto.stateHash(_state)
-    return toByteString('')
   }
 
 

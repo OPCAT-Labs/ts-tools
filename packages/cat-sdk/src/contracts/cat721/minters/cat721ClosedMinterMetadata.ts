@@ -1,5 +1,4 @@
 import { ClosedMinterCAT721Meta } from "../types";
-import { ConstantsLib } from "../../constants";
 
 /**
  * The CAT721 closed minter metadata helper
