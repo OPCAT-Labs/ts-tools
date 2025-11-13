@@ -86,7 +86,7 @@ export async function mintOpenMinterNft(
         nextLocalId: openMinter.state.nextLocalId + 1n,
         merkleRoot: nextMerkleRoot,
     })
-    const cat721 = new CAT721(ContractPeripheral.scriptHash(openMinter), CAT721GuardPeripheral.getGuardScriptHashes())
+    const cat721 = new CAT721(ContractPeripheral.scriptHash(openMinter), CAT721GuardPeripheral.getGuardVariantScriptHashes())
     cat721.state = nftState
     const mintPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .addContractInput(openMinter, (contract, tx) => {

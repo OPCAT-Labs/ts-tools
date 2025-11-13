@@ -69,7 +69,7 @@ export async function transferCat20(
 
   const cat20Script = new CAT20(
     token.token.minterScriptHash,
-    CAT20GuardPeripheral.getGuardScriptHashes(),
+    CAT20GuardPeripheral.getGuardVariantScriptHashes(),
     false,
     toByteString(''),
   ).lockingScript.toHex();

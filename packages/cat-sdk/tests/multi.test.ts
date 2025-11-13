@@ -208,7 +208,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
             let cat721TxOutputCountMax = 0;
 
             if (hasCat20) {
-                const cat20GuardScriptHashes = CAT20GuardPeripheral.getGuardScriptHashes();
+                const cat20GuardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
                 // Build script hash to index mapping
                 const cat20ScriptHashToIndex = new Map<string, number>();
@@ -372,7 +372,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
             if (hasCat721) {
                 cat721InputStartIndex = inputIndex;
                 cat721OutputStartIndex = outputIndex;
-                const cat721GuardScriptHashes = CAT721GuardPeripheral.getGuardScriptHashes();
+                const cat721GuardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes();
 
                 // Calculate number of unique collection types
                 const uniqueCollectionScripts = new Set(this.cat721s.map(({ cat721 }) => ContractPeripheral.scriptHash(cat721.utxo.script)));

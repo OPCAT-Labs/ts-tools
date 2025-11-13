@@ -29,7 +29,7 @@ export class TestCAT20Generator {
     return this.deployInfo.minterScriptHash
   }
   get guardScriptHashes() {
-    return CAT20GuardPeripheral.getGuardScriptHashes()
+    return CAT20GuardPeripheral.getGuardVariantScriptHashes()
   }
 
   constructor(

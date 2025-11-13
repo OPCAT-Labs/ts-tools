@@ -158,7 +158,7 @@ export async function multiSendTokens(
     }
 
     const network = await provider.getNetwork();
-    const guardScriptHashes = CAT20GuardPeripheral.getGuardScriptHashes();
+    const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
     // 4. build guard psbt
     const guardPsbt = new ExtPsbt({ network })

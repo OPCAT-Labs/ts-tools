@@ -35,8 +35,6 @@ import {
   TX_OUTPUT_COUNT_MAX_12,
   GUARD_TOKEN_TYPE_MAX_2,
   NFT_GUARD_COLLECTION_TYPE_MAX_2,
-  GUARD_TOKEN_TYPE_MAX_4,
-  NFT_GUARD_COLLECTION_TYPE_MAX_4,
   GUARD_TOKEN_TYPE_MAX,
   NFT_GUARD_COLLECTION_TYPE_MAX
 } from '../contracts/constants'
@@ -50,7 +48,7 @@ import { CAT721GuardStateLib } from '../contracts/cat721/cat721GuardStateLib'
 import { CAT721 } from '../contracts/cat721/cat721'
 import { CAT721OpenMinter } from '../contracts/cat721/minters/cat721OpenMinter'
 import { CAT721StateLib } from '../contracts/cat721/cat721StateLib'
-import { CAT721ClosedMinter, CAT20GuardType, CAT721GuardType } from '../contracts'
+import { CAT721ClosedMinter, CAT20GuardVariant, CAT721GuardVariant } from '../contracts'
 import { CAT20Guard_6_6_2 } from '../contracts/cat20/cat20Guard_6_6_2'
 import { CAT20Guard_6_6_4 } from '../contracts/cat20/cat20Guard_6_6_4'
 import { CAT20Guard_12_12_2 } from '../contracts/cat20/cat20Guard_12_12_2'
@@ -163,7 +161,7 @@ export class CAT20OpenMinterPeripheral {
     }
     const cat20 = new CAT20(
       ContractPeripheral.scriptHash(minter),
-      CAT20GuardPeripheral.getGuardScriptHashes(),
+      CAT20GuardPeripheral.getGuardVariantScriptHashes(),
       hasAdmin,
       adminScriptHash
     )
@@ -189,11 +187,6 @@ export class CAT20GuardPeripheral {
     return guardVariantScriptHashes;
   }
 
-  // Deprecated: Use getGuardVariantScriptHashes() instead
-  static getGuardScriptHashes() {
-    return CAT20GuardPeripheral.getGuardVariantScriptHashes();
-  }
-
   /**
    * Select appropriate CAT20 guard based on input/output token count and token types
    * @param inputTokenCount - Number of token inputs (excluding guard input)
@@ -208,7 +201,7 @@ export class CAT20GuardPeripheral {
     txOutputCount: number,
     guardTokenTypes: number
   ): {
-    guard: CAT20GuardType
+    guard: CAT20GuardVariant
     txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
     txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
   } {
@@ -220,7 +213,7 @@ export class CAT20GuardPeripheral {
       throw new Error(`Too many transaction outputs that exceed the maximum limit of ${TX_OUTPUT_COUNT_MAX}`)
     }
 
-    let guard: CAT20GuardType
+    let guard: CAT20GuardVariant
     let txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
     let txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
 
@@ -324,7 +317,7 @@ export class CAT20GuardPeripheral {
     txInputCount: number,
     txOutputCount: number,
   ): {
-    guard: CAT20GuardType
+    guard: CAT20GuardVariant
     guardState: CAT20GuardConstState
     outputTokens: FixedArray<CAT20State | undefined, typeof TX_OUTPUT_COUNT_MAX>
     txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
@@ -417,7 +410,7 @@ export class CAT20GuardPeripheral {
       inputIndex: number
     }[]
   ): {
-    guard: CAT20GuardType
+    guard: CAT20GuardVariant
     guardState: CAT20GuardConstState
     outputTokens: FixedArray<CAT20State | undefined, typeof TX_OUTPUT_COUNT_MAX>
     txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
@@ -507,7 +500,7 @@ export class CAT20GuardPeripheral {
     const expectTokenScriptHash = ContractPeripheral.scriptHash(
       new CAT20(
         minterScrtptHash,
-        CAT20GuardPeripheral.getGuardScriptHashes(),
+        CAT20GuardPeripheral.getGuardVariantScriptHashes(),
         hasAdmin,
         adminScriptHash
       )
@@ -577,11 +570,6 @@ export class CAT721GuardPeripheral {
     return guardVariantScriptHashes;
   }
 
-  // Deprecated: Use getGuardVariantScriptHashes() instead
-  static getGuardScriptHashes() {
-    return CAT721GuardPeripheral.getGuardVariantScriptHashes();
-  }
-
   /**
    * Select appropriate CAT721 guard based on input/output count and collection types
    * @param txInputCount - Total number of transaction inputs
@@ -596,7 +584,7 @@ export class CAT721GuardPeripheral {
     txOutputCount: number,
     guardCollectionTypes: number
   ): {
-    guard: CAT721GuardType
+    guard: CAT721GuardVariant
     txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
     txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
   } {
@@ -608,7 +596,7 @@ export class CAT721GuardPeripheral {
       throw new Error(`Too many transaction outputs that exceed the maximum limit of ${TX_OUTPUT_COUNT_MAX}`)
     }
 
-    let guard: CAT721GuardType
+    let guard: CAT721GuardVariant
     let txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
     let txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
 
@@ -695,7 +683,7 @@ export class CAT721GuardPeripheral {
     txInputCount: number,
     txOutputCount: number,
   ): {
-    guard: CAT721GuardType
+    guard: CAT721GuardVariant
     guardState: CAT721GuardConstState,
     outputNfts: FixedArray<CAT721State | undefined, typeof TX_OUTPUT_COUNT_MAX>
     txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
@@ -766,7 +754,7 @@ export class CAT721GuardPeripheral {
       inputIndex: number
     }[]
   ): {
-    guard: CAT721GuardType
+    guard: CAT721GuardVariant
     guardState: CAT721GuardConstState,
     txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
     txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
@@ -850,7 +838,7 @@ export class CAT721GuardPeripheral {
     const expectNftScriptHash = ContractPeripheral.scriptHash(
       new CAT721(
         minterScrtptHash,
-        CAT721GuardPeripheral.getGuardScriptHashes()
+        CAT721GuardPeripheral.getGuardVariantScriptHashes()
       )
     )
 

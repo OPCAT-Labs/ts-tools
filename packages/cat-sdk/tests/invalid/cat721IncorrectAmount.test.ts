@@ -118,7 +118,7 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
         guardState.nftBurnMasks = nftBurnMasks;
 
         guard.state = guardState;
-        const guardScriptHashes = CAT721GuardPeripheral.getGuardScriptHashes();
+        const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes();
         {
             const psbt = new ExtPsbt({
                 network: await testProvider.getNetwork(),

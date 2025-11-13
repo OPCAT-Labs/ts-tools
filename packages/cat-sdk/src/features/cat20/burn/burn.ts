@@ -75,7 +75,7 @@ export async function burnToken(
   )
   guardState.tokenBurnAmounts[0] = guardState.tokenAmounts[0]
   guard.state = guardState
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardScriptHashes()
+  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
 
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)

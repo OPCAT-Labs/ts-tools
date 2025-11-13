@@ -117,7 +117,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat20ClosedMinter',
         const cat20ClosedMinter = new CAT20ClosedMinter(toTokenOwnerAddress(mainAddress), genesisOutpoint)
 
         const minterScriptHash = ContractPeripheral.scriptHash(cat20ClosedMinter)
-        const cat20 = new CAT20(minterScriptHash, CAT20GuardPeripheral.getGuardScriptHashes(), false, NULL_ADMIN_SCRIPT_HASH)
+        const cat20 = new CAT20(minterScriptHash, CAT20GuardPeripheral.getGuardVariantScriptHashes(), false, NULL_ADMIN_SCRIPT_HASH)
         const tokenScriptHash = ContractPeripheral.scriptHash(cat20)
         const minterState: CAT20ClosedMinterState = {
             tokenScriptHash,
@@ -151,7 +151,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat20ClosedMinter',
             ...minter.state,
         }
         const nextMinter = minter.next(nextMinterState);
-        const cat20 = new CAT20(ContractPeripheral.scriptHash(nextMinter), CAT20GuardPeripheral.getGuardScriptHashes(), false, NULL_ADMIN_SCRIPT_HASH);
+        const cat20 = new CAT20(ContractPeripheral.scriptHash(nextMinter), CAT20GuardPeripheral.getGuardVariantScriptHashes(), false, NULL_ADMIN_SCRIPT_HASH);
         cat20.state = {
             ownerAddr: toTokenOwnerAddress(mainAddress),
             amount: mintAmount,

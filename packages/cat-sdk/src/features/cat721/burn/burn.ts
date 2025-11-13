@@ -45,7 +45,7 @@ export async function burnNft(
         }))
     )
     guard.state = guardState
-    const guardScriptHashes = CAT721GuardPeripheral.getGuardScriptHashes()
+    const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes()
 
     const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .spendUTXO(utxos)

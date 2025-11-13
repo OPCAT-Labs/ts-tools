@@ -81,7 +81,7 @@ export async function mintClosedMinterNft(
         // minter is always the first input
         0
     )
-    const cat721 = new CAT721(ContractPeripheral.scriptHash(closedMinter), CAT721GuardPeripheral.getGuardScriptHashes())
+    const cat721 = new CAT721(ContractPeripheral.scriptHash(closedMinter), CAT721GuardPeripheral.getGuardVariantScriptHashes())
     cat721.state = nftState
     const minterPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .addContractInput(closedMinter, (contract, tx) => {

@@ -59,7 +59,7 @@ CAT721NftInfo<OpenMinterCAT721Meta> & {
     const collectionId = `${genesisPsbt.getChangeUTXO()!.txId}_${genesisPsbt.getChangeUTXO()!.outputIndex}`
     const cat721OpenMinter = CAT721OpenMinterPeripheral.createMinter(collectionId, metadata)
     const minterScriptHash = ContractPeripheral.scriptHash(cat721OpenMinter)
-    const cat721 = new CAT721(minterScriptHash, CAT721GuardPeripheral.getGuardScriptHashes())
+    const cat721 = new CAT721(minterScriptHash, CAT721GuardPeripheral.getGuardVariantScriptHashes())
     const nftScriptHash = ContractPeripheral.scriptHash(cat721)
     const minterState: CAT721OpenMinterState = {
         nftScriptHash,

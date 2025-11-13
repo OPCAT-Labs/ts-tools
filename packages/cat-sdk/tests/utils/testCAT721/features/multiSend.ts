@@ -152,7 +152,7 @@ export async function multiSendNfts(
     }
 
     const network = await provider.getNetwork();
-    const guardScriptHashes = CAT721GuardPeripheral.getGuardScriptHashes();
+    const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes();
 
     // 4. build guard psbt
     const guardPsbt = new ExtPsbt({ network })

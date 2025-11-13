@@ -1,15 +1,15 @@
 import { describe } from 'mocha';
 import { expect } from 'chai';
-import { testSigner } from '../utils/testSigner';
-import { testProvider } from '../utils/testProvider';
-import { toTokenOwnerAddress } from '../../src/utils';
+import { testSigner } from './utils/testSigner';
+import { testProvider } from './utils/testProvider';
+import { toTokenOwnerAddress } from '../src/utils';
 import { ByteString, UTXO } from '@opcat-labs/scrypt-ts-opcat';
-import { createCat721, TestCat721 } from '../utils/testCAT721Generator';
-import { multiSendNfts, CAT721Receiver, MultiNftTransferInfo } from '../utils/testCAT721/features/multiSend';
-import { verifyTx } from '../utils';
-import { CAT721GuardPeripheral } from '../../src/utils/contractPeripheral';
-import { loadAllArtifacts } from '../features/cat721/utils';
-import { isLocalTest } from '../utils';
+import { createCat721, TestCat721 } from './utils/testCAT721Generator';
+import { multiSendNfts, CAT721Receiver, MultiNftTransferInfo } from './utils/testCAT721/features/multiSend';
+import { verifyTx } from './utils';
+import { CAT721GuardPeripheral } from '../src/utils/contractPeripheral';
+import { loadAllArtifacts } from './features/cat721/utils';
+import { isLocalTest } from './utils';
 
 function getRandom(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1)) + min;

@@ -1,12 +1,12 @@
-import { isLocalTest } from "../utils";
-import { testProvider } from "../utils/testProvider";
-import { loadAllArtifacts } from "../features/cat20/utils";
-import { createCat20 } from "../utils/testCAT20Generator";
-import { testSigner } from "../utils/testSigner";
-import { CAT20StateLib } from "../../src/contracts";
+import { isLocalTest } from "./utils";
+import { testProvider } from "./utils/testProvider";
+import { loadAllArtifacts } from "./features/cat20/utils";
+import { createCat20 } from "./utils/testCAT20Generator";
+import { testSigner } from "./utils/testSigner";
+import { CAT20StateLib } from "../src/contracts";
 import { use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { multiSendTokens, MultiTokenTransferInfo } from '../utils/testCAT20/features/multiSend';
+import { multiSendTokens, MultiTokenTransferInfo } from './utils/testCAT20/features/multiSend';
 import { Script } from '@opcat-labs/opcat';
 
 use(chaiAsPromised);

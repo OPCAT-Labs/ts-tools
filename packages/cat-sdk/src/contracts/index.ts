@@ -43,5 +43,5 @@ export * from './constants'
 export * from './types'
 export * from './catTags'
 
-export type CAT20GuardType = CAT20Guard_6_6_2 | CAT20Guard_6_6_4 | CAT20Guard_12_12_2 | CAT20Guard_12_12_4
-export type CAT721GuardType = CAT721Guard_6_6_2 | CAT721Guard_6_6_4 | CAT721Guard_12_12_2 | CAT721Guard_12_12_4
+export type CAT20GuardVariant = CAT20Guard_6_6_2 | CAT20Guard_6_6_4 | CAT20Guard_12_12_2 | CAT20Guard_12_12_4
+export type CAT721GuardVariant = CAT721Guard_6_6_2 | CAT721Guard_6_6_4 | CAT721Guard_12_12_2 | CAT721Guard_12_12_4

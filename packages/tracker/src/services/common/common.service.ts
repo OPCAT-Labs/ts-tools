@@ -22,11 +22,11 @@ export class CommonService {
     private blockEntityRepository: Repository<BlockEntity>,
   ) {
     // Initialize all FT guard script hashes
-    this.FT_GUARD_SCRIPT_HASHES = CAT20GuardPeripheral.getGuardScriptHashes();
+    this.FT_GUARD_SCRIPT_HASHES = CAT20GuardPeripheral.getGuardVariantScriptHashes();
     this.logger.log(`token guard script hashes = ${this.FT_GUARD_SCRIPT_HASHES.join(', ')}`);
 
     // Initialize all NFT guard script hashes
-    this.NFT_GUARD_SCRIPT_HASHES = CAT721GuardPeripheral.getGuardScriptHashes();
+    this.NFT_GUARD_SCRIPT_HASHES = CAT721GuardPeripheral.getGuardVariantScriptHashes();
     this.logger.log(`nft guard script hashes = ${this.NFT_GUARD_SCRIPT_HASHES.join(', ')}`);
   }
 

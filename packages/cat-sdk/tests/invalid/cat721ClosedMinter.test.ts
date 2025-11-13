@@ -241,7 +241,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721ClosedMinter'
         const minterScriptHash = ContractPeripheral.scriptHash(cat721ClosedMinter)
         const cat721 = new CAT721(
             minterScriptHash,
-            CAT721GuardPeripheral.getGuardScriptHashes()
+            CAT721GuardPeripheral.getGuardVariantScriptHashes()
         )
         const nftScriptHash = ContractPeripheral.scriptHash(cat721)
         const minterState: CAT721ClosedMinterState = {
@@ -280,7 +280,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721ClosedMinter'
             nextLocalId: minter.state.nextLocalId + 1n,
         }
         const nextMinter = minter.next(nextMinterState);
-        const cat721 = new CAT721(ContractPeripheral.scriptHash(nextMinter), CAT721GuardPeripheral.getGuardScriptHashes());
+        const cat721 = new CAT721(ContractPeripheral.scriptHash(nextMinter), CAT721GuardPeripheral.getGuardVariantScriptHashes());
         cat721.state = {
             localId: mintLocalId,
             ownerAddr: toTokenOwnerAddress(mainAddress),

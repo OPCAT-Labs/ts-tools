@@ -68,9 +68,9 @@ export const TX_OUTPUT_COUNT_MAX = TX_OUTPUT_COUNT_MAX_12;
  * @category Constants
  * @onchain
  */
-export const GUARD_TOKEN_TYPE_MAX = 4;
 export const GUARD_TOKEN_TYPE_MAX_2 = 2;
 export const GUARD_TOKEN_TYPE_MAX_4 = 4;
+export const GUARD_TOKEN_TYPE_MAX = GUARD_TOKEN_TYPE_MAX_4;
 export const GUARD_VARIANTS_COUNT = 4;
 
 /**
@@ -78,9 +78,9 @@ export const GUARD_VARIANTS_COUNT = 4;
  * @category Constants
  * @onchain
  */
-export const NFT_GUARD_COLLECTION_TYPE_MAX = 4;
 export const NFT_GUARD_COLLECTION_TYPE_MAX_2 = 2;
 export const NFT_GUARD_COLLECTION_TYPE_MAX_4 = 4;
+export const NFT_GUARD_COLLECTION_TYPE_MAX = NFT_GUARD_COLLECTION_TYPE_MAX_4;
 export const NFT_GUARD_VARIANTS_COUNT = 4;
 
 

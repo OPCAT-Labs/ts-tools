@@ -171,7 +171,7 @@ export async function burnByAdmin(
 
   const guardUtxo = guardPsbt.getUtxo(0)
   const feeUtxo = guardPsbt.getChangeUTXO()!
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardScriptHashes()
+  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
     new CAT20(
       minterScriptHash,

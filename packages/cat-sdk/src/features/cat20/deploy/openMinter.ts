@@ -100,7 +100,7 @@ export async function deployOpenMinterToken(
 
   const cat20 = new CAT20(
     minterScriptHash,
-    CAT20GuardPeripheral.getGuardScriptHashes(),
+    CAT20GuardPeripheral.getGuardVariantScriptHashes(),
     false,
     adminScriptHash
   )

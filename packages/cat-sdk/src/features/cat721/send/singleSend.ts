@@ -164,7 +164,7 @@ export async function singleSendNftStep2(
     const guardUtxo = guardPsbt.getUtxo(0)
     const feeUtxo = guardPsbt.getChangeUTXO()!
 
-    const guardScriptHashes = CAT721GuardPeripheral.getGuardScriptHashes()
+    const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes()
     const backtraces = await CAT721GuardPeripheral.getBackTraceInfo(
         minterScriptHash,
         inputNftUtxos,

@@ -112,7 +112,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
             txOutputCount
         );
         guard.state = guardState;
-        const guardScriptHashes = CAT20GuardPeripheral.getGuardScriptHashes();
+        const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
         {
             const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8}).spendUTXO(getDummyUtxo(mainAddress)).addContractOutput(guard, 1e8);
@@ -227,7 +227,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
             txOutputCount
         );
         guard.state = guardState;
-        const guardScriptHashes = CAT20GuardPeripheral.getGuardScriptHashes();
+        const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
         {
             const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8}).spendUTXO(getDummyUtxo(mainAddress)).addContractOutput(guard, 1e8);

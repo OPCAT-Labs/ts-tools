@@ -245,7 +245,7 @@ export async function singleSendStep2(
   const guardUtxo = guardPsbt.getUtxo(0)
   const feeUtxo = guardPsbt.getChangeUTXO()!
 
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardScriptHashes()
+  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
     inputTokenUtxos,

@@ -69,7 +69,7 @@ export async function deployClosedMinterToken(
   const adminScriptHash = ContractPeripheral.scriptHash(admin)
   const cat20 = new CAT20(
     minterScriptHash,
-    CAT20GuardPeripheral.getGuardScriptHashes(),
+    CAT20GuardPeripheral.getGuardVariantScriptHashes(),
     metadata.hasAdmin,
     adminScriptHash
   )
