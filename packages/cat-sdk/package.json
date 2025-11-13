@@ -51,9 +51,7 @@
   "dependencies": {
     "@opcat-labs/opcat": "1.0.3",
     "@opcat-labs/scrypt-ts-opcat": "1.0.5",
-    "cbor2": "^2.0.1",
-    "dotenv": "^16.0.3",
-    "ts-node": "^10.9.2"
+    "cbor2": "^2.0.1"
   },
   "devDependencies": {
     "@opcat-labs/cli-opcat": "1.0.7",
@@ -73,8 +71,9 @@
     "mocha": "^10.1.0",
     "prettier": "^2.8.2",
     "rimraf": "^3.0.2",
-    "ts-node": "^10.9.2",
-    "typescript": "~5.3.3"
+    "typescript": "~5.3.3",
+    "dotenv": "^16.0.3",
+    "ts-node": "^10.9.2"
   },
   "license": "MIT"
 }
