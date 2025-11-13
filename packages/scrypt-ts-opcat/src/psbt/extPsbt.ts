@@ -739,6 +739,10 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @returns {boolean} True if all inputs are finalized, false otherwise.
    */
   get isFinalized(): boolean {
+    // An empty PSBT (no inputs) should not be considered finalized
+    if (this.data.inputs.length === 0) {
+      return false;
+    }
     return this.data.inputs.reduce((finalized, input) => {
       return finalized && isFinalized(input);
     }, true);

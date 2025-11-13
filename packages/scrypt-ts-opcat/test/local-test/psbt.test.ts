@@ -151,4 +151,65 @@ describe('Test ExtPsbt Serialization', () => {
     const preimage2 = psbt2.txHashPreimage();
     expect(preimage2).to.equal(preimage1);
   });
+
+  it('should allow multiple addOutput calls without seal (no inputs)', async () => {
+    const address = await testSigner.getAddress();
+    const pubKey = await testSigner.getPublicKey();
+    const pkh = hash160(pubKey);
+    const script = Buffer.from('76a914' + pkh + '88ac', 'hex');
+    const psbt = new ExtPsbt({ network: testSigner.network });
+
+    // First addOutput - should work
+    expect(() => {
+      psbt.addOutput({
+        script: script,
+        value: BigInt(10000),
+        data: Buffer.from(''),
+      });
+    }).to.not.throw();
+
+    // Second addOutput - should also work (not sealed yet)
+    expect(() => {
+      psbt.addOutput({
+        script: script,
+        value: BigInt(20000),
+        data: Buffer.from(''),
+      });
+    }).to.not.throw();
+
+    // Verify both outputs were added
+    expect(psbt.txOutputs).to.have.length(2);
+    expect(psbt.txOutputs[0].value).to.equal(BigInt(10000));
+    expect(psbt.txOutputs[1].value).to.equal(BigInt(20000));
+  });
+
+  it('should throw error on addOutput after seal', async () => {
+    const address = await testSigner.getAddress();
+    const pubKey = await testSigner.getPublicKey();
+    const pkh = hash160(pubKey);
+    const script = Buffer.from('76a914' + pkh + '88ac', 'hex');
+    const psbt = new ExtPsbt({ network: testSigner.network });
+
+    // Add output - should work
+    psbt.addOutput({
+      script: script,
+      value: BigInt(10000),
+      data: Buffer.from(''),
+    });
+
+    // Add input to make seal() work properly
+    psbt.spendUTXO(getDummyUtxo(address, 100000));
+
+    // Seal the PSBT
+    psbt.seal();
+
+    // Try to add another output - should throw
+    expect(() => {
+      psbt.addOutput({
+        script: script,
+        value: BigInt(20000),
+        data: Buffer.from(''),
+      });
+    }).to.throw("This ExtPsbt has already sealed, can't add more output");
+  });
 });
