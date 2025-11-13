@@ -797,7 +797,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   private _checkSealed(extraMsg: string) {
-    if (this._isSealed) {
+    if (this._isSealed || this.isFinalized) {
       throw new Error(`This ExtPsbt has already sealed, ${extraMsg}`);
     }
   }
@@ -1002,7 +1002,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @throws {Error} If the PSBT is not sealed (must call `seal()` first).
    */
   txHashPreimage(): string {
-    if (!this._isSealed) {
+    if (!this._isSealed && !this.isFinalized) {
       // if call .change() but not call .seal(), it will cause the change satoshis is 0
       // here we throw an error to avoid this, toHex() and toBase64() will also check this
       throw new Error('should call seal() before txHashPreimage()');
@@ -1038,7 +1038,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @returns {Uint8Array} The serialized PSBT buffer.
    */
   toBuffer(): Uint8Array {
-    if (!this._isSealed) {
+    if (!this._isSealed && !this.isFinalized) {
       // if call .change() but not call .seal(), it will cause the change satoshis is 0
       // here we throw an error to avoid this, toHex() and toBase64() will also check this
       throw new Error('should call seal() before toBuffer()');
@@ -1052,7 +1052,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @returns {string} The hexadecimal string representation of the PSBT.
    */
   toHex(): string {
-    if (!this._isSealed) {
+    if (!this._isSealed && !this.isFinalized) {
       throw new Error('should call seal() before toHex()');
     }
     return super.toHex();
@@ -1064,7 +1064,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @returns {string} Base64 encoded PSBT data
    */
   toBase64(): string {
-    if (!this._isSealed) {
+    if (!this._isSealed && !this.isFinalized) {
       throw new Error('should call seal() before toBase64()');
     }
     return super.toBase64();
