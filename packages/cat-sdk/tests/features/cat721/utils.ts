@@ -1,4 +1,4 @@
-import { CAT721, CAT721ClosedMinter, CAT721Guard, CAT721GuardStateLib, CAT721OpenMinter, CAT721OpenMinterMetadata, CAT721StateLib, ClosedMinterCAT721Meta, MerkleProof, OpenMinterCAT721Meta, ProofNodePos } from "../../../src/contracts"
+import { CAT721, CAT721ClosedMinter, CAT721Guard_6_6_2, CAT721Guard_6_6_4, CAT721Guard_12_12_2, CAT721Guard_12_12_4, CAT721GuardStateLib, CAT721OpenMinter, CAT721OpenMinterMetadata, CAT721StateLib, ClosedMinterCAT721Meta, MerkleProof, OpenMinterCAT721Meta, ProofNodePos } from "../../../src/contracts"
 import { readArtifact } from "../../utils"
 import { ByteString, getUtxoKey, UTXO } from "@opcat-labs/scrypt-ts-opcat"
 import { testSigner } from "../../utils/testSigner"
@@ -25,8 +25,17 @@ export const loadAllArtifacts = function () {
     CAT721StateLib.loadArtifact(
       readArtifact('artifacts/cat721/cat721StateLib.json')
     )
-    CAT721Guard.loadArtifact(
-      readArtifact('artifacts/cat721/cat721Guard.json')
+    CAT721Guard_6_6_2.loadArtifact(
+      readArtifact('artifacts/cat721/cat721Guard_6_6_2.json')
+    )
+    CAT721Guard_6_6_4.loadArtifact(
+      readArtifact('artifacts/cat721/cat721Guard_6_6_4.json')
+    )
+    CAT721Guard_12_12_2.loadArtifact(
+      readArtifact('artifacts/cat721/cat721Guard_12_12_2.json')
+    )
+    CAT721Guard_12_12_4.loadArtifact(
+      readArtifact('artifacts/cat721/cat721Guard_12_12_4.json')
     )
     CAT721GuardStateLib.loadArtifact(
       readArtifact('artifacts/cat721/cat721GuardStateLib.json')

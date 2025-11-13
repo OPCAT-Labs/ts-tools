@@ -1,18 +1,5 @@
 /**
  * @ignore
- * Because of bvm stack max element size is 520, witness tx calculate txid data need less than 520.
- * so max input number is 6, and output number is 6.
- * version 4
- * inputNumber 1
- * input (32 + 4 + 1 + 4) * inputNumber
- * outputNumber 1
- * output (8 + 1 + 34(p2tr script size)) * outputNumber
- * nLocktime 4
- * (520 - (4 + 1 + 1 + 4)) / (41 + 43) = 6.07
- */
-
-/**
- * @ignore
  */
 export const SHA256_HASH_LEN = 32n;
 /** @ignore */
@@ -43,7 +30,5 @@ export const TX_VERSION_BYTE_LEN = 4n;
 export const TX_INPUT_PREV_TX_HASH_BYTE_LEN = TX_HASH_BYTE_LEN;
 /** @ignore */
 export const TX_OUTPUT_SATOSHI_BYTE_LEN = 8n;
-/** @ignore the maximum number of flattened fields in a state object. */
-export const MAX_FLAT_FIELDS_IN_STATE = 26;
 /** @ignore the dust limit is the minimum amount of satoshis that can be sent in a transaction */
 export const DUST_LIMIT = 1;

@@ -1,5 +1,5 @@
 import { Bool, ByteString, FixedArray, Int32 } from "@opcat-labs/scrypt-ts-opcat"
-import { GUARD_TOKEN_TYPE_MAX, NFT_GUARD_COLLECTION_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants"
+import { GUARD_TOKEN_TYPE_MAX, NFT_GUARD_COLLECTION_TYPE_MAX } from "../constants"
 
 /**
  * The CAT721 state
@@ -23,8 +23,23 @@ export type CAT721GuardConstState = {
     // for each input of curTx
     // if the input is an nft and it will be burned, then the value is true
     // otherwise, the value is false by default
-    nftBurnMasks: FixedArray<Bool, typeof TX_INPUT_COUNT_MAX>;
-    nftScriptIndexes: FixedArray<bigint, typeof TX_INPUT_COUNT_MAX>;
+    nftBurnMasks: ByteString;
+    /**
+     * Maps each transaction input to its NFT collection type index in nftScriptHashes array
+     * - For NFT inputs: contains the index (0-3) of the collection type in nftScriptHashes
+     * - For non-NFT inputs: contains -1 (0xFF in ByteString)
+     * - Each index occupies 1 byte
+     *
+     * @example
+     * Given nftScriptIndexes = "ff00010100ff" (hex representation of [-1, 0, 1, 1, 0, -1]):
+     * - Input #0: non-NFT (0xFF = -1)
+     * - Input #1: NFT collection 0 (nftScriptHashes[0])
+     * - Input #2: NFT collection 1 (nftScriptHashes[1])
+     * - Input #3: NFT collection 1 (nftScriptHashes[1])
+     * - Input #4: NFT collection 0 (nftScriptHashes[0])
+     * - Input #5: non-NFT (0xFF = -1)
+     */
+    nftScriptIndexes: ByteString;
 }
 
 /**

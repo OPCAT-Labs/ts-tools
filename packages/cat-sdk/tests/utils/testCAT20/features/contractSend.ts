@@ -17,7 +17,6 @@ import {
 import { CAT20_AMOUNT, CAT20State } from '../../../../src/contracts/cat20/types'
 import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from '../../../../src/contracts/constants'
 import { Postage } from '../../../../src/typeConstants'
-import { CAT20Guard } from '../../../../src/contracts/cat20/cat20Guard'
 import { CAT20 } from '../../../../src/contracts/cat20/cat20'
 import { CAT20GuardPeripheral } from '../../../../src/utils/contractPeripheral'
 import { ContractPeripheral } from '../../../../src/utils/contractPeripheral'
@@ -90,8 +89,14 @@ export async function contractSend(
         amount: totalInputAmt - totalOutputAmt,
       })
     }
-  
-    const { guardState, outputTokens: _outputTokens } =
+
+    // Calculate transaction input/output counts for send transaction
+    // Inputs: token inputs + guard input + fee input
+    const txInputCount = inputTokenUtxos.length + 2
+    // Outputs: token outputs + satoshi change output
+    const txOutputCount = receivers.length + 1
+
+    const { guard, guardState, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
       CAT20GuardPeripheral.createTransferGuard(
         inputTokenUtxos.map((utxo, index) => ({
           token: utxo,
@@ -100,13 +105,14 @@ export async function contractSend(
         receivers.map((receiver, index) => ({
           ...receiver,
           outputIndex: index,
-        }))
+        })),
+        txInputCount,
+        txOutputCount
       )
     const outputTokens: CAT20State[] = _outputTokens.filter(
       (v) => v != undefined
     ) as CAT20State[]
-  
-    const guard = new CAT20Guard()
+
     guard.state = guardState
     const guardPsbt = new ExtPsbt({network: await provider.getNetwork()})
       .spendUTXO(utxos)
@@ -123,9 +129,9 @@ export async function contractSend(
   
     const guardUtxo = guardPsbt.getUtxo(0)
     const feeUtxo = guardPsbt.getChangeUTXO()!
-    const guardScriptHash = ContractPeripheral.scriptHash(guard)
+    const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
     const inputTokens: CAT20[] = inputTokenUtxos.map(
-      (utxo) => new CAT20(minterScriptHash, guardScriptHash, hasAdmin, adminScriptHash).bindToUtxo(utxo)
+      (utxo) => new CAT20(minterScriptHash, guardScriptHashes, hasAdmin, adminScriptHash).bindToUtxo(utxo)
     )
   
     /// we use the fee input as contract input;
@@ -172,7 +178,7 @@ export async function contractSend(
   
     // add token outputs
     for (const outputToken of outputTokens) {
-      const outputCat20 = new CAT20(minterScriptHash, guardScriptHash, hasAdmin, adminScriptHash)
+      const outputCat20 = new CAT20(minterScriptHash, guardScriptHashes, hasAdmin, adminScriptHash)
       outputCat20.state = outputToken
       sendPsbt.addContractOutput(
         outputCat20,
@@ -183,7 +189,7 @@ export async function contractSend(
     // add guard input;
     guard.bindToUtxo(guardUtxo)
     sendPsbt.addContractInput(guard, (contract, tx) => {
-        const ownerAddrOrScript = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+        const ownerAddrOrScript = fill(toByteString(''), txOutputCountMax)
         applyFixedArray(
           ownerAddrOrScript,
           tx.txOutputs.map((output, index) => {
@@ -192,38 +198,38 @@ export async function contractSend(
               : ContractPeripheral.scriptHash(toHex(output.script))
           })
         )
-        const outputTokenAmts = fill(BigInt(0), TX_OUTPUT_COUNT_MAX)
+        const outputTokenAmts = fill(BigInt(0), txOutputCountMax)
         applyFixedArray(
           outputTokenAmts,
           outputTokens.map((t) => t.amount)
         )
-        const tokenScriptIndexArray = fill(-1n, TX_OUTPUT_COUNT_MAX)
+        const tokenScriptIndexArray = fill(-1n, txOutputCountMax)
         applyFixedArray(
           tokenScriptIndexArray,
           outputTokens.map(() => 0n)
         )
-        const outputSatoshis = fill(0n, TX_OUTPUT_COUNT_MAX)
+        const outputSatoshis = fill(0n, txOutputCountMax)
         applyFixedArray(
           outputSatoshis,
           tx.txOutputs.map((output) => output.value)
         )
         const inputCAT20States = fill(
           CAT20StateLib.create(0n, ''),
-          TX_INPUT_COUNT_MAX
+          txInputCountMax
         )
         applyFixedArray(inputCAT20States, inputTokenStates)
-        const nextStateHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+        const nextStateHashes = fill(toByteString(''), txOutputCountMax)
         applyFixedArray(
           nextStateHashes,
           tx.txOutputs.map((output) => sha256(toHex(output.data)))
         )
         contract.unlock(
-          nextStateHashes,
-          ownerAddrOrScript,
-          outputTokenAmts,
-          tokenScriptIndexArray,
-          outputSatoshis,
-          inputCAT20States,
+          nextStateHashes as any,
+          ownerAddrOrScript as any,
+          outputTokenAmts as any,
+          tokenScriptIndexArray as any,
+          outputSatoshis as any,
+          inputCAT20States as any,
           BigInt(tx.data.outputs.length)
         )
       }

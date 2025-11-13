@@ -5,7 +5,6 @@ import {
   CAT20OpenMinterState,
   OpenMinterCAT20Meta,
 } from '../../../contracts/cat20/types'
-import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
 import { CAT20 } from '../../../contracts/cat20/cat20'
 import { checkState } from '../../../utils/check'
 import {
@@ -24,6 +23,7 @@ import {
   toHex,
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
+  CAT20GuardPeripheral,
   CAT20OpenMinterPeripheral,
   ContractPeripheral,
 } from '../../../utils/contractPeripheral'
@@ -98,10 +98,9 @@ export async function deployOpenMinterToken(
 
   const adminScriptHash = NULL_ADMIN_SCRIPT_HASH
 
-  const guard = new CAT20Guard()
   const cat20 = new CAT20(
     minterScriptHash,
-    ContractPeripheral.scriptHash(guard),
+    CAT20GuardPeripheral.getGuardVariantScriptHashes(),
     false,
     adminScriptHash
   )

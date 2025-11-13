@@ -11,7 +11,7 @@ import { verifyTx } from "../utils"
 import { expect } from "chai"
 import { singleSendNft } from "../../src/features/cat721/send/singleSend"
 import { CAT721ClosedMinterPeripheral, CAT721GuardPeripheral, ContractPeripheral } from "../../src/utils/contractPeripheral"
-import { CAT20ClosedMinter, CAT721ClosedMinter, CAT721ClosedMinterMetadata, CAT721Guard, ConstantsLib } from "../../src/contracts"
+import { CAT20ClosedMinter, CAT721ClosedMinter, CAT721ClosedMinterMetadata, ConstantsLib } from "../../src/contracts"
 
 
 
@@ -26,8 +26,8 @@ export class TestCAT721Generator {
     get minterScriptHash() {
         return this.deployInfo.minterScriptHash
       }
-      get guardScriptHash() {
-        return ContractPeripheral.scriptHash(new CAT721Guard())
+      get guardScriptHashes() {
+        return CAT721GuardPeripheral.getGuardVariantScriptHashes()
       }
     constructor(
         deployInfo: CAT721NftInfo<ClosedMinterCAT721Meta> & {

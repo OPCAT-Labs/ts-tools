@@ -207,7 +207,10 @@ export class TxService {
         txOut.isFromMint = true;
         txOut.tokenAmount = 0n;
         txOut.data = toHex(output.data);
-        promises.push(this.txOutEntityRepository.save(txOut));
+        // Use upsert() instead of save() for composite primary key (txid, outputIndex)
+        // to avoid duplicate key errors when transaction is processed multiple times
+        // See: https://github.com/typeorm/typeorm/issues/720
+        promises.push(this.txOutEntityRepository.upsert(txOut, ['txid', 'outputIndex']));
       }
     }
     promises.push(this.tokenInfoEntityRepository.save(tokenInfoEntity));
@@ -249,7 +252,10 @@ export class TxService {
         const tokenInfo = inputTokenInfos.find((m) => m.minterScriptHash == lockingScriptHash);
         const backtraceValid = this.commonService.checkMinterBacktrace(txOut, tokenInfo, tx);
         if (backtraceValid) {
-          promises.push(this.txOutEntityRepository.save(txOut));
+          // Use upsert() instead of save() for composite primary key (txid, outputIndex)
+          // to avoid duplicate key errors when transaction is processed multiple times
+          // See: https://github.com/typeorm/typeorm/issues/720
+          promises.push(this.txOutEntityRepository.upsert(txOut, ['txid', 'outputIndex']));
         }
       } else if (
         outputTag.includes(CatTags.CAT20_TAG) ||
@@ -284,7 +290,10 @@ export class TxService {
         const backtraceValid = this.commonService.checkTokenBacktrace(txOut, tokenInfo, tx);
 
         if (backtraceValid) {
-          promises.push(this.txOutEntityRepository.save(txOut));
+          // Use upsert() instead of save() for composite primary key (txid, outputIndex)
+          // to avoid duplicate key errors when transaction is processed multiple times
+          // See: https://github.com/typeorm/typeorm/issues/720
+          promises.push(this.txOutEntityRepository.upsert(txOut, ['txid', 'outputIndex']));
         }
         if (
           backtraceValid &&
@@ -313,7 +322,10 @@ export class TxService {
               contentEncoding: nftMetadata.info.contentEncoding,
               contentRaw: contentRaw,
             });
-            promises.push(this.nftInfoEntityRepository.save(nftInfoEntity));
+            // Use upsert() instead of save() for composite primary key (collectionId, localId)
+            // to avoid duplicate key errors when transaction is processed multiple times
+            // See: https://github.com/typeorm/typeorm/issues/720
+            promises.push(this.nftInfoEntityRepository.upsert(nftInfoEntity, ['collectionId', 'localId']));
           }
         }
       }
@@ -357,7 +369,10 @@ export class TxService {
         txOut.data = toHex(output.data);
         const backtraceValid = this.commonService.checkTokenBacktrace(txOut, tokenInfo, tx);
         if (backtraceValid) {
-          promises.push(this.txOutEntityRepository.save(txOut));
+          // Use upsert() instead of save() for composite primary key (txid, outputIndex)
+          // to avoid duplicate key errors when transaction is processed multiple times
+          // See: https://github.com/typeorm/typeorm/issues/720
+          promises.push(this.txOutEntityRepository.upsert(txOut, ['txid', 'outputIndex']));
         }
       }
       if (outputTag.includes(CatTags.CAT721_TAG)) {
@@ -376,7 +391,10 @@ export class TxService {
         txOut.data = toHex(output.data);
         const backtraceValid = this.commonService.checkTokenBacktrace(txOut, tokenInfo, tx);
         if (backtraceValid) {
-          promises.push(this.txOutEntityRepository.save(txOut));
+          // Use upsert() instead of save() for composite primary key (txid, outputIndex)
+          // to avoid duplicate key errors when transaction is processed multiple times
+          // See: https://github.com/typeorm/typeorm/issues/720
+          promises.push(this.txOutEntityRepository.upsert(txOut, ['txid', 'outputIndex']));
         }
       }
     }

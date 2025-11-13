@@ -1,4 +1,4 @@
-import { CAT20ClosedMinter, CAT20, CAT20Guard, CAT20ClosedMinterState, ConstantsLib, CAT20_AMOUNT, CAT721OpenMinter, CAT721, CAT721Guard, CAT721OpenMinterState, CAT721MerkleLeaf, HEIGHT, MerkleProof, ProofNodePos } from "../../src/contracts";
+import { CAT20ClosedMinter, CAT20, CAT20ClosedMinterState, ConstantsLib, CAT20_AMOUNT, CAT721OpenMinter, CAT721, CAT721OpenMinterState, CAT721MerkleLeaf, HEIGHT, MerkleProof, ProofNodePos } from "../../src/contracts";
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { isLocalTest } from '../utils';
@@ -7,7 +7,7 @@ import { loadAllArtifacts } from '../features/cat721/utils';
 import { Address, assert, cloneDeep, DefaultSigner, ExtPsbt, fill, getBackTraceInfo, IExtPsbt, PubKey, sha256, Sig, Signer, toByteString, toHex, uint8ArrayToHex, UTXO } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from '../utils/testSigner';
 import { getDummyUtxo, outpoint2ByteString, toTokenOwnerAddress } from "../../src/utils";
-import { ContractPeripheral } from "../../src/utils/contractPeripheral";
+import { ContractPeripheral, CAT721GuardPeripheral } from "../../src/utils/contractPeripheral";
 import { Postage } from "../../src/typeConstants";
 import { CAT721OpenMinterMerkleTreeData } from "../../src/lib/cat721OPenMinterMerkleTreeData";
 import { MetadataSerializer } from "../../src/lib/metadata";
@@ -417,7 +417,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721OpenMinter', 
 
         const cat721OpenMinter = new CAT721OpenMinter(genesisOutpoint, max, premine, toTokenOwnerAddress(mainAddress));
         const minterScriptHash = ContractPeripheral.scriptHash(cat721OpenMinter);
-        const cat721 = new CAT721(minterScriptHash, ContractPeripheral.scriptHash(new CAT721Guard()));
+        const cat721 = new CAT721(minterScriptHash, CAT721GuardPeripheral.getGuardVariantScriptHashes());
         const nftScriptHash = ContractPeripheral.scriptHash(cat721);
         const merkleTree = new CAT721OpenMinterMerkleTreeData(generateCollectionLeaf(nextLocalId, max), HEIGHT);
         const minterState: CAT721OpenMinterState = {
@@ -484,7 +484,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721OpenMinter', 
         }
 
         const nextMinter = minter.next(nextMinterState);
-        const cat721 = new CAT721(ContractPeripheral.scriptHash(nextMinter), ContractPeripheral.scriptHash(new CAT721Guard()));
+        const cat721 = new CAT721(ContractPeripheral.scriptHash(nextMinter), CAT721GuardPeripheral.getGuardVariantScriptHashes());
         cat721.state = {
             localId: mintLocalId,
             ownerAddr: toTokenOwnerAddress(mainAddress),

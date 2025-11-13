@@ -3,8 +3,7 @@ import { ByteString, PubKey, toHex } from '@opcat-labs/scrypt-ts-opcat'
 import { ExtPsbt, Signer, ChainProvider, UtxoProvider, UTXO, getBackTraceInfo, markSpent } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20_AMOUNT } from '../../../contracts/cat20/types'
 import { CAT20ClosedMinterState, CAT20State } from '../../../contracts/cat20/types'
-import { ContractPeripheral } from '../../../utils/contractPeripheral'
-import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
+import { ContractPeripheral, CAT20GuardPeripheral } from '../../../utils/contractPeripheral'
 import { CAT20 } from '../../../contracts/cat20/cat20'
 import { checkArgument } from '../../../utils/check'
 import { CAT20ClosedMinter } from '../../../contracts/cat20/minters/cat20ClosedMinter'
@@ -58,11 +57,9 @@ export async function mintClosedMinterToken(
   )
 
   const minterScriptHash = ContractPeripheral.scriptHash(minterUtxo.script)
-  const guard = new CAT20Guard()
-  const guardScriptHash = ContractPeripheral.scriptHash(guard)
   const cat20 = new CAT20(
     minterScriptHash,
-    guardScriptHash,
+    CAT20GuardPeripheral.getGuardVariantScriptHashes(),
     hasAdmin,
     adminScriptHash
   )

@@ -3,11 +3,11 @@ import chaiAsPromised from 'chai-as-promised';
 import { isLocalTest } from '../utils';
 import { testProvider } from '../utils/testProvider';
 import { loadAllArtifacts } from '../features/cat721/utils';
-import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, uint8ArrayToHex } from '@opcat-labs/scrypt-ts-opcat';
+import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, uint8ArrayToHex, slice, intToByteString } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from '../utils/testSigner';
 import {createCat721, TestCat721} from '../utils/testCAT721Generator';
-import { CAT20, CAT20Guard, CAT20GuardStateLib, CAT20State, CAT20StateLib, CAT721, CAT721Guard, CAT721GuardStateLib, CAT721State, CAT721StateLib, ConstantsLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from '../../src/contracts';
-import { ContractPeripheral } from '../../src/utils/contractPeripheral';
+import { CAT721, CAT721State, CAT721StateLib, CAT721GuardStateLib, CAT721Guard_6_6_2, CAT721Guard_12_12_2 } from '../../src/contracts';
+import { ContractPeripheral, CAT721GuardPeripheral } from '../../src/utils/contractPeripheral';
 import { applyFixedArray, getDummyUtxo } from '../../src/utils';
 import { Postage } from '../../src/typeConstants';
 use(chaiAsPromised)
@@ -66,20 +66,6 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
     });
 
     async function testCase(cat721: TestCat721, outputLocalIds: bigint[], burnLocalIds: bigint[]) {
-        const guardState = CAT721GuardStateLib.createEmptyState();
-
-        // only 1 type token
-        guardState.nftScriptHashes[0] = ContractPeripheral.scriptHash(cat721.utxos[0].script);
-        cat721.utxos.forEach((utxo, inputIndex) => {
-            const nftState = CAT721StateLib.deserializeState(utxo.data);
-            // set burn mask
-            if (burnLocalIds.includes(BigInt(nftState.localId))) {
-                guardState.nftBurnMasks[inputIndex] = true;
-            }
-
-            guardState.nftScriptIndexes[inputIndex] = BigInt(0);
-        });
-        
         const outputStates: CAT721State[] = outputLocalIds.map((localId) => {
             return {
                 ownerAddr: CAT721.deserializeState(cat721.utxos[0].data).ownerAddr,
@@ -87,8 +73,52 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
             };
         });
 
-        const guard = new CAT721Guard();
+        // For incorrectAmount tests, we need to manually create the guard
+        // Calculate txInputCountMax and txOutputCountMax directly
+        const TX_INPUT_COUNT_MAX_6 = 6;
+        const TX_INPUT_COUNT_MAX_12 = 12;
+        const TX_OUTPUT_COUNT_MAX_6 = 6;
+        const TX_OUTPUT_COUNT_MAX_12 = 12;
+
+        const inputCount = cat721.utxos.length + 1; // +1 for the guard input
+        const outputCount = outputLocalIds.length;
+        const txInputCountMax = inputCount <= TX_INPUT_COUNT_MAX_6 ? TX_INPUT_COUNT_MAX_6 : TX_INPUT_COUNT_MAX_12;
+        const txOutputCountMax = (inputCount <= TX_INPUT_COUNT_MAX_6 && outputCount <= TX_OUTPUT_COUNT_MAX_6)
+            ? TX_OUTPUT_COUNT_MAX_6
+            : TX_OUTPUT_COUNT_MAX_12;
+
+        // Select appropriate guard based on input and output counts
+        const guard = (inputCount <= TX_INPUT_COUNT_MAX_6 && outputCount <= TX_OUTPUT_COUNT_MAX_6)
+            ? new CAT721Guard_6_6_2()
+            : new CAT721Guard_12_12_2();
+
+        // Manually construct the guardState with burn masks for testing
+        const guardState = CAT721GuardStateLib.createEmptyState(txInputCountMax);
+        guardState.nftScriptHashes[0] = ContractPeripheral.scriptHash(cat721.utxos[0].script);
+
+        // Build nftScriptIndexes
+        let nftScriptIndexes = guardState.nftScriptIndexes;
+        for (let index = 0; index < cat721.utxos.length; index++) {
+            const before = slice(nftScriptIndexes, 0n, BigInt(index));
+            const after = slice(nftScriptIndexes, BigInt(index + 1));
+            nftScriptIndexes = before + intToByteString(0n, 1n) + after;
+        }
+        guardState.nftScriptIndexes = nftScriptIndexes;
+
+        // Build burn masks
+        let nftBurnMasks = guardState.nftBurnMasks;
+        for (let inputIndex = 0; inputIndex < cat721.utxos.length; inputIndex++) {
+            const nftState = CAT721StateLib.deserializeState(cat721.utxos[inputIndex].data);
+            if (burnLocalIds.includes(BigInt(nftState.localId))) {
+                const before = slice(nftBurnMasks, 0n, BigInt(inputIndex));
+                const after = slice(nftBurnMasks, BigInt(inputIndex + 1));
+                nftBurnMasks = before + toByteString('01') + after;
+            }
+        }
+        guardState.nftBurnMasks = nftBurnMasks;
+
         guard.state = guardState;
+        const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes();
         {
             const psbt = new ExtPsbt({
                 network: await testProvider.getNetwork(),
@@ -103,13 +133,15 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
         }
 
         const guardInputIndex = cat721.utxos.length;
+        const cat721OutputStartIndex = 0;
+        const cat721InputStartIndex = 0;
         const psbt = new ExtPsbt({
             network: await testProvider.getNetwork(),
             maximumFeeRate: 1e8,
         });
 
         cat721.utxos.forEach((utxo, inputIndex) => {
-            const cat721Contract = new CAT721(cat721.generator.minterScriptHash, cat721.generator.guardScriptHash).bindToUtxo(utxo);
+            const cat721Contract = new CAT721(cat721.generator.minterScriptHash, cat721.generator.guardScriptHashes).bindToUtxo(utxo);
             psbt.addContractInput(cat721Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
@@ -125,7 +157,7 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
         });
         const outputHasCat721 = outputLocalIds.length > 0;
         psbt.addContractInput(guard, (contract, curPsbt) => {
-            const ownerAddrOrScripts = fill(toByteString(''), TX_OUTPUT_COUNT_MAX);
+            const ownerAddrOrScripts = fill(toByteString(''), txOutputCountMax);
             {
                 const outputScriptHashes = curPsbt.txOutputs
                     .map((output) => toByteString(sha256(uint8ArrayToHex(output.script))));
@@ -133,13 +165,13 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
                 const cat721OwnerAddrs = outputStates.map((state) => state.ownerAddr);
                 applyFixedArray(ownerAddrOrScripts, cat721OwnerAddrs, cat721OutputStartIndex);
             }
-            const _outputLocalIds = fill(-1n, TX_OUTPUT_COUNT_MAX);
+            const _outputLocalIds = fill(-1n, txOutputCountMax);
             {
                 if (outputHasCat721) {
                     applyFixedArray(_outputLocalIds, outputLocalIds, cat721OutputStartIndex);
                 }
             }
-            const nftScriptIndexes = fill(-1n, TX_OUTPUT_COUNT_MAX);
+            const nftScriptIndexes = fill(-1n, txOutputCountMax);
             {
                 if (outputHasCat721) {
                     applyFixedArray(
@@ -149,11 +181,11 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
                     );
                 }
             }
-            const outputSatoshis = fill(0n, TX_OUTPUT_COUNT_MAX);
+            const outputSatoshis = fill(0n, txOutputCountMax);
             {
                 applyFixedArray(outputSatoshis, curPsbt.txOutputs.map((output) => BigInt(output.value)));
             }
-            const cat721States = fill(CAT721StateLib.create(0n, toByteString('')), TX_INPUT_COUNT_MAX);
+            const cat721States = fill(CAT721StateLib.create(0n, toByteString('')), txInputCountMax);
             {
                 applyFixedArray(
                     cat721States,
@@ -162,7 +194,7 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
                 );
             }
             const outputCount = curPsbt.txOutputs.length;
-            const nextStateHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+            const nextStateHashes = fill(toByteString(''), txOutputCountMax)
             applyFixedArray(
               nextStateHashes,
               curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
@@ -178,13 +210,11 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
             );
         });
         outputStates.forEach((state) => {
-            const cat721Contract = new CAT721(cat721.generator.minterScriptHash, cat721.generator.guardScriptHash)
+            const cat721Contract = new CAT721(cat721.generator.minterScriptHash, cat721.generator.guardScriptHashes)
             cat721Contract.state = state;
             psbt.addContractOutput(cat721Contract, Postage.NFT_POSTAGE);
         });
 
-        const cat721OutputStartIndex = 0;
-        const cat721InputStartIndex = 0;
         const signedPsbtHex = await testSigner.signPsbt(psbt.seal().toHex(), psbt.psbtOptions());
         psbt.combine(ExtPsbt.fromHex(signedPsbtHex)).finalizeAllInputs();
         expect(psbt.isFinalized).to.be.true;

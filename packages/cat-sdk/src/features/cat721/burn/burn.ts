@@ -1,7 +1,6 @@
 import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, PubKey, Signer, toHex, toByteString, UTXO, UtxoProvider, fill, sha256, markSpent } from "@opcat-labs/scrypt-ts-opcat";
 import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../../contracts/constants";
 import { CAT721 } from "../../../contracts/cat721/cat721";
-import { CAT721Guard } from "../../../contracts/cat721/cat721Guard";
 import { CAT721StateLib } from "../../../contracts/cat721/cat721StateLib";
 import { Postage } from "../../../typeConstants";
 import { applyFixedArray, filterFeeUtxos } from "../../../utils";
@@ -39,16 +38,14 @@ export async function burnNft(
     }
 
     const inputNftStates = inputNftUtxos.map((utxo) => CAT721StateLib.deserializeState(utxo.data))
-    const { guardState } = CAT721GuardPeripheral.createBurnGuard(
+    const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT721GuardPeripheral.createBurnGuard(
         inputNftUtxos.map((utxo, index) => ({
             nft: utxo,
             inputIndex: index,
         }))
     )
-
-    const guard = new CAT721Guard()
     guard.state = guardState
-    const guardScriptHash = ContractPeripheral.scriptHash(guard)
+    const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes()
 
     const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .spendUTXO(utxos)
@@ -64,7 +61,7 @@ export async function burnNft(
     const feeUtxo = guardPsbt.getChangeUTXO()
 
     const inputNfts: CAT721[] = inputNftUtxos.map(
-        (utxo) => new CAT721(minterScriptHash, guardScriptHash).bindToUtxo(utxo)
+        (utxo) => new CAT721(minterScriptHash, guardScriptHashes).bindToUtxo(utxo)
     )
     const burnPsbt = new ExtPsbt({ network: await provider.getNetwork() })
 
@@ -101,34 +98,34 @@ export async function burnNft(
     // add guard input
     guard.bindToUtxo(guardUtxo);
     burnPsbt.addContractInput(guard, (contract, tx) => {
-        const ownerAddrOrScript = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+        const ownerAddrOrScript = fill(toByteString(''), txOutputCountMax)
         applyFixedArray(
             ownerAddrOrScript,
             tx.txOutputs.map((output) =>
                 ContractPeripheral.scriptHash(toHex(output.script))
             )
         )
-        const outputLocalIds = fill(BigInt(-1), TX_OUTPUT_COUNT_MAX)
-        const nftScriptHashIndexes = fill(-1n, TX_OUTPUT_COUNT_MAX)
-        const outputSatoshis = fill(0n, TX_OUTPUT_COUNT_MAX)
+        const outputLocalIds = fill(BigInt(-1), txOutputCountMax)
+        const nftScriptHashIndexes = fill(-1n, txOutputCountMax)
+        const outputSatoshis = fill(0n, txOutputCountMax)
         applyFixedArray(
             outputSatoshis,
             tx.txOutputs.map((output) => BigInt(output.value))
         )
-        const inputCAT721States = fill(CAT721StateLib.create(0n, toByteString('')), TX_INPUT_COUNT_MAX)
+        const inputCAT721States = fill(CAT721StateLib.create(0n, toByteString('')), txInputCountMax)
         applyFixedArray(inputCAT721States, inputNftStates)
-        const nextStateHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
+        const nextStateHashes = fill(toByteString(''), txOutputCountMax)
         applyFixedArray(
             nextStateHashes,
             tx.txOutputs.map((output) => sha256(toHex(output.data)))
         )
         contract.unlock(
-            nextStateHashes,
-            ownerAddrOrScript,
-            outputLocalIds,
-            nftScriptHashIndexes,
-            outputSatoshis,
-            inputCAT721States,
+            nextStateHashes as any,
+            ownerAddrOrScript as any,
+            outputLocalIds as any,
+            nftScriptHashIndexes as any,
+            outputSatoshis as any,
+            inputCAT721States as any,
             BigInt(tx.txOutputs.length)
         )
     })

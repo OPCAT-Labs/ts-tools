@@ -3,31 +3,31 @@ import { RpcService } from '../rpc/rpc.service';
 import { BlockEntity } from '../../entities/block.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CAT20Guard, CAT721Guard, ContractPeripheral } from '@opcat-labs/cat-sdk';
+import { CAT20Guard_12_12_2, CAT20Guard_12_12_4, CAT20Guard_6_6_2, CAT20Guard_6_6_4, CAT20GuardPeripheral, CAT721Guard_12_12_2, CAT721Guard_12_12_4, CAT721Guard_6_6_2, CAT721Guard_6_6_4, CAT721GuardPeripheral, CatTags, ContractPeripheral } from '@opcat-labs/cat-sdk';
 import { Input, Transaction } from '@opcat-labs/opcat';
 import { TxOutEntity } from 'src/entities/txOut.entity';
 import { TokenInfoEntity } from 'src/entities/tokenInfo.entity';
-import { ABICoder, ABIEntityType, sha256 } from '@opcat-labs/scrypt-ts-opcat';
+import { ABICoder, ABIEntityType, ContractHeaderSerializer, sha256 } from '@opcat-labs/scrypt-ts-opcat';
 
 @Injectable()
 export class CommonService {
   private readonly logger = new Logger(CommonService.name);
 
-  public readonly FT_GUARD_SCRIPT_HASH: string;
-  public readonly NFT_GUARD_SCRIPT_HASH: string;
+  public readonly FT_GUARD_SCRIPT_HASHES: string[];
+  public readonly NFT_GUARD_SCRIPT_HASHES: string[];
 
   constructor(
     private readonly rpcService: RpcService,
     @InjectRepository(BlockEntity)
     private blockEntityRepository: Repository<BlockEntity>,
   ) {
-    const guard = new CAT20Guard();
-    this.FT_GUARD_SCRIPT_HASH = ContractPeripheral.scriptHash(guard);
-    this.logger.log(`token guard script hash = ${this.FT_GUARD_SCRIPT_HASH}`);
+    // Initialize all FT guard script hashes
+    this.FT_GUARD_SCRIPT_HASHES = CAT20GuardPeripheral.getGuardVariantScriptHashes();
+    this.logger.log(`token guard script hashes = ${this.FT_GUARD_SCRIPT_HASHES.join(', ')}`);
 
-    const nftGuard = new CAT721Guard();
-    this.NFT_GUARD_SCRIPT_HASH = ContractPeripheral.scriptHash(nftGuard);
-    this.logger.log(`nft guard script hash = ${this.NFT_GUARD_SCRIPT_HASH}`);
+    // Initialize all NFT guard script hashes
+    this.NFT_GUARD_SCRIPT_HASHES = CAT721GuardPeripheral.getGuardVariantScriptHashes();
+    this.logger.log(`nft guard script hashes = ${this.NFT_GUARD_SCRIPT_HASHES.join(', ')}`);
   }
 
   public async getLastProcessedBlock(): Promise<BlockEntity | null> {
@@ -55,7 +55,22 @@ export class CommonService {
    */
   public parseTransferTxCAT20Outputs(guardInput: Input): Map<number, { ownerPubKeyHash: string, tokenAmount: bigint }> {
     const guardInputScript = guardInput.script.toHex()
-    const abi = new ABICoder(CAT20Guard.artifact);
+    const guardTags = ContractHeaderSerializer.deserialize(guardInput.output.script.toHex()).header?.tags || [];
+    if (!guardTags.includes(CatTags.CAT20_GUARD_TAG)) {
+      throw new Error('not a CAT20 guard input');
+    }
+    let abi: ABICoder;
+    if (guardTags.includes(CatTags.CAT20_GUARD_6_6_2_TAG)) {
+      abi = new ABICoder(CAT20Guard_6_6_2.artifact);
+    } else if (guardTags.includes(CatTags.CAT20_GUARD_6_6_4_TAG)) {
+      abi = new ABICoder(CAT20Guard_6_6_4.artifact);
+    } else if (guardTags.includes(CatTags.CAT20_GUARD_12_12_2_TAG)) {
+      abi = new ABICoder(CAT20Guard_12_12_2.artifact);
+    } else if (guardTags.includes(CatTags.CAT20_GUARD_12_12_4_TAG)) {
+      abi = new ABICoder(CAT20Guard_12_12_4.artifact);
+    } else {
+      throw new Error('unsupported CAT20 guard version');
+    }
     const decoded = abi.decodePubFunctionCall(guardInputScript);
     const methodAbi = abi.artifact.abi.find(abi => abi.name === 'unlock' && abi.type === ABIEntityType.FUNCTION);
     if (decoded.method !== methodAbi?.name) {
@@ -93,7 +108,22 @@ export class CommonService {
    */
   public parseTransferTxCAT721Outputs(guardInput: Input): Map<number, { ownerPubKeyHash: string, localId: bigint }> {
     const guardInputScript = guardInput.script.toHex()
-    const abi = new ABICoder(CAT721Guard.artifact);
+    const guardTags = ContractHeaderSerializer.deserialize(guardInput.output.script.toHex()).header?.tags || [];
+    if (!guardTags.includes(CatTags.CAT721_GUARD_TAG)) {
+      throw new Error('not a CAT721 guard input');
+    }
+    let abi: ABICoder;
+    if (guardTags.includes(CatTags.CAT721_GUARD_6_6_2_TAG)) {
+      abi = new ABICoder(CAT721Guard_6_6_2.artifact);
+    } else if (guardTags.includes(CatTags.CAT721_GUARD_6_6_4_TAG)) {
+      abi = new ABICoder(CAT721Guard_6_6_4.artifact);
+    } else if (guardTags.includes(CatTags.CAT721_GUARD_12_12_2_TAG)) {
+      abi = new ABICoder(CAT721Guard_12_12_2.artifact);
+    } else if (guardTags.includes(CatTags.CAT721_GUARD_12_12_4_TAG)) {
+      abi = new ABICoder(CAT721Guard_12_12_4.artifact);
+    } else {
+      throw new Error('unsupported CAT721 guard version');
+    }
     const decoded = abi.decodePubFunctionCall(guardInputScript);
     const methodAbi = abi.artifact.abi.find(abi => abi.name === 'unlock' && abi.type === ABIEntityType.FUNCTION);
     if (decoded.method !== methodAbi?.name) {
@@ -130,13 +160,15 @@ export class CommonService {
    */
   public searchGuardInputs(guardInputs: Input[]): Input[] {
     return guardInputs.filter((guardInput) => {
-      return this.FT_GUARD_SCRIPT_HASH === ContractPeripheral.scriptHash(guardInput.output.script.toHex()) ||
-        this.NFT_GUARD_SCRIPT_HASH === ContractPeripheral.scriptHash(guardInput.output.script.toHex())
+      const scriptHash = ContractPeripheral.scriptHash(guardInput.output.script.toHex());
+      return this.FT_GUARD_SCRIPT_HASHES.includes(scriptHash) ||
+        this.NFT_GUARD_SCRIPT_HASHES.includes(scriptHash);
     });
   }
 
   public isFungibleGuard(guardInput: Input): boolean {
-    return this.FT_GUARD_SCRIPT_HASH === ContractPeripheral.scriptHash(guardInput.output.script.toHex())
+    const scriptHash = ContractPeripheral.scriptHash(guardInput.output.script.toHex());
+    return this.FT_GUARD_SCRIPT_HASHES.includes(scriptHash);
   }
 
   public async getRawTx(txid: string, verbose: boolean = false): Promise<string | undefined> {

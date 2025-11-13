@@ -1,13 +1,11 @@
-import { StateLib } from '@opcat-labs/scrypt-ts-opcat'
 import { ClosedMinterCAT20Meta } from '../types'
-import { ConstantsLib } from '../../constants'
 
 /**
  * The CAT20 closed minter metadata helper
  * @category CAT20
  * @category Metadata
  */
-export class CAT20ClosedMinterMetadata extends StateLib<ClosedMinterCAT20Meta> {
+export class CAT20ClosedMinterMetadata {
   static createEmptyMetadata(): ClosedMinterCAT20Meta {
     return {
       name: '',

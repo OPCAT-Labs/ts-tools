@@ -5,9 +5,8 @@ import { checkState } from '../../../utils/check'
 import { CAT20ClosedMinter } from '../../../contracts/cat20/minters/cat20ClosedMinter'
 import { CAT20Admin } from '../../../contracts/cat20/cat20Admin'
 import { outpoint2ByteString, toTokenOwnerAddress } from '../../../utils'
-import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
 import { CAT20 } from '../../../contracts/cat20/cat20'
-import { ContractPeripheral } from '../../../utils/contractPeripheral'
+import { ContractPeripheral, CAT20GuardPeripheral } from '../../../utils/contractPeripheral'
 import {
   CAT20AdminState,
   CAT20ClosedMinterState,
@@ -68,10 +67,9 @@ export async function deployClosedMinterToken(
   const admin = new CAT20Admin(outpoint2ByteString(tokenId))
   const minterScriptHash = ContractPeripheral.scriptHash(closeMinter)
   const adminScriptHash = ContractPeripheral.scriptHash(admin)
-  const guard = new CAT20Guard()
   const cat20 = new CAT20(
     minterScriptHash,
-    ContractPeripheral.scriptHash(guard),
+    CAT20GuardPeripheral.getGuardVariantScriptHashes(),
     metadata.hasAdmin,
     adminScriptHash
   )

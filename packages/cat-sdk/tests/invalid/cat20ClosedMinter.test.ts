@@ -1,4 +1,4 @@
-import { CAT20ClosedMinter, CAT20, CAT20Guard, CAT20ClosedMinterState, ConstantsLib, CAT20_AMOUNT, NULL_ADMIN_SCRIPT_HASH } from "../../src/contracts";
+import { CAT20ClosedMinter, CAT20, CAT20ClosedMinterState, ConstantsLib, CAT20_AMOUNT, NULL_ADMIN_SCRIPT_HASH } from "../../src/contracts";
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { isLocalTest } from '../utils';
@@ -7,7 +7,7 @@ import { loadAllArtifacts } from '../features/cat20/utils';
 import { assert, DefaultSigner, ExtPsbt, fill, getBackTraceInfo, IExtPsbt, PubKey, sha256, Signer, toByteString, toHex, uint8ArrayToHex, UTXO } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from '../utils/testSigner';
 import { getDummyUtxo, outpoint2ByteString, toTokenOwnerAddress } from "../../src/utils";
-import { ContractPeripheral } from "../../src/utils/contractPeripheral";
+import { ContractPeripheral, CAT20GuardPeripheral } from "../../src/utils/contractPeripheral";
 import { Postage } from "../../src/typeConstants";
 
 use(chaiAsPromised)
@@ -117,7 +117,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat20ClosedMinter',
         const cat20ClosedMinter = new CAT20ClosedMinter(toTokenOwnerAddress(mainAddress), genesisOutpoint)
 
         const minterScriptHash = ContractPeripheral.scriptHash(cat20ClosedMinter)
-        const cat20 = new CAT20(minterScriptHash, ContractPeripheral.scriptHash(new CAT20Guard()), false, NULL_ADMIN_SCRIPT_HASH)
+        const cat20 = new CAT20(minterScriptHash, CAT20GuardPeripheral.getGuardVariantScriptHashes(), false, NULL_ADMIN_SCRIPT_HASH)
         const tokenScriptHash = ContractPeripheral.scriptHash(cat20)
         const minterState: CAT20ClosedMinterState = {
             tokenScriptHash,
@@ -151,7 +151,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat20ClosedMinter',
             ...minter.state,
         }
         const nextMinter = minter.next(nextMinterState);
-        const cat20 = new CAT20(ContractPeripheral.scriptHash(nextMinter), ContractPeripheral.scriptHash(new CAT20Guard()), false, NULL_ADMIN_SCRIPT_HASH);
+        const cat20 = new CAT20(ContractPeripheral.scriptHash(nextMinter), CAT20GuardPeripheral.getGuardVariantScriptHashes(), false, NULL_ADMIN_SCRIPT_HASH);
         cat20.state = {
             ownerAddr: toTokenOwnerAddress(mainAddress),
             amount: mintAmount,

@@ -1,11 +1,7 @@
-import {
-  ByteString,
-  FixedArray,
-  TxHashPreimage,
-} from '@opcat-labs/scrypt-ts-opcat'
+import { ByteString, FixedArray, TxHashPreimage } from "@opcat-labs/scrypt-ts-opcat"
 import { StateHashes } from '../types'
-import { GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from '../constants'
-import { StructObject } from '@opcat-labs/scrypt-ts-opcat'
+import { GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants";
+import { StructObject } from "@opcat-labs/scrypt-ts-opcat";
 
 export type CAT20_AMOUNT = bigint
 
@@ -19,24 +15,6 @@ export type CAT20State = {
   ownerAddr: ByteString
   // token amount
   amount: CAT20_AMOUNT
-}
-
-/**
- * The CAT20 guard info
- * @category CAT20
- * @onchain
- */
-export type CAT20GuardInfo = {
-  // guard input index in curTx\
-  inputIndex: bigint
-
-  // guard prevTx
-  prevTxPreimage: TxHashPreimage
-  prevOutIndex: bigint
-
-  // guard state
-  curState: CAT20GuardConstState
-  curStateHashes: StateHashes
 }
 
 /**
@@ -64,15 +42,22 @@ export type CAT20GuardConstState = {
   tokenBurnAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>
 
   // for each input of curTx
-  // if the input is a token, the value marks the index of the token script in the tokenScriptHashes array
-  // otherwise, the value is -1 by default
-  // e.g.
-  // [-1, 0, 1, 1, 0, -1]
-  // this means
-  // the input #0 and #5 is not a token contract
-  // the input #1 and #4 is a token contract with script tokenScripts[0] = 'token1Script'
-  // the input #2 and #3 is a token contract with script tokenScripts[1] = 'token2Script'
-  tokenScriptIndexes: FixedArray<bigint, typeof TX_INPUT_COUNT_MAX>
+  /**
+   * Maps each transaction input to its token type index in tokenScriptHashes array
+   * - For token inputs: contains the index (0-3) of the token type in tokenScriptHashes
+   * - For non-token inputs: contains -1 (0xFF in ByteString)
+   * - Each index occupies 1 byte
+   *
+   * @example
+   * Given tokenScriptIndexes = "ff00010100ff" (hex representation of [-1, 0, 1, 1, 0, -1]):
+   * - Input #0: non-token (0xFF = -1)
+   * - Input #1: token type 0 (tokenScriptHashes[0])
+   * - Input #2: token type 1 (tokenScriptHashes[1])
+   * - Input #3: token type 1 (tokenScriptHashes[1])
+   * - Input #4: token type 0 (tokenScriptHashes[0])
+   * - Input #5: non-token (0xFF = -1)
+   */
+  tokenScriptIndexes: ByteString
 }
 
 /**

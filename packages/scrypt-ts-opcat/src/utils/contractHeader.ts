@@ -2,6 +2,8 @@ import { Opcode, Script } from "@opcat-labs/opcat";
 import { ByteString, OpCode } from "../smart-contract/types/index.js";
 import { byteStringToInt, intToByteString, toByteString } from "../smart-contract/fns/index.js";
 import { encode as cborEncode, decode as cborDecode } from 'cbor2'
+import { pushData, splitChunks } from "./common.js";
+import {MAX_OP_PUSH_DATA_SIZE} from "./constants.js";
 
 
 export type ContractHeader = {
@@ -31,7 +33,7 @@ export class ContractHeaderSerializer {
   // current version of contract header
   static readonly VERSION = 1n;
   static readonly SCRYPT_SYMBOL = '736372';
-  private static readonly LIMIT = 520;
+  private static readonly LIMIT = MAX_OP_PUSH_DATA_SIZE;
   private static readonly ENVELOPE = {
     head: [
       OpCode.OP_FALSE,
@@ -78,10 +80,10 @@ export class ContractHeaderSerializer {
       return bufs
     }
     const data = Buffer.from(cborEncode(value))
-    const dataChunks = this.chunks(Array.from(data), this.LIMIT)
+    const dataChunks = splitChunks(Array.from(data), this.LIMIT)
     for (const chunk of dataChunks) {
       this.pushField(bufs, field)
-      bufs.push(this.toPushData(Buffer.from(chunk)));
+      bufs.push(pushData(Buffer.from(chunk)));
     }
     return bufs;
   }
@@ -91,42 +93,7 @@ export class ContractHeaderSerializer {
       throw new Error(`Invalid value type for field ${field}: ${typeof value}, expected string`)
     }
     this.pushField(bufs, field)
-    bufs.push(this.toPushData(Buffer.from(value, 'hex')))
-  }
-
-  private static toPushData(data: Buffer): Buffer {
-    const res: Array<Buffer> = [];
-
-    const dLen = data.length;
-    if (dLen < 0x4c) {
-      const dLenBuff = Buffer.alloc(1);
-      dLenBuff.writeUInt8(dLen);
-      res.push(dLenBuff);
-    } else if (dLen <= 0xff) {
-      // OP_PUSHDATA1
-      res.push(Buffer.from('4c', 'hex'));
-
-      const dLenBuff = Buffer.alloc(1);
-      dLenBuff.writeUInt8(dLen);
-      res.push(dLenBuff);
-    } else if (dLen <= 0xffff) {
-      // OP_PUSHDATA2
-      res.push(Buffer.from('4d', 'hex'));
-
-      const dLenBuff = Buffer.alloc(2);
-      dLenBuff.writeUint16LE(dLen);
-      res.push(dLenBuff);
-    } else {
-      // OP_PUSHDATA4
-      res.push(Buffer.from('4e', 'hex'));
-
-      const dLenBuff = Buffer.alloc(4);
-      dLenBuff.writeUint32LE(dLen);
-      res.push(dLenBuff);
-    }
-
-    res.push(data);
-    return Buffer.concat(res);
+    bufs.push(pushData(Buffer.from(value, 'hex')))
   }
 
   static sealHeader(header: ContractHeader): string {
@@ -186,19 +153,4 @@ export class ContractHeaderSerializer {
     return { header, lockingScript }
   }
 
-
-  private static chunks<T>(bin: T[], chunkSize: number): T[][] {
-    const chunks: T[][] = [];
-    let offset = 0;
-
-    while (offset < bin.length) {
-      // Use Buffer.slice to create a chunk. This method does not copy the memory;
-      // it creates a new Buffer that references the original memory.
-      const chunk = bin.slice(offset, offset + chunkSize);
-      chunks.push(chunk);
-      offset += chunkSize;
-    }
-
-    return chunks;
-  }
 }

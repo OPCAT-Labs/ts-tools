@@ -7,6 +7,8 @@ export {
   isFinal,
   toHex,
   addrToPkh,
+  pushData,
+  splitChunks
 } from './common.js';
 
 export { getValidatedHexString } from '../smart-contract/types/utils.js';
@@ -20,3 +22,5 @@ export { getBackTraceInfo, toGenesisOutpoint, toTxHashPreimage } from './proof.j
 export * as scriptNumber from './script_number.js';
 
 export * from './contractHeader.js';
+
+export {MAX_OP_PUSH_DATA_SIZE} from './constants.js';

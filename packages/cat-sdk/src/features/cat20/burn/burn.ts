@@ -14,7 +14,6 @@ import {
   getBackTraceInfo,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20 } from '../../../contracts/cat20/cat20'
-import { CAT20Guard } from '../../../contracts/cat20/cat20Guard'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
 import {
   ConstantsLib,
@@ -68,22 +67,15 @@ export async function burnToken(
   const inputTokenStates = inputTokenUtxos.map((utxo) =>
     CAT20.deserializeState(utxo.data)
   )
-  const { guardState } = CAT20GuardPeripheral.createBurnGuard(
+  const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createBurnGuard(
     inputTokenUtxos.map((utxo, index) => ({
       token: utxo,
       inputIndex: index,
-    })),
-    [
-      ...inputTokenStates.map((state) => CAT20StateLib.stateHash(state)),
-      ConstantsLib.ZERO_SHA1256_HASH,
-      SHA256_EMPTY_STRING,
-    ]
+    }))
   )
   guardState.tokenBurnAmounts[0] = guardState.tokenAmounts[0]
-
-  const guard = new CAT20Guard()
   guard.state = guardState
-  const guardScriptHash = ContractPeripheral.scriptHash(guard)
+  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
 
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
@@ -105,7 +97,7 @@ export async function burnToken(
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
     new CAT20(
       minterScriptHash,
-      guardScriptHash,
+      guardScriptHashes,
       hasAdmin,
       adminScriptHash
     ).bindToUtxo(utxo)
@@ -147,40 +139,41 @@ export async function burnToken(
   // add guard input
   guard.bindToUtxo(guardUtxo)
   burnPsbt.addContractInput(guard, (contract, tx) => {
-    const ownerAddrOrScript = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
-    applyFixedArray(
-      ownerAddrOrScript,
-      tx.txOutputs.map((output) =>
-        ContractPeripheral.scriptHash(toHex(output.script))
+      const ownerAddrOrScript = fill(toByteString(''), txOutputCountMax)
+      applyFixedArray(
+        ownerAddrOrScript,
+        tx.txOutputs.map((output) =>
+          ContractPeripheral.scriptHash(toHex(output.script))
+        )
       )
-    )
-    const outputTokenAmts = fill(BigInt(0), TX_OUTPUT_COUNT_MAX)
-    const tokenScriptIndexArray = fill(-1n, TX_OUTPUT_COUNT_MAX)
-    const outputSatoshis = fill(0n, TX_OUTPUT_COUNT_MAX)
-    applyFixedArray(
-      outputSatoshis,
-      tx.txOutputs.map((output) => BigInt(output.value))
-    )
-    const inputCAT20States = fill(
-      CAT20StateLib.create(0n, toByteString('')),
-      TX_INPUT_COUNT_MAX
-    )
-    applyFixedArray(inputCAT20States, inputTokenStates)
-    const nextStateHashes = fill(toByteString(''), TX_OUTPUT_COUNT_MAX)
-    applyFixedArray(
-      nextStateHashes,
-      tx.txOutputs.map((output) => sha256(toHex(output.data)))
-    )
-    contract.unlock(
-      nextStateHashes,
-      ownerAddrOrScript,
-      outputTokenAmts,
-      tokenScriptIndexArray,
-      outputSatoshis,
-      inputCAT20States,
-      BigInt(tx.txOutputs.length)
-    )
-  })
+      const outputTokenAmts = fill(BigInt(0), txOutputCountMax)
+      const tokenScriptIndexArray = fill(-1n, txOutputCountMax)
+      const outputSatoshis = fill(0n, txOutputCountMax)
+      applyFixedArray(
+        outputSatoshis,
+        tx.txOutputs.map((output) => BigInt(output.value))
+      )
+      const inputCAT20States = fill(
+        CAT20StateLib.create(0n, toByteString('')),
+        txInputCountMax
+      )
+      applyFixedArray(inputCAT20States, inputTokenStates)
+      const nextStateHashes = fill(toByteString(''), txOutputCountMax)
+      applyFixedArray(
+        nextStateHashes,
+        tx.txOutputs.map((output) => sha256(toHex(output.data)))
+      )
+      contract.unlock(
+        nextStateHashes as any,
+        ownerAddrOrScript as any,
+        outputTokenAmts as any,
+        tokenScriptIndexArray as any,
+        outputSatoshis as any,
+        inputCAT20States as any,
+        BigInt(tx.txOutputs.length)
+      )
+    }
+  )
 
   // add fee input
   burnPsbt.spendUTXO(feeUtxo!)

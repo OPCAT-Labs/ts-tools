@@ -196,3 +196,45 @@ export function toHex(val: Buffer | string | Uint8Array): string {
 export function addrToPkh(address: string) {
   return tools.toHex(Address.fromString(address).hashBuffer);
 }
+
+export function pushData(data: Buffer): Buffer {
+  const res: Array<Buffer> = [];
+  const dLen = data.length;
+  if (dLen < 0x4c) {
+    const dLenBuff = Buffer.alloc(1);
+    dLenBuff.writeUInt8(dLen);
+    res.push(dLenBuff);
+  } else if (dLen <= 0xff) {
+    // OP_PUSHDATA1
+    res.push(Buffer.from('4c', 'hex'));
+
+    const dLenBuff = Buffer.alloc(1);
+    dLenBuff.writeUInt8(dLen);
+    res.push(dLenBuff);
+  } else if (dLen <= 0xffff) {
+    // OP_PUSHDATA2
+    res.push(Buffer.from('4d', 'hex'));
+
+    const dLenBuff = Buffer.alloc(2);
+    dLenBuff.writeUint16LE(dLen);
+    res.push(dLenBuff);
+  } else {
+    // OP_PUSHDATA4
+    res.push(Buffer.from('4e', 'hex'));
+
+    const dLenBuff = Buffer.alloc(4);
+    dLenBuff.writeUint32LE(dLen);
+    res.push(dLenBuff);
+  }
+
+  res.push(data);
+  return Buffer.concat(res);
+}
+
+export function splitChunks<T extends Buffer | string | Array<any>>(buffer: T, chunkSize: number): T[] {
+  const chunks: T[] = [];
+  for (let i = 0; i < buffer.length; i += chunkSize) {
+    chunks.push(buffer.slice(i, i + chunkSize) as T);
+  }
+  return chunks;
+}

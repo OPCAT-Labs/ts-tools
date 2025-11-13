@@ -159,7 +159,6 @@ export class CollectionService {
         lockingScriptHash: collectionInfo.tokenScriptHash,
         tokenAmount: localId,
         spendTxid: IsNull(),
-        blockHeight: LessThanOrEqual(lastProcessedHeight),
       };
       utxos = await this.txOutRepository.find({
         where,

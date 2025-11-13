@@ -1,6 +1,6 @@
 import type { AxiosInstance } from 'axios';
 import axios from 'axios';
-import { CAT20, CAT20Guard } from '@opcat-labs/cat-sdk';
+import { CAT20, CAT20GuardPeripheral } from '@opcat-labs/cat-sdk';
 import { sha256, toByteString } from '@opcat-labs/scrypt-ts-opcat';
 import { useEffect, useState } from 'react';
 
@@ -21,7 +21,7 @@ export interface CatTrackerTokenBalance {
   confirmed: string;
 }
 
-export const CAT20_TRACKER_URL = 'http://157.245.154.198:3000/api';
+export const CAT20_TRACKER_URL = 'https://testnet.opcatlabs.io/api/tracker/api';
 
 export class CatTrackerApi {
   private httpClient: AxiosInstance;
@@ -90,8 +90,8 @@ export class CatTrackerApi {
 }
 
 function isCat20TokenSupported(token: CatTrackerToken) {
-  const guardScriptHash = sha256(new CAT20Guard().lockingScript.toHex());
-  const cat20 = new CAT20(token.minterScriptHash, guardScriptHash, false, toByteString(''));
+  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
+  const cat20 = new CAT20(token.minterScriptHash, guardScriptHashes, false, toByteString(''));
   const cat20ScriptHash = sha256(cat20.lockingScript.toHex());
   return cat20ScriptHash === token.tokenScriptHash;
 }

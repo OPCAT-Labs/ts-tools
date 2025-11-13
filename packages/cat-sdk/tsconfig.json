@@ -27,5 +27,6 @@
     "emitDecoratorMetadata": true,
     "useUnknownInCatchVariables": false
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.template.ts"]
 }

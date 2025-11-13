@@ -3,13 +3,12 @@ import {
   ExtPsbt,
   MempoolProvider,
   Script,
-  sha256,
   toByteString,
   type Signer,
   type SupportedNetwork,
 } from '@opcat-labs/scrypt-ts-opcat';
 import { CAT20_TRACKER_URL, CatTrackerApi, type Cat20Balance } from './cat20';
-import { CAT20, CAT20Guard, singleSend } from '@opcat-labs/cat-sdk';
+import { CAT20, CAT20GuardPeripheral, singleSend } from '@opcat-labs/cat-sdk';
 
 export async function transferSats(
   recipients: AddressAmount[],
@@ -70,7 +69,7 @@ export async function transferCat20(
 
   const cat20Script = new CAT20(
     token.token.minterScriptHash,
-    sha256(new CAT20Guard().lockingScript.toHex()),
+    CAT20GuardPeripheral.getGuardVariantScriptHashes(),
     false,
     toByteString(''),
   ).lockingScript.toHex();
