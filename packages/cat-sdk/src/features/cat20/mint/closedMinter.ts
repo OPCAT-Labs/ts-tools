@@ -56,6 +56,12 @@ export async function mintClosedMinterToken(
     toHex(spentMinterTx.inputs[minterInputIndex].prevTxId)
   )
 
+  const closedMinter = new CAT20ClosedMinter(
+    toTokenOwnerAddress(changeAddress),
+    outpoint2ByteString(tokenId)
+  )
+  const minterScript = closedMinter.lockingScript.toHex()
+  minterUtxo = normalizeUtxoScripts([minterUtxo], minterScript)[0]
   const minterScriptHash = ContractPeripheral.scriptHash(minterUtxo.script)
   const cat20 = new CAT20(
     minterScriptHash,
@@ -72,12 +78,6 @@ export async function mintClosedMinterToken(
     `tokenScriptHash in minterUtxo.data is not match, expected: ${cat20ScriptHash}, actual: ${minterState.tokenScriptHash}`
   )
 
-  const closedMinter = new CAT20ClosedMinter(
-    toTokenOwnerAddress(changeAddress),
-    outpoint2ByteString(tokenId)
-  )
-  const minterScript = closedMinter.lockingScript.toHex()
-  minterUtxo = normalizeUtxoScripts([minterUtxo], minterScript)[0]
   checkArgument(
     ContractPeripheral.scriptHash(closedMinter) === minterScriptHash,
     `minterScriptHash in minterUtxo.data is not match, expected: ${minterScriptHash}, actual: ${ContractPeripheral.scriptHash(
