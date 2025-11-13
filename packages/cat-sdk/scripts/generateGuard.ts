@@ -64,7 +64,7 @@ function generateGuardTemplateContent(
 
     const fileName = sourceFilePath.split(sep).pop()!
     const dirName_ = dirname(sourceFilePath)
-    const targetFileName = fileName.replaceAll('TI_COUNT', TI_COUNT.toString()).replaceAll('TO_COUNT', TO_COUNT.toString()).replaceAll('GTT_COUNT', GTT_COUNT.toString()).replaceAll('.template.ts', '.ts')
+    const targetFileName = fileName.replaceAll('TI_COUNT', TI_COUNT.toString()).replaceAll('TO_COUNT', TO_COUNT.toString()).replaceAll('GTT_COUNT', GTT_COUNT.toString()).replaceAll('.ts.template', '.ts')
     const targetFilePath = join(dirName_, targetFileName)
 
     console.log("generate: ", targetFilePath)
@@ -86,8 +86,8 @@ function generateGuardTemplateContent(
  * - 12x12x4: 12 inputs, 12 outputs, 4 token/collection types
  */
 async function main() {
-    const sourceFilePathCat20 = resolve(__dirname, '../src/contracts/cat20/cat20Guard_TI_COUNT_TO_COUNT_GTT_COUNT.template.ts')
-    const sourceFilePathCat721 = resolve(__dirname, '../src/contracts/cat721/cat721Guard_TI_COUNT_TO_COUNT_GTT_COUNT.template.ts')
+    const sourceFilePathCat20 = resolve(__dirname, '../src/contracts/cat20/cat20Guard_TI_COUNT_TO_COUNT_GTT_COUNT.ts.template')
+    const sourceFilePathCat721 = resolve(__dirname, '../src/contracts/cat721/cat721Guard_TI_COUNT_TO_COUNT_GTT_COUNT.ts.template')
 
     for (const vars of templateVariables) {
 
