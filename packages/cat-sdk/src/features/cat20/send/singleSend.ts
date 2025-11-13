@@ -20,7 +20,7 @@ import {
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants'
-import { applyFixedArray, filterFeeUtxos } from '../../../utils'
+import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils'
 import {
   CAT20GuardPeripheral,
   ContractPeripheral,
@@ -72,6 +72,17 @@ export async function singleSend(
   const pubkey = await signer.getPublicKey()
   const feeChangeAddress = await signer.getAddress()
   let feeUtxos = await provider.getUtxos(feeChangeAddress)
+
+  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
+  const cat20 = new CAT20(
+    minterScriptHash,
+    guardScriptHashes,
+    hasAdmin,
+    adminScriptHash
+  )
+  const cat20Script = cat20.lockingScript.toHex()
+  inputTokenUtxos = normalizeUtxoScripts(inputTokenUtxos, cat20Script)
+
   const { guardPsbt, outputTokenStates, changeTokenOutputIndex, guard, txInputCountMax, txOutputCountMax } = await singleSendStep1(
     provider,
     feeUtxos,

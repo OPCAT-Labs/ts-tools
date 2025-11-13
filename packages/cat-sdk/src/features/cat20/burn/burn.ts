@@ -22,7 +22,7 @@ import {
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants'
 import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants'
-import { applyFixedArray, filterFeeUtxos } from '../../../utils'
+import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils'
 import {
   CAT20GuardPeripheral,
   ContractPeripheral,
@@ -64,6 +64,16 @@ export async function burnToken(
     throw new Error('Insufficient satoshis input amount')
   }
 
+  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
+  const cat20 = new CAT20(
+    minterScriptHash,
+    guardScriptHashes,
+    hasAdmin,
+    adminScriptHash
+  )
+  const cat20Script = cat20.lockingScript.toHex()
+  inputTokenUtxos = normalizeUtxoScripts(inputTokenUtxos, cat20Script)
+
   const inputTokenStates = inputTokenUtxos.map((utxo) =>
     CAT20.deserializeState(utxo.data)
   )
@@ -75,7 +85,6 @@ export async function burnToken(
   )
   guardState.tokenBurnAmounts[0] = guardState.tokenAmounts[0]
   guard.state = guardState
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
 
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)

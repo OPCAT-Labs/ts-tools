@@ -13,6 +13,7 @@ import {
 } from '@opcat-labs/scrypt-ts-opcat'
 import { Transaction } from '@opcat-labs/opcat'
 import { CAT20OpenMinter } from '../../../contracts'
+import { normalizeUtxoScripts } from '../../../utils'
 
 /**
  * Mints a CAT20 token using `CAT20OpenMinter` contract
@@ -58,6 +59,8 @@ export async function mintOpenMinterToken(
 
   const utxos = await provider.getUtxos(address)
   const openMinter = CAT20OpenMinterPeripheral.createMinter(tokenId, metadata)
+  const minterScript = openMinter.lockingScript.toHex()
+  minterUtxo = normalizeUtxoScripts([minterUtxo], minterScript)[0]
 
   const mintPsbt = buildMintPsbt(
     minterPreTxHex,

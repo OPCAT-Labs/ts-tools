@@ -2,7 +2,7 @@
 import { ChainProvider, ExtPsbt, hexToUint8Array, markSpent, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { ClosedMinterCAT721Meta } from "../../../contracts/cat721/types";
 import { CAT721NftInfo } from "../../../lib/metadata";
-import { filterFeeUtxos } from "../../../utils";
+import { filterFeeUtxos, normalizeUtxoScripts } from "../../../utils";
 import { checkState } from "../../../utils/check";
 import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral";
 import { ConstantsLib, TX_INPUT_COUNT_MAX } from "../../../contracts/constants";
@@ -88,6 +88,10 @@ export async function deployClosedMinterCollection(
     await provider.broadcast(deployPsbt.extractTransaction().toHex())
     markSpent(provider, deployPsbt.extractTransaction())
 
+    const minterScript = cat721ClosedMinter.lockingScript.toHex()
+    let minterUtxo = deployPsbt.getUtxo(0)
+    minterUtxo = normalizeUtxoScripts([minterUtxo], minterScript)[0]
+
     return {
         collectionId: collectionId,
         minterScriptHash,
@@ -99,6 +103,6 @@ export async function deployClosedMinterCollection(
 
         genesisPsbt,
         deployPsbt,
-        minterUtxo: deployPsbt.getUtxo(0),
+        minterUtxo: minterUtxo,
     }
 }

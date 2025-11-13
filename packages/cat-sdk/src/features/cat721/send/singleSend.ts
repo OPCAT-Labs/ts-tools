@@ -1,7 +1,7 @@
 import { ByteString, ChainProvider, ExtPsbt, fill, fromSupportedNetwork, getBackTraceInfo, PubKey, Script, toByteString, toHex, Transaction, UTXO, UtxoProvider, markSpent, Signer, sha256 } from "@opcat-labs/scrypt-ts-opcat";
 import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, CAT721, CAT721StateLib, CAT721State } from "../../../contracts";
 import { Postage } from "../../../typeConstants";
-import { applyFixedArray, filterFeeUtxos } from "../../../utils";
+import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from "../../../utils";
 import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral";
 
 
@@ -33,6 +33,12 @@ export async function singleSendNft(
     const pubkey = await signer.getPublicKey()
     const feeChangeAddress = await signer.getAddress()
     let feeUtxos = await provider.getUtxos(feeChangeAddress)
+
+    const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes()
+    const cat721 = new CAT721(minterScriptHash, guardScriptHashes)
+    const cat721Script = cat721.lockingScript.toHex()
+    inputNftUtxos = normalizeUtxoScripts(inputNftUtxos, cat721Script)
+
     const { guardPsbt, outputNftStates, guard, txInputCountMax, txOutputCountMax } = await singleSendNftStep1(
         provider,
         feeUtxos,
