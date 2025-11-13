@@ -71,7 +71,7 @@ export class CAT20Guard_12_12_2 extends SmartContract<CAT20GuardConstState> {
     ) {
         // check current input state hash empty
 
-        CAT20GuardStateLib.formalCheckState12(this.state);
+        CAT20GuardStateLib.formalCheckState(this.state, 12);
 
         // how many different types of tokens in curTx inputs
         let inputTokenTypes = 0n

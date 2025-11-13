@@ -43,7 +43,7 @@ export class CAT721Guard_$TI_COUNT$_$TO_COUNT$_$GTT_COUNT$ extends SmartContract
         // the number of curTx outputs except for the state hash root output
         outputCount: bigint
     ) {
-        CAT721GuardStateLib.formalCheckState$TI_COUNT$(this.state);
+        CAT721GuardStateLib.formalCheckState(this.state, $TI_COUNT$);
 
         // how many different types of nfts in curTx inputs
         let inputNftTypes = 0n;

@@ -11,7 +11,7 @@ import { ConstantsLib, GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX, TX_INPUT_COUNT_
 export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
 
   @method()
-  static formalCheckState6(_state: CAT20GuardConstState): void {
+  static formalCheckState(_state: CAT20GuardConstState, txInputCountMax: number): void {
     CAT20GuardStateLib.checkTokenScriptsUniq(_state.tokenScriptHashes)
 
     for (let i = 0; i < GUARD_TOKEN_TYPE_MAX; i++) {
@@ -22,32 +22,12 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
       assert(_state.tokenBurnAmounts[i] >= 0)
     }
 
-    assert(len(_state.tokenScriptIndexes) == BigInt(TX_INPUT_COUNT_MAX_6))
-    for (let i = 0; i < TX_INPUT_COUNT_MAX_6; i++) {
+    assert(len(_state.tokenScriptIndexes) == BigInt(txInputCountMax))
+    for (let i = 0; i < txInputCountMax; i++) {
       const scriptIndex = byteStringToInt(slice(_state.tokenScriptIndexes, BigInt(i), BigInt(i + 1)))
       assert(scriptIndex >= -1 && scriptIndex < GUARD_TOKEN_TYPE_MAX)
     }
   }
-
-  @method()
-  static formalCheckState12(_state: CAT20GuardConstState): void {
-    CAT20GuardStateLib.checkTokenScriptsUniq(_state.tokenScriptHashes)
-
-    for (let i = 0; i < GUARD_TOKEN_TYPE_MAX; i++) {
-      const scriptLen = len(_state.tokenScriptHashes[i])
-      assert(scriptLen == SHA256_HASH_LEN)
-
-      assert(_state.tokenAmounts[i] >= 0)
-      assert(_state.tokenBurnAmounts[i] >= 0)
-    }
-
-    assert(len(_state.tokenScriptIndexes) == BigInt(TX_INPUT_COUNT_MAX_12))
-    for (let i = 0; i < TX_INPUT_COUNT_MAX_12; i++) {
-      const scriptIndex = byteStringToInt(slice(_state.tokenScriptIndexes, BigInt(i), BigInt(i + 1)))
-      assert(scriptIndex >= -1 && scriptIndex < GUARD_TOKEN_TYPE_MAX)
-    }
-  }
-
 
   /**
    * Ensure tokenScripts does not have duplicate values

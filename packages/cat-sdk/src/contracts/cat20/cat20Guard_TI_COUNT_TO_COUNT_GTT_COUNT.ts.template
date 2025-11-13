@@ -71,7 +71,7 @@ export class CAT20Guard_$TI_COUNT$_$TO_COUNT$_$GTT_COUNT$ extends SmartContract<
     ) {
         // check current input state hash empty
 
-        CAT20GuardStateLib.formalCheckState$TI_COUNT$(this.state);
+        CAT20GuardStateLib.formalCheckState(this.state, $TI_COUNT$);
 
         // how many different types of tokens in curTx inputs
         let inputTokenTypes = 0n
