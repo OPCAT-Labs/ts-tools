@@ -84,6 +84,35 @@ describe('Test ExtPsbt Serialization', () => {
     expect(reserialized).to.equal(psbtHex);
   });
 
+  it('should properly preserve isSealed state after finalize -> toBase64 -> fromBase64 roundtrip', async () => {
+    const psbt = await createAndFinalizePsbt(50000);
+
+    // Verify the PSBT is finalized
+    expect(psbt.isFinalized).to.be.true;
+    expect(psbt.isSealed).to.be.true;
+
+    // Serialize to base64
+    const psbtBase64 = psbt.toBase64();
+    expect(psbtBase64).to.be.a('string');
+
+    // Deserialize from base64
+    const deserializedPsbt = ExtPsbt.fromBase64(psbtBase64, { network: testSigner.network });
+
+    // Bug fix verification: After deserialization, even though isSealed is false,
+    // since isFinalized is true, methods like getUtxo() and toBase64() should work
+    expect(deserializedPsbt.isFinalized).to.be.true;
+
+    // These calls should NOT throw "should call seal() before" error
+    expect(() => deserializedPsbt.toHex()).to.not.throw();
+    expect(() => deserializedPsbt.toBase64()).to.not.throw();
+    expect(() => deserializedPsbt.txHashPreimage()).to.not.throw();
+    expect(() => deserializedPsbt.getUtxo(0)).to.not.throw();
+
+    // Verify the serialized data is consistent
+    const reserialized = deserializedPsbt.toBase64();
+    expect(reserialized).to.equal(psbtBase64);
+  });
+
   it('should handle multiple serialization roundtrips correctly', async () => {
     const psbt = await createAndFinalizePsbt(30000);
 
@@ -101,26 +130,6 @@ describe('Test ExtPsbt Serialization', () => {
     expect(() => psbt.getUtxo(0)).to.not.throw();
     expect(() => psbt2.getUtxo(0)).to.not.throw();
     expect(() => psbt3.getUtxo(0)).to.not.throw();
-  });
-
-  it('should handle fromBase64 deserialization of finalized PSBT', async () => {
-    const psbt = await createAndFinalizePsbt(25000);
-
-    // Serialize to base64
-    const psbtBase64 = psbt.toBase64();
-
-    // Deserialize from base64
-    const deserializedPsbt = ExtPsbt.fromBase64(psbtBase64, { network: testSigner.network });
-
-    expect(deserializedPsbt.isFinalized).to.be.true;
-
-    // These should work without throwing
-    expect(() => deserializedPsbt.toHex()).to.not.throw();
-    expect(() => deserializedPsbt.toBase64()).to.not.throw();
-    expect(() => deserializedPsbt.txHashPreimage()).to.not.throw();
-
-    // Base64 should match
-    expect(deserializedPsbt.toBase64()).to.equal(psbtBase64);
   });
 
   it('should still throw error when calling methods on unsealed and unfinalized PSBT', async () => {
