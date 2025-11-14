@@ -801,6 +801,8 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   }
 
   private _checkSealed(extraMsg: string) {
+    // if _isSealed == true, the psbt is sealed
+    // if isFinalized == true, the psbt is finalized, of course sealed
     if (this._isSealed || this.isFinalized) {
       throw new Error(`This ExtPsbt has already sealed, ${extraMsg}`);
     }
