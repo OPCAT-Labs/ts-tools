@@ -218,3 +218,42 @@ export function duplicateFilter<T>(uniqueFn: (item: T) => any) {
     return uniqueIndex === index
   }
 }
+
+
+/**
+ * Normalizes UTXO script fields to ensure they contain full script hex rather than script hashes.
+ *
+ * @ignore This is an internal utility function used by feature functions to handle UTXOs
+ * returned from trackers. Trackers often return script hashes instead of full scripts to
+ * reduce data transfer overhead. This function detects whether the UTXO contains a script
+ * hash or full script, validates it, and ensures all UTXOs have the full script for
+ * downstream processing.
+ *
+ * @param utxo - Array of UTXOs whose script fields need normalization
+ * @param script - The expected full script hex string
+ * @returns Array of UTXOs with normalized script fields (all containing full scripts)
+ * @throws {Error} If any UTXO's script field doesn't match either the provided script or its hash
+ *
+ * @remarks
+ * When users fetch UTXOs from a tracker API, the `script` field may contain:
+ * - A 32-byte script hash (sha256 of the full script) - for bandwidth optimization
+ * - The full script hex - for compatibility
+ *
+ * This function allows users to pass tracker-returned UTXOs directly to cat-sdk feature
+ * functions without manual conversion, improving developer experience and API compatibility.
+ */
+export function normalizeUtxoScripts(utxo: UTXO[], script: ByteString): UTXO[] {
+  let ret: UTXO[] = [];
+  const scriptHash = sha256(script);
+  for (let i = 0; i < utxo.length; i++) {
+    const u = utxo[i];
+    if (u.script !== scriptHash && u.script !== script) {
+      throw new Error(`utxo ${JSON.stringify(utxo)} script does not match script or scriptHash`);
+    }
+    ret.push({
+      ...u,
+      script: script,
+    });
+  }
+  return ret;
+}

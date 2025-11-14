@@ -3,8 +3,8 @@ import { readArtifact } from "../../utils"
 import { ByteString, getUtxoKey, UTXO } from "@opcat-labs/scrypt-ts-opcat"
 import { testSigner } from "../../utils/testSigner"
 import { testProvider } from "../../utils/testProvider"
-import { deploy } from "../../../src/features/cat721/deploy/cat721ClosedMinter"
-import { mintNft as mint } from "../../../src/features/cat721/mint/cat721ClosedMinter"
+import { deployClosedMinterCollection } from "../../../src/features/cat721/deploy/cat721ClosedMinter"
+import { mintClosedMinterNft as mint } from "../../../src/features/cat721/mint/cat721ClosedMinter"
 import { toTokenOwnerAddress } from "../../../src/utils"
 import { singleSendNft as singleSend } from "../../../src/features/cat721/send/singleSend"
 import { CAT721OpenMintInfo } from "../../../src/contracts/cat721/minters/cat721OpenMintInfo"
@@ -43,7 +43,7 @@ export const loadAllArtifacts = function () {
 }
 
 export async function deployNft(info: ClosedMinterCAT721Meta) {
-  return deploy(
+  return deployClosedMinterCollection(
     testSigner,
     testProvider,
     info,

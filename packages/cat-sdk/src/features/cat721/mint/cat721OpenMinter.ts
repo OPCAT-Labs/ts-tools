@@ -6,6 +6,7 @@ import { createNft } from "./nft";
 import { CAT721OpenMintInfo } from "../../../contracts/cat721/minters/cat721OpenMintInfo";
 import { Postage } from "../../../typeConstants";
 import { CAT721 } from "../../../contracts";
+import { normalizeUtxoScripts } from "../../../utils";
 
 
 /**
@@ -59,6 +60,8 @@ export async function mintOpenMinterNft(
     )
 
     const openMinter = CAT721OpenMinterPeripheral.createMinter(collectionId, metadata)
+    const minterScript = openMinter.lockingScript.toHex()
+    minterUtxo = normalizeUtxoScripts([minterUtxo], minterScript)[0]
     openMinter.bindToUtxo(minterUtxo)
 
     const createNftRes = await createNft(

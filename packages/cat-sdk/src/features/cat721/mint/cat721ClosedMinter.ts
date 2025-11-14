@@ -5,6 +5,7 @@ import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral
 import { CAT721ClosedMinter } from "../../../contracts/cat721/minters/cat721ClosedMinter";
 import { createNft } from "./nft";
 import { Postage } from "../../../typeConstants";
+import { normalizeUtxoScripts } from "../../../utils";
 
 
 /**
@@ -54,6 +55,8 @@ export async function mintClosedMinterNft(
         toHex(spentMinterTx.inputs[minterInputIndex].prevTxId)
     )
     const closedMinter = CAT721ClosedMinterPeripheral.createMinter(collectionId, metadata)
+    const minterScript = closedMinter.lockingScript.toHex()
+    minterUtxo = normalizeUtxoScripts([minterUtxo], minterScript)[0]
     closedMinter.bindToUtxo(minterUtxo)
 
     const createNftRes = await createNft(

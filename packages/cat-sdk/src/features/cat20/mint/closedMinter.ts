@@ -7,7 +7,7 @@ import { ContractPeripheral, CAT20GuardPeripheral } from '../../../utils/contrac
 import { CAT20 } from '../../../contracts/cat20/cat20'
 import { checkArgument } from '../../../utils/check'
 import { CAT20ClosedMinter } from '../../../contracts/cat20/minters/cat20ClosedMinter'
-import { outpoint2ByteString, toTokenOwnerAddress } from '../../../utils'
+import { outpoint2ByteString, toTokenOwnerAddress, normalizeUtxoScripts } from '../../../utils'
 import { Postage } from '../../../typeConstants'
 import { Transaction } from '@opcat-labs/opcat'
 import { ConstantsLib } from '../../../contracts'
@@ -56,6 +56,12 @@ export async function mintClosedMinterToken(
     toHex(spentMinterTx.inputs[minterInputIndex].prevTxId)
   )
 
+  const closedMinter = new CAT20ClosedMinter(
+    toTokenOwnerAddress(changeAddress),
+    outpoint2ByteString(tokenId)
+  )
+  const minterScript = closedMinter.lockingScript.toHex()
+  minterUtxo = normalizeUtxoScripts([minterUtxo], minterScript)[0]
   const minterScriptHash = ContractPeripheral.scriptHash(minterUtxo.script)
   const cat20 = new CAT20(
     minterScriptHash,
@@ -72,10 +78,6 @@ export async function mintClosedMinterToken(
     `tokenScriptHash in minterUtxo.data is not match, expected: ${cat20ScriptHash}, actual: ${minterState.tokenScriptHash}`
   )
 
-  const closedMinter = new CAT20ClosedMinter(
-    toTokenOwnerAddress(changeAddress),
-    outpoint2ByteString(tokenId)
-  )
   checkArgument(
     ContractPeripheral.scriptHash(closedMinter) === minterScriptHash,
     `minterScriptHash in minterUtxo.data is not match, expected: ${minterScriptHash}, actual: ${ContractPeripheral.scriptHash(

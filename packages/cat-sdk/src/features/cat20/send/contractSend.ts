@@ -26,6 +26,7 @@ import {
   applyFixedArray,
   filterFeeUtxos,
   toTokenOwnerAddress,
+  normalizeUtxoScripts,
 } from '../../../utils'
 import {
   CAT20GuardPeripheral,
@@ -83,6 +84,17 @@ export async function contractSend(
   if (utxos.length === 0) {
     throw new Error('Insufficient satoshis input amount')
   }
+
+  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
+  const cat20 = new CAT20(
+    minterScriptHash,
+    guardScriptHashes,
+    hasAdmin,
+    adminScriptHash
+  );
+  const cat20Script = cat20.lockingScript.toHex();
+  inputTokenUtxos = normalizeUtxoScripts(inputTokenUtxos, cat20Script)
+
 
   receivers = [...receivers]
   const inputTokenStates = inputTokenUtxos.map((utxo) =>
@@ -147,7 +159,6 @@ export async function contractSend(
 
   const guardUtxo = guardPsbt.getUtxo(0)
   const feeUtxo = guardPsbt.getChangeUTXO()!
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
     new CAT20(
       minterScriptHash,
