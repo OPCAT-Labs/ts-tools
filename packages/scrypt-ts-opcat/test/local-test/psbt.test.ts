@@ -219,6 +219,6 @@ describe('Test ExtPsbt Serialization', () => {
         value: BigInt(20000),
         data: Buffer.from(''),
       });
-    }).to.throw("This ExtPsbt has already sealed, can't add more output");
+    }).to.throw("This ExtPsbt is not modifiable(sealed or finalized), can't add more output");
   });
 });

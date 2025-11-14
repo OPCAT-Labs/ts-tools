@@ -274,7 +274,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    */
   override addInput(inputData: PsbtInputExtended): this {
     super.addInput(inputData);
-    this._checkSealed("can't add more input");
+    this._throwIfNonModifiable("can't add more input");
     if (inputData.finalizer) {
       const index = this.data.inputs.length - 1;
       const input = this.data.inputs[index];
@@ -344,7 +344,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    */
   override addOutput(outputData: PsbtOutputExtended): this {
     super.addOutput(outputData);
-    this._checkSealed("can't add more output");
+    this._throwIfNonModifiable("can't add more output");
     return this;
   }
 
@@ -355,7 +355,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @throws Error if the PSBT is sealed.
    */
   override setVersion(version: number): this {
-    this._checkSealed("can't setVersion");
+    this._throwIfNonModifiable("can't setVersion");
     return super.setVersion(version);
   }
 
@@ -366,7 +366,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @throws Error if the PSBT is already sealed
    */
   override setLocktime(locktime: number): this {
-    this._checkSealed("can't setLocktime");
+    this._throwIfNonModifiable("can't setLocktime");
     return super.setLocktime(locktime);
   }
 
@@ -378,7 +378,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @throws If the PSBT is sealed (immutable)
    */
   override setInputSequence(inputIndex: number, sequence: number): this {
-    this._checkSealed("can't setInputSequence");
+    this._throwIfNonModifiable("can't setInputSequence");
     return super.setInputSequence(inputIndex, sequence);
   }
 
@@ -748,15 +748,6 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }, true);
   }
 
-  /**
-   * Checks if the PSBT is modifiable (can add outputs, change, etc.).
-   * A PSBT is modifiable if it is neither sealed nor finalized.
-   * @returns {boolean} True if the PSBT can be modified, false otherwise.
-   */
-  private isModifiable(): boolean {
-    return !this._isSealed && !this.isFinalized;
-  }
-
   private _cacheInputUnlockScript(inputIndex: InputIndex, unlockScript: Script) {
     this._inputUnlockScripts.set(inputIndex, unlockScript);
   }
@@ -809,13 +800,26 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     return size;
   }
 
-  private _checkSealed(extraMsg: string) {
+  private isModifiable(): boolean {
+    // modifiable means not sealed and not finalized
+    return !this._isSealed && !this.isFinalized;
+  }
+
+  private _throwIfNonModifiable(extraMsg: string) {
     // if _isSealed == true, the psbt is sealed
     // if isFinalized == true, the psbt is finalized, of course sealed
-    if (this._isSealed || this.isFinalized) {
-      throw new Error(`This ExtPsbt has already sealed, ${extraMsg}`);
+    if (!this.isModifiable()) {
+      throw new Error(`This ExtPsbt is not modifiable(sealed or finalized), ${extraMsg}`);
     }
   }
+
+  private _throwIfModifiable(msg: string) {
+    // if the psbt is not sealed and not finalized, it is modifiable
+    if (this.isModifiable()) {
+      throw new Error(`This ExtPsbt is still modifiable, ${msg}`);
+    }
+  }
+
 
   private _addSigRequest(inputIndex: InputIndex, options: Omit<ToSignInput, 'index'>) {
     const sigRequests = this._sigRequests.get(inputIndex) || [];
@@ -1017,11 +1021,9 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @throws {Error} If the PSBT is not sealed (must call `seal()` first).
    */
   txHashPreimage(): string {
-    if (this.isModifiable()) {
-      // if call .change() but not call .seal(), it will cause the change satoshis is 0
-      // here we throw an error to avoid this, toHex() and toBase64() will also check this
-      throw new Error('should call seal() before txHashPreimage()');
-    }
+    // if call .change() but not call .seal(), it will cause the change satoshis is 0
+    // here we throw an error to avoid this, toHex() and toBase64() will also check this
+    this._throwIfModifiable('should call seal() before txHashPreimage()');
     return uint8ArrayToHex(this.extractTransaction().toTxHashPreimage());
   }
 
@@ -1053,11 +1055,9 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @returns {Uint8Array} The serialized PSBT buffer.
    */
   toBuffer(): Uint8Array {
-    if (this.isModifiable()) {
-      // if call .change() but not call .seal(), it will cause the change satoshis is 0
-      // here we throw an error to avoid this, toHex() and toBase64() will also check this
-      throw new Error('should call seal() before toBuffer()');
-    }
+    // if call .change() but not call .seal(), it will cause the change satoshis is 0
+    // here we throw an error to avoid this, toHex() and toBase64() will also check this
+    this._throwIfModifiable('should call seal() before toBuffer()')
     return super.toBuffer();
   }
 
@@ -1067,9 +1067,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @returns {string} The hexadecimal string representation of the PSBT.
    */
   toHex(): string {
-    if (this.isModifiable()) {
-      throw new Error('should call seal() before toHex()');
-    }
+    this._throwIfModifiable('should call seal() before toHex()')
     return super.toHex();
   }
 
@@ -1079,9 +1077,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @returns {string} Base64 encoded PSBT data
    */
   toBase64(): string {
-    if (this.isModifiable()) {
-      throw new Error('should call seal() before toBase64()');
-    }
+    this._throwIfModifiable('should call seal() before toBase64()')
     return super.toBase64();
   }
 }
