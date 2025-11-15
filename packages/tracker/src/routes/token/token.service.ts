@@ -8,9 +8,10 @@ import { Constants } from '../../common/constants';
 import { LRUCache } from 'lru-cache';
 import { TxEntity } from '../../entities/tx.entity';
 import { CommonService } from '../../services/common/common.service';
-import { TokenTypeScope } from '../../common/types';
+import { CachedContent, TokenTypeScope } from '../../common/types';
 import { TokenMintEntity } from '../../entities/tokenMint.entity';
 import { HttpStatusCode } from 'axios';
+import { MetadataSerializer } from '@opcat-labs/cat-sdk';
 
 @Injectable()
 export class TokenService {
@@ -22,6 +23,12 @@ export class TokenService {
   private static readonly tokenInfoCache = new LRUCache<string, TokenInfoEntity>({
     max: Constants.CACHE_MAX_SIZE,
   });
+
+  private static readonly tokenIconCache = new LRUCache<string, CachedContent>({
+    max: Constants.CACHE_MAX_SIZE,
+  });
+
+  
 
   constructor(
     private readonly commonService: CommonService,
@@ -407,5 +414,45 @@ export class TokenService {
       holders,
       trackerBlockHeight: lastProcessedHeight,
     };
+  }
+
+  private async _getTokenIcon(tokenIdOrScriptHash: string): Promise<CachedContent | null> {
+    const tokenContent = await this.tokenInfoRepository.findOne({
+      select: ['rawInfo', 'createdAt'],
+      where: { tokenId: tokenIdOrScriptHash },
+    });
+    let ret: CachedContent | null = null;
+    if (tokenContent) {
+      try {
+        const tokenInfo = MetadataSerializer.deserialize(tokenContent.rawInfo);
+        if (tokenInfo.type !== 'Token') {
+          ret = null;
+        } else {
+          const contentType = MetadataSerializer.decodeContenType(tokenInfo.info.contentType);
+          const contentRaw = Buffer.from(tokenInfo.info.contentBody, 'hex');
+          ret = {
+            type: contentType,
+            encoding: tokenInfo.info.contentEncoding,
+            raw: contentRaw,
+            lastModified: tokenContent.createdAt,
+          };
+        }
+      } catch (e) {
+        ret = null;
+      }
+    }
+    return ret;
+  }
+
+  async getTokenIcon(tokenIdOrScriptHash: string): Promise<CachedContent | null> {
+    const key = `${tokenIdOrScriptHash}`;
+    let cached = TokenService.tokenIconCache.get(key);
+    if (!cached) {
+      cached = await this._getTokenIcon(tokenIdOrScriptHash);
+    }
+    if (cached) {
+      TokenService.tokenIconCache.set(key, cached);
+    }
+    return cached;
   }
 }
