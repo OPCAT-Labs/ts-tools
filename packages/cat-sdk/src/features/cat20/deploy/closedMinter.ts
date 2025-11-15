@@ -1,6 +1,6 @@
 import { ExtPsbt, Signer, ChainProvider, UtxoProvider, hexToUint8Array, markSpent } from '@opcat-labs/scrypt-ts-opcat'
 import { ClosedMinterCAT20Meta } from '../../../contracts'
-import { CAT20TokenInfo, MetadataSerializer } from '../../../lib/metadata'
+import { CAT20TokenInfo, ImageMimeTypes, MetadataSerializer } from '../../../lib/metadata'
 import { checkState } from '../../../utils/check'
 import { CAT20ClosedMinter } from '../../../contracts/cat20/minters/cat20ClosedMinter'
 import { CAT20Admin } from '../../../contracts/cat20/cat20Admin'
@@ -31,6 +31,10 @@ export async function deployClosedMinterToken(
   provider: ChainProvider & UtxoProvider,
   metadata: ClosedMinterCAT20Meta,
   feeRate: number,
+  icon: {
+    type: string
+    body: string
+  } | undefined = undefined,
   changeAddress?: string
 ): Promise<
   CAT20TokenInfo<ClosedMinterCAT20Meta> & {
@@ -46,9 +50,14 @@ export async function deployClosedMinterToken(
   const utxos = await provider.getUtxos(feeAddress)
   checkState(utxos.length > 0, 'Insufficient satoshis')
 
+  if (icon) {
+    checkState(ImageMimeTypes.includes(icon.type), 'Invalid icon MIME type')
+  }  
+
   const genesisTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
-    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', { metadata })))
+    // here we use the content field to store icon data if provided
+    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', { metadata, content: icon })))
     .seal()
 
   const signedGenesisTx = await signer.signPsbt(

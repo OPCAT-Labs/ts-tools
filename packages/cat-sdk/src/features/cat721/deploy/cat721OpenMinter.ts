@@ -27,6 +27,10 @@ export async function deployOpenMinterCollection(
     metadata: OpenMinterCAT721Meta,
     initMerkleRoot: ByteString,
     feeRate: number,
+    content: {
+        type: string,
+        body: string,
+    } | undefined = undefined,
     changeAddress?: string
 ): Promise<
 CAT721NftInfo<OpenMinterCAT721Meta> & {
@@ -47,6 +51,7 @@ CAT721NftInfo<OpenMinterCAT721Meta> & {
             'Collection',
             {
                 metadata,
+                content,
             }
         )))
         .seal()

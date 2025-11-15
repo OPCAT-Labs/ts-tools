@@ -1,4 +1,4 @@
-import { CAT20TokenInfo, MetadataSerializer } from '../../../lib/metadata'
+import { CAT20TokenInfo, ImageMimeTypes, MetadataSerializer } from '../../../lib/metadata'
 import { CAT20OpenMinter } from '../../../contracts/cat20/minters/cat20OpenMinter'
 import { Postage } from '../../../typeConstants'
 import {
@@ -42,6 +42,7 @@ import {
  * @param provider the provider for the blockchain and UTXO operations
  * @param metadata the metadata for the token
  * @param feeRate the fee rate for the transaction
+ * @param icon the icon for the token, optional. If provided, it should contain `type` and `body`, where `type` is the MIME type and `body` is the binary data in hex string
  * @param changeAddress the address for the change output
  * @returns the token info and the PSBTs for the genesis, deploy, and premine transactions
  */
@@ -53,6 +54,10 @@ export async function deployOpenMinterToken(
   provider: UtxoProvider & ChainProvider,
   metadata: OpenMinterCAT20Meta,
   feeRate: number,
+  icon: {
+    type: string
+    body: string
+  } | undefined = undefined,
   changeAddress?: string
 ): Promise<
   CAT20TokenInfo<OpenMinterCAT20Meta> & {
@@ -71,12 +76,18 @@ export async function deployOpenMinterToken(
   const premineCount = metadata.premine / metadata.limit
   const remainingSupplyCount = maxCount - premineCount
 
+  if (icon) {
+    checkState(ImageMimeTypes.includes(icon.type), 'Invalid icon MIME type')
+  }
+
   const genesisPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
+    // here we use the content field to store icon data if provided
     .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize(
       'Token',
       {
         metadata: metadata,
+        content: icon,
       }
     )))
     .seal()

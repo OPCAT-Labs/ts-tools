@@ -20,7 +20,7 @@ import { MetadataSerializer } from "../../../lib/metadata";
  * @param provider the provider for the blockchain and UTXO operations
  * @param metadata the metadata for the collection
  * @param feeRate the fee rate for the transaction
- * @param content the content for the collection
+ * @param content the content for the collection. If provided, it should contain `type` and `body`, where `type` is the MIME type and `body` is the binary data in hex string
  * @param changeAddress the address for the change output
  * @returns the collection info and the PSBTs for the genesis and deploy transactions
  */
@@ -29,10 +29,10 @@ export async function deployClosedMinterCollection(
     provider: UtxoProvider & ChainProvider,
     metadata: ClosedMinterCAT721Meta,
     feeRate: number,
-    content?: {
+    content: {
         type: string,
         body: string,
-    },
+    } | undefined = undefined,
     changeAddress?: string
 ): Promise<CAT721NftInfo<ClosedMinterCAT721Meta> & {
     genesisPsbt: ExtPsbt,
