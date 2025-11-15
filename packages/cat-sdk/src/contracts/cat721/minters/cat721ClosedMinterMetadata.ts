@@ -12,8 +12,6 @@ export class CAT721ClosedMinterMetadata {
             symbol: '',
             description: '',
             max: 0n,
-            icon: '',
-            minterMd5: '',
             issuerAddress: '',
         }
     }

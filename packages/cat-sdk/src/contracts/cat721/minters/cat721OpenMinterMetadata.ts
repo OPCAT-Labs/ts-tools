@@ -15,8 +15,6 @@ export class CAT721OpenMinterMetadata {
             max: 0n,
             premine: 0n,
             preminerAddr: '',
-            icon: '',
-            minterMd5: '',
         }
     }
 }

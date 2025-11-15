@@ -116,10 +116,6 @@ export type CAT721Metadata = {
     description: ByteString
     // max supply of the CAT721 collection
     max: bigint
-    // icon of the CAT721 collection
-    icon: ByteString
-    // md5 of the CAT721 token minter contract
-    minterMd5: ByteString
 }
 
 /**
@@ -138,10 +134,6 @@ export type ClosedMinterCAT721Meta = {
     max: bigint
     // issuer address
     issuerAddress: ByteString
-    // icon of the CAT721 collection
-    icon: ByteString
-    // md5 of the CAT721 token minter contract
-    minterMd5: ByteString
 }
 
 /**
@@ -163,9 +155,4 @@ export type OpenMinterCAT721Meta = {
     premine: bigint
     // preminer address of the CAT721 collection
     preminerAddr: ByteString
-    // --------------- new field ---------------
-    // icon of the CAT721 collection
-    icon: ByteString
-    // md5 of the CAT721 token minter contract
-    minterMd5: ByteString
 }

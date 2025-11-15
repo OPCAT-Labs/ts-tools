@@ -72,8 +72,6 @@ export interface CAT20Metadata extends StructObject {
   symbol: ByteString
   // decimals of the token, length is 1 byte
   decimals: bigint
-  // md5 of the token minter contract, length is 16 bytes
-  minterMd5: ByteString
 }
 
 // todo: transpiler should support this
@@ -89,7 +87,6 @@ export interface ClosedMinterCAT20Meta extends StructObject {
   symbol: ByteString
   decimals: bigint
   hasAdmin: boolean
-  minterMd5: ByteString
 }
 
 /**
@@ -105,8 +102,6 @@ export interface OpenMinterCAT20Meta extends StructObject {
   // decimals of the token, length is 1 byte
   decimals: bigint
   hasAdmin: boolean
-  // md5 of the token minter contract, length is 16 bytes
-  minterMd5: ByteString
 
   // max supply of the token
   max: CAT20_AMOUNT

@@ -12,7 +12,6 @@ export class CAT20OpenMinterMetadata {
       symbol: '',
       decimals: 0n,
       hasAdmin: false,
-      minterMd5: '',
       max: 0n,
       limit: 0n,
       premine: 0n,
