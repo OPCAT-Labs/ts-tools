@@ -22,7 +22,7 @@ function createTestProvider(): ChainProvider & UtxoProvider {
   const getUtxosFn = provider.getUtxos.bind(provider)
   provider.getUtxos = async (...args) => {
     // wait for 1 second to make sure the node is synced
-    await new Promise((resolve) => setTimeout(resolve, 5000))
+    await new Promise((resolve) => setTimeout(resolve, 3000))
     const utxos = await getUtxosFn(...args)
     return utxos
   }
