@@ -51,8 +51,8 @@
 **When:** Automatically triggered on push to `beta-release` branch (when workflow or script files change)
 
 **What it does:**
-1. Uses fixed test parameters: `commit_sha = 9e83e4c`, `version_core = 2.0.0`
-2. Constructs `full_version = 2.0.0-beta-9e83e4c-{date}`
+1. Uses current commit SHA and `version_core = 2.0.0`
+2. Constructs `full_version = 2.0.0-beta-{short_sha}-{date}`
 3. Calls `build-and-publish.yml` to test the entire release process
 
 **Triggers:**
@@ -61,7 +61,7 @@
 
 **Purpose:** Validate beta release workflow before merging to main.
 
-**⚠️ Warning:** This will actually publish to npm with version `2.0.0-beta-9e83e4c-YYYYMMDD`
+**⚠️ Warning:** This will actually publish to npm with version `2.0.0-beta-{current_commit_sha}-YYYYMMDD`
 
 ---
 
