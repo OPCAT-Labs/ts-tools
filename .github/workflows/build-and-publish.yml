@@ -28,46 +28,53 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout to specific commit
+      # 1. Checkout repository with full history
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.commit_sha }}
+          fetch-depth: 0
 
-      # 2. Setup Node.js
+      # 2. Checkout to specific commit
+      - name: Checkout specific commit
+        run: |
+          git checkout ${{ inputs.commit_sha }}
+          echo "✅ Checked out to commit: $(git rev-parse HEAD)"
+          echo "📝 Commit message: $(git log -1 --pretty=%B)"
+
+      # 3. Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'yarn'
 
-      # 3. Install dependencies
+      # 4. Install dependencies
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
-      # 4. Build packages
+      # 5. Build packages
       - name: Build packages
         run: yarn build
 
-      # 5. Update package versions
+      # 6. Update package versions
       - name: Update package versions to ${{ inputs.full_version }}
         run: node scripts/update-version.js "${{ inputs.full_version }}"
 
-      # 6. Check if versions already exist on npm
+      # 7. Check if versions already exist on npm
       - name: Check if version exists on npm
         run: node scripts/check-versions.js "${{ inputs.full_version }}"
 
-      # 7. Configure npm authentication
+      # 8. Configure npm authentication
       - name: Configure npm authentication
         run: |
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
           echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
 
-      # 8. Publish to npm
+      # 9. Publish to npm
       - name: Publish packages to npm
         run: node scripts/publish-packages.js ${{ inputs.npmTag }}
 
-      # 9. Create summary
+      # 10. Create summary
       - name: Create job summary
         if: always()
         run: |
