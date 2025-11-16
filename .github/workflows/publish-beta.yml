@@ -1,0 +1,44 @@
+name: Publish Beta
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Git commit SHA to publish (8-char or full hash)'
+        required: true
+        type: string
+      version_core:
+        description: 'Core version in format: <major>.<minor>.<patch> (e.g., 1.0.5, 2.0.0)'
+        required: true
+        type: string
+
+jobs:
+  construct_version:
+    name: Construct Full Version
+    runs-on: ubuntu-latest
+    outputs:
+      full_version: ${{ steps.version.outputs.full_version }}
+    steps:
+      - name: Construct full version
+        id: version
+        run: |
+          COMMIT_SHA="${{ inputs.commit_sha }}"
+          # Get short SHA (first 8 chars)
+          SHORT_SHA="${COMMIT_SHA:0:8}"
+          # Get commit date
+          COMMIT_DATE=$(date +%Y%m%d)
+          # Construct full_version
+          FULL_VERSION="${{ inputs.version_core }}-beta-${SHORT_SHA}-${COMMIT_DATE}"
+          echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
+          echo "📦 Full version: $FULL_VERSION"
+
+  publish:
+    name: Publish Beta Version
+    needs: construct_version
+    uses: ./.github/workflows/build-and-publish.yml
+    with:
+      commit_sha: ${{ inputs.commit_sha }}
+      full_version: ${{ needs.construct_version.outputs.full_version }}
+      npmTag: beta
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
