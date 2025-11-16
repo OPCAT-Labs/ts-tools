@@ -47,6 +47,24 @@
 
 ---
 
+### test-publish-beta.yml
+**When:** Automatically triggered on push to `beta-release` branch (when workflow or script files change)
+
+**What it does:**
+1. Uses fixed test parameters: `commit_sha = 9e83e4c`, `version_core = 2.0.0`
+2. Constructs `full_version = 2.0.0-beta-9e83e4c-{date}`
+3. Calls `build-and-publish.yml` to test the entire release process
+
+**Triggers:**
+- Push to `beta-release` branch
+- Only when `.github/workflows/**` or `scripts/**` files change
+
+**Purpose:** Validate beta release workflow before merging to main.
+
+**⚠️ Warning:** This will actually publish to npm with version `2.0.0-beta-9e83e4c-YYYYMMDD`
+
+---
+
 ### publish-beta.yml
 **When:** User manually triggers via GitHub Actions UI
 
@@ -358,6 +376,7 @@ npm dist-tag ls @opcat-labs/scrypt-ts-opcat
 ### Workflows
 - `.github/workflows/test.yml` - Automated testing on push/PR
 - `.github/workflows/claude-pr-review.yml` - Automated AI code review on PRs
+- `.github/workflows/test-publish-beta.yml` - Auto test beta release on beta-release branch
 - `.github/workflows/publish-beta.yml` - Manual beta release workflow
 - `.github/workflows/build-and-publish.yml` - Reusable build & publish workflow
 
