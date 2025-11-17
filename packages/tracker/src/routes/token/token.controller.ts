@@ -83,7 +83,6 @@ export class TokenController {
     }
   }
 
-
   @Get(':tokenIdOrTokenScriptHash/addresses/:ownerAddrOrPkh/utxos')
   @ApiTags('token')
   @ApiOperation({ summary: 'Get token utxos by owner address' })

@@ -48,11 +48,10 @@ export async function deployClosedMinterToken(
 
   if (metadata.icon) {
     checkState(ImageMimeTypes.includes(metadata.icon.type), 'Invalid icon MIME type')
-  }  
+  }
 
   const genesisTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
-    // here we use the content field to store icon data if provided
     .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', { metadata })))
     .seal()
 

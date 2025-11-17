@@ -48,7 +48,7 @@ export class CollectionService {
           ret = null;
         } else {
           const isDelegate = nftInfo.info.delegate?.length > 0 && !nftInfo.info.contentBody;
-          const contentType = isDelegate ? Constants.CONTENT_TYPE_CAT721_DELEGATE_V1 : MetadataSerializer.decodeContenType(nftInfo.info.contentType);
+          const contentType = isDelegate ? Constants.CONTENT_TYPE_CAT721_DELEGATE_V1 : MetadataSerializer.decodeContentType(nftInfo.info.contentType);
           const contentRaw = isDelegate ? Buffer.from(nftInfo.info.delegate, 'hex') : Buffer.from(nftInfo.info.contentBody, 'hex');
           ret = {
             type: contentType,

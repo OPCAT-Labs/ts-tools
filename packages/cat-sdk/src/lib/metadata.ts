@@ -220,10 +220,10 @@ export class MetadataSerializer {
 
   /**
    * decode the contentType from hex to utf8 string
-   * @param contentType 
-   * @returns 
+   * @param contentType
+   * @returns
    */
-  static decodeContenType(contentType: string) {
+  static decodeContentType(contentType: string) {
     if (!contentType) {
       return ''
     }

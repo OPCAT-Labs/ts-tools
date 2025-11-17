@@ -133,7 +133,7 @@ export class TxService {
         return this.getDelegateContent(info.info.delegate)
       }
       return {
-        type: MetadataSerializer.decodeContenType(info?.info.contentType),
+        type: MetadataSerializer.decodeContentType(info?.info.contentType),
         encoding: info?.info.contentEncoding,
         raw: Buffer.from(info?.info.contentBody, 'hex'),
       }

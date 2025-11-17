@@ -307,7 +307,7 @@ export class TxService {
             // handle delegate content
             // if the content is empty and the delegate is not empty, it's a delegate content
             const isDelegate = nftMetadata.info.delegate?.length > 0 && !nftMetadata.info.contentBody
-            const contentType = isDelegate ? Constants.CONTENT_TYPE_CAT721_DELEGATE_V1 : MetadataSerializer.decodeContenType(nftMetadata.info.contentType)
+            const contentType = isDelegate ? Constants.CONTENT_TYPE_CAT721_DELEGATE_V1 : MetadataSerializer.decodeContentType(nftMetadata.info.contentType)
             const contentRaw = isDelegate ? Buffer.from(nftMetadata.info.delegate, 'hex') : Buffer.from(nftMetadata.info.contentBody, 'hex')
 
 

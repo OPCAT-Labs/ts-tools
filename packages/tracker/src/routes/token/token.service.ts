@@ -28,8 +28,6 @@ export class TokenService {
     max: Constants.CACHE_MAX_SIZE,
   });
 
-  
-
   constructor(
     private readonly commonService: CommonService,
     @InjectRepository(TokenInfoEntity)
@@ -434,7 +432,7 @@ export class TokenService {
           return null;
         }
         const {type, body} = tokenInfo.info.metadata.icon;
-        const contentType = MetadataSerializer.decodeContenType(type);
+        const contentType = MetadataSerializer.decodeContentType(type);
         const contentRaw = Buffer.from(body, 'hex');
         return {
           type: contentType,

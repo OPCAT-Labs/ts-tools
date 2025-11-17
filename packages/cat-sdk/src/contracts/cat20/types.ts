@@ -76,7 +76,7 @@ export interface CAT20Metadata {
   hasAdmin: boolean
   // icon
   icon?: {
-    type: string
+    type: ByteString
     body: ByteString
   }
 }
@@ -91,10 +91,6 @@ export interface CAT20Metadata {
  * @category Metadata
  */
 export interface ClosedMinterCAT20Meta extends CAT20Metadata {
-  name: ByteString
-  symbol: ByteString
-  decimals: bigint
-  hasAdmin: boolean
 }
 
 /**
