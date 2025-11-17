@@ -63,6 +63,7 @@ export class TokenService {
           'name',
           'symbol',
           'decimals',
+          'hasAdmin',
           'rawInfo',
           'minterScriptHash',
           'adminScriptHash',
@@ -114,8 +115,10 @@ export class TokenService {
         'name',
         'symbol',
         'decimals',
+        'hasAdmin',
         'rawInfo',
         'minterScriptHash',
+        'adminScriptHash',
         'tokenScriptHash',
         'firstMintHeight',
       ],
@@ -421,27 +424,29 @@ export class TokenService {
       select: ['rawInfo', 'createdAt'],
       where: { tokenId: tokenIdOrScriptHash },
     });
-    let ret: CachedContent | null = null;
     if (tokenContent) {
       try {
         const tokenInfo = MetadataSerializer.deserialize(tokenContent.rawInfo);
         if (tokenInfo.type !== 'Token') {
-          ret = null;
-        } else {
-          const contentType = MetadataSerializer.decodeContenType(tokenInfo.info.contentType);
-          const contentRaw = Buffer.from(tokenInfo.info.contentBody, 'hex');
-          ret = {
-            type: contentType,
-            encoding: tokenInfo.info.contentEncoding,
-            raw: contentRaw,
-            lastModified: tokenContent.createdAt,
-          };
+          return null;
         }
+        if (!tokenInfo.info.metadata.icon) {
+          return null;
+        }
+        const {type, body} = tokenInfo.info.metadata.icon;
+        const contentType = MetadataSerializer.decodeContenType(type);
+        const contentRaw = Buffer.from(body, 'hex');
+        return {
+          type: contentType,
+          encoding: tokenInfo.info.contentEncoding,
+          raw: contentRaw,
+          lastModified: tokenContent.createdAt,
+        };
       } catch (e) {
-        ret = null;
+        return null;
       }
     }
-    return ret;
+    return null;
   }
 
   async getTokenIcon(tokenIdOrScriptHash: string): Promise<CachedContent | null> {

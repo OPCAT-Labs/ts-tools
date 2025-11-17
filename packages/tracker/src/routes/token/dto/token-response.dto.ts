@@ -27,8 +27,14 @@ export class TokenInfo {
   @ApiProperty({ example: 8, description: 'Token decimals' })
   decimals: number;
 
+  @ApiProperty({ example: true, description: 'Indicates if the token has admin capabilities' })
+  hasAdmin: boolean;
+
   @ApiProperty({ example: 'abc123...', description: 'Minter script hash' })
   minterScriptHash: string;
+
+  @ApiProperty({ example: 'def456...', description: 'Admin script hash' })
+  adminScriptHash: string;
 
   @ApiProperty({ example: 'def456...', description: 'Token script hash' })
   tokenScriptHash: string;
