@@ -168,6 +168,10 @@ describe('Test the metadata serializer', () => {
 
     describe('should serialize and deserialize successfully', () => {
         it('Token', () => {
+            const content = {
+                type: Buffer.from('746578742f706c61696e3b636861727365743d7574662d38', 'hex').toString(),
+                body: '7b2270223a226272632d3230222c226f70223a226465706c6f79222c227469636b223a22f09d9b91222c226d6178223a2233313431353932363533353839373933222c226c696d223a22313439353939363530313731227d'
+            }
             const metadata = {
                 name: 'name name',
                 symbol: '#2symbol',
@@ -175,17 +179,13 @@ describe('Test the metadata serializer', () => {
                 max: BigInt(2100e4 * 1e8),
                 limit: BigInt(2100e4),
                 premine: BigInt(1e8),
-                preminerAddr: '6a160014dfaa26490122e7c0c431103f4ef3d62bda700eb8'
-            }
-            const content = {
-                type: Buffer.from('746578742f706c61696e3b636861727365743d7574662d38', 'hex').toString(),
-                body: '7b2270223a226272632d3230222c226f70223a226465706c6f79222c227469636b223a22f09d9b91222c226d6178223a2233313431353932363533353839373933222c226c696d223a22313439353939363530313731227d'
+                preminerAddr: '6a160014dfaa26490122e7c0c431103f4ef3d62bda700eb8',
+                icon: content,
             }
             const hex = MetadataSerializer.serialize(
                 'Token', 
                 {
                     metadata,
-                    content
                 }
             )
             const res = MetadataSerializer.deserialize(hex)!
@@ -197,8 +197,8 @@ describe('Test the metadata serializer', () => {
             expect(res.info.metadata!.limit).eq(Number(metadata.limit))
             expect(res.info.metadata!.premine).eq(Number(metadata.premine))
             expect(res.info.metadata!.preminerAddr).eq(metadata.preminerAddr)
-            expect(res.info.contentType).eq(Buffer.from(content.type).toString('hex'))
-            expect(res.info.contentBody).eq(content.body)
+            expect(res.info.metadata!.icon.type).deep.eq(metadata.icon.type)
+            expect(res.info.metadata!.icon.body).deep.eq(metadata.icon.body)
         })
 
         describe('collection', () => {

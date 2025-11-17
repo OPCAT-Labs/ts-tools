@@ -1,7 +1,7 @@
 import { stringToHex } from '../utils'
 import { CAT20Metadata, OpenMinterCAT20Meta } from '../contracts/cat20/types'
 import { CAT721Metadata } from '../contracts/cat721/types'
-import { Script } from '@opcat-labs/opcat'
+import { Script, util as opcatUtil } from '@opcat-labs/opcat'
 import {encode as cborEncode, decode as cborDecode} from 'cbor2'
 import { hexToUint8Array , pushData, splitChunks, MAX_OP_PUSH_DATA_SIZE} from '@opcat-labs/scrypt-ts-opcat'
 
@@ -202,6 +202,11 @@ export class MetadataSerializer {
 
     switch (type) {
       case 'Token':
+        this.pushMetadata(res, info.metadata)
+        if (info.content) {
+          throw new Error('Token metadata should not contain content')
+        }
+        break
       case 'Collection':
       case 'NFT':
         this.pushMetadata(res, info.metadata)
@@ -222,12 +227,15 @@ export class MetadataSerializer {
     if (!contentType) {
       return ''
     }
-    try {
-      // if the contentType is hex, return the original contentType
-      return Buffer.from(contentType, 'hex').toString('utf-8')
-    } catch (e) {
-      return contentType
+    if (opcatUtil.js.isHexa(contentType)) {
+      try {
+        // if the contentType is hex, return the original contentType
+        return Buffer.from(contentType, 'hex').toString('utf-8')
+      } catch (e) {
+        return contentType
+      }
     }
+    return contentType
   }
 
 

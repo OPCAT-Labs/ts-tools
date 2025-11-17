@@ -65,14 +65,22 @@ export type CAT20GuardConstState = {
  * @category CAT20
  * @category Metadata
  */
-export interface CAT20Metadata extends StructObject {
-  // name of the token, length is 1~int8.max bytes
+export interface CAT20Metadata {
+  // name of the token
   name: ByteString
-  // symbol of the token, length is 1~int8.max bytes
+  // symbol of the token
   symbol: ByteString
-  // decimals of the token, length is 1 byte
+  // decimals of the token
   decimals: bigint
+  // whether the token has admin
+  hasAdmin: boolean
+  // icon
+  icon?: {
+    type: string
+    body: ByteString
+  }
 }
+
 
 // todo: transpiler should support this
 // export interface ClosedMinterCAT20Meta extends CAT20Metadata {}
@@ -82,7 +90,7 @@ export interface CAT20Metadata extends StructObject {
  * @category CAT20
  * @category Metadata
  */
-export interface ClosedMinterCAT20Meta extends StructObject {
+export interface ClosedMinterCAT20Meta extends CAT20Metadata {
   name: ByteString
   symbol: ByteString
   decimals: bigint
@@ -94,15 +102,7 @@ export interface ClosedMinterCAT20Meta extends StructObject {
  * @category CAT20
  * @category Metadata
  */
-export interface OpenMinterCAT20Meta extends StructObject {
-  // name of the token, length is 1~int8.max bytes
-  name: ByteString
-  // symbol of the token, length is 1~int8.max bytes
-  symbol: ByteString
-  // decimals of the token, length is 1 byte
-  decimals: bigint
-  hasAdmin: boolean
-
+export interface OpenMinterCAT20Meta extends CAT20Metadata {
   // max supply of the token
   max: CAT20_AMOUNT
   // limit of the token

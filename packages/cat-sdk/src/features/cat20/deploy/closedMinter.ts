@@ -31,10 +31,6 @@ export async function deployClosedMinterToken(
   provider: ChainProvider & UtxoProvider,
   metadata: ClosedMinterCAT20Meta,
   feeRate: number,
-  icon: {
-    type: string
-    body: string
-  } | undefined = undefined,
   changeAddress?: string
 ): Promise<
   CAT20TokenInfo<ClosedMinterCAT20Meta> & {
@@ -50,14 +46,14 @@ export async function deployClosedMinterToken(
   const utxos = await provider.getUtxos(feeAddress)
   checkState(utxos.length > 0, 'Insufficient satoshis')
 
-  if (icon) {
-    checkState(ImageMimeTypes.includes(icon.type), 'Invalid icon MIME type')
+  if (metadata.icon) {
+    checkState(ImageMimeTypes.includes(metadata.icon.type), 'Invalid icon MIME type')
   }  
 
   const genesisTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
     // here we use the content field to store icon data if provided
-    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', { metadata, content: icon })))
+    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', { metadata })))
     .seal()
 
   const signedGenesisTx = await signer.signPsbt(

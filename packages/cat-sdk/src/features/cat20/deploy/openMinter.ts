@@ -54,10 +54,6 @@ export async function deployOpenMinterToken(
   provider: UtxoProvider & ChainProvider,
   metadata: OpenMinterCAT20Meta,
   feeRate: number,
-  icon: {
-    type: string
-    body: string
-  } | undefined = undefined,
   changeAddress?: string
 ): Promise<
   CAT20TokenInfo<OpenMinterCAT20Meta> & {
@@ -76,10 +72,9 @@ export async function deployOpenMinterToken(
   const premineCount = metadata.premine / metadata.limit
   const remainingSupplyCount = maxCount - premineCount
 
-  if (icon) {
-    checkState(ImageMimeTypes.includes(icon.type), 'Invalid icon MIME type')
-  }
-
+  if (metadata.icon) {
+    checkState(ImageMimeTypes.includes(metadata.icon.type), 'Invalid icon MIME type')
+  }  
   const genesisPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
     // here we use the content field to store icon data if provided
@@ -87,7 +82,6 @@ export async function deployOpenMinterToken(
       'Token',
       {
         metadata: metadata,
-        content: icon,
       }
     )))
     .seal()
