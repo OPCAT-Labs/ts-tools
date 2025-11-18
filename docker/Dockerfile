@@ -38,21 +38,8 @@ RUN yarn install --frozen-lockfile
 # Remove packages we don't need to build
 RUN rm -rf packages/examples packages/integration-examples
 
-# Build packages individually to handle cat-sdk specially
-# Build dependencies first
-RUN cd packages/scrypt-ts-opcat && yarn build
-RUN cd packages/scrypt-ts-transpiler-opcat && yarn build
-RUN cd packages/scrypt-ts-cli-opcat && yarn build
-
-# Build cat-sdk without contract compilation (use existing artifacts)
-RUN cd packages/cat-sdk && \
-    npx rimraf dist && \
-    yarn run build:cjs && \
-    yarn run build:esm && \
-    npx -y cpy-cli artifacts dist/
-
-# Build tracker
-RUN cd packages/tracker && yarn build
+# Build all packages using turbo
+RUN yarn build
 
 # =============================================================================
 # Production base stage (shared by API and Worker)
