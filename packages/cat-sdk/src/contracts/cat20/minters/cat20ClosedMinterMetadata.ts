@@ -12,7 +12,6 @@ export class CAT20ClosedMinterMetadata {
       symbol: '',
       decimals: 0n,
       hasAdmin: false,
-      minterMd5: '',
     }
   }
 }

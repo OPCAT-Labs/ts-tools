@@ -63,6 +63,7 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
       .concat(Array.from(this.newUTXOs.values()))
       .filter((utxo) => this.isUnSpent(utxo.txId, utxo.outputIndex))
       .filter(duplicateFilter((utxo) => `${utxo.txId}:${utxo.outputIndex}`))
+      .filter(utxo => utxo.script === script)
       .sort((a, b) => a.satoshis - b.satoshis);
   }
 

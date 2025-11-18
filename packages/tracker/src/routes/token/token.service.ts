@@ -8,9 +8,10 @@ import { Constants } from '../../common/constants';
 import { LRUCache } from 'lru-cache';
 import { TxEntity } from '../../entities/tx.entity';
 import { CommonService } from '../../services/common/common.service';
-import { TokenTypeScope } from '../../common/types';
+import { CachedContent, TokenTypeScope } from '../../common/types';
 import { TokenMintEntity } from '../../entities/tokenMint.entity';
 import { HttpStatusCode } from 'axios';
+import { MetadataSerializer } from '@opcat-labs/cat-sdk';
 
 @Injectable()
 export class TokenService {
@@ -20,6 +21,10 @@ export class TokenService {
   });
 
   private static readonly tokenInfoCache = new LRUCache<string, TokenInfoEntity>({
+    max: Constants.CACHE_MAX_SIZE,
+  });
+
+  private static readonly tokenIconCache = new LRUCache<string, CachedContent>({
     max: Constants.CACHE_MAX_SIZE,
   });
 
@@ -56,6 +61,7 @@ export class TokenService {
           'name',
           'symbol',
           'decimals',
+          'hasAdmin',
           'rawInfo',
           'minterScriptHash',
           'adminScriptHash',
@@ -107,8 +113,10 @@ export class TokenService {
         'name',
         'symbol',
         'decimals',
+        'hasAdmin',
         'rawInfo',
         'minterScriptHash',
+        'adminScriptHash',
         'tokenScriptHash',
         'firstMintHeight',
       ],
@@ -407,5 +415,47 @@ export class TokenService {
       holders,
       trackerBlockHeight: lastProcessedHeight,
     };
+  }
+
+  private async _getTokenIcon(tokenIdOrScriptHash: string): Promise<CachedContent | null> {
+    const tokenContent = await this.tokenInfoRepository.findOne({
+      select: ['rawInfo', 'createdAt'],
+      where: { tokenId: tokenIdOrScriptHash },
+    });
+    if (tokenContent) {
+      try {
+        const tokenInfo = MetadataSerializer.deserialize(tokenContent.rawInfo);
+        if (tokenInfo.type !== 'Token') {
+          return null;
+        }
+        if (!tokenInfo.info.metadata.icon) {
+          return null;
+        }
+        const {type, body} = tokenInfo.info.metadata.icon;
+        const contentType = MetadataSerializer.decodeContentType(type);
+        const contentRaw = Buffer.from(body, 'hex');
+        return {
+          type: contentType,
+          encoding: tokenInfo.info.contentEncoding,
+          raw: contentRaw,
+          lastModified: tokenContent.createdAt,
+        };
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  async getTokenIcon(tokenIdOrScriptHash: string): Promise<CachedContent | null> {
+    const key = `${tokenIdOrScriptHash}`;
+    let cached = TokenService.tokenIconCache.get(key);
+    if (!cached) {
+      cached = await this._getTokenIcon(tokenIdOrScriptHash);
+    }
+    if (cached) {
+      TokenService.tokenIconCache.set(key, cached);
+    }
+    return cached;
   }
 }

@@ -4,7 +4,7 @@ import { sha256, UTXO, ExtPsbt } from '@opcat-labs/scrypt-ts-opcat'
 import { testSigner } from '../utils/testSigner'
 import { loadAllArtifacts as loadCAT20Artifacts, deployToken, mintToken } from './cat20/utils'
 import { loadAllArtifacts as loadCAT721Artifacts } from './cat721/utils'
-import { OpenMinterCAT20Meta, ClosedMinterCAT20Meta, ClosedMinterCAT721Meta } from '../../src/contracts/cat20/types'
+import { OpenMinterCAT20Meta } from '../../src/contracts/cat20/types'
 import { OpenMinterCAT721Meta, CAT721MerkleLeaf, MerkleProof, ProofNodePos, HEIGHT } from '../../src/contracts/cat721/types'
 import { toTokenOwnerAddress } from '../../src/utils'
 import { formatMetadata } from '../../src/lib/metadata'
@@ -24,8 +24,7 @@ import { mintOpenMinterNft } from '../../src/features/cat721/mint/cat721OpenMint
 import { CAT721OpenMinterMerkleTreeData } from '../../src/lib/cat721OPenMinterMerkleTreeData'
 import { CAT721OpenMinter } from '../../src/contracts/cat721/minters/cat721OpenMinter'
 import { MetadataSerializer } from '../../src/lib/metadata'
-import { deployClosedMinterToken } from '../../src/features/cat20/deploy/closedMinter'
-import { mintClosedMinterToken } from '../../src/features/cat20/mint/closedMinter'
+import { isLocalTest } from '../utils'
 
 use(chaiAsPromised)
 
@@ -42,7 +41,7 @@ function toTrackerUtxo(utxo: UTXO): UTXO {
   }
 }
 
-describe('Test tracker UTXO compatibility', () => {
+isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
   let address: string
   let tokenReceiverAddr: string
 
@@ -422,7 +421,7 @@ describe('Test tracker UTXO compatibility', () => {
       const deployResult = await deployOpenMinterCollection(
         testSigner,
         testProvider,
-        openMinterMetadata,
+        { metadata: openMinterMetadata },
         nftOpenMinterMerkleTreeData.merkleRoot,
         await testProvider.getFeeRate()
       )

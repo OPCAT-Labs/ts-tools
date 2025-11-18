@@ -4,7 +4,8 @@ import { ChainProvider } from './chainProvider.js';
 import { UtxoProvider, UtxoQueryOptions, getUtxoKey } from './utxoProvider.js';
 import { SupportedNetwork, UTXO } from '../globalTypes.js';
 import * as tools from 'uint8array-tools';
-import { duplicateFilter } from '../utils/common.js';
+import { duplicateFilter, uint8ArrayToHex } from '../utils/common.js';
+import { Script } from '../index.js';
 /**
  * The RPCProvider is backed by opcat RPC
  * @category Provider
@@ -233,6 +234,7 @@ export class RPCProvider implements ChainProvider, UtxoProvider {
   }
 
   async getUtxos(address: string, _options?: UtxoQueryOptions): Promise<UTXO[]> {
+    const script = uint8ArrayToHex(Script.fromAddress(address).toBuffer());
     const Authorization = `Basic ${tools.toBase64(
       tools.fromUtf8(`${this.getRpcUser()}:${this.getRpcPassword()}`),
     )}`;
@@ -281,7 +283,8 @@ export class RPCProvider implements ChainProvider, UtxoProvider {
     return utxos
       .concat(Array.from(this.newUTXOs.values()))
       .filter((utxo) => this.isUnSpent(utxo.txId, utxo.outputIndex))
-      .filter(duplicateFilter((utxo) => `${utxo.txId}:${utxo.outputIndex}`))
+      .filter(duplicateFilter((utxo) => `${utxo.txId}:${utxo.outputIndex}`))      
+      .filter(utxo => utxo.script === script)
       .sort((a, b) => a.satoshi - b.satoshi);
   }
 

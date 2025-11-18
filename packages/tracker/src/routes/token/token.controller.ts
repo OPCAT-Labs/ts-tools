@@ -1,4 +1,4 @@
-import { Controller, DefaultValuePipe, Get, Param, Query, UseInterceptors } from '@nestjs/common';
+import { Controller, DefaultValuePipe, Get, Param, Query, Res, UseInterceptors } from '@nestjs/common';
 import { TokenService } from './token.service';
 import { okResponse, errorResponse } from '../../common/utils';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags, ApiOkResponse, ApiBadRequestResponse } from '@nestjs/swagger';
@@ -15,6 +15,7 @@ import {
 } from './dto/token-response.dto';
 import { ok } from 'assert';
 import { IntegerType } from 'typeorm';
+import { Response } from 'express';
 
 @Controller('tokens')
 @UseInterceptors(ResponseHeaderInterceptor)
@@ -47,6 +48,38 @@ export class TokenController {
       return okResponse(tokenInfo);
     } catch (e) {
       return errorResponse(e);
+    }
+  }
+
+  @Get(':tokenIdOrTokenScriptHash/icon')
+  @ApiTags('token')
+  @ApiOperation({ summary: 'Get token icon' })
+  @ApiParam({
+    name: 'tokenIdOrTokenScriptHash',
+    required: true,
+    type: String,
+    description: 'token id or token script hash',
+  })
+  async getTokenIcon(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string, @Res() res: Response) {
+    try {
+      const content = await this.tokenService.getTokenIcon(tokenIdOrTokenScriptHash);
+      if (content?.raw) {
+        if (content?.type) {
+          res.setHeader('Content-Type', content.type);
+        }
+        if (content?.encoding) {
+          res.setHeader('Content-Encoding', content.encoding);
+        }
+        if (content?.lastModified) {
+          res.setHeader('Last-Modified', content.lastModified.toUTCString());
+        }
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
+        res.send(content.raw);
+      } else {
+        res.sendStatus(404);
+      }
+    } catch (e) {
+      return res.send(errorResponse(e));
     }
   }
 

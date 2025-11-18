@@ -43,7 +43,7 @@ export class TestCAT721Generator {
         const deployInfo = await deployClosedMinterCollection(
             testSigner,
             testProvider,
-            info,
+            { metadata: info },
             await testProvider.getFeeRate()
         )
         return new TestCAT721Generator(deployInfo)

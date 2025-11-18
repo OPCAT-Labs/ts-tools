@@ -46,7 +46,7 @@ export async function deployNft(info: ClosedMinterCAT721Meta) {
   return deployClosedMinterCollection(
     testSigner,
     testProvider,
-    info,
+    { metadata: info },
     await testProvider.getFeeRate()
   )
 }

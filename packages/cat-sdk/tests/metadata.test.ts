@@ -168,20 +168,24 @@ describe('Test the metadata serializer', () => {
 
     describe('should serialize and deserialize successfully', () => {
         it('Token', () => {
+            const content = {
+                type: Buffer.from('746578742f706c61696e3b636861727365743d7574662d38', 'hex').toString(),
+                body: '7b2270223a226272632d3230222c226f70223a226465706c6f79222c227469636b223a22f09d9b91222c226d6178223a2233313431353932363533353839373933222c226c696d223a22313439353939363530313731227d'
+            }
             const metadata = {
                 name: 'name name',
                 symbol: '#2symbol',
                 decimals: 3n,
-                minterMd5: '7edb8802cb4f86a16c6cdfb27c07d6c6c98c83ab',
                 max: BigInt(2100e4 * 1e8),
                 limit: BigInt(2100e4),
                 premine: BigInt(1e8),
-                preminerAddr: '6a160014dfaa26490122e7c0c431103f4ef3d62bda700eb8'
+                preminerAddr: '6a160014dfaa26490122e7c0c431103f4ef3d62bda700eb8',
+                icon: content,
             }
             const hex = MetadataSerializer.serialize(
                 'Token', 
                 {
-                    metadata
+                    metadata,
                 }
             )
             const res = MetadataSerializer.deserialize(hex)!
@@ -189,11 +193,12 @@ describe('Test the metadata serializer', () => {
             expect(res.info.metadata!.name).eq(metadata.name)
             expect(res.info.metadata!.symbol).eq(metadata.symbol)
             expect(res.info.metadata!.decimals).eq(Number(metadata.decimals))
-            expect(res.info.metadata!.minterMd5).eq(metadata.minterMd5)
             expect(res.info.metadata!.max).eq(Number(metadata.max))
             expect(res.info.metadata!.limit).eq(Number(metadata.limit))
             expect(res.info.metadata!.premine).eq(Number(metadata.premine))
             expect(res.info.metadata!.preminerAddr).eq(metadata.preminerAddr)
+            expect(res.info.metadata!.icon.type).deep.eq(metadata.icon.type)
+            expect(res.info.metadata!.icon.body).deep.eq(metadata.icon.body)
         })
 
         describe('collection', () => {
@@ -203,9 +208,7 @@ describe('Test the metadata serializer', () => {
                 description: 'its a long long description',
                 max: BigInt(2100),
                 premine: BigInt(21),
-                preminerAddr: '6a160014dfaa26490122e7c0c431103f4ef3d62bda700eb8',
-                icon: 'https://testnet.opcatlabs.io/tx/c9f6d011acb4e0876bb27b017789831f3c372c70883d56cd21f84f9ac7a860c4',
-                minterMd5: '7edb8802cb4f86a16c6cdfb27c07d6c6c98c83ab'
+                preminerAddr: '6a160014dfaa26490122e7c0c431103f4ef3d62bda700eb8'
             }
             const content = {
                 type: Buffer.from('746578742f706c61696e3b636861727365743d7574662d38', 'hex').toString(),
@@ -228,8 +231,6 @@ describe('Test the metadata serializer', () => {
                 expect(res.info.metadata!.max).eq(Number(metadata.max))
                 expect(res.info.metadata!.premine).eq(Number(metadata.premine))
                 expect(res.info.metadata!.preminerAddr).eq(metadata.preminerAddr)
-                expect(res.info.metadata!.icon).eq(metadata.icon)
-                expect(res.info.metadata!.minterMd5).eq(metadata.minterMd5)
                 expect(res.info.contentType).eq('')
                 expect(res.info.contentBody).eq('')
             })
@@ -250,14 +251,12 @@ describe('Test the metadata serializer', () => {
                 expect(res.info.metadata!.max).eq(Number(metadata.max))
                 expect(res.info.metadata!.premine).eq(Number(metadata.premine))
                 expect(res.info.metadata!.preminerAddr).eq(metadata.preminerAddr)
-                expect(res.info.metadata!.icon).eq(metadata.icon)
-                expect(res.info.metadata!.minterMd5).eq(metadata.minterMd5)
                 expect(res.info.contentType).eq(Buffer.from(content.type).toString('hex'))
                 expect(res.info.contentBody).eq(content.body)
             })
         })
 
-        
+
         describe('NFT', () => {
             const metadata = {
                 name: 'name name',
@@ -265,9 +264,7 @@ describe('Test the metadata serializer', () => {
                 description: 'its a long long description',
                 max: BigInt(2100),
                 premine: BigInt(21),
-                preminerAddr: '6a160014dfaa26490122e7c0c431103f4ef3d62bda700eb8',
-                icon: 'https://testnet.opcatlabs.io/tx/c9f6d011acb4e0876bb27b017789831f3c372c70883d56cd21f84f9ac7a860c4',
-                minterMd5: '7edb8802cb4f86a16c6cdfb27c07d6c6c98c83ab'
+                preminerAddr: '6a160014dfaa26490122e7c0c431103f4ef3d62bda700eb8'
             }
             const content = {
                 type: Buffer.from('746578742f706c61696e3b636861727365743d7574662d38', 'hex').toString(),
@@ -290,8 +287,6 @@ describe('Test the metadata serializer', () => {
                 expect(res.info.metadata!.max).eq(Number(metadata.max))
                 expect(res.info.metadata!.premine).eq(Number(metadata.premine))
                 expect(res.info.metadata!.preminerAddr).eq(metadata.preminerAddr)
-                expect(res.info.metadata!.icon).eq(metadata.icon)
-                expect(res.info.metadata!.minterMd5).eq(metadata.minterMd5)
                 expect(res.info.contentType).eq('')
                 expect(res.info.contentBody).eq('')
             })
@@ -312,8 +307,6 @@ describe('Test the metadata serializer', () => {
                 expect(res.info.metadata!.max).eq(Number(metadata.max))
                 expect(res.info.metadata!.premine).eq(Number(metadata.premine))
                 expect(res.info.metadata!.preminerAddr).eq(metadata.preminerAddr)
-                expect(res.info.metadata!.icon).eq(metadata.icon)
-                expect(res.info.metadata!.minterMd5).eq(metadata.minterMd5)
                 expect(res.info.contentType).eq(Buffer.from(content.type).toString('hex'))
                 expect(res.info.contentBody).eq(content.body)
             })

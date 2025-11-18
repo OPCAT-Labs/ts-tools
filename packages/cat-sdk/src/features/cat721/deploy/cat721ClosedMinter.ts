@@ -1,5 +1,5 @@
 
-import { ChainProvider, ExtPsbt, hexToUint8Array, markSpent, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
+import { ByteString, ChainProvider, ExtPsbt, hexToUint8Array, markSpent, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { ClosedMinterCAT721Meta } from "../../../contracts/cat721/types";
 import { CAT721NftInfo } from "../../../lib/metadata";
 import { filterFeeUtxos, normalizeUtxoScripts } from "../../../utils";
@@ -20,19 +20,21 @@ import { MetadataSerializer } from "../../../lib/metadata";
  * @param provider the provider for the blockchain and UTXO operations
  * @param metadata the metadata for the collection
  * @param feeRate the fee rate for the transaction
- * @param content the content for the collection
+ * @param content the content for the collection. If provided, it should contain `type` and `body`, where `type` is the MIME type and `body` is the binary data in hex string
  * @param changeAddress the address for the change output
  * @returns the collection info and the PSBTs for the genesis and deploy transactions
  */
 export async function deployClosedMinterCollection(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
-    metadata: ClosedMinterCAT721Meta,
-    feeRate: number,
-    content?: {
-        type: string,
-        body: string,
+    deployInfo: {
+        metadata: ClosedMinterCAT721Meta,
+        content?: {
+            type: ByteString;
+            body: ByteString;
+        }
     },
+    feeRate: number,
     changeAddress?: string
 ): Promise<CAT721NftInfo<ClosedMinterCAT721Meta> & {
     genesisPsbt: ExtPsbt,
@@ -46,14 +48,13 @@ export async function deployClosedMinterCollection(
     utxos = filterFeeUtxos(utxos).slice(0, TX_INPUT_COUNT_MAX)
     checkState(utxos.length > 0, 'Insufficient satoshis')
 
+    const { metadata } = deployInfo
+
     const genesisPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .spendUTXO(utxos)
         .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize(
             'Collection',
-            {
-                metadata,
-                content,
-            }
+            deployInfo
         )))
         .seal()
 

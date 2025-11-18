@@ -1,7 +1,7 @@
 import { stringToHex } from '../utils'
 import { CAT20Metadata, OpenMinterCAT20Meta } from '../contracts/cat20/types'
 import { CAT721Metadata } from '../contracts/cat721/types'
-import { Script } from '@opcat-labs/opcat'
+import { Script, util as opcatUtil } from '@opcat-labs/opcat'
 import {encode as cborEncode, decode as cborDecode} from 'cbor2'
 import { hexToUint8Array , pushData, splitChunks, MAX_OP_PUSH_DATA_SIZE} from '@opcat-labs/scrypt-ts-opcat'
 
@@ -86,6 +86,18 @@ export function formatMetadata<T extends CAT20Metadata>(
   return hexStrings(clone)
 }
 
+export const ImageMimeTypes: string[] = [
+  'image/apng',        // Animated Portable Network Graphics (APNG)
+  'image/avif',        // AV1 Image File Format (AVIF)
+  'image/bmp',         // Bitmap image (BMP)
+  'image/gif',         // Graphics Interchange Format (GIF)
+  'image/jpeg',        // Joint Photographic Expert Group image (JPEG)
+  'image/png',         // Portable Network Graphics (PNG)
+  'image/svg+xml',     // Scalable Vector Graphics (SVG)
+  'image/tiff',        // Tagged Image File Format (TIFF)
+  'image/webp',        // Web Picture format (WEBP)
+  'image/vnd.microsoft.icon' // Icon format (ICO)
+]
 
 /**
  * Metadata serializer for CAT20 and CAT721, serialize the metadata and content or ordinals like format, deserialize the metadata and content from ordinals like format
@@ -191,7 +203,7 @@ export class MetadataSerializer {
       case 'Token':
         this.pushMetadata(res, info.metadata)
         if (info.content) {
-          throw new Error('Content is not supported for token')
+          throw new Error('Token metadata should not contain content')
         }
         break
       case 'Collection':
@@ -207,19 +219,22 @@ export class MetadataSerializer {
 
   /**
    * decode the contentType from hex to utf8 string
-   * @param contentType 
-   * @returns 
+   * @param contentType
+   * @returns
    */
-  static decodeContenType(contentType: string) {
+  static decodeContentType(contentType: string) {
     if (!contentType) {
       return ''
     }
-    try {
-      // if the contentType is hex, return the original contentType
-      return Buffer.from(contentType, 'hex').toString('utf-8')
-    } catch (e) {
-      return contentType
+    if (opcatUtil.js.isHexa(contentType)) {
+      try {
+        // if the contentType is hex, return the original contentType
+        return Buffer.from(contentType, 'hex').toString('utf-8')
+      } catch (e) {
+        return contentType
+      }
     }
+    return contentType
   }
 
 

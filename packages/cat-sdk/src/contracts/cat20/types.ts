@@ -65,16 +65,22 @@ export type CAT20GuardConstState = {
  * @category CAT20
  * @category Metadata
  */
-export interface CAT20Metadata extends StructObject {
-  // name of the token, length is 1~int8.max bytes
+export interface CAT20Metadata {
+  // name of the token
   name: ByteString
-  // symbol of the token, length is 1~int8.max bytes
+  // symbol of the token
   symbol: ByteString
-  // decimals of the token, length is 1 byte
+  // decimals of the token
   decimals: bigint
-  // md5 of the token minter contract, length is 16 bytes
-  minterMd5: ByteString
+  // whether the token has admin
+  hasAdmin: boolean
+  // icon
+  icon?: {
+    type: ByteString
+    body: ByteString
+  }
 }
+
 
 // todo: transpiler should support this
 // export interface ClosedMinterCAT20Meta extends CAT20Metadata {}
@@ -84,12 +90,7 @@ export interface CAT20Metadata extends StructObject {
  * @category CAT20
  * @category Metadata
  */
-export interface ClosedMinterCAT20Meta extends StructObject {
-  name: ByteString
-  symbol: ByteString
-  decimals: bigint
-  hasAdmin: boolean
-  minterMd5: ByteString
+export interface ClosedMinterCAT20Meta extends CAT20Metadata {
 }
 
 /**
@@ -97,17 +98,7 @@ export interface ClosedMinterCAT20Meta extends StructObject {
  * @category CAT20
  * @category Metadata
  */
-export interface OpenMinterCAT20Meta extends StructObject {
-  // name of the token, length is 1~int8.max bytes
-  name: ByteString
-  // symbol of the token, length is 1~int8.max bytes
-  symbol: ByteString
-  // decimals of the token, length is 1 byte
-  decimals: bigint
-  hasAdmin: boolean
-  // md5 of the token minter contract, length is 16 bytes
-  minterMd5: ByteString
-
+export interface OpenMinterCAT20Meta extends CAT20Metadata {
   // max supply of the token
   max: CAT20_AMOUNT
   // limit of the token
