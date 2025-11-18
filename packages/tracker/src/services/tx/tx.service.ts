@@ -18,7 +18,7 @@ import { byteStringToInt, toHex, sha256, uint8ArrayToHex } from '@opcat-labs/scr
 import { ContractLib } from '../../common/contract';
 import { RpcService } from '../rpc/rpc.service';
 import { ZmqService } from '../zmq/zmq.service';
-import { CatTags, MetadataSerializer } from '@opcat-labs/cat-sdk';
+import { CatTags, MetadataSerializer, NULL_ADMIN_SCRIPT_HASH } from '@opcat-labs/cat-sdk';
 
 @Injectable()
 export class TxService {
@@ -182,7 +182,7 @@ export class TxService {
       hasAdmin: hasAdmin,
       rawInfo: toHex(inputGenesis.data),
     });
-    let adminScriptHash = sha256('');
+    let adminScriptHash = NULL_ADMIN_SCRIPT_HASH;
     const adminIndex = outputTags.findIndex((tags) => tags.includes(CatTags.CAT20_ADMIN_TAG));
     if (adminIndex !== -1 && tx.outputs.length > adminIndex) {
       adminScriptHash = sha256(tx.outputs[adminIndex].script.toHex());
