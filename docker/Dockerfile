@@ -19,10 +19,15 @@
 # =============================================================================
 
 # Build stage
-FROM node:22-alpine AS builder
+FROM node:22-slim AS builder
 
 # Install build dependencies
-RUN apk add --no-cache python3 make g++ git
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 \
+    make \
+    g++ \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -45,10 +50,12 @@ RUN yarn build
 # =============================================================================
 # Production base stage (shared by API and Worker)
 # =============================================================================
-FROM node:22-alpine AS production-base
+FROM node:22-slim AS production-base
 
 # Install runtime dependencies
-RUN apk add --no-cache dumb-init
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    dumb-init \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
