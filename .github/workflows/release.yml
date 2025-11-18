@@ -120,6 +120,9 @@ jobs:
       # Create summary
       - name: Create job summary
         run: |
+          # Convert repository owner to lowercase for Docker image names
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+
           echo "## 🚀 Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Tag:** \`${{ needs.validate-and-release.outputs.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
@@ -132,6 +135,10 @@ jobs:
           echo "- 🐳 Docker images published to ghcr.io" >> $GITHUB_STEP_SUMMARY
           echo "- 📝 GitHub Release created" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🐳 Docker Images" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${OWNER_LOWER}/cat-token-tracker/api:${{ needs.validate-and-release.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${OWNER_LOWER}/cat-token-tracker/worker:${{ needs.validate-and-release.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
           echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate-and-release.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
-          echo "- [Docker Images](https://github.com/orgs/${{ github.repository_owner }}/packages?repo_name=cat-token-tracker)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Docker Packages](https://github.com/orgs/${OWNER_LOWER}/packages?repo_name=cat-token-tracker)" >> $GITHUB_STEP_SUMMARY

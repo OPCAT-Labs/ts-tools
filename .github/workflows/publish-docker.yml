@@ -107,6 +107,9 @@ jobs:
       - name: Create job summary
         if: always()
         run: |
+          # Convert IMAGE_NAME to lowercase for Docker compatibility
+          IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+
           echo "## 🐳 Docker Images Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit SHA:** \`${{ inputs.commit }}\`" >> $GITHUB_STEP_SUMMARY
@@ -119,8 +122,8 @@ jobs:
           IFS=',' read -ra TAGS_ARRAY <<< "${{ inputs.dockerTags }}"
           for TAG in "${TAGS_ARRAY[@]}"; do
             echo "#### Tag: \`$TAG\`" >> $GITHUB_STEP_SUMMARY
-            echo "- **API:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:$TAG\`" >> $GITHUB_STEP_SUMMARY
-            echo "- **Worker:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/worker:$TAG\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **API:** \`${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/api:$TAG\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Worker:** \`${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/worker:$TAG\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
           done
 
@@ -128,7 +131,7 @@ jobs:
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "# Pull images with any of the tags:" >> $GITHUB_STEP_SUMMARY
           for TAG in "${TAGS_ARRAY[@]}"; do
-            echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:$TAG" >> $GITHUB_STEP_SUMMARY
-            echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/worker:$TAG" >> $GITHUB_STEP_SUMMARY
+            echo "docker pull ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/api:$TAG" >> $GITHUB_STEP_SUMMARY
+            echo "docker pull ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}/worker:$TAG" >> $GITHUB_STEP_SUMMARY
           done
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
