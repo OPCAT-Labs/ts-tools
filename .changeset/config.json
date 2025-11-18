@@ -2,7 +2,18 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    [
+      "@opcat-labs/cat-sdk",
+      "@opcat-labs/scrypt-ts-opcat",
+      "@opcat-labs/scrypt-ts-transpiler-opcat",
+      "@opcat-labs/cli-opcat",
+      "@opcat-labs/opcat",
+      "@opcat-labs/cat-tracker",
+      "@opcat-labs/examples",
+      "@opcat-labs/integration-examples"
+    ]
+  ],
   "linked": [],
   "access": "restricted",
   "baseBranch": "main",
