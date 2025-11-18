@@ -34,6 +34,9 @@ jobs:
 
   publish-npm:
     needs: construct_version
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/publish-npm.yml
     with:
       commit_sha: ${{ needs.construct_version.outputs.commit_sha }}
