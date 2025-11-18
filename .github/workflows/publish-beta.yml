@@ -32,13 +32,21 @@ jobs:
           echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
           echo "📦 Full version: $FULL_VERSION"
 
-  publish:
-    name: Publish Beta Version
+  publish-npm:
+    name: Publish NPM Packages
     needs: construct_version
-    uses: ./.github/workflows/build-and-publish.yml
+    uses: ./.github/workflows/publish-npm.yml
     with:
       commit_sha: ${{ inputs.commit_sha }}
       full_version: ${{ needs.construct_version.outputs.full_version }}
       npmTag: beta
     secrets:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-docker:
+    name: Publish Docker Images
+    needs: construct_version
+    uses: ./.github/workflows/publish-docker.yml
+    with:
+      commit: ${{ inputs.commit_sha }}
+      dockerTag: ${{ needs.construct_version.outputs.full_version }}

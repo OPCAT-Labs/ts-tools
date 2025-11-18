@@ -1,0 +1,115 @@
+name: Build and Publish Docker Images to ghcr.io
+
+on:
+  workflow_call:
+    inputs:
+      commit:
+        description: 'Git commit SHA to build'
+        required: true
+        type: string
+      dockerTag:
+        description: 'Docker image tag (e.g., beta, latest, v1.0.0)'
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/cat-token-tracker
+
+jobs:
+  publish-docker:
+    name: Build and Publish Docker Images to ghcr.io
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # 1. Checkout repository with full history
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Checkout to specific commit
+      - name: Checkout specific commit
+        run: |
+          git checkout ${{ inputs.commit }}
+          echo "✅ Checked out to commit: $(git rev-parse HEAD)"
+          echo "📝 Commit message: $(git log -1 --pretty=%B)"
+
+      # 3. Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 4. Log in to GitHub Container Registry
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 5. Extract metadata for API image
+      - name: Extract metadata for API image
+        id: meta-api
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api
+          tags: |
+            type=raw,value=${{ inputs.dockerTag }}
+
+      # 6. Build and push API image
+      - name: Build and push API image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          target: api
+          push: true
+          tags: ${{ steps.meta-api.outputs.tags }}
+          labels: ${{ steps.meta-api.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 7. Extract metadata for Worker image
+      - name: Extract metadata for Worker image
+        id: meta-worker
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/worker
+          tags: |
+            type=raw,value=${{ inputs.dockerTag }}
+
+      # 8. Build and push Worker image
+      - name: Build and push Worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          target: worker
+          push: true
+          tags: ${{ steps.meta-worker.outputs.tags }}
+          labels: ${{ steps.meta-worker.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # 9. Create job summary
+      - name: Create job summary
+        if: always()
+        run: |
+          echo "## 🐳 Docker Images Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit SHA:** \`${{ inputs.commit }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** \`${{ inputs.dockerTag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Published Images" >> $GITHUB_STEP_SUMMARY
+          echo "- **API:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${{ inputs.dockerTag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Worker:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/worker:${{ inputs.dockerTag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pull Commands" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${{ inputs.dockerTag }}" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/worker:${{ inputs.dockerTag }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

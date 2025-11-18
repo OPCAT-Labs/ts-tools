@@ -53,7 +53,7 @@
 **What it does:**
 1. Uses current commit SHA and `version_core = 2.0.0`
 2. Constructs `full_version = 2.0.0-beta-{short_sha}-{date}`
-3. Calls `build-and-publish.yml` to test the entire release process
+3. Calls `publish-npm.yml` to test the entire release process
 
 **Triggers:**
 - Push to `beta-release` branch
@@ -71,7 +71,7 @@
 **What it does:**
 1. Accepts user inputs: `commit_sha` + `version_core`
 2. Constructs `full_version = {version_core}-beta-{short_sha}-{date}`
-3. Calls `build-and-publish.yml` with the constructed version
+3. Calls `publish-npm.yml` with the constructed version
 
 **Inputs:**
 - `commit_sha` (required) - Git commit hash (8-char or full)
@@ -91,7 +91,7 @@ npmTag: beta
 
 ---
 
-### build-and-publish.yml
+### publish-npm.yml
 **When:** Called by `publish-beta.yml` (reusable workflow)
 
 **What it does:**
@@ -145,7 +145,7 @@ User triggers publish-beta.yml
   │
   ├─ Construct: full_version = 1.0.5-beta-9e83e4c0-20241116
   │
-  └─ Calls: build-and-publish.yml
+  └─ Calls: publish-npm.yml
        │
        ├─ Checkout @ 9e83e4c0
        ├─ yarn install && yarn build
@@ -378,7 +378,7 @@ npm dist-tag ls @opcat-labs/scrypt-ts-opcat
 - `.github/workflows/claude-pr-review.yml` - Automated AI code review on PRs
 - `.github/workflows/test-publish-beta.yml` - Auto test beta release on beta-release branch
 - `.github/workflows/publish-beta.yml` - Manual beta release workflow
-- `.github/workflows/build-and-publish.yml` - Reusable build & publish workflow
+- `.github/workflows/publish-npm.yml` - Reusable build & publish workflow
 
 ### Scripts
 - `scripts/update-version.js` - Update package versions

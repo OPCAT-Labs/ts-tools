@@ -1,4 +1,4 @@
-name: Build and Publish
+name: Build and Publish to npmjs.com
 
 on:
   workflow_call:
@@ -24,7 +24,7 @@ env:
 
 jobs:
   build-and-publish:
-    name: Build and Publish (${{ inputs.npmTag }}) @ ${{ inputs.commit_sha }}
+    name: Build and Publish (${{ inputs.npmTag }}) @ ${{ inputs.commit_sha }} to npmjs.com
     runs-on: ubuntu-latest
 
     steps:
