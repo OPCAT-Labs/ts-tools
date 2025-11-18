@@ -9,10 +9,13 @@ import {
   BacktraceInfo,
   TxUtils,
   PubKeyHash,
+  tags,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20AdminState } from './types'
 import { OwnerUtils } from '../utils/ownerUtils'
+import { CatTags } from '../catTags'
 
+@tags([CatTags.CAT20_ADMIN_TAG])
 export class CAT20Admin extends SmartContract<CAT20AdminState> {
   @prop()
   genesisOutpoint: ByteString

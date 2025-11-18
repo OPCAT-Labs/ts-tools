@@ -1,5 +1,5 @@
 import { ExtPsbt, Signer, ChainProvider, UtxoProvider, hexToUint8Array, markSpent } from '@opcat-labs/scrypt-ts-opcat'
-import { ClosedMinterCAT20Meta } from '../../../contracts'
+import { ClosedMinterCAT20Meta, NULL_ADMIN_SCRIPT_HASH } from '../../../contracts'
 import { CAT20TokenInfo, ImageMimeTypes, MetadataSerializer } from '../../../lib/metadata'
 import { checkState } from '../../../utils/check'
 import { CAT20ClosedMinter } from '../../../contracts/cat20/minters/cat20ClosedMinter'
@@ -74,10 +74,11 @@ export async function deployClosedMinterToken(
   )
   const admin = new CAT20Admin(outpoint2ByteString(tokenId))
   const minterScriptHash = ContractPeripheral.scriptHash(closeMinter)
-  const adminScriptHash = ContractPeripheral.scriptHash(admin)
+  const adminScriptHash = metadata.hasAdmin ? ContractPeripheral.scriptHash(admin) : NULL_ADMIN_SCRIPT_HASH;
+  const guardVariantScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
   const cat20 = new CAT20(
     minterScriptHash,
-    CAT20GuardPeripheral.getGuardVariantScriptHashes(),
+    guardVariantScriptHashes,
     metadata.hasAdmin,
     adminScriptHash
   )
@@ -95,7 +96,12 @@ export async function deployClosedMinterToken(
   const deployTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(genesisUtxo)
     .addContractOutput(closeMinter, Postage.MINTER_POSTAGE)
-    .addContractOutput(admin, Postage.ADMIN_POSTAGE)
+
+  if (metadata.hasAdmin) {
+    deployTx.addContractOutput(admin, Postage.ADMIN_POSTAGE)
+  }
+
+  deployTx
     .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', deployInfo)))
     .seal()
 
