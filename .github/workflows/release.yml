@@ -75,31 +75,10 @@ jobs:
           echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
           echo "✅ Commit SHA: $COMMIT_SHA"
 
-  # 9. Publish to npm
-  publish-npm:
-    name: Publish to npm
-    needs: validate-and-release
-    uses: ./.github/workflows/publish-npm.yml
-    with:
-      commit_sha: ${{ needs.validate-and-release.outputs.commit_sha }}
-      full_version: ${{ needs.validate-and-release.outputs.version }}
-      npmTag: latest
-    secrets:
-      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  # 10. Publish Docker images
-  publish-docker:
-    name: Publish Docker images
-    needs: validate-and-release
-    uses: ./.github/workflows/publish-docker.yml
-    with:
-      commit: ${{ needs.validate-and-release.outputs.commit_sha }}
-      dockerTags: latest,${{ needs.validate-and-release.outputs.tag_name }},${{ needs.validate-and-release.outputs.version }}
-
-  # 11. Create GitHub Release
+  # 9. Create GitHub Release
   create-release:
     name: Create GitHub Release
-    needs: [validate-and-release, publish-npm, publish-docker]
+    needs: validate-and-release
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -142,3 +121,24 @@ jobs:
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
           echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate-and-release.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
           echo "- [Docker Packages](https://github.com/orgs/${OWNER_LOWER}/packages?repo_name=cat-token-tracker)" >> $GITHUB_STEP_SUMMARY
+
+  # 10. Publish Docker images
+  publish-docker:
+    name: Publish Docker images
+    needs: validate-and-release
+    uses: ./.github/workflows/publish-docker.yml
+    with:
+      commit: ${{ needs.validate-and-release.outputs.commit_sha }}
+      dockerTags: latest,${{ needs.validate-and-release.outputs.tag_name }},${{ needs.validate-and-release.outputs.version }}
+
+  # 11. Publish to npm
+  publish-npm:
+    name: Publish to npm
+    needs: validate-and-release
+    uses: ./.github/workflows/publish-npm.yml
+    with:
+      commit_sha: ${{ needs.validate-and-release.outputs.commit_sha }}
+      full_version: ${{ needs.validate-and-release.outputs.version }}
+      npmTag: latest
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
