@@ -36,7 +36,7 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new LoggingInterceptor());
 
-  await app.listen(process.env.API_PORT || 3000);
+  await app.listen(process.env.API_PORT || 3000, '0.0.0.0');
   console.log(`tracker api is running on: ${await app.getUrl()}`);
 }
 
