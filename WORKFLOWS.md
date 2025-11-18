@@ -112,6 +112,68 @@ npmTag: beta
 
 ---
 
+### publish-docker.yml
+**When:** Called by `publish-beta.yml` or `release.yml` (reusable workflow)
+
+**What it does:**
+1. Checkout code at specified commit
+2. Build Docker images for API and Worker
+3. Publish to GitHub Container Registry (ghcr.io)
+4. Tag images with specified tags
+
+**Inputs:**
+- `commit` (required) - Git commit to build
+- `dockerTags` (required) - Comma-separated tags (e.g., `beta,latest,v1.0.0`)
+
+**Images:**
+- `ghcr.io/{owner}/cat-token-tracker/api`
+- `ghcr.io/{owner}/cat-token-tracker/worker`
+
+---
+
+### release.yml
+**When:** Automatically triggered on push of version tag (`vX.Y.Z`)
+
+**What it does:**
+1. **Validates** tag and version consistency:
+   - All package versions match tag version
+   - CHANGELOG.md files contain the version as latest entry
+2. **Publishes** packages and Docker images:
+   - Calls `publish-npm.yml` with `npmTag: latest`
+   - Calls `publish-docker.yml` with tags: `latest`, `vX.Y.Z`, `X.Y.Z`
+3. **Creates GitHub Release** with auto-generated release notes from CHANGELOGs
+
+**Triggers:**
+- Push tag matching `v[0-9]+.[0-9]+.[0-9]+` (e.g., `v1.0.5`)
+
+**Validation scripts:**
+- `check-package-versions.js` - Ensures all packages have the same version
+- `check-changelog.js` - Verifies CHANGELOG.md contains version as latest
+- `extract-release-notes.js` - Generates release notes from CHANGELOGs
+
+**Usage:**
+```bash
+# 1. Version packages using Changesets
+yarn changeset version
+
+# 2. Commit changes
+git add .
+git commit -m "chore: version packages"
+git push origin main
+
+# 3. Create and push tag
+VERSION=$(jq -r '.version' packages/cat-sdk/package.json)
+git tag -a "v$VERSION" -m "Release v$VERSION"
+git push origin "v$VERSION"
+```
+
+**⚠️ Requirements:**
+- All package versions must be identical
+- CHANGELOG.md must exist and contain the version
+- Version must be the latest entry in CHANGELOG
+
+---
+
 ## 🚀 How to Use
 
 ### Publish Beta Version
@@ -379,10 +441,15 @@ npm dist-tag ls @opcat-labs/scrypt-ts-opcat
 - `.github/workflows/test-publish-beta.yml` - Auto test beta release on beta-release branch
 - `.github/workflows/publish-beta.yml` - Manual beta release workflow
 - `.github/workflows/publish-npm.yml` - Reusable build & publish workflow
+- `.github/workflows/publish-docker.yml` - Reusable Docker build & publish workflow
+- `.github/workflows/release.yml` - Production release on version tags
 
 ### Scripts
 - `scripts/update-version.js` - Update package versions
 - `scripts/check-versions.js` - Check version existence
+- `scripts/check-package-versions.js` - Verify all packages have same version
+- `scripts/check-changelog.js` - Verify CHANGELOG.md entries
+- `scripts/extract-release-notes.js` - Generate release notes from CHANGELOGs
 - `scripts/publish-packages.js` - Publish to npm
 
 ### Documentation
