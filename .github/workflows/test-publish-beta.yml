@@ -43,6 +43,9 @@ jobs:
 
   publish-docker:
     needs: construct_version
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/publish-docker.yml
     with:
       commit: ${{ needs.construct_version.outputs.commit_sha }}
