@@ -50,4 +50,4 @@ jobs:
     uses: ./.github/workflows/publish-docker.yml
     with:
       commit: ${{ needs.construct_version.outputs.commit_sha }}
-      dockerTag: ${{ needs.construct_version.outputs.full_version }}
+      dockerTags: ${{ needs.construct_version.outputs.full_version }},beta

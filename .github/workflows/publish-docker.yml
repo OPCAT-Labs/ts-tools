@@ -7,8 +7,8 @@ on:
         description: 'Git commit SHA to build'
         required: true
         type: string
-      dockerTag:
-        description: 'Docker image tag (e.g., beta, latest, v1.0.0)'
+      dockerTags:
+        description: 'Docker image tags (comma-separated, e.g., "beta,latest,v1.0.0")'
         required: true
         type: string
 
@@ -50,14 +50,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 5. Extract metadata for API image
+      # 5. Process tags and extract metadata for API image
+      - name: Process tags
+        id: process-tags
+        run: |
+          TAGS="${{ inputs.dockerTags }}"
+          echo "raw_tags=$TAGS" >> $GITHUB_OUTPUT
+          # Convert comma-separated tags to newline-separated for metadata-action
+          TAGS_NEWLINE=$(echo "$TAGS" | tr ',' '\n' | sed 's/^/type=raw,value=/')
+          echo "tags_formatted<<EOF" >> $GITHUB_OUTPUT
+          echo "$TAGS_NEWLINE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Extract metadata for API image
         id: meta-api
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api
-          tags: |
-            type=raw,value=${{ inputs.dockerTag }}
+          tags: ${{ steps.process-tags.outputs.tags_formatted }}
 
       # 6. Build and push API image
       - name: Build and push API image
@@ -78,8 +88,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/worker
-          tags: |
-            type=raw,value=${{ inputs.dockerTag }}
+          tags: ${{ steps.process-tags.outputs.tags_formatted }}
 
       # 8. Build and push Worker image
       - name: Build and push Worker image
@@ -101,15 +110,25 @@ jobs:
           echo "## 🐳 Docker Images Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit SHA:** \`${{ inputs.commit }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag:** \`${{ inputs.dockerTag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tags:** \`${{ inputs.dockerTags }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Published Images" >> $GITHUB_STEP_SUMMARY
-          echo "- **API:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${{ inputs.dockerTag }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Worker:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/worker:${{ inputs.dockerTag }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Convert comma-separated tags to array and print each
+          IFS=',' read -ra TAGS_ARRAY <<< "${{ inputs.dockerTags }}"
+          for TAG in "${TAGS_ARRAY[@]}"; do
+            echo "#### Tag: \`$TAG\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **API:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:$TAG\`" >> $GITHUB_STEP_SUMMARY
+            echo "- **Worker:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/worker:$TAG\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
+
           echo "### Pull Commands" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:${{ inputs.dockerTag }}" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/worker:${{ inputs.dockerTag }}" >> $GITHUB_STEP_SUMMARY
+          echo "# Pull images with any of the tags:" >> $GITHUB_STEP_SUMMARY
+          for TAG in "${TAGS_ARRAY[@]}"; do
+            echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/api:$TAG" >> $GITHUB_STEP_SUMMARY
+            echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/worker:$TAG" >> $GITHUB_STEP_SUMMARY
+          done
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
