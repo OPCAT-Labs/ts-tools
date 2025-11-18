@@ -421,7 +421,7 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
       const deployResult = await deployOpenMinterCollection(
         testSigner,
         testProvider,
-        openMinterMetadata,
+        { metadata: openMinterMetadata },
         nftOpenMinterMerkleTreeData.merkleRoot,
         await testProvider.getFeeRate()
       )

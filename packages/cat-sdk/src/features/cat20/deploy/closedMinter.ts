@@ -29,7 +29,9 @@ import { ConstantsLib } from '../../../contracts'
 export async function deployClosedMinterToken(
   signer: Signer,
   provider: ChainProvider & UtxoProvider,
-  metadata: ClosedMinterCAT20Meta,
+  deployInfo: {
+    metadata: ClosedMinterCAT20Meta,
+  },
   feeRate: number,
   changeAddress?: string
 ): Promise<
@@ -46,13 +48,15 @@ export async function deployClosedMinterToken(
   const utxos = await provider.getUtxos(feeAddress)
   checkState(utxos.length > 0, 'Insufficient satoshis')
 
+  const { metadata } = deployInfo
+
   if (metadata.icon) {
     checkState(ImageMimeTypes.includes(metadata.icon.type), 'Invalid icon MIME type')
   }
 
   const genesisTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
-    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', { metadata })))
+    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', deployInfo)))
     .seal()
 
   const signedGenesisTx = await signer.signPsbt(
@@ -92,7 +96,7 @@ export async function deployClosedMinterToken(
     .spendUTXO(genesisUtxo)
     .addContractOutput(closeMinter, Postage.MINTER_POSTAGE)
     .addContractOutput(admin, Postage.ADMIN_POSTAGE)
-    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', { metadata })))
+    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', deployInfo)))
     .seal()
 
   const signedDeployTx = await signer.signPsbt(

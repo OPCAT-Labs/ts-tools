@@ -24,13 +24,15 @@ import { filterFeeUtxos } from "../../../utils";
 export async function deployOpenMinterCollection(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
-    metadata: OpenMinterCAT721Meta,
+    deployInfo: {
+        metadata: OpenMinterCAT721Meta,
+        content?: {
+            type: ByteString;
+            body: ByteString;
+        }
+    },
     initMerkleRoot: ByteString,
     feeRate: number,
-    content: {
-        type: string,
-        body: string,
-    } | undefined = undefined,
     changeAddress?: string
 ): Promise<
 CAT721NftInfo<OpenMinterCAT721Meta> & {
@@ -45,14 +47,13 @@ CAT721NftInfo<OpenMinterCAT721Meta> & {
     utxos = filterFeeUtxos(utxos).slice(0, TX_INPUT_COUNT_MAX)
     checkState(utxos.length > 0, 'Insufficient satoshis')
 
+    const { metadata } = deployInfo
+
     const genesisPsbt = new ExtPsbt({network: await provider.getNetwork()})
         .spendUTXO(utxos)
         .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize(
             'Collection',
-            {
-                metadata,
-                content,
-            }
+            deployInfo
         )))
         .seal()
 

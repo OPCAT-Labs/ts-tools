@@ -46,7 +46,7 @@ export class TestCAT20Generator {
     const deployInfo = await deployClosedMinterToken(
       testSigner,
       testProvider,
-      info,
+      { metadata: info },
       await testProvider.getFeeRate(),
     )
     return new TestCAT20Generator(deployInfo)

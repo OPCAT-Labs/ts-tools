@@ -46,7 +46,7 @@ describe('Test the feature `deploy` for `CAT721OpenMinter`', () => {
         const dpeloyResult = await deployOpenMinterCollection(
             testSigner,
             testProvider,
-            metadata,
+            { metadata },
             nftOpenMinterMerkleTreeData.merkleRoot,
             await testProvider.getFeeRate()
         )

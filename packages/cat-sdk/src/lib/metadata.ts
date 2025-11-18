@@ -99,7 +99,6 @@ export const ImageMimeTypes: string[] = [
   'image/vnd.microsoft.icon' // Icon format (ICO)
 ]
 
-
 /**
  * Metadata serializer for CAT20 and CAT721, serialize the metadata and content or ordinals like format, deserialize the metadata and content from ordinals like format
  * @category Metadata

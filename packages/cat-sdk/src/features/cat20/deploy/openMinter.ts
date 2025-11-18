@@ -52,7 +52,9 @@ export async function deployOpenMinterToken(
   // signer for preminer
   preminerSigner: Signer,
   provider: UtxoProvider & ChainProvider,
-  metadata: OpenMinterCAT20Meta,
+  deployInfo: {
+    metadata: OpenMinterCAT20Meta,
+  },
   feeRate: number,
   changeAddress?: string
 ): Promise<
@@ -68,20 +70,20 @@ export async function deployOpenMinterToken(
   const utxos = await provider.getUtxos(address)
   checkState(utxos.length > 0, 'Insufficient satoshis')
 
+  const { metadata } = deployInfo
+
   const maxCount = metadata.max / metadata.limit
   const premineCount = metadata.premine / metadata.limit
   const remainingSupplyCount = maxCount - premineCount
 
   if (metadata.icon) {
     checkState(ImageMimeTypes.includes(metadata.icon.type), 'Invalid icon MIME type')
-  }  
+  }
   const genesisPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
     .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize(
       'Token',
-      {
-        metadata: metadata,
-      }
+      deployInfo
     )))
     .seal()
 

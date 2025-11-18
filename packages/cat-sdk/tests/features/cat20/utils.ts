@@ -43,7 +43,7 @@ export async function deployToken(info: OpenMinterCAT20Meta) {
     testSigner,
     testSigner,
     testProvider,
-    info,
+    { metadata: info },
     await testProvider.getFeeRate()
   )
 }
