@@ -47,25 +47,7 @@
 
 ---
 
-### test-publish-beta.yml
-**When:** Automatically triggered on push to `beta-release` branch (when workflow or script files change)
-
-**What it does:**
-1. Uses current commit SHA and `version_core = 2.0.0`
-2. Constructs `full_version = 2.0.0-beta-{short_sha}-{date}`
-3. Calls `publish-npm.yml` to test the entire release process
-
-**Triggers:**
-- Push to `beta-release` branch
-- Only when `.github/workflows/**` or `scripts/**` files change
-
-**Purpose:** Validate beta release workflow before merging to main.
-
-**⚠️ Warning:** This will actually publish to npm with version `2.0.0-beta-{current_commit_sha}-YYYYMMDD`
-
----
-
-### publish-beta.yml
+### release-beta.yml
 **When:** User manually triggers via GitHub Actions UI
 
 **What it does:**
@@ -92,7 +74,7 @@ npmTag: beta
 ---
 
 ### publish-npm.yml
-**When:** Called by `publish-beta.yml` (reusable workflow)
+**When:** Called by `release-beta.yml` (reusable workflow)
 
 **What it does:**
 1. Checkout code at specified commit
@@ -113,7 +95,7 @@ npmTag: beta
 ---
 
 ### publish-docker.yml
-**When:** Called by `publish-beta.yml` or `release.yml` (reusable workflow)
+**When:** Called by `release-beta.yml` or `release.yml` (reusable workflow)
 
 **What it does:**
 1. Checkout code at specified commit
@@ -180,7 +162,7 @@ git push origin "v$VERSION"
 
 1. **Go to GitHub Actions**
    ```
-   Actions → "Publish Beta" → Run workflow
+   Actions → "Release Beta" → Run workflow
    ```
 
 2. **Fill in inputs:**
@@ -200,7 +182,7 @@ git push origin "v$VERSION"
 ## 🔄 Workflow Call Chain
 
 ```
-User triggers publish-beta.yml
+User triggers release-beta.yml
   │
   ├─ Input: commit_sha = 9e83e4c0
   ├─ Input: version_core = 1.0.5
@@ -336,7 +318,7 @@ find packages -name "package.json.backup" -exec sh -c 'mv "$1" "${1%.backup}"' _
 
 **Components:**
 - `version_core`: From user input (e.g., `1.0.5`)
-- `npmTag`: Fixed to `beta` in publish-beta.yml
+- `npmTag`: Fixed to `beta` in release-beta.yml
 - `commit_sha`: From user input, truncated to 8 chars
 - `commit_date`: Auto-generated (YYYYMMDD format)
 
@@ -385,7 +367,7 @@ npm view @opcat-labs/scrypt-ts-opcat versions | grep 1.0.5-beta
 
 **Steps:**
 1. Get latest commit: `git log --oneline | head -1`
-2. Actions → Publish Beta
+2. Actions → Release Beta
 3. Input: `commit_sha = 9e83e4c0`, `version_core = 1.0.5`
 4. Result: `1.0.5-beta-9e83e4c0-20241116`
 
@@ -397,7 +379,7 @@ npm view @opcat-labs/scrypt-ts-opcat versions | grep 1.0.5-beta
 
 **Steps:**
 1. Get commit: `git log --oneline | head -1`
-2. Actions → Publish Beta
+2. Actions → Release Beta
 3. Input: `commit_sha = a1b2c3d4`, `version_core = 2.0.0`
 4. Result: `2.0.0-beta-a1b2c3d4-20241116`
 
@@ -409,7 +391,7 @@ npm view @opcat-labs/scrypt-ts-opcat versions | grep 1.0.5-beta
 
 **Steps:**
 1. Find commit: `git log --oneline | grep "feature"`
-2. Actions → Publish Beta
+2. Actions → Release Beta
 3. Input: `commit_sha = abcd1234`, `version_core = 1.0.5`
 4. Result: `1.0.5-beta-abcd1234-20241116`
 
@@ -438,8 +420,7 @@ npm dist-tag ls @opcat-labs/scrypt-ts-opcat
 ### Workflows
 - `.github/workflows/test.yml` - Automated testing on push/PR
 - `.github/workflows/claude-pr-review.yml` - Automated AI code review on PRs
-- `.github/workflows/test-publish-beta.yml` - Auto test beta release on beta-release branch
-- `.github/workflows/publish-beta.yml` - Manual beta release workflow
+- `.github/workflows/release-beta.yml` - Manual beta release workflow
 - `.github/workflows/publish-npm.yml` - Reusable build & publish workflow
 - `.github/workflows/publish-docker.yml` - Reusable Docker build & publish workflow
 - `.github/workflows/release.yml` - Production release on version tags
@@ -457,4 +438,4 @@ npm dist-tag ls @opcat-labs/scrypt-ts-opcat
 
 ---
 
-**Last Updated:** 2025-11-16
+**Last Updated:** 2025-11-19
