@@ -1,5 +1,16 @@
 # @opcat-labs/cli-opcat
 
+## 2.0.0
+
+### Major Changes
+
+- Release CAT721
+
+### Patch Changes
+
+- Updated dependencies
+  - @opcat-labs/scrypt-ts-transpiler-opcat@2.0.0
+
 ## 1.0.7
 
 ### Patch Changes

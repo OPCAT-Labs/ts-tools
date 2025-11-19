@@ -16,8 +16,10 @@ import cat721StateLib from '../../artifacts/cat721/cat721StateLib.json'
 import cat721GuardStateLib from '../../artifacts/cat721/cat721GuardStateLib.json'
 import cat20StateLib from '../../artifacts/cat20/cat20StateLib.json'
 import cat20GuardStateLib from '../../artifacts/cat20/cat20GuardStateLib.json'
+import cat20Admin from '../../artifacts/cat20/cat20Admin.json'
 import constants from '../../artifacts/constants.json'
 import cat721OpenMintInfo from '../../artifacts/cat721/minters/cat721OpenMintInfo.json'
+import cat721OpenMinterMerkleTree from '../../artifacts/cat721/minters/cat721OpenMinterMerkleTree.json'
 
 import { CAT20ClosedMinter } from '../contracts/cat20/minters/cat20ClosedMinter'
 import { CAT20 } from '../contracts/cat20/cat20'
@@ -28,6 +30,8 @@ import { CAT20Guard_12_12_4 } from '../contracts/cat20/cat20Guard_12_12_4'
 import { CAT20OpenMinter } from '../contracts/cat20/minters/cat20OpenMinter'
 import { CAT20StateLib } from '../contracts/cat20/cat20StateLib'
 import { CAT20GuardStateLib } from '../contracts/cat20/cat20GuardStateLib'
+import { CAT20Admin } from '../contracts/cat20/cat20Admin'
+
 import { ConstantsLib } from '../contracts/constants'
 
 import { CAT721ClosedMinter } from '../contracts/cat721/minters/cat721ClosedMinter'
@@ -40,6 +44,7 @@ import { CAT721Guard_12_12_4 } from '../contracts/cat721/cat721Guard_12_12_4'
 import { CAT721StateLib } from '../contracts/cat721/cat721StateLib'
 import { CAT721GuardStateLib } from '../contracts/cat721/cat721GuardStateLib'
 import { CAT721OpenMintInfo } from '../contracts/cat721/minters/cat721OpenMintInfo'
+import { CAT721OpenMinterMerkleTree } from '../contracts/cat721/minters/cat721OpenMinterMerkleTree'
 
 export function loadAllArtifacts() {
   // CAT20
@@ -53,10 +58,12 @@ export function loadAllArtifacts() {
   CAT20StateLib.loadArtifact(cat20StateLib)
   CAT20GuardStateLib.loadArtifact(cat20GuardStateLib)
   ConstantsLib.loadArtifact(constants)
+  CAT20Admin.loadArtifact(cat20Admin)
   // CAT721
   CAT721ClosedMinter.loadArtifact(cat721ClosedMinter)
   CAT721OpenMinter.loadArtifact(cat721OpenMinter)
   CAT721OpenMintInfo.loadArtifact(cat721OpenMintInfo)
+  CAT721OpenMinterMerkleTree.loadArtifact(cat721OpenMinterMerkleTree)
   CAT721.loadArtifact(cat721)
   CAT721Guard_6_6_2.loadArtifact(cat721Guard_6_6_2)
   CAT721Guard_6_6_4.loadArtifact(cat721Guard_6_6_4)

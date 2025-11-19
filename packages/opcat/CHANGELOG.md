@@ -1,5 +1,11 @@
 # @opcat-labs/opcat
 
+## 2.0.0
+
+### Major Changes
+
+- Release CAT721
+
 ## 1.0.3
 
 ### Patch Changes

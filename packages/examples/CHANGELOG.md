@@ -1,5 +1,16 @@
 # @opcat-labs/examples
 
+## 2.0.0
+
+### Major Changes
+
+- Release CAT721
+
+### Patch Changes
+
+- Updated dependencies
+  - @opcat-labs/scrypt-ts-opcat@2.0.0
+
 ## 0.1.5
 
 ### Patch Changes

@@ -1,0 +1,149 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'  # Matches tags like v1.0.0, v2.3.4, etc.
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  validate-and-release:
+    name: Validate and Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      tag_name: ${{ steps.extract-version.outputs.tag_name }}
+      version: ${{ steps.extract-version.outputs.version }}
+      commit_sha: ${{ steps.get-commit.outputs.commit_sha }}
+      release_notes: ${{ steps.release-notes.outputs.notes }}
+
+    steps:
+      # 1. Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Extract version from tag
+      - name: Extract version from tag
+        id: extract-version
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG_NAME#v}
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "✅ Tag: $TAG_NAME"
+          echo "✅ Version: $VERSION"
+
+      # 3. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      # 4. Install dependencies
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # 5. Check if all package versions match the tag version
+      - name: Check package versions
+        run: node scripts/check-package-versions.js ${{ steps.extract-version.outputs.version }}
+
+      # 6. Check if CHANGELOG.md files contain the version and it's the latest
+      - name: Check CHANGELOG.md files
+        run: node scripts/check-changelog.js ${{ steps.extract-version.outputs.version }}
+
+      # 7. Extract release notes from CHANGELOG.md
+      - name: Extract release notes
+        id: release-notes
+        run: |
+          RELEASE_NOTES=$(node scripts/extract-release-notes.js ${{ steps.extract-version.outputs.version }})
+          echo "notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$RELEASE_NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      # 8. Get commit SHA for the tag
+      - name: Get commit SHA
+        id: get-commit
+        run: |
+          COMMIT_SHA=$(git rev-list -n 1 ${{ steps.extract-version.outputs.tag_name }})
+          echo "commit_sha=$COMMIT_SHA" >> $GITHUB_OUTPUT
+          echo "✅ Commit SHA: $COMMIT_SHA"
+
+  # 9. Create GitHub Release
+  create-release:
+    name: Create GitHub Release
+    needs: validate-and-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      # Create GitHub Release
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.validate-and-release.outputs.tag_name }}
+          name: Release ${{ needs.validate-and-release.outputs.tag_name }}
+          body: ${{ needs.validate-and-release.outputs.release_notes }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Create summary
+      - name: Create job summary
+        run: |
+          # Convert repository owner to lowercase for Docker image names
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+
+          echo "## 🚀 Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag:** \`${{ needs.validate-and-release.outputs.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version:** \`${{ needs.validate-and-release.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit SHA:** \`${{ needs.validate-and-release.outputs.commit_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Release Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 Packages published to npm with tag \`latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- 🐳 Docker images published to ghcr.io" >> $GITHUB_STEP_SUMMARY
+          echo "- 📝 GitHub Release created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🐳 Docker Images" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${OWNER_LOWER}/cat-token-tracker/api:${{ needs.validate-and-release.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/${OWNER_LOWER}/cat-token-tracker/worker:${{ needs.validate-and-release.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [GitHub Release](https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate-and-release.outputs.tag_name }})" >> $GITHUB_STEP_SUMMARY
+          echo "- [Docker Packages](https://github.com/orgs/${OWNER_LOWER}/packages?repo_name=cat-token-tracker)" >> $GITHUB_STEP_SUMMARY
+
+  # 10. Publish Docker images
+  publish-docker:
+    name: Publish Docker images
+    needs: validate-and-release
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-docker.yml
+    with:
+      commit: ${{ needs.validate-and-release.outputs.commit_sha }}
+      dockerTags: latest,${{ needs.validate-and-release.outputs.tag_name }},${{ needs.validate-and-release.outputs.version }}
+
+  # 11. Publish to npm
+  publish-npm:
+    name: Publish to npm
+    needs: validate-and-release
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/publish-npm.yml
+    with:
+      commit_sha: ${{ needs.validate-and-release.outputs.commit_sha }}
+      full_version: ${{ needs.validate-and-release.outputs.version }}
+      npmTag: latest
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

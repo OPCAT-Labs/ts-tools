@@ -1,0 +1,90 @@
+name: Build and Publish to npmjs.com
+
+on:
+  workflow_call:
+    inputs:
+      commit_sha:
+        description: 'Git commit SHA to build and publish'
+        required: true
+        type: string
+      full_version:
+        description: 'Full version string (e.g., 1.0.5-beta-a1b2c3d4-20241116)'
+        required: true
+        type: string
+      npmTag:
+        description: 'NPM dist tag (e.g., beta, alpha, rc)'
+        required: true
+        type: string
+    secrets:
+      NPM_TOKEN:
+        required: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  build-and-publish:
+    name: Build and Publish (${{ inputs.npmTag }}) @ ${{ inputs.commit_sha }} to npmjs.com
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repository with full history
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 2. Checkout to specific commit
+      - name: Checkout specific commit
+        run: |
+          git checkout ${{ inputs.commit_sha }}
+          echo "✅ Checked out to commit: $(git rev-parse HEAD)"
+          echo "📝 Commit message: $(git log -1 --pretty=%B)"
+
+      # 3. Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'yarn'
+
+      # 4. Install dependencies
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      # 5. Build packages
+      - name: Build packages
+        run: yarn build
+
+      # 6. Update package versions
+      - name: Update package versions to ${{ inputs.full_version }}
+        run: node scripts/update-version.js "${{ inputs.full_version }}"
+
+      # 7. Check if versions already exist on npm
+      - name: Check if version exists on npm
+        run: node scripts/check-versions.js "${{ inputs.full_version }}"
+
+      # 8. Configure npm authentication
+      - name: Configure npm authentication
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+          echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
+
+      # 9. Publish to npm
+      - name: Publish packages to npm
+        run: node scripts/publish-packages.js ${{ inputs.npmTag }}
+
+      # 10. Create summary
+      - name: Create job summary
+        if: always()
+        run: |
+          echo "## 📦 Publish Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Full Version:** \`${{ inputs.full_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **NPM Tag:** \`${{ inputs.npmTag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit SHA:** \`${{ inputs.commit_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Package Versions" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          find packages -name "package.json" -not -path "*/node_modules/*" -exec sh -c 'jq -r "select(.private != true) | \"\\(.name)@\\(.version)\"" "$1"' _ {} \; >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
