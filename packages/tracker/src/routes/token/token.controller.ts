@@ -8,16 +8,13 @@ import {
   TokenInfoResponse,
   TokenUtxosResponse,
   TokenBalanceResponse,
-  TokenMintAmountResponse,
-  TokenCirculationResponse,
+  TokenTotalMintedAmountResponse,
+  TokenTotalSupplyResponse,
   TokenHoldersResponse,
   ErrorResponse,
-  HoldersNumResponse,
-  SupplyResponse,
-  TotalTransNumResponse,
+  TotalHoldersResponse,
+  TotalTxsResponse,
 } from './dto/token-response.dto';
-import { ok } from 'assert';
-import { IntegerType } from 'typeorm';
 import { Response } from 'express';
 
 @Controller('tokens')
@@ -134,61 +131,30 @@ export class TokenController {
     }
   }
 
-  @Get(':tokenIdOrTokenScriptHash/holdersnum')
+  @Get(':tokenIdOrTokenScriptHash/totalHolders')
   @ApiTags('token')
   @ApiOperation({ summary: 'Get token holders number by token id or token script hash' })
   @ApiOkResponse({
     description: 'Token holders number retrieved successfully',
-    type: HoldersNumResponse,
+    type: TotalHoldersResponse,
   })
   @ApiBadRequestResponse({
     description: 'Invalid token id or token script hash',
     type: ErrorResponse,
   })
-  async getTokenHoldersNum(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
+  async getTokenTotalHolders(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
-      const holdersNum = await this.tokenService.getTokenHoldersNumByTokenIdOrTokenScriptHash(
+      const r = await this.tokenService.getTokenTotalHolders(
         tokenIdOrTokenScriptHash,
         TokenTypeScope.Fungible,
       );
-      return okResponse({
-        holdersNum: holdersNum.toString()
-      });
+      return okResponse(r);
     } catch (e) {
       return errorResponse(e);
     }
   }
 
-  @Get(':tokenIdOrTokenScriptHash/supply')
-  @ApiTags('token')
-  @ApiOperation({ summary: 'Get token supply by token id or token script hash' })
-  @ApiParam({
-    name: 'tokenIdOrTokenScriptHash',
-    required: true,
-    type: String,
-    description: 'token id or token script hash',
-  })
-  @ApiOkResponse({
-    description: 'Token supply retrieved successfully',
-    type: SupplyResponse,
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid token id or token script hash',
-    type: ErrorResponse,
-  })
-  async getTokenSupply(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
-    try {
-      const supply = await this.tokenService.getTokenSupplyByTokenIdOrTokenScriptHash(
-        tokenIdOrTokenScriptHash,
-        TokenTypeScope.Fungible,
-      );
-      return okResponse(supply);
-    } catch (e) {
-      return errorResponse(e);
-    }
-  }
-
-  @Get(':tokenIdOrTokenScriptHash/totaltransnum')
+  @Get(':tokenIdOrTokenScriptHash/totalTxs')
   @ApiTags('token')
   @ApiOperation({ summary: 'Get token total transaction number by token id or token script hash' })
   @ApiParam({
@@ -199,19 +165,19 @@ export class TokenController {
   })
   @ApiOkResponse({
     description: 'Token total transaction number retrieved successfully',
-    type: TotalTransNumResponse,
+    type: TotalTxsResponse,
   })
   @ApiBadRequestResponse({
     description: 'Invalid token id or token script hash',
     type: ErrorResponse,
   })
-  async getTokenTotalTransNum(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
+  async getTokenTotalTxs(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
-      const totalTransNum = await this.tokenService.getTokenTotalTransNumByTokenIdOrTokenScriptHash(
+      const r = await this.tokenService.getTokenTotalTxsByTokenIdOrTokenScriptHash(
         tokenIdOrTokenScriptHash,
         TokenTypeScope.Fungible,
       );
-      return okResponse(totalTransNum);
+      return okResponse(r);
     } catch (e) {
       return errorResponse(e);
     }
@@ -311,7 +277,7 @@ export class TokenController {
     }
   }
 
-  @Get(':tokenIdOrTokenScriptHash/mintAmount')
+  @Get(':tokenIdOrTokenScriptHash/totalMintedAmount')
   @ApiTags('token')
   @ApiOperation({
     summary: 'Get token total mint amount by token id or token address',
@@ -324,25 +290,25 @@ export class TokenController {
   })
   @ApiOkResponse({
     description: 'Token mint amount retrieved successfully',
-    type: TokenMintAmountResponse,
+    type: TokenTotalMintedAmountResponse,
   })
   @ApiBadRequestResponse({
     description: 'Invalid token id or token address',
     type: ErrorResponse,
   })
-  async getTokenMintAmount(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
+  async getTokenTotalMintedAmount(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
-      const mintCount = await this.tokenService.getTokenMintAmount(tokenIdOrTokenScriptHash, TokenTypeScope.Fungible);
+      const mintCount = await this.tokenService.getTokenTotalMintedAmount(tokenIdOrTokenScriptHash, TokenTypeScope.Fungible);
       return okResponse(mintCount);
     } catch (e) {
       return errorResponse(e);
     }
   }
 
-  @Get(':tokenIdOrTokenScriptHash/circulation')
+  @Get(':tokenIdOrTokenScriptHash/totalSupply')
   @ApiTags('token')
   @ApiOperation({
-    summary: 'Get token current circulation by token id or token address',
+    summary: 'Get token current total supply by token id or token address',
   })
   @ApiParam({
     name: 'tokenIdOrTokenScriptHash',
@@ -351,20 +317,20 @@ export class TokenController {
     description: 'token id or token address',
   })
   @ApiOkResponse({
-    description: 'Token circulation retrieved successfully',
-    type: TokenCirculationResponse,
+    description: 'Token total supply retrieved successfully',
+    type: TokenTotalSupplyResponse,
   })
   @ApiBadRequestResponse({
     description: 'Invalid token id or token address',
     type: ErrorResponse,
   })
-  async getTokenCirculation(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
+  async getTokenTotalSupply(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
-      const circulation = await this.tokenService.getTokenCirculation(
+      const totalSupply = await this.tokenService.getTokenTotalSupply(
         tokenIdOrTokenScriptHash,
         TokenTypeScope.Fungible,
       );
-      return okResponse(circulation);
+      return okResponse(totalSupply);
     } catch (e) {
       return errorResponse(e);
     }
@@ -413,19 +379,7 @@ export class TokenController {
         offset,
         limit,
       );
-      const holders = r.holders.map((holder, index) => {
-        return {
-          ownerPubKeyHash: holder.ownerPubKeyHash,          
-          balance: holder.tokenAmount!,
-          rank: Number((offset || 0) + index + 1),
-          percentage: holder.percentage
-        };
-      });
-
-      return okResponse({
-        holders,
-        trackerBlockHeight: r.trackerBlockHeight,
-      });
+      return okResponse(r);
     } catch (e) {
       return errorResponse(e);
     }

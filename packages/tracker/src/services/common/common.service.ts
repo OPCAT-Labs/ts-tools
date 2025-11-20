@@ -178,7 +178,7 @@ export class CommonService {
 
   checkMinterBacktrace(
     txOut: TxOutEntity,
-    tokenInfo: TokenInfoEntity,
+    tokenInfo: {tokenId: string},
     tx: Transaction
   ) {
     const txPrevouts = tx.inputs.map((input) => {
@@ -195,7 +195,7 @@ export class CommonService {
 
   checkTokenBacktrace(
     txOut: TxOutEntity,
-    tokenInfo: TokenInfoEntity,
+    tokenInfo: {tokenId: string, minterScriptHash: string},
     tx: Transaction
   ) {
     const txPrevScriptHashes = this.getInputScriptHashes(tx);

@@ -1,8 +1,8 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
-import { IsNull, LessThanOrEqual, Repository, MoreThanOrEqual, LessThan, Like, ILike } from 'typeorm';
-import { ownerAddressToPubKeyHash } from '../../common/utils';
+import { IsNull, LessThanOrEqual, Repository, MoreThanOrEqual, LessThan, Like, ILike, FindOptionsWhere } from 'typeorm';
+import { ownerAddressToPubKeyHash, parseBlockchainIdentifier } from '../../common/utils';
 import { TxOutEntity } from '../../entities/txOut.entity';
 import { TxOutArchiveEntity } from '../../entities/txOutArchive.entity';
 import { Constants } from '../../common/constants';
@@ -13,7 +13,9 @@ import { CachedContent, TokenTypeScope } from '../../common/types';
 import { TokenMintEntity } from '../../entities/tokenMint.entity';
 import { HttpStatusCode } from 'axios';
 import { MetadataSerializer } from '@opcat-labs/cat-sdk';
+import { util as opcatUtil} from '@opcat-labs/opcat'
 import { of } from 'rxjs';
+import { Decimal } from 'decimal.js';
 
 @Injectable()
 export class TokenService {
@@ -22,29 +24,41 @@ export class TokenService {
     max: Constants.CACHE_MAX_SIZE,
   });
 
+  // Token info cache without TTL (permanent until LRU eviction)
+  // Only caches token info when tokenScriptHash exists (see line 121)
+  // This ensures incomplete token info is not cached
   private static readonly tokenInfoCache = new LRUCache<string, TokenInfoEntity>({
     max: Constants.CACHE_MAX_SIZE,
   });
 
-  private static readonly holdersCache = new LRUCache<string, any>({
+  private static readonly holdersCache = new LRUCache<string, {
+    holders: {
+      ownerPubKeyHash: string;
+      balance: string;
+      percentage: number;
+      rank: number
+    }[];
+    total: number;
+    trackerBlockHeight: number;
+  }>({
     max: Constants.CACHE_MAX_SIZE,
     ttl: 5 * 60 * 1000,
     ttlAutopurge: true
   });
 
-  private static readonly holdersNumCache = new LRUCache<string, any>({
+  private static readonly totalHoldersCache = new LRUCache<string, {
+    totalHolders: number;
+    trackerBlockHeight: number;
+  }>({
     max: Constants.CACHE_MAX_SIZE,
     ttl: 5 * 60 * 1000,
     ttlAutopurge: true
   });
 
-  private static readonly supplyCache = new LRUCache<string, any>({
-    max: Constants.CACHE_MAX_SIZE,
-    ttl: 5 * 60 * 1000,
-    ttlAutopurge: true
-  });
-
-  private static readonly totalTransNumCache = new LRUCache<string, any>({
+  private static readonly totalTxsCache = new LRUCache<string, {
+    totalTxs: number;
+    trackerBlockHeight: number;
+  }>({
     max: Constants.CACHE_MAX_SIZE,
     ttl: 5 * 60 * 1000,
     ttlAutopurge: true
@@ -56,7 +70,21 @@ export class TokenService {
     ttlAutopurge: true
   });
 
+  private static readonly tokenIconCache = new LRUCache<string, CachedContent | null>({
+    max: Constants.CACHE_MAX_SIZE,
+    ttl: 60 * 60 * 1000, // 1 hour
+  });
+
   private static readonly searchTokensCache = new LRUCache<string, any>({
+    max: Constants.CACHE_MAX_SIZE,
+    ttl: 5 * 60 * 1000,
+    ttlAutopurge: true
+  });
+
+  private static readonly totalSupplyCache = new LRUCache<string, {
+    totalSupply: string;
+    trackerBlockHeight: number;
+  }>({
     max: Constants.CACHE_MAX_SIZE,
     ttl: 5 * 60 * 1000,
     ttlAutopurge: true
@@ -143,33 +171,38 @@ export class TokenService {
     if (cached) {
       return cached;
     }
+    query = query ? query.trim() : query;
 
     const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
+    const blockIdentifierDetection = parseBlockchainIdentifier(query || '');
 
     try {
-      let whereCondition: any = {};
-
+      // Build base condition for scope filtering
+      const baseCondition: FindOptionsWhere<TokenInfoEntity> = {};
       if (scope === TokenTypeScope.Fungible) {
-        whereCondition.decimals = MoreThanOrEqual(0);
+        baseCondition.decimals = MoreThanOrEqual(0);
       } else if (scope === TokenTypeScope.NonFungible) {
-        whereCondition.decimals = LessThan(0);
+        baseCondition.decimals = LessThan(0);
       }
 
-      if (query && query.trim()) {
+      // Build where condition (always use array for consistent type)
+      let whereCondition: FindOptionsWhere<TokenInfoEntity>[];
+      if (query) {
+        // If query exists, search in tokenId, name, or symbol (OR logic)
         whereCondition = [
-          {
-            ...whereCondition,
-            tokenId: query,
-          },
-          {
-            ...whereCondition,
-            name: ILike(`%${query.trim()}%`)
-          },
-          {
-            ...whereCondition,
-            symbol: ILike(`%${query.trim()}%`)
-          }
+          { ...baseCondition, tokenId: query },
+          { ...baseCondition, name: ILike(`%${query}%`) },
+          { ...baseCondition, symbol: ILike(`%${query}%`) }
         ];
+        if (blockIdentifierDetection.isSha256Hash) {
+          whereCondition.push({ ...baseCondition, tokenScriptHash: query });
+        }
+        if (blockIdentifierDetection.isOutpoint) {
+          whereCondition.push({ ...baseCondition, genesisTxid: blockIdentifierDetection.outpoint.txid });
+        }
+      } else {
+        // If no query, wrap base condition in array for consistent type
+        whereCondition = [baseCondition];
       }
 
       const [tokens, total] = await this.tokenInfoRepository.findAndCount({
@@ -210,119 +243,50 @@ export class TokenService {
     }
   }
 
-  private async queryHoldersCount(tokenScriptHash: string, repository: Repository<any>): Promise<number> {
-    const query = repository
-      .createQueryBuilder()
-      .select('COUNT(DISTINCT owner_pkh)', 'count')
-      .where('spend_txid IS NULL')
-      .andWhere('locking_script_hash = :tokenScriptHash', {
-        tokenScriptHash,
-      });
 
-    const result = await query.getRawOne();
-    return Number(result?.count || '0');
+  /**
+   * Query the total number of unique transactions for a token.
+   * Queries both tx_out and tx_out_archive tables and deduplicates by txid.
+   *
+   * @param tokenScriptHash - Token script hash to query
+   * @returns Total count of unique transaction IDs
+   */
+  private async queryTransactionCount(tokenScriptHash: string): Promise<number> {
+    // Query both tx_out and tx_out_archive, then count distinct txids
+    const query = `
+      SELECT COUNT(DISTINCT txid) as count
+      FROM (
+        SELECT txid FROM tx_out WHERE locking_script_hash = $1
+        UNION
+        SELECT txid FROM tx_out_archive WHERE locking_script_hash = $1
+      ) as combined
+    `;
+
+    const result = await this.txOutRepository.query(query, [tokenScriptHash]);
+    return Number(result[0]?.count || '0');
   }
 
-  async getTokenHoldersNumByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash: string, scope: TokenTypeScope) {
-    const holdersNumKey = `holdersNum-${tokenIdOrTokenScriptHash}-${scope}`;
-    const cachedHoldersNum = TokenService.holdersNumCache.get(holdersNumKey);
-
-    if (cachedHoldersNum !== null && cachedHoldersNum !== undefined) {
-      return cachedHoldersNum;
+  async getTokenTotalTxsByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash: string, scope: TokenTypeScope) {
+    const totalTxsKey = `totalTxs-${tokenIdOrTokenScriptHash}-${scope}`;
+    let cache = TokenService.totalTxsCache.get(totalTxsKey);
+    if (cache !== null && cache !== undefined) {
+      return cache;
     }
 
-    const cached = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash, scope);
-    let holdersNum = 0;
-
-    if (cached?.tokenScriptHash) {
-      const [outHoldersNum, outArchiveHoldersNum] = await Promise.all([
-        this.queryHoldersCount(cached.tokenScriptHash, this.txOutRepository),
-        this.queryHoldersCount(cached.tokenScriptHash, this.txOutArchiveRepository)
-      ]);
-
-      holdersNum = outHoldersNum + outArchiveHoldersNum;
+    const tokenInfo = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash, scope);
+    const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
+    if (!tokenInfo?.tokenScriptHash || lastProcessedHeight === null) {
+      return {
+        totalTxs: 0,
+        trackerBlockHeight: lastProcessedHeight,
+      };
     }
 
-    TokenService.holdersNumCache.set(holdersNumKey, holdersNum);
-    return holdersNum;
-  }
+    const totalTxs = await this.queryTransactionCount(tokenInfo.tokenScriptHash);
+    cache = { totalTxs, trackerBlockHeight: lastProcessedHeight };
 
-  private async queryTokenSupply(tokenScriptHash: string, repository: Repository<any>): Promise<string> {
-    const query = repository
-      .createQueryBuilder()
-      .select('SUM(token_amount)', 'amount')
-      .where('spend_txid IS NULL')
-      .andWhere('locking_script_hash = :tokenScriptHash', {
-        tokenScriptHash,
-      });
-
-    const result = await query.getRawOne();
-    return result?.amount || '0';
-  }
-
-  async getTokenSupplyByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash: string, scope: TokenTypeScope) {
-    const supplyKey = `supply-${tokenIdOrTokenScriptHash}-${scope}`;
-    const cachedSupply = TokenService.supplyCache.get(supplyKey);
-
-    if (cachedSupply !== null && cachedSupply !== undefined) {
-      return cachedSupply;
-    }
-
-    const cached = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash, scope);
-    let supply = '0';
-
-    if (cached?.tokenScriptHash) {
-      const [mainSupply, archiveSupply] = await Promise.all([
-        this.queryTokenSupply(cached.tokenScriptHash, this.txOutRepository),
-        this.queryTokenSupply(cached.tokenScriptHash, this.txOutArchiveRepository)
-      ]);
-      const totalSupply = BigInt(mainSupply) + BigInt(archiveSupply);
-      supply = totalSupply.toString();
-    }
-
-    TokenService.supplyCache.set(supplyKey, supply);
-    return supply;
-  }
-
-  private async queryTransactionCount(tokenScriptHash: string, repository: Repository<any>): Promise<number> {
-    const query = repository
-      .createQueryBuilder()
-      .select('COUNT(DISTINCT txid)', 'count')
-      .where('locking_script_hash = :tokenScriptHash', {
-        tokenScriptHash,
-      });
-
-    const result = await query.getRawOne();
-    return Number(result?.count || '0');
-  }
-
-  async getTokenTotalTransNumByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash: string, scope: TokenTypeScope) {
-    const totalTransNumKey = `totalTransNum-${tokenIdOrTokenScriptHash}-${scope}`;
-    const cachedTotalTransNum = TokenService.totalTransNumCache.get(totalTransNumKey);
-
-    if (cachedTotalTransNum !== null && cachedTotalTransNum !== undefined) {
-      return cachedTotalTransNum;
-    }
-
-    const cached = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash, scope);
-    let totalTransNum = 0;
-
-    if (cached?.tokenScriptHash) {
-      const [mainTransNum, archiveTransNum] = await Promise.all([
-        this.queryTransactionCount(cached.tokenScriptHash, this.txOutRepository),
-        this.queryTransactionCount(cached.tokenScriptHash, this.txOutArchiveRepository)
-      ]);
-
-      totalTransNum = mainTransNum + archiveTransNum;
-    }
-
-    TokenService.totalTransNumCache.set(totalTransNumKey, totalTransNum);
-    return totalTransNum;
-  }
-
-  async getTokenInfoByTokenPubKey(tokenPubKey: string, scope: TokenTypeScope) {
-    const tokenAddr = xOnlyPubKeyToAddress(tokenPubKey);
-    return this.getTokenInfoByTokenIdOrTokenScriptHash(tokenAddr, scope);
+    TokenService.totalTxsCache.set(totalTxsKey, cache);
+    return cache
   }
 
   renderTokenInfo(tokenInfo: TokenInfoEntity) {
@@ -332,40 +296,6 @@ export class TokenService {
     const rendered = Object.assign({}, { info: tokenInfo.rawInfo }, tokenInfo);
     delete rendered.rawInfo;
     return rendered;
-  }
-
-  async getTokenInfosByNamePrefix(tokenName: string, limit: number, scope: TokenTypeScope) {
-    const results = [];
-    if (scope !== TokenTypeScope.Fungible) {
-      return
-    }
-    let where: object;
-    where = {
-      name: ILike(`${tokenName}%`),
-    };
-
-    const tokenInfos = await this.tokenInfoRepository.find({
-      select: [
-        'tokenId',
-        'genesisTxid',
-        'name',
-        'symbol',
-        'decimals',
-        'hasAdmin',
-        'rawInfo',
-        'minterScriptHash',
-        'adminScriptHash',
-        'tokenScriptHash',
-        'firstMintHeight',
-      ],
-      where,
-      take: limit,
-    });
-    for (const tokenInfo of tokenInfos) {
-      results.push(this.renderTokenInfo(tokenInfo));
-    }
-
-    return results;
   }
 
   async getTokenUtxosByOwnerAddress(
@@ -378,7 +308,7 @@ export class TokenService {
     const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
     const tokenInfo = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenAddr, scope);
     let utxos = [];
-    if (tokenInfo) {
+    if (tokenInfo?.tokenScriptHash) {
       utxos = await this.queryTokenUtxosByOwnerAddress(
         lastProcessedHeight,
         ownerAddrOrPkh,
@@ -491,8 +421,10 @@ export class TokenService {
     const query = this.txOutRepository
       .createQueryBuilder('t1')
       .select('t2.token_id', 'tokenId')
+      .addSelect('t2.tokenScriptHash', 'tokenScriptHash')
       .addSelect('t2.name', 'name')
       .addSelect('t2.symbol', 'symbol')
+      .addSelect('t2.decimals', 'decimals')
       .innerJoin(TokenInfoEntity, 't2', 't1.locking_script_hash = t2.token_script_hash')
       .where('t1.spend_txid IS NULL')
       .andWhere('t1.owner_pkh = :ownerPkh', { ownerPkh: ownerPubKeyHash })
@@ -512,8 +444,10 @@ export class TokenService {
     return results.map((r) => ({
       tokenId: r.tokenId,
       confirmed: r.confirmed,
+      tokenScriptHash: r.tokenScriptHash,
       name: r.name,
       symbol: r.symbol,
+      decimals: r.decimals,
     }));
   }
 
@@ -553,7 +487,7 @@ export class TokenService {
     return renderedUtxos;
   }
 
-  async getTokenMintAmount(
+  async getTokenTotalMintedAmount(
     tokenIdOrTokenAddr: string,
     scope: TokenTypeScope.Fungible | TokenTypeScope.NonFungible,
   ): Promise<{
@@ -562,55 +496,157 @@ export class TokenService {
   }> {
 
     const mintedAmountKey = `mintedAmount-${tokenIdOrTokenAddr}-${scope}`;
-    const cachedMintedAmount = TokenService.mintedAmountCache.get(mintedAmountKey);
+    let cache = TokenService.mintedAmountCache.get(mintedAmountKey);
 
-    if (cachedMintedAmount !== null && cachedMintedAmount !== undefined) {
-      return cachedMintedAmount;
+    if (cache !== null && cache !== undefined) {
+      return cache;
     }
 
     const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
     const tokenInfo = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenAddr, scope);
-    let amount = '0';
-    if (tokenInfo && tokenInfo.tokenScriptHash && lastProcessedHeight) {
-      const where = {
-        tokenScriptHash: tokenInfo.tokenScriptHash,
+    if (!tokenInfo?.tokenScriptHash || lastProcessedHeight === null) {
+      return {
+        amount: '0',
+        trackerBlockHeight: lastProcessedHeight,
       };
-
-      if (scope === TokenTypeScope.Fungible) {
-        const r = await this.tokenMintRepository
-          .createQueryBuilder()
-          .select('SUM(token_amount)', 'count')
-          .where(where)
-          .getRawOne();
-        amount = r?.count || '0';
-      } else {
-        const r = await this.tokenMintRepository.count({ where });
-        amount = (r || 0).toString();
-      }
     }
 
-    const result = {
+    const where = {
+      tokenScriptHash: tokenInfo.tokenScriptHash,
+    };
+    let amount: string;
+    if (scope === TokenTypeScope.Fungible) {
+      const r = await this.tokenMintRepository
+        .createQueryBuilder()
+        .select('SUM(token_amount)', 'count')
+        .where(where)
+        .getRawOne();
+      amount = r?.count || '0';
+    } else {
+      const r = await this.tokenMintRepository.count({ where });
+      amount = (r || 0).toString();
+    }
+    
+    cache = {
       amount,
       trackerBlockHeight: lastProcessedHeight,
     };
-    TokenService.mintedAmountCache.set(mintedAmountKey, result);
+    TokenService.mintedAmountCache.set(mintedAmountKey, cache);
 
-    return result;
+    return cache;
   }
 
-  async getTokenCirculation(
+  /**
+   * Get token total supply with caching.
+   *
+   * @param tokenIdOrTokenAddr - Token ID or token script hash to query
+   * @param scope - Token type scope (Fungible for CAT-20, NonFungible for CAT-721)
+   * @returns Object containing totalSupply (as string) and current tracker block height
+   */
+  async getTokenTotalSupply(
     tokenIdOrTokenAddr: string,
     scope: TokenTypeScope.Fungible | TokenTypeScope.NonFungible,
-  ): Promise<{
-    amount: string;
-    trackerBlockHeight: number;
-  }> {
-    const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
+  ) {
+    const totalSupplyKey = `totalSupply-${tokenIdOrTokenAddr}-${scope}`;
+    let cache = TokenService.totalSupplyCache.get(totalSupplyKey);
+    if (cache !== null && cache !== undefined) {
+      return cache;
+    }
+
     const tokenInfo = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenAddr, scope);
-    let amount = '0';
-    if (tokenInfo && tokenInfo.tokenScriptHash && lastProcessedHeight) {
+    const trackerBlockHeight = await this.commonService.getLastProcessedBlockHeight();
+    if (!tokenInfo?.tokenScriptHash || trackerBlockHeight === null) {
+      return {
+        totalSupply: '0',
+        trackerBlockHeight,
+      };
+    }
+
+    cache = {
+      totalSupply: await this.queryTokenTotalSupply(tokenInfo.tokenScriptHash, scope),
+      trackerBlockHeight,
+    };
+    TokenService.totalSupplyCache.set(totalSupplyKey, cache);
+
+    return cache;
+  }
+
+  /**
+   * Calculate the total supply of a token.
+   *
+   * Supply Terminology Clarification:
+   * - **totalSupply**: The total amount of tokens currently in circulation (unspent UTXOs).
+   *   This represents tokens that exist and are available for use. For fungible tokens (CAT-20),
+   *   it's the sum of all unspent token amounts. For non-fungible tokens (CAT-721), it's the count
+   *   of all unspent NFTs.
+   *
+   * - **supply**: Generally synonymous with totalSupply in this context, representing circulating tokens.
+   *
+   * - **maxSupply**: The maximum possible supply that can ever exist for a token. This is a fixed
+   *   limit defined at token creation. Not currently tracked or returned by this method.
+   *
+   * - **circulating supply**: The amount of tokens actively available for trading in the market.
+   *   - Includes:
+   *     - Tokens held by users that can be freely bought and sold
+   *     - Tokens circulating on exchanges
+   *     - Tokens in DeFi protocols that can be withdrawn at any time
+   *   - Excludes:
+   *     - Tokens locked by team/foundation
+   *     - Tokens locked in staking (depending on whether they can be immediately unlocked)
+   *     - Burned tokens
+   *     - Tokens in long-inactive "dead" wallets (sometimes excluded)
+   *
+   * **CAT-20 Example:**
+   * Consider a CAT-20 token with the following state:
+   * - Max mintable: 21,000,000 tokens (defined at token creation)
+   * - Already minted: 15,000,000 tokens (tracked by totalMintedAmount)
+   * - Burned: 1,000,000 tokens (spent to unspendable outputs)
+   * - Locked in staking: 3,000,000 tokens (held in staking contracts)
+   * - Locked by foundation: 2,000,000 tokens (held in foundation addresses)
+   * - Available for trading: 9,000,000 tokens (remaining unspent tokens)
+   *
+   * **Calculation Formulas:**
+   * ```
+   * totalMintedAmount = 15,000,000  (sum of all minted tokens from token_mint table)
+   * burned = 1,000,000              (not tracked separately in current implementation)
+   * lockedInStaking = 3,000,000     (not tracked separately in current implementation)
+   * lockedByFoundation = 2,000,000  (not tracked separately in current implementation)
+   * totalSupply = 14,000,000        (sum of all unspent token UTXOs)
+   *
+   * totalSupply = totalMintedAmount - burned
+   *             = 15,000,000 - 1,000,000
+   *             = 14,000,000
+   *
+   * totalSupply = lockedInStaking + lockedByFoundation + availableForTrading
+   *             = 3,000,000 + 2,000,000 + 9,000,000
+   *             = 14,000,000
+   *
+   * True circulating supply (market-tradable tokens):
+   * circulating supply = totalSupply - lockedInStaking - lockedByFoundation
+   *                    = 14,000,000 - 3,000,000 - 2,000,000
+   *                    = 9,000,000
+   *
+   * In this implementation (no separate tracking of locked tokens):
+   * circulating supply ≈ totalSupply = 14,000,000
+   * ```
+   *
+   * **Size Relationships:**
+   * ```
+   * maxSupply >= totalMintedAmount >= totalSupply >= circulating supply (market-tradable) >= 0
+   * 21,000,000 >= 15,000,000 >= 14,000,000 >= 9,000,000 >= 0
+   * ```
+   * 
+   * @param tokenScriptHash - Token script hash to query
+   * @param scope - Token type scope (Fungible for CAT-20, NonFungible for CAT-721)
+   * @returns Object containing totalSupply (as string) and current tracker block height
+   */
+  private async queryTokenTotalSupply(
+    tokenScriptHash: string,
+    scope: TokenTypeScope.Fungible | TokenTypeScope.NonFungible,
+  ): Promise<string> {
+    let totalSupply = '0';
       const where = {
-        lockingScriptHash: tokenInfo.tokenScriptHash,
+        lockingScriptHash: tokenScriptHash,
         spendTxid: IsNull(),
       };
       if (scope === TokenTypeScope.Fungible) {
@@ -619,16 +655,89 @@ export class TokenService {
           .select('SUM(token_amount)', 'count')
           .where(where)
           .getRawOne();
-        amount = r?.count || '0';
+        totalSupply = r?.count || '0';
       } else {
         const r = await this.txOutRepository.count({ where });
-        amount = (r || 0).toString();
+        totalSupply = (r || 0).toString();
+      }
+    return totalSupply;
+  }
+
+
+  private async queryTokenTotalHolders(tokenScriptHash: string): Promise<number> {
+    const query = this.txOutRepository
+      .createQueryBuilder()
+      .select('COUNT(DISTINCT owner_pkh)', 'count')
+      .where('spend_txid IS NULL')
+      .andWhere('locking_script_hash = :tokenScriptHash', {
+        tokenScriptHash,
+      });
+
+    const result = await query.getRawOne();
+    return Number(result?.count || '0');
+  }
+
+  async getTokenTotalHolders(tokenIdOrTokenScriptHash: string, scope: TokenTypeScope) {
+    const totalHoldersKey = `totalHolders-${tokenIdOrTokenScriptHash}-${scope}`;
+    let cache = TokenService.totalHoldersCache.get(totalHoldersKey);
+    if (cache !== null && cache !== undefined) {
+      return cache;
+    }
+    const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
+    const tokenInfo = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash, scope);
+    if (!tokenInfo?.tokenScriptHash || lastProcessedHeight === null) {
+      return {
+        totalHolders: 0,
+        trackerBlockHeight: lastProcessedHeight,
       }
     }
-    return {
-      amount,
+    const totalHolders = await this.queryTokenTotalHolders(tokenInfo.tokenScriptHash);
+    cache = {
+      totalHolders: totalHolders,
       trackerBlockHeight: lastProcessedHeight,
-    };
+    }
+    TokenService.totalHoldersCache.set(totalHoldersKey, cache);
+    return cache;
+  }
+
+  private async queryTokenHolderList(
+    tokenScriptHash: string,
+    scope: TokenTypeScope.Fungible | TokenTypeScope.NonFungible,
+    offset: number,
+    limit: number
+  ): Promise<Array<{
+    ownerPubKeyHash: string;
+    balance: string;
+  }>> {
+    // Using TypeORM Query Builder avoids column name case sensitivity issues
+    const queryBuilder = this.txOutRepository
+      .createQueryBuilder('txOut')
+      .select('txOut.ownerPubKeyHash', 'ownerPubKeyHash')
+      .where('txOut.spendTxid IS NULL')
+      .andWhere('txOut.lockingScriptHash = :tokenScriptHash', { tokenScriptHash })
+      .groupBy('txOut.ownerPubKeyHash')
+      .offset(offset)
+      .limit(limit);
+
+    if (scope === TokenTypeScope.Fungible) {
+      // For fungible tokens, sum up the token amounts for each owner
+      // Note: COALESCE handles NULL values, returns '0' if all amounts are NULL
+      queryBuilder.addSelect('COALESCE(SUM(txOut.tokenAmount), 0)', 'balance');
+      queryBuilder.orderBy('balance', 'DESC');
+    } else {
+      // For non-fungible tokens, count the number of NFTs for each owner
+      queryBuilder.addSelect('COALESCE(COUNT(*), 0)', 'balance');
+      queryBuilder.orderBy('balance', 'DESC');
+    }
+
+    const holders = await queryBuilder.getRawMany();
+
+    return holders.map(holder => ({
+      ownerPubKeyHash: holder.ownerPubKeyHash,
+      // COALESCE ensures balance is never NULL, so we can safely convert to string
+      // PostgreSQL NUMERIC type is returned as string by node-postgres driver
+      balance: String(holder.balance ?? '0')
+    }));
   }
 
   async getTokenHolders(
@@ -639,9 +748,9 @@ export class TokenService {
   ): Promise<{
     holders: {
       ownerPubKeyHash: string;
-      tokenAmount?: string;
-      nftAmount?: number;
+      balance: string;
       percentage: number;
+      rank: number
     }[];
     total: number;
     trackerBlockHeight: number;
@@ -651,58 +760,39 @@ export class TokenService {
     const finalLimit = Math.min(limit || Constants.QUERY_PAGING_DEFAULT_LIMIT, Constants.QUERY_PAGING_MAX_LIMIT);
     const key = `holders-${tokenIdOrTokenAddr}-${scope}-${finalOffset}-${finalLimit}`;
 
-    const cached = TokenService.holdersCache.get(key);
-    if (cached) {
-      return cached;
+    let cache = TokenService.holdersCache.get(key);
+    if (cache) {
+      return cache;
     }
 
     const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
     const tokenInfo = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenAddr, scope);
-
-    if (!tokenInfo?.tokenScriptHash || !lastProcessedHeight) {
+    if (!tokenInfo?.tokenScriptHash || lastProcessedHeight === null) {
       return {
         holders: [],
         total: 0,
         trackerBlockHeight: lastProcessedHeight
       };
     }
+    const [holders, totalSupply, totalHolders] = await Promise.all([
+      this.queryTokenHolderList(tokenInfo.tokenScriptHash, scope, finalOffset, finalLimit),
+      this.queryTokenTotalSupply(tokenInfo.tokenScriptHash, scope),
+      this.queryTokenTotalHolders(tokenInfo.tokenScriptHash)
+    ]);
 
-    try {
-      const [holdersData, totalSupply] = await Promise.all([
-        this.queryHoldersFromBothTables(tokenInfo.tokenScriptHash, scope, finalOffset, finalLimit),
-        scope === TokenTypeScope.Fungible
-          ? this.queryTotalSupplyFromBothTables(tokenInfo.tokenScriptHash)
-          : Promise.resolve('0')
-      ]);
-
-      const totalTokenAmount = BigInt(totalSupply || '0');
-
-      const holdersList = holdersData?.holders || [];
-      const holdersWithPercentage = holdersList.map(holder => ({
-        ...holder,
-        percentage: scope === TokenTypeScope.Fungible
-          ? this.calculateHolderPercentage(holder.tokenAmount || '0', totalTokenAmount)
-          : 0
-      }));
-
-      const result = {
-        holders: holdersWithPercentage,
-        total: holdersData.total,
-        trackerBlockHeight: lastProcessedHeight
-      };
-
-      TokenService.holdersCache.set(key, result);
-
-      return result;
-    } catch (error) {
-      console.error('Error in getTokenHolders:', error);
-      return {
-        holders: [],
-        total: 0,
-        trackerBlockHeight: lastProcessedHeight
-      };
-    }
-
+    const result = holders.map((holder, index) => ({
+      ownerPubKeyHash: holder.ownerPubKeyHash,
+      balance: holder.balance,
+      percentage: this.calculateHolderPercentage(holder.balance, BigInt(totalSupply)),
+      rank: finalOffset + index + 1
+    }));
+    cache = {
+      holders: result,
+      total: totalHolders,
+      trackerBlockHeight: lastProcessedHeight
+    };
+    TokenService.holdersCache.set(key, cache);
+    return cache;
   }
 
   private async _getTokenIcon(tokenIdOrScriptHash: string): Promise<CachedContent | null> {
@@ -747,132 +837,15 @@ export class TokenService {
     return cached;
   }
 
-  private async queryHoldersFromBothTables(
-    tokenScriptHash: string,
-    scope: TokenTypeScope,
-    offset: number,
-    limit: number
-  ): Promise<{
-    holders: Array<{
-      ownerPubKeyHash: string;
-      tokenAmount?: string;
-      nftAmount?: number;
-    }>;
-    total: number;
-  }> {
-    try {
-      let unionQuery: string;
-      if (scope === TokenTypeScope.Fungible) {
-        unionQuery = `
-                      SELECT owner_pkh as ownerPubKeyHash,SUM(token_amount)::BIGINT as tokenAmount
-                      FROM tx_out 
-                      WHERE spend_txid IS NULL AND locking_script_hash = $1
-                      GROUP BY owner_pkh
-                      UNION ALL
-                      SELECT owner_pkh as ownerPubKeyHash, SUM(token_amount)::BIGINT as tokenAmount
-                      FROM tx_out_archive 
-                      WHERE spend_txid IS NULL AND locking_script_hash = $2
-                      GROUP BY owner_pkh
-                  `;
-      } else {
-        unionQuery = `
-                      SELECT owner_pkh as ownerPubKeyHash,  COUNT(1) as nftAmount
-                      FROM tx_out 
-                      WHERE spend_txid IS NULL AND locking_script_hash = $1
-                      GROUP BY owner_pkh
-                      UNION ALL
-                      SELECT owner_pkh as ownerPubKeyHash,  COUNT(1) as nftAmount
-                      FROM tx_out_archive 
-                      WHERE spend_txid IS NULL AND locking_script_hash = $2
-                      GROUP BY owner_pkh
-                  `;
-      }
-
-      let finalQuery: string;
-      let orderBy: string;
-
-      if (scope === TokenTypeScope.Fungible) {
-        orderBy = 'tokenAmount DESC';
-        finalQuery = `
-                    SELECT 
-                      ownerPubKeyHash,                    
-                      SUM(tokenAmount)::BIGINT as tokenAmount
-                    FROM (${unionQuery}) as combined
-                    GROUP BY ownerPubKeyHash
-                    ORDER BY ${orderBy}
-                    LIMIT $3 OFFSET $4
-                  `;
-      } else {
-        orderBy = 'nftAmount DESC';
-        finalQuery = `
-                      SELECT 
-                        ownerPubKeyHash,                      
-                        SUM(nftAmount)::BIGINT as nftAmount
-                      FROM (${unionQuery}) as combined
-                      GROUP BY ownerPubKeyHash
-                      ORDER BY ${orderBy}
-                      LIMIT $3 OFFSET $4
-                    `;
-      }
-      const countQuery = `
-                          SELECT COUNT(DISTINCT combined.ownerPubKeyHash) as total
-                          FROM (${unionQuery}) as combined
-                        `;
-
-      const holdersParams = [tokenScriptHash, tokenScriptHash, limit, offset];
-      const countParams = [tokenScriptHash, tokenScriptHash];
-
-      const [holders, countResult] = await Promise.all([
-        this.txOutRepository.query(finalQuery, holdersParams),
-        this.txOutRepository.query(countQuery, countParams)
-      ]);
-
-      return {
-        holders: holders.map(holder => ({
-          ownerPubKeyHash: holder.ownerpubkeyhash || holder.ownerPubKeyHash,       
-          ...(scope === TokenTypeScope.Fungible
-            ? { tokenAmount: holder.tokenamount || '0' }
-            : { nftAmount: parseInt(holder.nftamount || '0') }
-          )
-        })),
-        total: parseInt(countResult[0]?.total || '0')
-      };
-    } catch (error) {
-      console.error('Error querying holders from both tables:', error);
-    }
-
-  }
-
-  private async queryTotalSupplyFromBothTables(tokenScriptHash: string): Promise<string> {
-
-    try {
-      const query = `
-                  SELECT SUM(total_amount)::BIGINT as totalSupply FROM (
-                      SELECT SUM(token_amount)::BIGINT as total_amount
-                      FROM tx_out 
-                      WHERE spend_txid IS NULL AND locking_script_hash = $1
-                    UNION ALL
-                      SELECT SUM(token_amount)::BIGINT as total_amount
-                      FROM tx_out_archive 
-                      WHERE spend_txid IS NULL AND locking_script_hash = $2
-                  ) as combined
-                `;
-
-      const result = await this.txOutRepository.query(query, [tokenScriptHash, tokenScriptHash]);
-      return result[0]?.totalsupply || '0';
-
-    } catch (error) {
-      console.error('Error querying total supply from both tables:', error);
-    }
-
-  }
-
   private calculateHolderPercentage(holderAmount: string, totalAmount: bigint): number {
     if (totalAmount === 0n) {
       return 0;
     }
-    const holderAmountBigInt = BigInt(holderAmount || '0');
-    const percentage = (holderAmountBigInt * 10000n) / totalAmount;
-    return Number(percentage) / 100;
+    // Use Decimal.js to handle arbitrary precision arithmetic
+    // This avoids both BigInt truncation and Number overflow issues
+    const holderAmountDecimal = new Decimal(holderAmount || '0');
+    const totalAmountDecimal = new Decimal(totalAmount.toString());
+    const percentage = holderAmountDecimal.div(totalAmountDecimal).mul(100);
+    return percentage.toNumber();
   }
 }

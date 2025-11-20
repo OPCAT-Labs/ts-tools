@@ -6,7 +6,7 @@ import { TokenService } from '../token/token.service';
 import { Response } from 'express';
 import { TokenTypeScope } from '../../common/types';
 import { ErrorResponse } from '../token/dto/token-response.dto';
-import { CollectionInfoResponse, NftInfoResponse, CollectionUtxosResponse, NftUtxoResponse, CollectionBalanceResponse, CollectionMintAmountResponse, CollectionCirculationResponse, NftHolderResponse, CollectionNftLocalIdsResponse } from './dto/collection-response.dto';
+import { CollectionInfoResponse, NftInfoResponse, CollectionUtxosResponse, NftUtxoResponse, CollectionBalanceResponse, CollectionMintAmountResponse, NftHolderResponse, CollectionNftLocalIdsResponse, CollectionTotalSupplyResponse } from './dto/collection-response.dto';
 
 @Controller('collections')
 export class CollectionController {
@@ -358,17 +358,17 @@ export class CollectionController {
   })
   async getCollectionMintAmount(@Param('collectionIdOrAddr') collectionIdOrAddr: string) {
     try {
-      const mintCount = await this.tokenService.getTokenMintAmount(collectionIdOrAddr, TokenTypeScope.NonFungible);
+      const mintCount = await this.tokenService.getTokenTotalMintedAmount(collectionIdOrAddr, TokenTypeScope.NonFungible);
       return okResponse(mintCount);
     } catch (e) {
       return errorResponse(e);
     }
   }
 
-  @Get(':collectionIdOrAddr/circulation')
+  @Get(':collectionIdOrAddr/totalSupply')
   @ApiTags('collection')
   @ApiOperation({
-    summary: 'Get collection current circulation by collection id or collection address',
+    summary: 'Get collection current total supply by collection id or collection address',
   })
   @ApiParam({
     name: 'collectionIdOrAddr',
@@ -377,17 +377,17 @@ export class CollectionController {
     description: 'collection id or collection address',
   })
   @ApiOkResponse({
-    description: 'Collection circulation retrieved successfully',
-    type: CollectionCirculationResponse,
+    description: 'Collection total supply retrieved successfully',
+    type: CollectionTotalSupplyResponse,
   })
   @ApiBadRequestResponse({
     description: 'Invalid collection id or collection address',
     type: ErrorResponse,
   })
-  async getCollectionCirculation(@Param('collectionIdOrAddr') collectionIdOrAddr: string) {
+  async getCollectionTotalSupply(@Param('collectionIdOrAddr') collectionIdOrAddr: string) {
     try {
-      const circulation = await this.tokenService.getTokenCirculation(collectionIdOrAddr, TokenTypeScope.NonFungible);
-      return okResponse(circulation);
+      const totalSupply = await this.tokenService.getTokenTotalSupply(collectionIdOrAddr, TokenTypeScope.NonFungible);
+      return okResponse(totalSupply);
     } catch (e) {
       return errorResponse(e);
     }
@@ -431,16 +431,7 @@ export class CollectionController {
   ) {
     try {
       const r = await this.tokenService.getTokenHolders(collectionIdOrAddr, TokenTypeScope.NonFungible, offset, limit);
-      const holders = r.holders.map((holder) => {
-        return {
-          ownerPubKeyHash: holder.ownerPubKeyHash,
-          nftAmount: holder.nftAmount!,
-        };
-      });
-      return okResponse({
-        holders,
-        trackerBlockHeight: r.trackerBlockHeight,
-      });
+      return okResponse(r);
     } catch (e) {
       return errorResponse(e);
     }

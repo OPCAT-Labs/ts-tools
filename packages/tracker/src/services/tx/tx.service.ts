@@ -98,11 +98,12 @@ export class TxService {
       }
       //
       if (inputTags[0].includes(CatTags.CAT20_MINTER_TAG) || inputTags[0].includes(CatTags.CAT721_MINTER_TAG)) {
-        // search minter in inputs
+        // if there are minter input tags, process as a mint tx, only process the minting part, if there are token/nft outputs, they will be processed in processTransferTx()
         isSaveTx = isSaveTx || (await this.processMintTx(tx, outputTags, inputMetadatas, blockHeader, outputFields));
         this.logger.log(`[OK] mint tx ${tx.id}`);
       }
       if (tags.includes(CatTags.CAT20_TAG) || tags.includes(CatTags.CAT721_TAG)) {
+        // if there are token/nft output/input tags, process as a transfer tx
         isSaveTx = isSaveTx || (await this.processTransferTx(tx, outputTags, blockHeader, outputFields));
         this.logger.log(`[OK] transfer tx ${tx.id}`);
       }
@@ -147,7 +148,7 @@ export class TxService {
   private async saveTx(tx: Transaction, txIndex: number, blockHeader: BlockHeader | null) {
     return this.txEntityRepository.save({
       txid: tx.id,
-      blockHeight: blockHeader ? blockHeader.height : 2147483647,
+      blockHeight: blockHeader ? blockHeader.height : Constants.UNCONFIRMED_BLOCK_HEIGHT,
       txIndex,
     });
   }
@@ -208,11 +209,11 @@ export class TxService {
         tokenInfoEntity.minterScriptHash = lockingScriptHash;
         tokenInfoEntity.adminScriptHash = adminScriptHash;
         tokenInfoEntity.deployTxid = tx.hash;
-        tokenInfoEntity.deployHeight = blockHeader ? blockHeader.height : 2147483647;
+        tokenInfoEntity.deployHeight = blockHeader ? blockHeader.height : Constants.UNCONFIRMED_BLOCK_HEIGHT;
 
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
-        txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;
+        txOut.blockHeight = blockHeader ? blockHeader.height : Constants.UNCONFIRMED_BLOCK_HEIGHT;
         txOut.satoshis = BigInt(output.satoshis);
         txOut.lockingScriptHash = lockingScriptHash;
         txOut.isFromMint = true;
@@ -237,11 +238,28 @@ export class TxService {
     outputFields: string[][],
   ) {
     const promises: Promise<any>[] = [];
-    const inputTokenInfos = await this.tokenInfoEntityRepository.find({
+
+    // find input tokenInfos by minterScriptHash
+    const uniqueInputScriptHashes = Array.from(
+      new Set(tx.inputs.map((input) => sha256(input.output.script.toHex())))
+    );
+    const inputTokenInfos: {tokenId: string, tokenScriptHash: string, minterScriptHash: string, firstMintHeight: number}[] = await this.tokenInfoEntityRepository.find({
+      select: ['tokenId', 'tokenScriptHash', 'minterScriptHash', 'firstMintHeight'],
       where: {
-        minterScriptHash: In(tx.inputs.map((input) => sha256(input.output.script.toHex()))),
+        minterScriptHash: In(uniqueInputScriptHashes),
       },
     });
+    // find output tokenInfos by tokenScriptHash
+    const uniqueOutputScriptHashes = Array.from(
+      new Set(tx.outputs.map((output) => sha256(output.script.toHex())))
+    );
+    const outputTokenInfos: {tokenId: string, tokenScriptHash: string, minterScriptHash: string, firstMintHeight: number}[] = await this.tokenInfoEntityRepository.find({
+      select: ['tokenId', 'tokenScriptHash', 'minterScriptHash', 'firstMintHeight'],
+      where: {
+        tokenScriptHash: In(uniqueOutputScriptHashes),
+      },
+    });
+
     for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
       const outputTag = outputTags[outputIndex];
       const output = tx.outputs[outputIndex];
@@ -250,10 +268,11 @@ export class TxService {
         outputTag.includes(CatTags.CAT20_MINTER_TAG) ||
         outputTag.includes(CatTags.CAT721_MINTER_TAG)
       ) {
+        // a minter output, save it
         const txOut = this.txOutEntityRepository.create();
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
-        txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;
+        txOut.blockHeight = blockHeader ? blockHeader.height : Constants.UNCONFIRMED_BLOCK_HEIGHT;
         txOut.satoshis = BigInt(output.satoshis);
         txOut.lockingScriptHash = lockingScriptHash;
         txOut.isFromMint = true;
@@ -272,8 +291,18 @@ export class TxService {
         outputTag.includes(CatTags.CAT20_TAG) ||
         outputTag.includes(CatTags.CAT721_TAG)
       ) {
+        // a token/nft output, if its tokenScriptHash matches one of the input minterScriptHash, save it
+
+        // the tokenInfo.tokenScriptHash is empty if the token has not been minted before, so update its tokenScriptHash when we see it here
         const tokenInfoToUpdate = inputTokenInfos.find((m) => !m.tokenScriptHash);
-        if (tokenInfoToUpdate) {
+        const outputTokenInfo = outputTokenInfos.find((m) => m.tokenScriptHash == lockingScriptHash);
+
+        // Update tokenScriptHash for new tokens:
+        // If tokenInfo doesn't have a tokenScriptHash yet, we need to set it.
+        // We verify this is the correct tokenScriptHash by querying the database
+        // using lockingScriptHash. If no matching tokenInfo is found in the output,
+        // it confirms this is a new token and we can safely update tokenScriptHash.
+        if (tokenInfoToUpdate && !outputTokenInfo) {
           tokenInfoToUpdate.tokenScriptHash = lockingScriptHash;
           promises.push(this.tokenInfoEntityRepository.save(tokenInfoToUpdate));
         }
@@ -282,19 +311,35 @@ export class TxService {
           tokenInfoToUpdateFirstMintHeight.firstMintHeight = blockHeader.height;
           promises.push(this.tokenInfoEntityRepository.save(tokenInfoToUpdateFirstMintHeight));
         }
+
+
+        const inputTokenInfo = inputTokenInfos.find((m) => m.tokenScriptHash == lockingScriptHash);
+        const thisTokenOrNftIsMinted = inputTokenInfo !== undefined;
+        if (!thisTokenOrNftIsMinted) {
+          continue;
+        }
+
         const outputField = outputFields[outputIndex];
         const [owner, _amount] = outputField;
         const amount = byteStringToInt(_amount);
         const txOut = this.txOutEntityRepository.create();
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
-        txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;
+        txOut.blockHeight = blockHeader ? blockHeader.height : Constants.UNCONFIRMED_BLOCK_HEIGHT;
         txOut.satoshis = BigInt(output.satoshis);
         txOut.lockingScriptHash = lockingScriptHash;
         txOut.isFromMint = true;
         txOut.ownerPubKeyHash = sha256(owner);
         txOut.tokenAmount = amount;
         txOut.data = toHex(output.data);
+
+          const tokenMint = this.tokenMintRepository.create({
+              txid: tx.hash,
+              outputIndex: outputIndex,
+              tokenScriptHash: lockingScriptHash,
+              blockHeight: blockHeader ? blockHeader.height : Constants.UNCONFIRMED_BLOCK_HEIGHT,
+              tokenAmount: amount,
+          })
 
 
         const tokenInfo = inputTokenInfos.find((m) => m.tokenScriptHash == lockingScriptHash);
@@ -305,6 +350,7 @@ export class TxService {
           // to avoid duplicate key errors when transaction is processed multiple times
           // See: https://github.com/typeorm/typeorm/issues/720
           promises.push(this.txOutEntityRepository.upsert(txOut, ['txid', 'outputIndex']));
+          promises.push(this.tokenMintRepository.upsert(tokenMint, ['txid', 'outputIndex']));
         }
         if (
           backtraceValid &&
@@ -326,7 +372,7 @@ export class TxService {
               collectionId: tokenInfo.tokenId,
               localId: amount,
               mintTxid: tx.hash,
-              mintHeight: blockHeader ? blockHeader.height : 2147483647,
+              mintHeight: blockHeader ? blockHeader.height : Constants.UNCONFIRMED_BLOCK_HEIGHT,
               commitTxid,
               metadata: nftMetadata.info.metadata,
               contentType: contentType,
@@ -353,7 +399,8 @@ export class TxService {
     outputFields: string[][],
   ) {
     const promises: Promise<any>[] = [];
-    const inputTokenInfos = await this.tokenInfoEntityRepository.find({
+    const inputTokenInfos: {tokenId: string, tokenScriptHash: string, minterScriptHash: string}[] = await this.tokenInfoEntityRepository.find({
+      select: ['tokenId', 'tokenScriptHash', 'minterScriptHash',],
       where: {
         tokenScriptHash: In(tx.outputs.map((output) => sha256(output.script.toHex()))),
       },
@@ -371,7 +418,7 @@ export class TxService {
         const txOut = this.txOutEntityRepository.create();
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
-        txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;
+        txOut.blockHeight = blockHeader ? blockHeader.height : Constants.UNCONFIRMED_BLOCK_HEIGHT;
         txOut.satoshis = BigInt(output.satoshis);
         txOut.lockingScriptHash = lockingScriptHash;
         txOut.isFromMint = false;
@@ -393,7 +440,7 @@ export class TxService {
         const txOut = this.txOutEntityRepository.create();
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
-        txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;
+        txOut.blockHeight = blockHeader ? blockHeader.height : Constants.UNCONFIRMED_BLOCK_HEIGHT;
         txOut.satoshis = BigInt(output.satoshis);
         txOut.lockingScriptHash = lockingScriptHash;
         txOut.isFromMint = false;

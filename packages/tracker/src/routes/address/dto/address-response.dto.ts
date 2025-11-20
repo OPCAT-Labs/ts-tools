@@ -17,12 +17,18 @@ export class TokenBalance {
 
   @ApiProperty({ example: '100', description: 'Confirmed balance' })
   confirmed: string;
+  
+  @ApiProperty({ example: 'def456...', description: 'Token script hash' })
+  tokenScriptHash: string;
 
-  @ApiProperty({ example: 'cat20', description: 'token name' })
+  @ApiProperty({ example: 'My Token', description: 'Token name' })
   name: string;
 
-  @ApiProperty({ example: 'cat20', description: 'token symbol' })
+  @ApiProperty({ example: 'MTK', description: 'Token symbol' })
   symbol: string;
+
+  @ApiProperty({ example: 8, description: 'Token decimals' })
+  decimals: number;
 }
 
 export class TokenBalancesData {
@@ -66,13 +72,16 @@ export class CollectionBalancesResponse extends BaseResponse<CollectionBalancesD
 }
 
 export class TransactionData {
-  @ApiProperty({ example: 'ade162290a77650375ccafe7afcad47bb81c4be4f169f77013ed106723f8b7ea', description: 'txid' })
-  txid: string;
+  @ApiProperty({ example: 10, description: 'total number of transactions' })
+  total: number;
+
+  @ApiProperty({ example: ['ade162290a77650375ccafe7afcad47bb81c4be4f169f77013ed106723f8b7ea'], description: 'list of transaction ids', type: [String] })
+  list: string[];
 }
 
-export class TransactionResponse extends BaseResponse<TransactionData[]> {
-  @ApiProperty({ type: [TransactionData] })
-  data: TransactionData[];
+export class TransactionResponse extends BaseResponse<TransactionData> {
+  @ApiProperty({ type: TransactionData })
+  data: TransactionData;
 }
 
 export class ErrorResponse extends BaseResponse<null> {

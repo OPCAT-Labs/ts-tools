@@ -153,26 +153,34 @@ export class CollectionMintAmountResponse extends BaseResponse<CollectionMintAmo
   data: CollectionMintAmount;
 }
 
-export class CollectionCirculation {
-  @ApiProperty({ example: '5000000000', description: 'Total circulation amount' })
+export class CollectionTotalSupply {
+  @ApiProperty({ example: '5000000000', description: 'Total supply amount' })
   amount: string
   @ApiProperty({ example: 100000, description: 'Current tracker block height' })
   trackerBlockHeight: number
 }
-export class CollectionCirculationResponse extends BaseResponse<CollectionCirculation> {
-  @ApiProperty({ type: CollectionCirculation })
-  data: CollectionCirculation;
+export class CollectionTotalSupplyResponse extends BaseResponse<CollectionTotalSupply> {
+  @ApiProperty({ type: CollectionTotalSupply })
+  data: CollectionTotalSupply;
 }
 
 export class NftHolder {
   @ApiProperty({ example: 'abc123......', description: 'p2pkh lockingScript or script hash' })
   ownerPubKeyHash: string;
-  @ApiProperty({ example: '5', description: 'NFT amount' })
-  nftAmount: string;
+  @ApiProperty({ example: '5', description: 'nft balance, how many NFTs held by the owner' })
+  balance: string;
+  @ApiProperty({ example: 1, description: 'Rank by NFT amount held' })
+  rank: number;
+  @ApiProperty({ example: 0.5, description: 'Percentage of total NFTs held' })
+  percentage: number;
 }
 export class NftHolderData {
   @ApiProperty({ type: [NftHolder], description: 'NFT holders' })
   holders: NftHolder[];
+
+  @ApiProperty({ example: 1000, description: 'Total number of token holders' })
+  total: number;
+
   @ApiProperty({ example: 100000, description: 'Current tracker block height' })
   trackerBlockHeight: number
 }

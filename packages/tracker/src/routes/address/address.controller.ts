@@ -4,6 +4,7 @@ import { TxService } from '../tx/tx.service';
 import { errorResponse, okResponse } from '../../common/utils';
 import { ApiOperation, ApiParam, ApiQuery, ApiTags, ApiOkResponse, ApiBadRequestResponse, ApiHeader } from '@nestjs/swagger';
 import { ResponseHeaderInterceptor } from '../../common/interceptors/response-header.interceptor';
+import { TokenTypeScope } from '../../common/types';
 import {
   TokenBalancesResponse,
   CollectionBalancesResponse,
@@ -71,6 +72,7 @@ export class AddressController {
           return {
             collectionId: balance.tokenId,
             confirmed: balance.confirmed,
+            tokenScriptHash: balance.tokenScriptHash,
             name: balance.name,
             symbol: balance.symbol,
           };
@@ -83,7 +85,7 @@ export class AddressController {
   }
 
 
-  @Get(':ownerAddrOrPkh/tokenTransactions')
+  @Get(':ownerAddrOrPkh/tokenTxs')
   @ApiTags('address')
   @ApiOperation({
     summary: 'Get transactions by owner address or public key hash',
@@ -95,16 +97,16 @@ export class AddressController {
     description: 'owner address or public key hash',
   })
   @ApiQuery({
-    name: 'page',
+    name: 'offset',
     required: false,
     type: Number,
-    description: 'paging page',
+    description: 'pagination offset',
   })
   @ApiQuery({
-    name: 'size',
+    name: 'limit',
     required: false,
     type: Number,
-    description: 'paging size',
+    description: 'pagination limit',
   })
   @ApiOkResponse({
     description: 'Transactions retrieved successfully',
@@ -116,18 +118,18 @@ export class AddressController {
   })
   async getTokenTransactions(
     @Param('ownerAddrOrPkh') ownerAddrOrPkh: string,
-    @Query('page') page?: number,
-    @Query('size') size?: number,
+    @Query('offset') offset?: number,
+    @Query('limit') limit?: number,
   ) {
     try {
+      const finalOffset = Number.isInteger(offset) && offset >= 0 ? offset : 0;
+      const finalLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 100) : 10;
 
-      page = Number.isInteger(page) && page > 0 ? page : 1;
-      size = Number.isInteger(size) && size > 0 ? size : 10;
-
-      const r = await this.txService.queryTransactionsByAddress(
+      const r = await this.txService.getTransactionsByAddress(
         ownerAddrOrPkh,
-        page,
-        size
+        TokenTypeScope.Fungible,
+        finalOffset,
+        finalLimit
       );
       return okResponse(r);
     } catch (e) {

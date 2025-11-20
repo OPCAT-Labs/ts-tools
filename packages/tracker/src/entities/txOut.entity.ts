@@ -1,4 +1,5 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryColumn, UpdateDateColumn } from 'typeorm';
+import { Constants } from '../common/constants';
 
 @Entity('tx_out')
 @Index(['spendTxid', 'spendInputIndex'], { unique: true })
@@ -10,7 +11,7 @@ export class TxOutEntity {
   @PrimaryColumn({ name: 'output_index' })
   outputIndex: number;
 
-  @Column({ name: 'block_height', default: 2147483647 })
+  @Column({ name: 'block_height', default: Constants.UNCONFIRMED_BLOCK_HEIGHT })
   @Index()
   blockHeight: number;
 
