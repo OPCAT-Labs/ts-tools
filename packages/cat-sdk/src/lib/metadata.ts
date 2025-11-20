@@ -51,19 +51,6 @@ function scaleUpAmounts(metadata: OpenMinterCAT20Meta): OpenMinterCAT20Meta {
   return clone
 }
 
-/**
- * @category Metadata
- * @category CAT20
- * Convert the symbol and name in metadata from utf8 strings to hex strings
- */
-function hexStrings<T extends CAT20Metadata>(metadata: T): T {
-  return {
-    ...metadata,
-    name: metadata.name,
-    symbol: metadata.symbol,
-  }
-}
-
 function scaleUpByDecimals(amount: bigint, decimals: number) {
   return amount * BigInt(Math.pow(10, decimals))
 }
@@ -82,7 +69,7 @@ export function formatMetadata<T extends CAT20Metadata>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     clone = scaleUpAmounts(metadata as any as OpenMinterCAT20Meta) as any as T
   }
-  return hexStrings(clone)
+  return clone
 }
 
 export const ImageMimeTypes: string[] = [
