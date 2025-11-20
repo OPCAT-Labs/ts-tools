@@ -39,6 +39,12 @@ export class TokenInfoEntity {
   @Index()
   firstMintHeight: number;
 
+  @Column({ name: 'deploy_height', nullable: true })
+  deployHeight: number;
+
+  @Column({ name: 'deploy_txid', nullable: true })
+  deployTxid: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

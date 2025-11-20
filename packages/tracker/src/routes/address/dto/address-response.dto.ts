@@ -17,6 +17,12 @@ export class TokenBalance {
 
   @ApiProperty({ example: '100', description: 'Confirmed balance' })
   confirmed: string;
+
+  @ApiProperty({ example: 'cat20', description: 'token name' })
+  name: string;
+
+  @ApiProperty({ example: 'cat20', description: 'token symbol' })
+  symbol: string;
 }
 
 export class TokenBalancesData {
@@ -38,6 +44,12 @@ export class CollectionBalance {
 
   @ApiProperty({ example: '5', description: 'Confirmed NFT count' })
   confirmed: string;
+
+  @ApiProperty({ example: 'cat20', description: 'token name' })
+  name: string;
+
+  @ApiProperty({ example: 'cat20', description: 'token symbol' })
+  symbol: string;
 }
 
 export class CollectionBalancesData {
@@ -51,6 +63,16 @@ export class CollectionBalancesData {
 export class CollectionBalancesResponse extends BaseResponse<CollectionBalancesData> {
   @ApiProperty({ type: CollectionBalancesData })
   data: CollectionBalancesData;
+}
+
+export class TransactionData {
+  @ApiProperty({ example: 'ade162290a77650375ccafe7afcad47bb81c4be4f169f77013ed106723f8b7ea', description: 'txid' })
+  txid: string;
+}
+
+export class TransactionResponse extends BaseResponse<TransactionData[]> {
+  @ApiProperty({ type: [TransactionData] })
+  data: TransactionData[];
 }
 
 export class ErrorResponse extends BaseResponse<null> {

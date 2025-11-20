@@ -12,15 +12,66 @@ import {
   TokenCirculationResponse,
   TokenHoldersResponse,
   ErrorResponse,
+  HoldersNumResponse,
+  SupplyResponse,
+  TotalTransNumResponse,
 } from './dto/token-response.dto';
 import { ok } from 'assert';
 import { IntegerType } from 'typeorm';
 import { Response } from 'express';
 
 @Controller('tokens')
-@UseInterceptors(ResponseHeaderInterceptor)
 export class TokenController {
   constructor(private readonly tokenService: TokenService) { }
+
+  @Get('/search')
+  @ApiTags('token')
+  @ApiOperation({ summary: 'Search tokens by token id or token name with pagination' })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    type: String,
+    description: 'search query (token id or token name), empty for all tokens',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'paging offset',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'paging limit',
+  })
+  @ApiOkResponse({
+    description: 'Token list retrieved successfully',
+    type: [TokenInfoResponse],
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid parameters',
+    type: ErrorResponse,
+  })
+  async searchTokens(
+    @Query('q') query?: string,
+    @Query('offset') offset?: number,
+    @Query('limit') limit?: number,
+  ) {
+    try {
+
+      const result = await this.tokenService.searchTokens(
+        query,
+        TokenTypeScope.Fungible,
+        offset,
+        limit,
+      );
+
+      return okResponse(result);
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
 
   @Get(':tokenIdOrTokenScriptHash')
   @ApiTags('token')
@@ -80,6 +131,89 @@ export class TokenController {
       }
     } catch (e) {
       return res.send(errorResponse(e));
+    }
+  }
+
+  @Get(':tokenIdOrTokenScriptHash/holdersnum')
+  @ApiTags('token')
+  @ApiOperation({ summary: 'Get token holders number by token id or token script hash' })
+  @ApiOkResponse({
+    description: 'Token holders number retrieved successfully',
+    type: HoldersNumResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid token id or token script hash',
+    type: ErrorResponse,
+  })
+  async getTokenHoldersNum(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
+    try {
+      const holdersNum = await this.tokenService.getTokenHoldersNumByTokenIdOrTokenScriptHash(
+        tokenIdOrTokenScriptHash,
+        TokenTypeScope.Fungible,
+      );
+      return okResponse({
+        holdersNum: holdersNum.toString()
+      });
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
+
+  @Get(':tokenIdOrTokenScriptHash/supply')
+  @ApiTags('token')
+  @ApiOperation({ summary: 'Get token supply by token id or token script hash' })
+  @ApiParam({
+    name: 'tokenIdOrTokenScriptHash',
+    required: true,
+    type: String,
+    description: 'token id or token script hash',
+  })
+  @ApiOkResponse({
+    description: 'Token supply retrieved successfully',
+    type: SupplyResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid token id or token script hash',
+    type: ErrorResponse,
+  })
+  async getTokenSupply(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
+    try {
+      const supply = await this.tokenService.getTokenSupplyByTokenIdOrTokenScriptHash(
+        tokenIdOrTokenScriptHash,
+        TokenTypeScope.Fungible,
+      );
+      return okResponse(supply);
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
+
+  @Get(':tokenIdOrTokenScriptHash/totaltransnum')
+  @ApiTags('token')
+  @ApiOperation({ summary: 'Get token total transaction number by token id or token script hash' })
+  @ApiParam({
+    name: 'tokenIdOrTokenScriptHash',
+    required: true,
+    type: String,
+    description: 'token id or token script hash',
+  })
+  @ApiOkResponse({
+    description: 'Token total transaction number retrieved successfully',
+    type: TotalTransNumResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid token id or token script hash',
+    type: ErrorResponse,
+  })
+  async getTokenTotalTransNum(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
+    try {
+      const totalTransNum = await this.tokenService.getTokenTotalTransNumByTokenIdOrTokenScriptHash(
+        tokenIdOrTokenScriptHash,
+        TokenTypeScope.Fungible,
+      );
+      return okResponse(totalTransNum);
+    } catch (e) {
+      return errorResponse(e);
     }
   }
 
@@ -279,50 +413,19 @@ export class TokenController {
         offset,
         limit,
       );
-      const holders = r.holders.map((holder) => {
+      const holders = r.holders.map((holder, index) => {
         return {
-          ownerPubKeyHash: holder.ownerPubKeyHash,
+          ownerPubKeyHash: holder.ownerPubKeyHash,          
           balance: holder.tokenAmount!,
+          rank: Number((offset || 0) + index + 1),
+          percentage: holder.percentage
         };
       });
+
       return okResponse({
         holders,
         trackerBlockHeight: r.trackerBlockHeight,
       });
-    } catch (e) {
-      return errorResponse(e);
-    }
-  }
-  @Get(':tokenName/getTokensByNamePrefix')
-  @ApiTags('token')
-  @ApiOperation({ summary: 'fuzzy search tokens by token names' })
-  @ApiParam({
-    name: 'tokenName',
-    required: true,
-    type: String,
-    description: 'token name',
-  })
-
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    schema: {type: 'number', default: 10, minimum: 1, maximum: 100},
-    description: 'number limit',
-  })
-  @ApiOkResponse({
-    description: 'Tokens retrieved successfully',
-    type: [TokenInfoResponse],
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid token name or limit',
-    type: ErrorResponse,
-  })
-  async getTokensByName(@Param('tokenName') tokenName: string, @Query('limit', new DefaultValuePipe(10)) limit: number){
-    // To be implemented
-    try {
-      const tokens = await this.tokenService.getTokenInfosByNamePrefix(tokenName, limit, TokenTypeScope.Fungible);
-      return okResponse(tokens);
-      
     } catch (e) {
       return errorResponse(e);
     }

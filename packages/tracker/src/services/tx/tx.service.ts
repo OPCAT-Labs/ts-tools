@@ -45,6 +45,8 @@ export class TxService {
     private txEntityRepository: Repository<TxEntity>,
     @InjectRepository(TxOutEntity)
     private txOutEntityRepository: Repository<TxOutEntity>,
+    @InjectRepository(TokenMintEntity)
+    private readonly tokenMintRepository: Repository<TokenMintEntity>,
     @InjectRepository(NftInfoEntity)
     private nftInfoEntityRepository: Repository<NftInfoEntity>,
     private zmqService: ZmqService,
@@ -205,6 +207,9 @@ export class TxService {
         const txOut = this.txOutEntityRepository.create();
         tokenInfoEntity.minterScriptHash = lockingScriptHash;
         tokenInfoEntity.adminScriptHash = adminScriptHash;
+        tokenInfoEntity.deployTxid = tx.hash;
+        tokenInfoEntity.deployHeight = blockHeader ? blockHeader.height : 2147483647;
+
         txOut.txid = tx.hash;
         txOut.outputIndex = outputIndex;
         txOut.blockHeight = blockHeader ? blockHeader.height : 2147483647;

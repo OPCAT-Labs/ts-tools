@@ -1,12 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { TokenService } from '../token/token.service';
+import { TxOutEntity } from '../../entities/txOut.entity';
+import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CachedContent, TokenTypeScope } from '../../common/types';
 import { CommonService } from '../../services/common/common.service';
 import { Constants } from '../../common/constants';
+import { ownerAddressToPubKeyHash, } from '../../common/utils';
 import { LRUCache } from 'lru-cache';
-import { Transaction } from '@opcat-labs/opcat';
-import { toHex } from '@opcat-labs/scrypt-ts-opcat';
-import { ContractPeripheral, MetadataSerializer } from '@opcat-labs/cat-sdk';
+import { HttpStatusCode } from 'axios';
+
+
 
 @Injectable()
 export class TxService {
@@ -19,6 +24,10 @@ export class TxService {
   constructor(
     private readonly commonService: CommonService,
     private readonly tokenService: TokenService,
+
+    @InjectRepository(TxOutEntity)
+    private readonly txOutRepository: Repository<TxOutEntity>,
+
   ) { }
 
   /**
@@ -142,4 +151,45 @@ export class TxService {
     }
     return null;
   }
+
+  async queryTransactionsByAddress(
+    ownerAddrOrPkh: string,
+    page: number,
+    size: number
+  ) {
+    const ownerPubKeyHash = ownerAddressToPubKeyHash(ownerAddrOrPkh);
+    if (!ownerPubKeyHash) {
+      throw new HttpException('Invalid ownerAddrOrPkh', HttpStatusCode.BadRequest);
+    }
+    try {
+      const offset = (page - 1) * size;
+      const sql = `
+                  SELECT txid FROM (
+                    SELECT t1.txid, t1.created_at
+                    FROM tx_out t1
+                    WHERE t1.owner_pkh = $1
+                    UNION ALL
+                    SELECT t2.txid, t2.created_at
+                    FROM tx_out_archive t2
+                    WHERE t2.owner_pkh = $2
+                  ) AS combined
+                  GROUP BY txid, created_at
+                  ORDER BY created_at DESC
+                  LIMIT $3 OFFSET $4
+                `;
+      const results = await this.txOutRepository.query(sql, [
+        ownerPubKeyHash,
+        ownerPubKeyHash,
+        size,
+        offset
+      ]);
+
+      return results;
+    } catch (e) {
+      this.logger.error(e);
+      return [];
+    }
+
+  }
+
 }

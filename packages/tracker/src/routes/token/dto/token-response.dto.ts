@@ -44,6 +44,13 @@ export class TokenInfo {
 
   @ApiProperty({ example: 'abcdef0102', description: 'Token metadata in raw hex format' })
   info: string;
+
+  @ApiProperty({ example: 1254, description: 'Deploy height' })
+  deployHeight: number;
+
+  @ApiProperty({ example: '45ee725c2c5993b3e4d308842d87e973bf1951f5f7a804b21e4dd964ecd12d6b', description: 'Deploy Txid' })
+  deployTxid: string;
+
 }
 
 export class TokenInfoResponse extends BaseResponse<TokenInfo> {
@@ -120,6 +127,36 @@ export class TokenMintAmountResponse extends BaseResponse<TokenMintAmountData> {
   data: TokenMintAmountData;
 }
 
+export class HoldersNumData {
+  @ApiProperty({ example: '12000', description: 'Total holders number' })
+  holdersNum: string;
+}
+
+export class HoldersNumResponse extends BaseResponse<HoldersNumData> {
+  @ApiProperty({ type: HoldersNumData })
+  data: HoldersNumData;
+}
+
+export class SupplyData {
+  @ApiProperty({ example: '21000000', description: 'Total supply' })
+  supply: string;
+}
+
+export class SupplyResponse extends BaseResponse<SupplyData> {
+  @ApiProperty({ type: SupplyData })
+  data: SupplyData;
+}
+
+export class TotalTransNumData {
+  @ApiProperty({ example: '21000000', description: 'Total transaction number' })
+  totalTransNum: string;
+}
+
+export class TotalTransNumResponse extends BaseResponse<TotalTransNumData> {
+  @ApiProperty({ type: TotalTransNumData })
+  data: TotalTransNumData;
+}
+
 export class TokenCirculationData {
   @ApiProperty({ example: '4500000000', description: 'Current circulation amount' })
   amount: string;
@@ -139,6 +176,13 @@ export class TokenHolder {
 
   @ApiProperty({ example: '100', description: 'Token balance' })
   balance: string;
+
+  @ApiProperty({ example: '1', description: 'Token rank' })
+  rank: string;
+
+  @ApiProperty({ example: '0.05', description: 'Token percentage' })
+  percentage: string;
+
 }
 
 export class TokenHoldersData {
