@@ -8,7 +8,6 @@ export {
   toTxOutpoint,
   outpoint2ByteString,
   toTokenOwnerAddress,
-  stringToHex,
   hexToString,
   getDummyUtxo,
 } from './utils/index'

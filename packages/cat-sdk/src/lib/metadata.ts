@@ -1,4 +1,3 @@
-import { stringToHex } from '../utils'
 import { CAT20Metadata, OpenMinterCAT20Meta } from '../contracts/cat20/types'
 import { CAT721Metadata } from '../contracts/cat721/types'
 import { Script, util as opcatUtil } from '@opcat-labs/opcat'
@@ -60,8 +59,8 @@ function scaleUpAmounts(metadata: OpenMinterCAT20Meta): OpenMinterCAT20Meta {
 function hexStrings<T extends CAT20Metadata>(metadata: T): T {
   return {
     ...metadata,
-    name: stringToHex(metadata.name),
-    symbol: stringToHex(metadata.symbol),
+    name: metadata.name,
+    symbol: metadata.symbol,
   }
 }
 
