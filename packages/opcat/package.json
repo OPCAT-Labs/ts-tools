@@ -18,7 +18,7 @@
     "postgen:esm": "npm run fixup",
     "fixup": "node fixup.cjs",
     "gen:types": "tsc",
-    "test": "mocha",
+    "test": "mocha && npm run test:dist",
     "test:dist": "node test-esm/test.mjs && node test-cjs/test.cjs"
   },
   "dependencies": {
