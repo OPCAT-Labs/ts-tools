@@ -1,9 +1,9 @@
 import { assert, BacktraceInfo, ByteString, len, method, prop, PubKey, Sig, SmartContract, tags, toByteString, TxUtils, UInt64 } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT721ClosedMinterState, CAT721State } from "../types";
-import { OwnerUtils } from "../../utils/ownerUtils";
-import { ConstantsLib, OWNER_ADDR_P2PKH_BYTE_LEN } from "../../constants";
-import { CAT721StateLib } from "../cat721StateLib";
-import { CatTags } from "../../catTags";
+import { CAT721ClosedMinterState, CAT721State } from "../types.js";
+import { OwnerUtils } from "../../utils/ownerUtils.js";
+import { ConstantsLib, OWNER_ADDR_P2PKH_BYTE_LEN } from "../../constants.js";
+import { CAT721StateLib } from "../cat721StateLib.js";
+import { CatTags } from "../../catTags.js";
 
 
 /**

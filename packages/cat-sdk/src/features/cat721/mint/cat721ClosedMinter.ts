@@ -1,11 +1,11 @@
 
 import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, markSpent, PubKey, Signer, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT721, CAT721State, ClosedMinterCAT721Meta, ConstantsLib } from "../../../contracts";
-import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral";
-import { CAT721ClosedMinter } from "../../../contracts/cat721/minters/cat721ClosedMinter";
-import { createNft } from "./nft";
-import { Postage } from "../../../typeConstants";
-import { normalizeUtxoScripts } from "../../../utils";
+import { CAT721, CAT721State, ClosedMinterCAT721Meta, ConstantsLib } from "../../../contracts/index.js";
+import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral.js";
+import { CAT721ClosedMinter } from "../../../contracts/cat721/minters/cat721ClosedMinter.js";
+import { createNft } from "./nft.js";
+import { Postage } from "../../../typeConstants.js";
+import { normalizeUtxoScripts } from "../../../utils/index.js";
 
 
 /**

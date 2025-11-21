@@ -1,16 +1,16 @@
 
 import { ByteString, PubKey, toHex } from '@opcat-labs/scrypt-ts-opcat'
 import { ExtPsbt, Signer, ChainProvider, UtxoProvider, UTXO, getBackTraceInfo, markSpent } from '@opcat-labs/scrypt-ts-opcat'
-import { CAT20_AMOUNT } from '../../../contracts/cat20/types'
-import { CAT20ClosedMinterState, CAT20State } from '../../../contracts/cat20/types'
-import { ContractPeripheral, CAT20GuardPeripheral } from '../../../utils/contractPeripheral'
-import { CAT20 } from '../../../contracts/cat20/cat20'
-import { checkArgument } from '../../../utils/check'
-import { CAT20ClosedMinter } from '../../../contracts/cat20/minters/cat20ClosedMinter'
-import { outpoint2ByteString, toTokenOwnerAddress, normalizeUtxoScripts } from '../../../utils'
-import { Postage } from '../../../typeConstants'
+import { CAT20_AMOUNT } from '../../../contracts/cat20/types.js'
+import { CAT20ClosedMinterState, CAT20State } from '../../../contracts/cat20/types.js'
+import { ContractPeripheral, CAT20GuardPeripheral } from '../../../utils/contractPeripheral.js'
+import { CAT20 } from '../../../contracts/cat20/cat20.js'
+import { checkArgument } from '../../../utils/check.js'
+import { CAT20ClosedMinter } from '../../../contracts/cat20/minters/cat20ClosedMinter.js'
+import { outpoint2ByteString, toTokenOwnerAddress, normalizeUtxoScripts } from '../../../utils/index.js'
+import { Postage } from '../../../typeConstants.js'
 import { Transaction } from '@opcat-labs/opcat'
-import { ConstantsLib } from '../../../contracts'
+import { ConstantsLib } from '../../../contracts/index.js'
 
 
 /**

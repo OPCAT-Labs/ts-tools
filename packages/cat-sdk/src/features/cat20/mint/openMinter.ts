@@ -1,6 +1,6 @@
-import { buildMintPsbt } from '../deploy/openMinter'
-import { CAT20OpenMinterPeripheral } from '../../../utils/contractPeripheral'
-import { OpenMinterCAT20Meta } from '../../../contracts/cat20/types'
+import { buildMintPsbt } from '../deploy/openMinter.js'
+import { CAT20OpenMinterPeripheral } from '../../../utils/contractPeripheral.js'
+import { OpenMinterCAT20Meta } from '../../../contracts/cat20/types.js'
 import {
   Signer,
   UtxoProvider,
@@ -12,8 +12,8 @@ import {
   toHex,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { Transaction } from '@opcat-labs/opcat'
-import { CAT20OpenMinter } from '../../../contracts'
-import { normalizeUtxoScripts } from '../../../utils'
+import { CAT20OpenMinter } from '../../../contracts/index.js'
+import { normalizeUtxoScripts } from '../../../utils/index.js'
 
 /**
  * Mints a CAT20 token using `CAT20OpenMinter` contract

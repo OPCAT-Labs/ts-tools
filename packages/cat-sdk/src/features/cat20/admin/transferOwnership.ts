@@ -11,10 +11,10 @@ import {
   Transaction,
   PubKeyHash,
 } from '@opcat-labs/scrypt-ts-opcat'
-import { TX_INPUT_COUNT_MAX } from '../../../contracts/constants'
-import { filterFeeUtxos } from '../../../utils'
-import { CAT20Admin } from '../../../contracts/cat20/cat20Admin'
-import { OwnerUtils } from '../../../contracts'
+import { TX_INPUT_COUNT_MAX } from '../../../contracts/constants.js'
+import { filterFeeUtxos } from '../../../utils/index.js'
+import { CAT20Admin } from '../../../contracts/cat20/cat20Admin.js'
+import { OwnerUtils } from '../../../contracts/index.js'
 
 /**
  * Change CAT20 admin owner in a single transaction.

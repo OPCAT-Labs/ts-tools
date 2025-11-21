@@ -1,2 +1,2 @@
-// export * from './extTransaction'
-export * from './metadata'
+// export * from './extTransaction.js'
+export * from './metadata.js'

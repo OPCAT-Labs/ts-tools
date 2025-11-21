@@ -13,21 +13,21 @@ import {
   markSpent,
   getBackTraceInfo,
 } from '@opcat-labs/scrypt-ts-opcat'
-import { CAT20 } from '../../../contracts/cat20/cat20'
-import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
+import { CAT20 } from '../../../contracts/cat20/cat20.js'
+import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib.js'
 import {
   ConstantsLib,
   NULL_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
-} from '../../../contracts/constants'
-import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants'
-import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils'
+} from '../../../contracts/constants.js'
+import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants.js'
+import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils/index.js'
 import {
   CAT20GuardPeripheral,
   ContractPeripheral,
-} from '../../../utils/contractPeripheral'
-import { SPEND_TYPE_USER_SPEND } from '../../../contracts'
+} from '../../../utils/contractPeripheral.js'
+import { SPEND_TYPE_USER_SPEND } from '../../../contracts/index.js'
 
 /**
  * Burns a CAT20 token using `CAT20Guard` contract

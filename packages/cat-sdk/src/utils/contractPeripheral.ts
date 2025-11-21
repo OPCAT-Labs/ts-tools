@@ -14,15 +14,15 @@ import {
   slice,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { Transaction } from '@opcat-labs/opcat'
-import { CAT20 } from '../contracts/cat20/cat20'
-import { CAT20OpenMinter } from '../contracts/cat20/minters/cat20OpenMinter'
+import { CAT20 } from '../contracts/cat20/cat20.js'
+import { CAT20OpenMinter } from '../contracts/cat20/minters/cat20OpenMinter.js'
 import {
   CAT20_AMOUNT,
   CAT20GuardConstState,
   CAT20OpenMinterState,
   CAT20State,
   OpenMinterCAT20Meta,
-} from '../contracts/cat20/types'
+} from '../contracts/cat20/types.js'
 import {
   NULL_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
@@ -37,26 +37,26 @@ import {
   NFT_GUARD_COLLECTION_TYPE_MAX_2,
   GUARD_TOKEN_TYPE_MAX,
   NFT_GUARD_COLLECTION_TYPE_MAX
-} from '../contracts/constants'
-// import { Provider, UTXO } from '../lib/provider'
-import { emptyOutputByteStrings, outpoint2ByteString } from '.'
-// import { ExtTransaction } from '../lib/extTransaction'
-import { CAT20StateLib } from '../contracts/cat20/cat20StateLib'
-import { CAT20GuardStateLib } from '../contracts/cat20/cat20GuardStateLib'
-import { CAT721GuardConstState, CAT721State, ClosedMinterCAT721Meta, OpenMinterCAT721Meta } from '../contracts/cat721/types'
-import { CAT721GuardStateLib } from '../contracts/cat721/cat721GuardStateLib'
-import { CAT721 } from '../contracts/cat721/cat721'
-import { CAT721OpenMinter } from '../contracts/cat721/minters/cat721OpenMinter'
-import { CAT721StateLib } from '../contracts/cat721/cat721StateLib'
-import { CAT721ClosedMinter, CAT20GuardVariant, CAT721GuardVariant } from '../contracts'
-import { CAT20Guard_6_6_2 } from '../contracts/cat20/cat20Guard_6_6_2'
-import { CAT20Guard_6_6_4 } from '../contracts/cat20/cat20Guard_6_6_4'
-import { CAT20Guard_12_12_2 } from '../contracts/cat20/cat20Guard_12_12_2'
-import { CAT20Guard_12_12_4 } from '../contracts/cat20/cat20Guard_12_12_4'
-import { CAT721Guard_6_6_2 } from '../contracts/cat721/cat721Guard_6_6_2'
-import { CAT721Guard_6_6_4 } from '../contracts/cat721/cat721Guard_6_6_4'
-import { CAT721Guard_12_12_2 } from '../contracts/cat721/cat721Guard_12_12_2'
-import { CAT721Guard_12_12_4 } from '../contracts/cat721/cat721Guard_12_12_4'
+} from '../contracts/constants.js'
+// import { Provider, UTXO } from '../lib/provider.js'
+import { emptyOutputByteStrings, outpoint2ByteString } from './index.js'
+// import { ExtTransaction } from '../lib/extTransaction.js'
+import { CAT20StateLib } from '../contracts/cat20/cat20StateLib.js'
+import { CAT20GuardStateLib } from '../contracts/cat20/cat20GuardStateLib.js'
+import { CAT721GuardConstState, CAT721State, ClosedMinterCAT721Meta, OpenMinterCAT721Meta } from '../contracts/cat721/types.js'
+import { CAT721GuardStateLib } from '../contracts/cat721/cat721GuardStateLib.js'
+import { CAT721 } from '../contracts/cat721/cat721.js'
+import { CAT721OpenMinter } from '../contracts/cat721/minters/cat721OpenMinter.js'
+import { CAT721StateLib } from '../contracts/cat721/cat721StateLib.js'
+import { CAT721ClosedMinter, CAT20GuardVariant, CAT721GuardVariant } from '../contracts/index.js'
+import { CAT20Guard_6_6_2 } from '../contracts/cat20/cat20Guard_6_6_2.js'
+import { CAT20Guard_6_6_4 } from '../contracts/cat20/cat20Guard_6_6_4.js'
+import { CAT20Guard_12_12_2 } from '../contracts/cat20/cat20Guard_12_12_2.js'
+import { CAT20Guard_12_12_4 } from '../contracts/cat20/cat20Guard_12_12_4.js'
+import { CAT721Guard_6_6_2 } from '../contracts/cat721/cat721Guard_6_6_2.js'
+import { CAT721Guard_6_6_4 } from '../contracts/cat721/cat721Guard_6_6_4.js'
+import { CAT721Guard_12_12_2 } from '../contracts/cat721/cat721Guard_12_12_2.js'
+import { CAT721Guard_12_12_4 } from '../contracts/cat721/cat721Guard_12_12_4.js'
 
 /**
  * Helper class for contract peripheral operations

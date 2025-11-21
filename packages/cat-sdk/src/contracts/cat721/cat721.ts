@@ -1,11 +1,11 @@
 import { prop, ByteString, SmartContract, method, BacktraceInfo, assert, ContextUtils, len, sha256, SpentScriptHashes, tags, slice, byteStringToInt, FixedArray, Sha256 } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT721ContractUnlockArgs } from "../types";
-import { CAT721GuardConstState, CAT721State } from "./types";
-import { CAT721GuardStateLib } from "./cat721GuardStateLib";
-import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN, NFT_GUARD_VARIANTS_COUNT } from "../constants";
-import { OwnerUtils } from "../utils/ownerUtils";
+import { CAT721ContractUnlockArgs } from "../types.js";
+import { CAT721GuardConstState, CAT721State } from "./types.js";
+import { CAT721GuardStateLib } from "./cat721GuardStateLib.js";
+import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN, NFT_GUARD_VARIANTS_COUNT } from "../constants.js";
+import { OwnerUtils } from "../utils/ownerUtils.js";
 import { SpentDataHashes } from "@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs";
-import { CatTags } from "../catTags";
+import { CatTags } from "../catTags.js";
 
 /**
  * The CAT721 contract

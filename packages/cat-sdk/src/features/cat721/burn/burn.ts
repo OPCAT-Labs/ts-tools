@@ -1,10 +1,10 @@
 import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, PubKey, Signer, toHex, toByteString, UTXO, UtxoProvider, fill, sha256, markSpent } from "@opcat-labs/scrypt-ts-opcat";
-import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../../contracts/constants";
-import { CAT721 } from "../../../contracts/cat721/cat721";
-import { CAT721StateLib } from "../../../contracts/cat721/cat721StateLib";
-import { Postage } from "../../../typeConstants";
-import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from "../../../utils";
-import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral";
+import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../../contracts/constants.js";
+import { CAT721 } from "../../../contracts/cat721/cat721.js";
+import { CAT721StateLib } from "../../../contracts/cat721/cat721StateLib.js";
+import { Postage } from "../../../typeConstants.js";
+import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from "../../../utils/index.js";
+import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral.js";
 
 /**
  * Burns a CAT721 NFT using `CAT721Guard` contract

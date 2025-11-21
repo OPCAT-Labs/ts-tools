@@ -1,7 +1,7 @@
 import { StateLib, method, assert, ByteString } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT20_AMOUNT, CAT20State } from "./types";
-import { OwnerUtils } from "../utils/ownerUtils";
-import { ConstantsLib } from "../constants";
+import { CAT20_AMOUNT, CAT20State } from "./types.js";
+import { OwnerUtils } from "../utils/ownerUtils.js";
+import { ConstantsLib } from "../constants.js";
 
 /**
  * The CAT20 state library

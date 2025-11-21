@@ -1,15 +1,15 @@
 
 import { ByteString, ChainProvider, ExtPsbt, hexToUint8Array, markSpent, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
-import { ClosedMinterCAT721Meta } from "../../../contracts/cat721/types";
-import { CAT721NftInfo } from "../../../lib/metadata";
-import { filterFeeUtxos, normalizeUtxoScripts } from "../../../utils";
-import { checkState } from "../../../utils/check";
-import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral";
-import { ConstantsLib, TX_INPUT_COUNT_MAX } from "../../../contracts/constants";
-import { Postage } from "../../../typeConstants";
-import { CAT721 } from "../../../contracts/cat721/cat721";
-import { CAT721ClosedMinterState } from "../../../contracts/cat721/types";
-import { MetadataSerializer } from "../../../lib/metadata";
+import { ClosedMinterCAT721Meta } from "../../../contracts/cat721/types.js";
+import { CAT721NftInfo } from "../../../lib/metadata.js";
+import { filterFeeUtxos, normalizeUtxoScripts } from "../../../utils/index.js";
+import { checkState } from "../../../utils/check.js";
+import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral.js";
+import { ConstantsLib, TX_INPUT_COUNT_MAX } from "../../../contracts/constants.js";
+import { Postage } from "../../../typeConstants.js";
+import { CAT721 } from "../../../contracts/cat721/cat721.js";
+import { CAT721ClosedMinterState } from "../../../contracts/cat721/types.js";
+import { MetadataSerializer } from "../../../lib/metadata.js";
 
 
 /**

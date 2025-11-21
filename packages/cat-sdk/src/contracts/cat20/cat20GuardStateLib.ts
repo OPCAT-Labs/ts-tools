@@ -1,6 +1,6 @@
 import { StateLib, method, assert, ByteString, len, SHA256_HASH_LEN, FixedArray, toByteString, fill, byteStringToInt, slice, intToByteString } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT20GuardConstState } from "./types";
-import { ConstantsLib, GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX, TX_INPUT_COUNT_MAX_6, TX_INPUT_COUNT_MAX_12 } from "../constants";
+import { CAT20GuardConstState } from "./types.js";
+import { ConstantsLib, GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX, TX_INPUT_COUNT_MAX_6, TX_INPUT_COUNT_MAX_12 } from "../constants.js";
 
 /**
  * The CAT20 guard state library

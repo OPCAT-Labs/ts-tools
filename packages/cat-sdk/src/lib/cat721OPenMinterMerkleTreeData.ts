@@ -1,6 +1,6 @@
 import { hash160, Ripemd160 } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT721MerkleLeaf } from "../contracts/cat721/types";
-import { CAT721OpenMinterMerkleTree } from "../contracts/cat721/minters/cat721OpenMinterMerkleTree";
+import { CAT721MerkleLeaf } from "../contracts/cat721/types.js";
+import { CAT721OpenMinterMerkleTree } from "../contracts/cat721/minters/cat721OpenMinterMerkleTree.js";
 
 
 

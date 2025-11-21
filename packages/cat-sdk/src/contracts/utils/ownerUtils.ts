@@ -12,7 +12,7 @@ import {
   OWNER_ADDR_CONTRACT_HASH_BYTE_LEN,
   OWNER_ADDR_P2PKH_BYTE_LEN,
   PUBKEY_BYTE_LEN,
-} from '../constants'
+} from '../constants.js'
 
 /**
  * The owner utilities for the CAT contracts
