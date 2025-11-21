@@ -6,9 +6,11 @@ import { CommonModule } from '../../services/common/common.module';
 import { TxService } from '../tx/tx.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TxOutEntity } from '../../entities/txOut.entity';
+import { TxOutArchiveEntity } from '../../entities/txOutArchive.entity';
+import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
 
 @Module({
-  imports: [TokenModule, CommonModule, TypeOrmModule.forFeature([TxOutEntity])],
+  imports: [TokenModule, CommonModule, TypeOrmModule.forFeature([TxOutEntity, TxOutArchiveEntity, TokenInfoEntity])],
   providers: [AddressService, TxService],
   controllers: [AddressController],
 })
