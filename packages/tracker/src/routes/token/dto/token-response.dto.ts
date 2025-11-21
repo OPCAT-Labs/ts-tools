@@ -128,8 +128,8 @@ export class TokenTotalMintedAmountResponse extends BaseResponse<TokenTotalMinte
 }
 
 export class TotalHoldersData {
-  @ApiProperty({ example: '12000', description: 'Total holders number' })
-  totalHolders: string;
+  @ApiProperty({ example: 12000, description: 'Total holders number' })
+  totalHolders: number;
   @ApiProperty({ example: 100000, description: 'Current tracker block height' })
   trackerBlockHeight: number;
 }
@@ -140,8 +140,8 @@ export class TotalHoldersResponse extends BaseResponse<TotalHoldersData> {
 }
 
 export class TotalTxsData {
-  @ApiProperty({ example: '21000000', description: 'Total transaction number' })
-  totalTxs: string;
+  @ApiProperty({ example: 21000000, description: 'Total transaction number' })
+  totalTxs: number;
   @ApiProperty({ example: 100000, description: 'Current tracker block height' })
   trackerBlockHeight: number;
 }
@@ -171,11 +171,11 @@ export class TokenHolder {
   @ApiProperty({ example: '100', description: 'Token balance' })
   balance: string;
 
-  @ApiProperty({ example: '1', description: 'Token rank' })
-  rank: string;
+  @ApiProperty({ example: 1, description: 'Token rank' })
+  rank: number;
 
-  @ApiProperty({ example: '0.05', description: 'Token percentage' })
-  percentage: string;
+  @ApiProperty({ example: 0.05, description: 'Token percentage' })
+  percentage: number;
 
 }
 

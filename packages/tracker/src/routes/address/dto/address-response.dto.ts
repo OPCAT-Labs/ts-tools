@@ -51,6 +51,9 @@ export class CollectionBalance {
   @ApiProperty({ example: '5', description: 'Confirmed NFT count' })
   confirmed: string;
 
+  @ApiProperty({ example: 'def456...', description: 'Collection script hash' })
+  collectionScriptHash: string;
+
   @ApiProperty({ example: 'cat20', description: 'token name' })
   name: string;
 

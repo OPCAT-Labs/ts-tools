@@ -50,6 +50,8 @@ export class CollectionController {
         delete collectionInfo.tokenScriptHash;
         delete collectionInfo.info;
         delete collectionInfo.decimals;
+        delete collectionInfo.hasAdmin;
+        delete collectionInfo.adminScriptHash;
       }
       return okResponse(collectionInfo);
     } catch (e) {

@@ -72,7 +72,7 @@ export class AddressController {
           return {
             collectionId: balance.tokenId,
             confirmed: balance.confirmed,
-            tokenScriptHash: balance.tokenScriptHash,
+            collectionScriptHash: balance.tokenScriptHash,
             name: balance.name,
             symbol: balance.symbol,
           };
