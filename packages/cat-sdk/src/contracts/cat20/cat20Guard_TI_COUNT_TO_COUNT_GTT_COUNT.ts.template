@@ -57,7 +57,7 @@ export class CAT20Guard_$TI_COUNT$_$TO_COUNT$_$GTT_COUNT$ extends SmartContract<
         // otherwise, the value is -1 by default
         // this logic is the same as tokenScriptIndexes in GuardConstState which is used for token inputs
         tokenScriptHashIndexes: FixedArray<
-            CAT20_AMOUNT,
+            bigint,
             typeof TX_OUTPUT_COUNT_MAX_$TO_COUNT$
         >,
         // output satoshi of each curTx output except the state hash root output

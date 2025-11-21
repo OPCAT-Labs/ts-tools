@@ -9,7 +9,7 @@ export {
   outpoint2ByteString,
   toTokenOwnerAddress,
   stringToHex,
-  hexToString,
+  hexToString,  
   getDummyUtxo,
 } from './utils/index'
 
