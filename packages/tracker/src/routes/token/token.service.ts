@@ -2,7 +2,7 @@ import { HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
 import { IsNull, LessThanOrEqual, Repository, MoreThanOrEqual, LessThan, Like, ILike, FindOptionsWhere } from 'typeorm';
-import { ownerAddressToPubKeyHash, parseBlockchainIdentifier } from '../../common/utils';
+import { ownerAddressToPubKeyHash, parseBlockchainIdentifier, pubKeyHashToOwnerAddress } from '../../common/utils';
 import { TxOutEntity } from '../../entities/txOut.entity';
 import { TxOutArchiveEntity } from '../../entities/txOutArchive.entity';
 import { Constants } from '../../common/constants';
@@ -16,6 +16,8 @@ import { MetadataSerializer } from '@opcat-labs/cat-sdk';
 import { util as opcatUtil} from '@opcat-labs/opcat'
 import { of } from 'rxjs';
 import { Decimal } from 'decimal.js';
+import { SupportedNetwork } from '@opcat-labs/scrypt-ts-opcat';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class TokenService {
@@ -33,7 +35,7 @@ export class TokenService {
 
   private static readonly holdersCache = new LRUCache<string, {
     holders: {
-      ownerPubKeyHash: string;
+      address: string;
       balance: string;
       percentage: number;
       rank: number
@@ -90,6 +92,8 @@ export class TokenService {
     ttlAutopurge: true
   });
 
+  private network!: SupportedNetwork
+
   constructor(
     private readonly commonService: CommonService,
     @InjectRepository(TokenInfoEntity)
@@ -102,7 +106,10 @@ export class TokenService {
     private readonly txRepository: Repository<TxEntity>,
     @InjectRepository(TokenMintEntity)
     private readonly tokenMintRepository: Repository<TokenMintEntity>,
-  ) { }
+    private readonly configService: ConfigService,
+  ) { 
+    this.network = this.configService.get('NETWORK') as SupportedNetwork;
+  }
 
   async getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash: string, scope: TokenTypeScope) {
     let cached = TokenService.tokenInfoCache.get(tokenIdOrTokenScriptHash);
@@ -747,7 +754,7 @@ export class TokenService {
     limit: number | null = null,
   ): Promise<{
     holders: {
-      ownerPubKeyHash: string;
+      address: string;
       balance: string;
       percentage: number;
       rank: number
@@ -781,7 +788,7 @@ export class TokenService {
     ]);
 
     const result = holders.map((holder, index) => ({
-      ownerPubKeyHash: holder.ownerPubKeyHash,
+      address: pubKeyHashToOwnerAddress(holder.ownerPubKeyHash, this.network),
       balance: holder.balance,
       percentage: this.calculateHolderPercentage(holder.balance, BigInt(totalSupply)),
       rank: finalOffset + index + 1

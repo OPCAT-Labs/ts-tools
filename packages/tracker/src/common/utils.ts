@@ -1,7 +1,7 @@
 import { toTokenOwnerAddress } from '@opcat-labs/cat-sdk';
 import { network } from './constants';
-import { sha256 } from '@opcat-labs/scrypt-ts-opcat';
-import { util as opcatUtil} from '@opcat-labs/opcat'
+import { len, sha256, SupportedNetwork } from '@opcat-labs/scrypt-ts-opcat';
+import { util as opcatUtil, Script} from '@opcat-labs/opcat'
 
 export function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -25,6 +25,16 @@ export function errorResponse(e: Error) {
 
 export function ownerAddressToPubKeyHash(ownerAddr: string) {
   return toTokenOwnerAddress(ownerAddr)
+}
+
+export function pubKeyHashToOwnerAddress(pubKeyHash: string, network: SupportedNetwork) {
+  if (len(pubKeyHash) == BigInt(32)) {
+    // it's the sha256 hash of the output script
+    return pubKeyHash;
+  } else {
+    // it's the p2pkh script, transform to address
+    return Script.fromHex(pubKeyHash).toAddress(network).toString()
+  }
 }
 
 export const stringify = (data) => {

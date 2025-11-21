@@ -165,8 +165,8 @@ export class TokenTotalSupplyResponse extends BaseResponse<TokenTotalSupplyData>
 }
 
 export class TokenHolder {
-  @ApiProperty({ example: 'abc123......', description: 'Owner public key hash' })
-  ownerPubKeyHash: string;
+  @ApiProperty({ example: 'moP2wuUKQ5aqXswdeGX4VoRjbbyd6bc123', description: 'p2pkh address or script hash' })
+  address: string;
 
   @ApiProperty({ example: '100', description: 'Token balance' })
   balance: string;

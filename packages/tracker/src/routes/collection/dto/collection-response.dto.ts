@@ -174,8 +174,8 @@ export class CollectionTotalSupplyResponse extends BaseResponse<CollectionTotalS
 }
 
 export class NftHolder {
-  @ApiProperty({ example: 'abc123......', description: 'p2pkh lockingScript or script hash' })
-  ownerPubKeyHash: string;
+  @ApiProperty({ example: 'moP2wuUKQ5aqXswdeGX4VoRjbbyd6bc123', description: 'p2pkh address or script hash' })
+  address: string;
   @ApiProperty({ example: '5', description: 'nft balance, how many NFTs held by the owner' })
   balance: string;
   @ApiProperty({ example: 1, description: 'Rank by NFT amount held' })
