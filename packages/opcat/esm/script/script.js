@@ -977,7 +977,8 @@ Script.buildMultisigIn = function (pubkeys, threshold, signatures, opts) {
   $.checkArgument(_.isArray(signatures));
   opts = opts || {};
   var s = new Script();
-  s.add(Opcode.OP_0);
+  // Note: OP_0 is not needed for OPCAT multisig implementation
+  // (removed the dummy OP_0 required by legacy Bitcoin CHECKMULTISIG)
   _.each(signatures, function (signature) {
     $.checkArgument(Buffer.isBuffer(signature), 'Signatures must be an array of Buffers');
     // TODO: allow signatures to be an array of Signature objects
