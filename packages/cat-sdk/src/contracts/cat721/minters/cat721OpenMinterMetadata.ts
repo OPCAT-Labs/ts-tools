@@ -1,4 +1,4 @@
-import { OpenMinterCAT721Meta } from "../types";
+import { OpenMinterCAT721Meta } from "../types.js";
 
 
 /**

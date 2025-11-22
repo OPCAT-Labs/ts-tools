@@ -14,23 +14,23 @@ import {
   fromSupportedNetwork,
   getBackTraceInfo,
 } from '@opcat-labs/scrypt-ts-opcat'
-import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types'
+import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types.js'
 import {
   NULL_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
-} from '../../../contracts/constants'
-import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils'
+} from '../../../contracts/constants.js'
+import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils/index.js'
 import {
   CAT20GuardPeripheral,
   ContractPeripheral,
-} from '../../../utils/contractPeripheral'
-import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants'
-import { CAT20 } from '../../../contracts/cat20/cat20'
+} from '../../../utils/contractPeripheral.js'
+import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants.js'
+import { CAT20 } from '../../../contracts/cat20/cat20.js'
 import * as opcat from '@opcat-labs/opcat'
-import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
+import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib.js'
 import { Transaction } from '@opcat-labs/opcat'
-import { SPEND_TYPE_USER_SPEND } from '../../../contracts'
+import { SPEND_TYPE_USER_SPEND } from '../../../contracts/index.js'
 
 /**
  * Sends a CAT20 token using `CAT20Guard` contract

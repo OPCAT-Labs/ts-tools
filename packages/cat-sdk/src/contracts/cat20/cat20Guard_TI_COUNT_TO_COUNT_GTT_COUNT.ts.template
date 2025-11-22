@@ -26,12 +26,12 @@ import {
     ConstantsLib,
     TX_OUTPUT_COUNT_MAX_$TO_COUNT$,
     GUARD_TOKEN_TYPE_MAX,
-} from '../constants'
-import { CAT20State, CAT20GuardConstState, CAT20_AMOUNT } from './types'
-import { SafeMath } from '../utils/safeMath'
-import { CAT20GuardStateLib } from './cat20GuardStateLib'
-import { CAT20StateLib } from './cat20StateLib'
-import { CatTags } from '../catTags'
+} from '../constants.js'
+import { CAT20State, CAT20GuardConstState, CAT20_AMOUNT } from './types.js'
+import { SafeMath } from '../utils/safeMath.js'
+import { CAT20GuardStateLib } from './cat20GuardStateLib.js'
+import { CAT20StateLib } from './cat20StateLib.js'
+import { CatTags } from '../catTags.js'
 /**
  * The CAT20 guard contract
  * @category Contract

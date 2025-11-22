@@ -1,11 +1,11 @@
 import { assert, BacktraceInfo, ByteString, ContextUtils, len, method, prop, PubKey, Sig, SmartContract, tags, toByteString, TxUtils, UInt64 } from "@opcat-labs/scrypt-ts-opcat"
-import { CAT721OpenMinterState, CAT721State, MerkleProof, ProofNodePos } from "../types"
-import { ConstantsLib, OWNER_ADDR_P2PKH_BYTE_LEN } from "../../constants"
-import { CAT721StateLib } from "../cat721StateLib"
-import { OwnerUtils } from "../../utils/ownerUtils"
-import { CAT721OpenMinterMerkleTree } from "./cat721OpenMinterMerkleTree"
-import { CAT721OpenMintInfo, CAT721OpenMintInfoState } from "./cat721OpenMintInfo"
-import { CatTags } from "../../catTags"
+import { CAT721OpenMinterState, CAT721State, MerkleProof, ProofNodePos } from "../types.js"
+import { ConstantsLib, OWNER_ADDR_P2PKH_BYTE_LEN } from "../../constants.js"
+import { CAT721StateLib } from "../cat721StateLib.js"
+import { OwnerUtils } from "../../utils/ownerUtils.js"
+import { CAT721OpenMinterMerkleTree } from "./cat721OpenMinterMerkleTree.js"
+import { CAT721OpenMintInfo, CAT721OpenMintInfoState } from "./cat721OpenMintInfo.js"
+import { CatTags } from "../../catTags.js"
 
 
 /**

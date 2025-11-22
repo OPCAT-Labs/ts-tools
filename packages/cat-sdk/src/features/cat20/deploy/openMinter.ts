@@ -1,12 +1,12 @@
-import { CAT20TokenInfo, ImageMimeTypes, MetadataSerializer } from '../../../lib/metadata'
-import { CAT20OpenMinter } from '../../../contracts/cat20/minters/cat20OpenMinter'
-import { Postage } from '../../../typeConstants'
+import { CAT20TokenInfo, ImageMimeTypes, MetadataSerializer } from '../../../lib/metadata.js'
+import { CAT20OpenMinter } from '../../../contracts/cat20/minters/cat20OpenMinter.js'
+import { Postage } from '../../../typeConstants.js'
 import {
   CAT20OpenMinterState,
   OpenMinterCAT20Meta,
-} from '../../../contracts/cat20/types'
-import { CAT20 } from '../../../contracts/cat20/cat20'
-import { checkState } from '../../../utils/check'
+} from '../../../contracts/cat20/types.js'
+import { CAT20 } from '../../../contracts/cat20/cat20.js'
+import { checkState } from '../../../utils/check.js'
 import {
   ByteString,
   PubKey,
@@ -26,12 +26,12 @@ import {
   CAT20GuardPeripheral,
   CAT20OpenMinterPeripheral,
   ContractPeripheral,
-} from '../../../utils/contractPeripheral'
+} from '../../../utils/contractPeripheral.js'
 import { Transaction } from '@opcat-labs/opcat'
 import {
   ConstantsLib,
   NULL_ADMIN_SCRIPT_HASH,
-} from '../../../contracts/constants'
+} from '../../../contracts/constants.js'
 
 /**
  * Deploys a CAT20 token and its metadata using `CAT20OpenMinter` contract, and premines the token if applicable.

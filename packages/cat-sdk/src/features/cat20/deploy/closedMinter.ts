@@ -1,18 +1,18 @@
 import { ExtPsbt, Signer, ChainProvider, UtxoProvider, hexToUint8Array, markSpent } from '@opcat-labs/scrypt-ts-opcat'
-import { ClosedMinterCAT20Meta, NULL_ADMIN_SCRIPT_HASH } from '../../../contracts'
-import { CAT20TokenInfo, ImageMimeTypes, MetadataSerializer } from '../../../lib/metadata'
-import { checkState } from '../../../utils/check'
-import { CAT20ClosedMinter } from '../../../contracts/cat20/minters/cat20ClosedMinter'
-import { CAT20Admin } from '../../../contracts/cat20/cat20Admin'
-import { outpoint2ByteString, toTokenOwnerAddress } from '../../../utils'
-import { CAT20 } from '../../../contracts/cat20/cat20'
-import { ContractPeripheral, CAT20GuardPeripheral } from '../../../utils/contractPeripheral'
+import { ClosedMinterCAT20Meta, NULL_ADMIN_SCRIPT_HASH } from '../../../contracts/index.js'
+import { CAT20TokenInfo, ImageMimeTypes, MetadataSerializer } from '../../../lib/metadata.js'
+import { checkState } from '../../../utils/check.js'
+import { CAT20ClosedMinter } from '../../../contracts/cat20/minters/cat20ClosedMinter.js'
+import { CAT20Admin } from '../../../contracts/cat20/cat20Admin.js'
+import { outpoint2ByteString, toTokenOwnerAddress } from '../../../utils/index.js'
+import { CAT20 } from '../../../contracts/cat20/cat20.js'
+import { ContractPeripheral, CAT20GuardPeripheral } from '../../../utils/contractPeripheral.js'
 import {
   CAT20AdminState,
   CAT20ClosedMinterState,
-} from '../../../contracts/cat20/types'
-import { Postage } from '../../../typeConstants'
-import { ConstantsLib } from '../../../contracts'
+} from '../../../contracts/cat20/types.js'
+import { Postage } from '../../../typeConstants.js'
+import { ConstantsLib } from '../../../contracts/index.js'
 
 
 /**

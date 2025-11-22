@@ -4,7 +4,7 @@ import {
   PubKey,
   Sig,
 } from '@opcat-labs/scrypt-ts-opcat'
-import { TX_OUTPUT_COUNT_MAX } from './constants'
+import { TX_OUTPUT_COUNT_MAX } from './constants.js'
 
 export const SPEND_TYPE_USER_SPEND = 0n
 export const SPEND_TYPE_CONTRACT_SPEND = 1n

@@ -8,8 +8,8 @@ import {
   toByteString,
   UTXO,
 } from '@opcat-labs/scrypt-ts-opcat'
-import { TX_OUTPUT_COUNT_MAX } from '../contracts/constants'
-import { Outpoint } from '../typeConstants'
+import { TX_OUTPUT_COUNT_MAX } from '../contracts/constants.js'
+import { Outpoint } from '../typeConstants.js'
 import { randomBytes } from 'crypto'
 import * as opcat from '@opcat-labs/opcat'
 

@@ -1,6 +1,6 @@
 import { ChainProvider, ExtPsbt, hexToUint8Array, sha256, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT721OpenMintInfo } from "../../../contracts/cat721/minters/cat721OpenMintInfo";
-import { MetadataSerializer } from "../../../lib/metadata";
+import { CAT721OpenMintInfo } from "../../../contracts/cat721/minters/cat721OpenMintInfo.js";
+import { MetadataSerializer } from "../../../lib/metadata.js";
 
 
 export async function createNft(

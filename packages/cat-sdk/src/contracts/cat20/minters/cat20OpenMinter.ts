@@ -21,13 +21,13 @@ import {
   CAT20OpenMinterState,
   CAT20_AMOUNT,
   OpenMinterCAT20Meta,
-} from '../types'
-import { OUTPUT_DATA_HASH_INDEX, OUTPUT_DATA_HASH_LEN } from '../../constants'
-import { ConstantsLib } from '../../constants'
-import { OwnerUtils } from '../../utils/ownerUtils'
-import { CAT20StateLib } from '../cat20StateLib'
-import { CAT20OpenMinterMetadata } from './cat20OpenMinterMetadata'
-import { CatTags } from '../../catTags'
+} from '../types.js'
+import { OUTPUT_DATA_HASH_INDEX, OUTPUT_DATA_HASH_LEN } from '../../constants.js'
+import { ConstantsLib } from '../../constants.js'
+import { OwnerUtils } from '../../utils/ownerUtils.js'
+import { CAT20StateLib } from '../cat20StateLib.js'
+import { CAT20OpenMinterMetadata } from './cat20OpenMinterMetadata.js'
+import { CatTags } from '../../catTags.js'
 const MAX_NEXT_MINTERS = 2
 
 /**

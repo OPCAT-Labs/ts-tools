@@ -1,4 +1,4 @@
-import { OpenMinterCAT20Meta } from '../types'
+import { OpenMinterCAT20Meta } from '../types.js'
 
 /**
  * The CAT20 open minter metadata helper

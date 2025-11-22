@@ -1,5 +1,5 @@
-import { CAT20Metadata, OpenMinterCAT20Meta } from '../contracts/cat20/types'
-import { CAT721Metadata } from '../contracts/cat721/types'
+import { CAT20Metadata, OpenMinterCAT20Meta } from '../contracts/cat20/types.js'
+import { CAT721Metadata } from '../contracts/cat721/types.js'
 import { Script, util as opcatUtil } from '@opcat-labs/opcat'
 import {encode as cborEncode, decode as cborDecode} from 'cbor2'
 import { hexToUint8Array , pushData, splitChunks, MAX_OP_PUSH_DATA_SIZE} from '@opcat-labs/scrypt-ts-opcat'

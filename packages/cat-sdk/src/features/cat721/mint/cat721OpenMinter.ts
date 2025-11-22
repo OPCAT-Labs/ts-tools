@@ -1,12 +1,12 @@
 import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, markSpent, PubKey, Script, Sig, Signer, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT721State, MerkleProof, OpenMinterCAT721Meta, ProofNodePos } from "../../../contracts/cat721/types";
-import { ConstantsLib } from "../../../contracts/constants";
-import { CAT721OpenMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral";
-import { createNft } from "./nft";
-import { CAT721OpenMintInfo } from "../../../contracts/cat721/minters/cat721OpenMintInfo";
-import { Postage } from "../../../typeConstants";
-import { CAT721 } from "../../../contracts";
-import { normalizeUtxoScripts } from "../../../utils";
+import { CAT721State, MerkleProof, OpenMinterCAT721Meta, ProofNodePos } from "../../../contracts/cat721/types.js";
+import { ConstantsLib } from "../../../contracts/constants.js";
+import { CAT721OpenMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral.js";
+import { createNft } from "./nft.js";
+import { CAT721OpenMintInfo } from "../../../contracts/cat721/minters/cat721OpenMintInfo.js";
+import { Postage } from "../../../typeConstants.js";
+import { CAT721 } from "../../../contracts/index.js";
+import { normalizeUtxoScripts } from "../../../utils/index.js";
 
 
 /**

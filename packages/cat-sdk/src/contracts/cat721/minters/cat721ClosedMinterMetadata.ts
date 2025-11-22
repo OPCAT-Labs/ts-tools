@@ -1,4 +1,4 @@
-import { ClosedMinterCAT721Meta } from "../types";
+import { ClosedMinterCAT721Meta } from "../types.js";
 
 /**
  * The CAT721 closed minter metadata helper

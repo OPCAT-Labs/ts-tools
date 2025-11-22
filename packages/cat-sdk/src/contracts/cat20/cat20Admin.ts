@@ -11,9 +11,9 @@ import {
   PubKeyHash,
   tags,
 } from '@opcat-labs/scrypt-ts-opcat'
-import { CAT20AdminState } from './types'
-import { OwnerUtils } from '../utils/ownerUtils'
-import { CatTags } from '../catTags'
+import { CAT20AdminState } from './types.js'
+import { OwnerUtils } from '../utils/ownerUtils.js'
+import { CatTags } from '../catTags.js'
 
 @tags([CatTags.CAT20_ADMIN_TAG])
 export class CAT20Admin extends SmartContract<CAT20AdminState> {

@@ -1,0 +1,9 @@
+{
+  "name": "test-cjs-import",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Test cat-sdk as CJS package",
+  "scripts": {
+    "test": "node test.cjs"
+  }
+}

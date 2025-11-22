@@ -1,6 +1,6 @@
 import { assert, ByteString, byteStringToInt, fill, FixedArray, intToByteString, len, method, Ripemd160, sha1, SHA256_HASH_LEN, slice, StateLib, toByteString } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT721GuardConstState } from "./types";
-import { ConstantsLib, NFT_GUARD_COLLECTION_TYPE_MAX, TX_INPUT_COUNT_MAX_12, TX_INPUT_COUNT_MAX_6 } from "../constants";
+import { CAT721GuardConstState } from "./types.js";
+import { ConstantsLib, NFT_GUARD_COLLECTION_TYPE_MAX, TX_INPUT_COUNT_MAX_12, TX_INPUT_COUNT_MAX_6 } from "../constants.js";
 
 
 /**

@@ -1,6 +1,6 @@
 import { ByteString, SmartContractLib, assert, hash160, intToByteString, len, method, toByteString } from "@opcat-labs/scrypt-ts-opcat";
-import { ProofNodePos, MerkleProof, HEIGHT, CAT721MerkleLeaf } from "../types";
-import { OUTPUT_DATA_HASH_LEN } from "../../constants";
+import { ProofNodePos, MerkleProof, HEIGHT, CAT721MerkleLeaf } from "../types.js";
+import { OUTPUT_DATA_HASH_LEN } from "../../constants.js";
 
 
 export class CAT721OpenMinterMerkleTree extends SmartContractLib {

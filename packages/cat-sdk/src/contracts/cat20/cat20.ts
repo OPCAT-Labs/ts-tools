@@ -15,14 +15,14 @@ import {
   slice,
   SpentDataHashes
 } from '@opcat-labs/scrypt-ts-opcat'
-import { OwnerUtils } from '../utils/ownerUtils'
-import { CAT20State, CAT20GuardConstState } from './types'
+import { OwnerUtils } from '../utils/ownerUtils.js'
+import { CAT20State, CAT20GuardConstState } from './types.js'
 import {
   CAT20ContractUnlockArgs,
-} from '../types'
-import { GUARD_VARIANTS_COUNT } from '../constants'
-import { CAT20GuardStateLib } from './cat20GuardStateLib'
-import { CatTags } from '../catTags'
+} from '../types.js'
+import { GUARD_VARIANTS_COUNT } from '../constants.js'
+import { CAT20GuardStateLib } from './cat20GuardStateLib.js'
+import { CatTags } from '../catTags.js'
 
 /**
  * The CAT20 contract
