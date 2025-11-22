@@ -1747,9 +1747,13 @@ Interpreter.prototype.step = function (scriptType) {
           return false;
         }
         // int isig = ++i;
+        // Note: OPCAT removes the dummy element requirement completely.
+        // We keep ++i for correct cleanup loop behavior, but check stack.length < i - 1
+        // because there's no dummy element on the stack.
         var isig = ++i;
         i += nSigsCount;
-        if (this.stack.length < i) {
+        // OPCAT: check i - 1 instead of i (no dummy)
+        if (this.stack.length < i - 1) {
           this.errstr = 'SCRIPT_ERR_INVALID_STACK_OPERATION';
           return false;
         }
