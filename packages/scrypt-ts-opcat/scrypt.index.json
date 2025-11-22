@@ -70,6 +70,10 @@
       "path": "smart-contract/builtin-libs/stateLib.scrypt.tpl"
     },
     {
+      "symbol": "Genesis",
+      "path": "smart-contract/builtin-libs/genesis.scrypt.tpl"
+    },
+    {
       "symbol": "P2PK",
       "path": "smart-contract/builtin-libs/p2pk.scrypt.tpl"
     },

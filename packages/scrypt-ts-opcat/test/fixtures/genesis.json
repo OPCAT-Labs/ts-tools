@@ -1,0 +1,50 @@
+{
+  "version": 10,
+  "compilerVersion": "1.21.0+commit.2ada378",
+  "contract": "Genesis",
+  "md5": "temp_md5_for_testing",
+  "structs": [
+    {
+      "name": "TxOut",
+      "params": [
+        {
+          "name": "scriptHash",
+          "type": "bytes"
+        },
+        {
+          "name": "dataHash",
+          "type": "bytes"
+        },
+        {
+          "name": "satoshis",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    }
+  ],
+  "library": [],
+  "alias": [],
+  "abi": [
+    {
+      "type": "function",
+      "name": "checkDeploy",
+      "index": 0,
+      "params": [
+        {
+          "name": "outputs",
+          "type": "TxOut[3]"
+        }
+      ]
+    },
+    {
+      "type": "constructor",
+      "params": []
+    }
+  ],
+  "stateProps": [],
+  "buildType": "debug",
+  "file": "",
+  "hex": "5279517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f",
+  "sourceMapFile": ""
+}
