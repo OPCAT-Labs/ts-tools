@@ -11,6 +11,15 @@ export interface ChainProvider {
    * @returns A promise which resolves to the hash of the transaction that has been sent.
    */
   broadcast(txHex: string): Promise<TxId>;
+
+  /**
+  * Send a PSBT.
+  * @param psbtHex The PSBT to send.
+  * @param metadata Optional metadata to attach to the transaction.
+  * @returns A promise which resolves to the hash of the transaction that has been sent.
+  */
+  broadcastPsbt(psbtHex: string, metadata?: Record<string, unknown>): Promise<TxId>;
+
   /**
    * Get a transaction raw hex from the network.
    * @param txHash The hash value of the transaction.

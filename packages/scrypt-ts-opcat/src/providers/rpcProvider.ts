@@ -2,10 +2,11 @@
 import Decimal from 'decimal.js';
 import { ChainProvider } from './chainProvider.js';
 import { UtxoProvider, UtxoQueryOptions, getUtxoKey } from './utxoProvider.js';
-import { SupportedNetwork, UTXO } from '../globalTypes.js';
+import { SupportedNetwork, TxId, UTXO } from '../globalTypes.js';
 import * as tools from 'uint8array-tools';
 import { duplicateFilter, uint8ArrayToHex } from '../utils/common.js';
 import { Script } from '../index.js';
+import { ExtPsbt } from '../psbt/extPsbt.js';
 /**
  * The RPCProvider is backed by opcat RPC
  * @category Provider
@@ -174,13 +175,19 @@ export class RPCProvider implements ChainProvider, UtxoProvider {
       });
   }
 
-  async broadcast(txHex: string): Promise<string> {
+  async broadcast(txHex: string): Promise<TxId> {
     const res = await this._broadcast(txHex);
     if (res instanceof Error) {
       throw res;
     }
     this.broadcastedTxs.set(res, txHex);
     return res;
+  }
+
+  async broadcastPsbt(psbtHex: string, metadata?: Record<string, unknown>): Promise<TxId> {
+    const psbt = ExtPsbt.fromHex(psbtHex);
+    const txHex = psbt.extractTransaction().toHex();
+    return this.broadcast(txHex);
   }
 
   async getRawTransaction(txId: string): Promise<string> {
@@ -283,9 +290,9 @@ export class RPCProvider implements ChainProvider, UtxoProvider {
     return utxos
       .concat(Array.from(this.newUTXOs.values()))
       .filter((utxo) => this.isUnSpent(utxo.txId, utxo.outputIndex))
-      .filter(duplicateFilter((utxo) => `${utxo.txId}:${utxo.outputIndex}`))      
+      .filter(duplicateFilter((utxo) => `${utxo.txId}:${utxo.outputIndex}`))
       .filter(utxo => utxo.script === script)
-      .sort((a, b) => a.satoshi - b.satoshi);
+      .sort((a, b) => a.satoshis - b.satoshis);
   }
 
   private isUnSpent(txId: string, vout: number) {

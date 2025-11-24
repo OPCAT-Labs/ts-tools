@@ -1,9 +1,10 @@
-import { SupportedNetwork, UTXO } from '../globalTypes.js';
+import { SupportedNetwork, TxId, UTXO } from '../globalTypes.js';
 import { ChainProvider } from './chainProvider.js';
 import fetch from 'cross-fetch';
 import { UtxoProvider, UtxoQueryOptions, getUtxoKey } from './utxoProvider.js';
 import { uint8ArrayToHex, duplicateFilter } from '../utils/common.js';
 import { Script } from '@opcat-labs/opcat';
+import { ExtPsbt } from '../psbt/extPsbt.js';
 
 /**
  * The MempoolProvider is backed by [Mempool]{@link https://opcatlabs.io}
@@ -184,13 +185,19 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
       });
   }
 
-  async broadcast(txHex: string): Promise<string> {
+  async broadcast(txHex: string): Promise<TxId> {
     const res = await this._broadcast(txHex);
     if (res instanceof Error) {
       throw res;
     }
     this.broadcastedTxs.set(res, txHex);
     return res;
+  }
+
+  async broadcastPsbt(psbtHex: string, metadata?: Record<string, unknown>): Promise<TxId> {
+    const psbt = ExtPsbt.fromHex(psbtHex);
+    const txHex = psbt.extractTransaction().toHex();
+    return this.broadcast(txHex);
   }
 
   async getRawTransaction(txId: string): Promise<string> {
