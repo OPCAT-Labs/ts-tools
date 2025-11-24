@@ -88,7 +88,7 @@ export class BlockService implements OnModuleInit {
       try {
         await this.processBlocks();
       } catch (e) {
-        this.logger.error(`daemon process blocks error, ${e.message}`);
+        this.logger.error(`daemon process blocks error, ${e.message}  stack: ${e.stack}`);
       }
     }
   }

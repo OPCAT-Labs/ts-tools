@@ -89,15 +89,20 @@ export class TxService {
       const inputMetadatas = ContractLib.decodeAllInputMetadata(tx);
       const tags = inputTags.flat().concat(outputTags.flat());
       let isSaveTx = false;
-      if (
-        inputMetadatas[0]?.type === 'Token' ||
-        inputMetadatas[0]?.type === 'Collection'
-      ) {
-        isSaveTx = isSaveTx || (await this.processMetaTx(tx, outputTags, inputMetadatas[0], blockHeader));
-        this.logger.log(`[OK] genesis tx ${tx.id}, type: ${inputMetadatas[0]?.type}`);
+      // process genesis tx
+      for (let inputIndex = 0; inputIndex < inputMetadatas.length; inputIndex++) {
+        const inputMetadata = inputMetadatas[inputIndex];
+        if (inputMetadata?.type === 'Token' || inputMetadata?.type === 'Collection') {
+          isSaveTx = isSaveTx || (await this.processMetaTx(tx, outputTags, inputIndex, inputMetadata, blockHeader));
+          this.logger.log(`[OK] genesis tx ${tx.id}, type: ${inputMetadata?.type}`);
+        }
       }
-      //
-      if (inputTags[0].includes(CatTags.CAT20_MINTER_TAG) || inputTags[0].includes(CatTags.CAT721_MINTER_TAG)) {
+
+      const hasMinterInputTag = inputTags.some((tags) =>
+        tags.includes(CatTags.CAT20_MINTER_TAG) || tags.includes(CatTags.CAT721_MINTER_TAG)
+      );
+      
+      if (hasMinterInputTag) {
         // if there are minter input tags, process as a mint tx, only process the minting part, if there are token/nft outputs, they will be processed in processTransferTx()
         isSaveTx = isSaveTx || (await this.processMintTx(tx, outputTags, inputMetadatas, blockHeader, outputFields));
         this.logger.log(`[OK] mint tx ${tx.id}`);
@@ -156,11 +161,12 @@ export class TxService {
   private async processMetaTx(
     tx: Transaction,
     outputTags: string[][],
+    inputIndex: number,
     inputMetadata: ReturnType<typeof MetadataSerializer.deserialize>,
     blockHeader: BlockHeader | null,
   ) {
     const promises: Promise<any>[] = [];
-    const input = tx.inputs[0];
+    const input = tx.inputs[inputIndex];
     const inputGenesis = input.output;
     if (inputGenesis.script.toString() != this.genesis.lockingScript.toString()) {
       return false
@@ -243,12 +249,17 @@ export class TxService {
     const uniqueInputScriptHashes = Array.from(
       new Set(tx.inputs.map((input) => sha256(input.output.script.toHex())))
     );
+
+
+    // we only process minterd tokens/nfts here, so filter by minterScriptHash, for those tokens/nfts is not new minted, we process it in processTransferTx()
     const inputTokenInfos: {tokenId: string, tokenScriptHash: string, minterScriptHash: string, firstMintHeight: number}[] = await this.tokenInfoEntityRepository.find({
       select: ['tokenId', 'tokenScriptHash', 'minterScriptHash', 'firstMintHeight'],
       where: {
         minterScriptHash: In(uniqueInputScriptHashes),
       },
     });
+
+
     // find output tokenInfos by tokenScriptHash
     const uniqueOutputScriptHashes = Array.from(
       new Set(tx.outputs.map((output) => sha256(output.script.toHex())))
@@ -306,17 +317,17 @@ export class TxService {
           tokenInfoToUpdate.tokenScriptHash = lockingScriptHash;
           promises.push(this.tokenInfoEntityRepository.save(tokenInfoToUpdate));
         }
-        const tokenInfoToUpdateFirstMintHeight = inputTokenInfos.find((m) => m.tokenScriptHash == lockingScriptHash);
-        if (blockHeader && tokenInfoToUpdateFirstMintHeight.firstMintHeight == null) {
-          tokenInfoToUpdateFirstMintHeight.firstMintHeight = blockHeader.height;
-          promises.push(this.tokenInfoEntityRepository.save(tokenInfoToUpdateFirstMintHeight));
-        }
-
 
         const inputTokenInfo = inputTokenInfos.find((m) => m.tokenScriptHash == lockingScriptHash);
-        const thisTokenOrNftIsMinted = inputTokenInfo !== undefined;
+        // if we cannot find the minter from the tx inputs, it's not new minted token/nft, skip it here
+        const thisTokenOrNftIsMinted = inputTokenInfo != undefined;
         if (!thisTokenOrNftIsMinted) {
           continue;
+        }
+      
+        if (blockHeader && inputTokenInfo.firstMintHeight == null) {
+          inputTokenInfo.firstMintHeight = blockHeader.height;
+          promises.push(this.tokenInfoEntityRepository.save(inputTokenInfo));
         }
 
         const outputField = outputFields[outputIndex];
@@ -329,7 +340,7 @@ export class TxService {
         txOut.satoshis = BigInt(output.satoshis);
         txOut.lockingScriptHash = lockingScriptHash;
         txOut.isFromMint = true;
-        txOut.ownerPubKeyHash = sha256(owner);
+        txOut.ownerPubKeyHash = owner;
         txOut.tokenAmount = amount;
         txOut.data = toHex(output.data);
 
