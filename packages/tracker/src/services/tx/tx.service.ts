@@ -81,10 +81,16 @@ export class TxService {
     try {
       this.updateSpent(tx);
 
+      const isNonContractTx = ContractLib.txAllInputsAreP2pkh(tx) && ContractLib.txAllOutputsAreP2pkh(tx);
+      if (isNonContractTx) {
+        // skip non-contract tx
+        return;
+      }
+
       await this.commonService.txAddPrevouts(tx);
       // get tags
-      const inputTags = ContractLib.decodeInputsTag(tx);
       const outputTags = ContractLib.decodeOutputsTag(tx);
+      const inputTags = ContractLib.decodeInputsTag(tx);
       const outputFields = ContractLib.decodeAllOutputFields(tx);
       const inputMetadatas = ContractLib.decodeAllInputMetadata(tx);
       const tags = inputTags.flat().concat(outputTags.flat());

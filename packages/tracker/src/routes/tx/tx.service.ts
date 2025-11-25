@@ -137,8 +137,8 @@ export class TxService {
     const key = `${txId}_${outputIndex}`;
     let cached = TxService.contentCache.get(key);
     if (!cached) {
-      const raw = await this.commonService.getRawTx(txId, true);
-      const tx = new Transaction(raw['hex']);
+      const raw = await this.commonService.getRawTx(txId);
+      const tx = new Transaction(raw);
       if (outputIndex < tx.outputs.length) {
         const content = await this.parseContentEnvelope(toHex(tx.outputs[outputIndex].data));
         if (content) {
