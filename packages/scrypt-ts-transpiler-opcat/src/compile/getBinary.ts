@@ -5,7 +5,7 @@ import { chmodSync, createWriteStream, existsSync, mkdirSync } from 'fs';
 
 import { compilerVersion } from './compilerWrapper';
 import { getPlatformScryptc } from './findCompiler';
-import { getProxySettings } from 'get-proxy-settings';
+import { getProxySettings, ProxySettings } from 'get-proxy-settings';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import chalk from 'chalk';
 import { promisify } from 'util';
@@ -27,7 +27,17 @@ export const getBinary = async (version?: string) => {
 
   version = version || DEFAULT_COMPILER_VERSION;
 
-  const proxy = await getProxySettings();
+
+  let proxy: ProxySettings | null = null;
+  try {
+    proxy = await getProxySettings();
+  } catch (e) {
+    console.info(
+      `${chalk.green.bold(`
+${chalk.grey.bold('x')}`)}`,
+      `fetch proxy settings failed, continue without proxy: ${e}`,
+    );
+  }
 
   if (version === 'latest') {
     const fromAPI = await fetch(
