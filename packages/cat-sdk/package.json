@@ -12,6 +12,7 @@
       "import": "./dist/esm/index.js",
       "types": "./dist/types/index.d.ts"
     },
+    "./artifacts/*": "./artifacts/*",
     "./dist/*": {
       "require": "./dist/cjs/*.js",
       "types": "./dist/types/*.d.ts",
