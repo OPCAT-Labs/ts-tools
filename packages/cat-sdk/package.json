@@ -12,7 +12,6 @@
       "import": "./dist/esm/index.js",
       "types": "./dist/types/index.d.ts"
     },
-    "./artifacts/*": "./artifacts/*",
     "./dist/*": {
       "require": "./dist/cjs/*.js",
       "types": "./dist/types/*.d.ts",
@@ -29,7 +28,7 @@
     "gen:guard": "ts-node ./scripts/generateGuard.ts",
     "build": "npm run compile && rimraf dist && npm run build:cjs && npm run build:esm && npx -y cpy-cli artifacts dist/ ",
     "build:cjs": "tsc -p tsconfig.cjs.json",
-    "build:esm": "tsc -p tsconfig.esm.json && node scripts/fix-esm-json-imports.js && echo '{\"type\":\"module\"}' > dist/esm/package.json",
+    "build:esm": "tsc -p tsconfig.esm.json && node scripts/fix-esm-json-imports.js",
     "deploy": "npx ts-node ./deploy.ts",
     "compile": "rimraf artifacts && npm run gen:guard && scrypt-cli-opcat compile",
     "test": "npm run test:local && npm run test:dist",
