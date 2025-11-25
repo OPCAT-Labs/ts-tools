@@ -77,8 +77,8 @@ export class DummyProvider implements ChainProvider, UtxoProvider {
     return tx.id;
   }
 
-  async broadcastPsbt(psbtHex: string, metadata?: Record<string, unknown>): Promise<TxId> {
-    const psbt = ExtPsbt.fromHex(psbtHex);
+  async broadcastPsbt(psbtBase64: string, metadata?: Record<string, unknown>): Promise<TxId> {
+    const psbt = ExtPsbt.fromBase64(psbtBase64);
     const txHex = psbt.extractTransaction().toHex();
     return this.broadcast(txHex);
   }
