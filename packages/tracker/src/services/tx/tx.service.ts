@@ -99,7 +99,8 @@ export class TxService {
       for (let inputIndex = 0; inputIndex < inputMetadatas.length; inputIndex++) {
         const inputMetadata = inputMetadatas[inputIndex];
         if (inputMetadata?.type === 'Token' || inputMetadata?.type === 'Collection') {
-          isSaveTx = isSaveTx || (await this.processMetaTx(tx, outputTags, inputIndex, inputMetadata, blockHeader));
+          const shouldSave = await this.processMetaTx(tx, outputTags, inputIndex, inputMetadata, blockHeader);
+          isSaveTx = isSaveTx || shouldSave;
           this.logger.log(`[OK] genesis tx ${tx.id}, type: ${inputMetadata?.type}`);
         }
       }
@@ -110,12 +111,14 @@ export class TxService {
       
       if (hasMinterInputTag) {
         // if there are minter input tags, process as a mint tx, only process the minting part, if there are token/nft outputs, they will be processed in processTransferTx()
-        isSaveTx = isSaveTx || (await this.processMintTx(tx, outputTags, inputMetadatas, blockHeader, outputFields));
+        const shouldSave = await this.processMintTx(tx, outputTags, inputMetadatas, blockHeader, outputFields);
+        isSaveTx = isSaveTx || shouldSave;
         this.logger.log(`[OK] mint tx ${tx.id}`);
       }
       if (tags.includes(CatTags.CAT20_TAG) || tags.includes(CatTags.CAT721_TAG)) {
         // if there are token/nft output/input tags, process as a transfer tx
-        isSaveTx = isSaveTx || (await this.processTransferTx(tx, outputTags, blockHeader, outputFields));
+        const shouldSave = await this.processTransferTx(tx, outputTags, blockHeader, outputFields);
+        isSaveTx = isSaveTx || shouldSave;
         this.logger.log(`[OK] transfer tx ${tx.id}`);
       }
       if (isSaveTx) {
