@@ -2,7 +2,7 @@
   "version": 10,
   "compilerVersion": "1.21.0+commit.2ada378",
   "contract": "Genesis",
-  "md5": "temp_md5_for_testing",
+  "md5": "d3404c4b368255eec0f93e2d868e4510",
   "structs": [
     {
       "name": "TxOut",
@@ -21,9 +21,90 @@
         }
       ],
       "genericTypes": []
+    },
+    {
+      "name": "SHPreimage",
+      "params": [
+        {
+          "name": "nVersion",
+          "type": "bytes"
+        },
+        {
+          "name": "hashPrevouts",
+          "type": "bytes"
+        },
+        {
+          "name": "spentScriptHash",
+          "type": "bytes"
+        },
+        {
+          "name": "spentDataHash",
+          "type": "bytes"
+        },
+        {
+          "name": "value",
+          "type": "int"
+        },
+        {
+          "name": "nSequence",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentAmounts",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentScriptHashes",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentDataHashes",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSequences",
+          "type": "bytes"
+        },
+        {
+          "name": "hashOutputs",
+          "type": "bytes"
+        },
+        {
+          "name": "inputIndex",
+          "type": "int"
+        },
+        {
+          "name": "nLockTime",
+          "type": "int"
+        },
+        {
+          "name": "sigHashType",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
     }
   ],
-  "library": [],
+  "library": [
+    {
+      "name": "TxUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    },
+    {
+      "name": "ContextUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    },
+    {
+      "name": "StdUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    }
+  ],
   "alias": [],
   "abi": [
     {
@@ -34,6 +115,10 @@
         {
           "name": "outputs",
           "type": "TxOut[3]"
+        },
+        {
+          "name": "__scrypt_ts_shPreimage",
+          "type": "SHPreimage"
         }
       ]
     },
@@ -43,8 +128,8 @@
     }
   ],
   "stateProps": [],
-  "buildType": "debug",
+  "buildType": "release",
   "file": "",
-  "hex": "5279517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f",
+  "hex": "512097dfd76851bf465e8f715593b217714858bbe9570ff3bd5e33840a34e20ff0262102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec0382201008ce7480da41702918d1ec8e6849ba32b4d65b1e40dc669c31a1e6306b266c0111790111790111790111790111790111790111790111790111790111790111790111790111790111795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6c54797855795579210ac407f0e4bd44bfc207355a778b046225a7068fc59ee7eda43ad905aadbffc800206c266b30e6a1319c66dc401e5bd6b432ba49688eecd118297041da8074ce0810577956795679aa7676517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01007e817757795679567956795679537956795479577995939521414136d08c5ed2bf3ba048afe6dcaebafeffffffffffffffffffffffffffffff006e6e9776009f636e936776687777777b757c6e5296a0636e7c947b757c6853798277527982775379012080517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01205279947f77545379935279930130787e527e54797e58797e527e53797e52797e57797e6b6d6d6d6d6d6d6c765779ac6b6d6d6d6d6d6c776900011b766b796c766b796c766b796c755279827700a06370707c527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a537975686d750118766b796c766b796c766b796c755279827700a06370707c527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a537975686d750115766b796c766b796c766b796c755279827700a06370707c527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a537975686d75011b766b796c766b796c766b796c6d7c77827700a0630118766b796c766b796c766b796c6d7c77827700a067006863011b766b796c766b796c766b796c6d7c770119766b796c766b796c766b796c6d7c7787916968011b766b796c766b796c766b796c6d7c77827700a0630115766b796c766b796c766b796c6d7c77827700a067006863011b766b796c766b796c766b796c6d7c770116766b796c766b796c766b796c6d7c77879169680118766b796c766b796c766b796c6d7c77827700a0630115766b796c766b796c766b796c6d7c77827700a0670068630118766b796c766b796c766b796c6d7c770116766b796c766b796c766b796c6d7c778791696876aa5979876b6d6d6d6d6d6d6d6d6d6d6d6d6d6d6c",
   "sourceMapFile": ""
 }

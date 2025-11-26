@@ -18,8 +18,10 @@ export const MAX_GENESIS_CHECK_OUTPUT = 3;
 /**
  * Genesis contract for validating initial deployment outputs.
  *
- * This contract ensures that during deployment, exactly 3 outputs are created
- * with distinct script hashes, preventing duplicate deployments to the same address.
+ * This contract ensures that during deployment, all non-empty outputs have
+ * distinct script hashes, preventing duplicate deployments to the same address.
+ * Empty scriptHashes (represented by empty ByteString) are treated as placeholders
+ * and are not validated for uniqueness.
  *
  * @category Contract
  * @category Genesis
@@ -36,12 +38,15 @@ export class Genesis extends SmartContract {
    * Validates the deployment transaction outputs.
    *
    * This method performs the following checks:
-   * 1. Serializes all output data (scriptHash, satoshis, dataHash)
-   * 2. Ensures all three output script hashes are unique
+   * 1. Serializes all non-empty output data (scriptHash, satoshis, dataHash)
+   * 2. Ensures all non-empty script hashes are unique
    * 3. Verifies the serialized outputs match the transaction context
    *
+   * Empty scriptHashes (len == 0) are treated as placeholders and are skipped
+   * in both serialization and uniqueness validation.
+   *
    * @param outputs - Fixed array of 3 transaction outputs to validate
-   * @throws {Error} If any two outputs have the same scriptHash
+   * @throws {Error} If any two non-empty outputs have the same scriptHash
    * @throws {Error} If outputs don't match the transaction context
    * @onchain
    */
@@ -60,19 +65,26 @@ export class Genesis extends SmartContract {
       }
     }
 
-    // Ensure all script hashes are unique (no duplicate deployments)
-    assert(
-      outputs[0].scriptHash != outputs[1].scriptHash,
-      'Duplicate scriptHash: outputs[0] and outputs[1] have the same scriptHash',
-    );
-    assert(
-      outputs[0].scriptHash != outputs[2].scriptHash,
-      'Duplicate scriptHash: outputs[0] and outputs[2] have the same scriptHash',
-    );
-    assert(
-      outputs[1].scriptHash != outputs[2].scriptHash,
-      'Duplicate scriptHash: outputs[1] and outputs[2] have the same scriptHash',
-    );
+    // Ensure all non-empty script hashes are unique (no duplicate deployments)
+    // Empty scriptHashes (len == 0) are placeholders and should be skipped
+    if (len(outputs[0].scriptHash) > 0n && len(outputs[1].scriptHash) > 0n) {
+      assert(
+        outputs[0].scriptHash != outputs[1].scriptHash,
+        'Duplicate scriptHash: outputs[0] and outputs[1] have the same scriptHash',
+      );
+    }
+    if (len(outputs[0].scriptHash) > 0n && len(outputs[2].scriptHash) > 0n) {
+      assert(
+        outputs[0].scriptHash != outputs[2].scriptHash,
+        'Duplicate scriptHash: outputs[0] and outputs[2] have the same scriptHash',
+      );
+    }
+    if (len(outputs[1].scriptHash) > 0n && len(outputs[2].scriptHash) > 0n) {
+      assert(
+        outputs[1].scriptHash != outputs[2].scriptHash,
+        'Duplicate scriptHash: outputs[1] and outputs[2] have the same scriptHash',
+      );
+    }
 
     // Verify outputs match the transaction context
     assert(this.checkOutputs(outputBytes), 'Outputs mismatch with the transaction context');
