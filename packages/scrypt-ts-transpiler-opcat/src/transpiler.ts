@@ -4166,8 +4166,13 @@ export class Transpiler {
       });
     }
 
-    // only import builtins for non-builtin packages
-    if (fromPkgName !== BUILDIN_PACKAGE_NAME) {
+    // Check if any of the components in this file is a SmartContract
+    const hasSmartContract = this.scComponents.some(component => this.isContract(component));
+
+    // Import builtins if:
+    // 1. Any component is a SmartContract, OR
+    // 2. It's not from the builtin package
+    if (hasSmartContract || fromPkgName !== BUILDIN_PACKAGE_NAME) {
       this.importAllBuiltins(imports);
     }
 
