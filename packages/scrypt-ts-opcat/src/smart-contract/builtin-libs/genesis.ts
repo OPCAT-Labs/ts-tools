@@ -1,8 +1,10 @@
 import { SmartContract } from '../smartContract.js';
 import { method, tags } from '../decorators.js';
-import { assert, toByteString, len } from '../fns/index.js';
+import { assert, toByteString, len, sha256, fill } from '../fns/index.js';
 import { FixedArray, TxOut } from '../types/index.js';
 import { TxUtils } from './txUtils.js';
+import { ContractCall } from '../../psbt/types.js';
+import { uint8ArrayToHex } from '../../utils/common.js';
 
 /**
  * Maximum number of outputs to check during genesis deployment
@@ -83,6 +85,57 @@ export class Genesis extends SmartContract {
     // Verify outputs match the transaction context
     assert(this.checkOutputs(outputBytes), 'Outputs mismatch with the transaction context');
   }
+}
+
+/**
+ * Creates a contract call function for Genesis.checkDeploy that automatically
+ * builds the TxOut array from the transaction outputs.
+ *
+ * This function handles the conversion of transaction outputs to the TxOut format
+ * required by the Genesis contract, including:
+ * - Creating empty placeholders for unused output slots
+ * - Computing scriptHash and dataHash for each output
+ * - Limiting to MAX_GENESIS_CHECK_OUTPUT (3) outputs
+ *
+ * @returns A ContractCall function that can be used with ExtPsbt.addContractInput
+ *
+ * @example
+ * ```typescript
+ * const genesis = new Genesis();
+ * genesis.bindToUtxo(genesisUtxo);
+ *
+ * const deployPsbt = new ExtPsbt({ network })
+ *   .addContractInput(genesis, genesisCheckDeploy())
+ *   .addContractOutput(minter, Postage.MINTER_POSTAGE)
+ *   .change(changeAddress, feeRate)
+ *   .seal();
+ * ```
+ *
+ * @category Genesis
+ */
+export function genesisCheckDeploy(): ContractCall<Genesis> {
+  return (contract, psbt) => {
+    // Create output array with empty placeholders
+    const emptyOutput: TxOut = {
+      scriptHash: toByteString(''),
+      satoshis: 0n,
+      dataHash: sha256(toByteString('')),
+    };
+    const outputs: TxOut[] = fill(emptyOutput, MAX_GENESIS_CHECK_OUTPUT);
+
+    // Fill with actual outputs from the transaction
+    const txOutputs = psbt.txOutputs;
+    for (let i = 0; i < txOutputs.length && i < MAX_GENESIS_CHECK_OUTPUT; i++) {
+      const output = txOutputs[i];
+      outputs[i] = {
+        scriptHash: sha256(toByteString(uint8ArrayToHex(output.script))),
+        satoshis: BigInt(output.value),
+        dataHash: sha256(toByteString(uint8ArrayToHex(output.data))),
+      };
+    }
+
+    contract.checkDeploy(outputs as FixedArray<TxOut, typeof MAX_GENESIS_CHECK_OUTPUT>);
+  };
 }
 
 // Embedded artifact for Genesis contract
