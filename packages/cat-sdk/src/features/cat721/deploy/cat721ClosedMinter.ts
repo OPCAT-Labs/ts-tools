@@ -1,11 +1,10 @@
-
-import { ByteString, ChainProvider, ExtPsbt, hexToUint8Array, markSpent, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
+import { ByteString, ChainProvider, ExtPsbt, markSpent, Signer, UTXO, UtxoProvider, Genesis, genesisCheckDeploy } from "@opcat-labs/scrypt-ts-opcat";
 import { ClosedMinterCAT721Meta } from "../../../contracts/cat721/types.js";
 import { CAT721NftInfo } from "../../../lib/metadata.js";
 import { filterFeeUtxos, normalizeUtxoScripts } from "../../../utils/index.js";
 import { checkState } from "../../../utils/check.js";
 import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral.js";
-import { ConstantsLib, TX_INPUT_COUNT_MAX } from "../../../contracts/constants.js";
+import { TX_INPUT_COUNT_MAX } from "../../../contracts/constants.js";
 import { Postage } from "../../../typeConstants.js";
 import { CAT721 } from "../../../contracts/cat721/cat721.js";
 import { CAT721ClosedMinterState } from "../../../contracts/cat721/types.js";
@@ -50,19 +49,22 @@ export async function deployClosedMinterCollection(
 
     const { metadata } = deployInfo
 
+    // Create Genesis contract instance and set metadata in its data field
+    const genesis = new Genesis()
+    genesis.data = MetadataSerializer.serialize('Collection', deployInfo)
+
     const genesisPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .spendUTXO(utxos)
-        .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize(
-            'Collection',
-            deployInfo
-        )))
+        .addContractOutput(genesis, Postage.GENESIS_POSTAGE)
+        .change(changeAddress, feeRate)
         .seal()
 
     const signedGenesisPsbt = await signer.signPsbt(genesisPsbt.toHex(), genesisPsbt.psbtOptions())
     genesisPsbt.combine(ExtPsbt.fromHex(signedGenesisPsbt))
     genesisPsbt.finalizeAllInputs()
 
-    const collectionId = `${genesisPsbt.getChangeUTXO()!.txId}_${genesisPsbt.getChangeUTXO()!.outputIndex}`
+    const genesisUtxo = genesisPsbt.getUtxo(0)!
+    const collectionId = `${genesisUtxo.txId}_${genesisUtxo.outputIndex}`
     const cat721ClosedMinter = CAT721ClosedMinterPeripheral.createMinter(collectionId, metadata)
     const minterScriptHash = ContractPeripheral.scriptHash(cat721ClosedMinter)
     const cat721 = new CAT721(minterScriptHash, CAT721GuardPeripheral.getGuardVariantScriptHashes())
@@ -74,7 +76,11 @@ export async function deployClosedMinterCollection(
     }
     cat721ClosedMinter.state = minterState
 
+    // Bind Genesis contract to UTXO
+    genesis.bindToUtxo(genesisPsbt.getUtxo(0))
+
     const deployPsbt = new ExtPsbt({ network: await provider.getNetwork() })
+        .addContractInput(genesis, genesisCheckDeploy())
         .spendUTXO(genesisPsbt.getChangeUTXO()!)
         .addContractOutput(cat721ClosedMinter, Postage.MINTER_POSTAGE)
         .change(changeAddress, feeRate)

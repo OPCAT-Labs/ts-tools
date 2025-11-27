@@ -17,10 +17,11 @@ import {
   markSpent,
   UtxoProvider,
   ChainProvider,
-  hexToUint8Array,
   SupportedNetwork,
   getBackTraceInfo,
   toHex,
+  Genesis,
+  genesisCheckDeploy,
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
   CAT20GuardPeripheral,
@@ -29,7 +30,6 @@ import {
 } from '../../../utils/contractPeripheral.js'
 import { Transaction } from '@opcat-labs/opcat'
 import {
-  ConstantsLib,
   NULL_ADMIN_SCRIPT_HASH,
 } from '../../../contracts/constants.js'
 
@@ -79,12 +79,15 @@ export async function deployOpenMinterToken(
   if (metadata.icon) {
     checkState(ImageMimeTypes.includes(metadata.icon.type), 'Invalid icon MIME type')
   }
+
+  // Create Genesis contract instance and set metadata in its data field
+  const genesis = new Genesis()
+  genesis.data = MetadataSerializer.serialize('Token', deployInfo)
+
   const genesisPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
-    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize(
-      'Token',
-      deployInfo
-    )))
+    .addContractOutput(genesis, Postage.GENESIS_POSTAGE)
+    .change(changeAddress, feeRate)
     .seal()
 
   const signedGenesisPsbt = await signer.signPsbt(
@@ -94,7 +97,7 @@ export async function deployOpenMinterToken(
   genesisPsbt.combine(ExtPsbt.fromHex(signedGenesisPsbt))
   genesisPsbt.finalizeAllInputs()
 
-  const genesisUtxo = genesisPsbt.getChangeUTXO()!
+  const genesisUtxo = genesisPsbt.getUtxo(0)!
   const tokenId = `${genesisUtxo.txId}_${genesisUtxo.outputIndex}`
 
   const openMinter = CAT20OpenMinterPeripheral.createMinter(tokenId, metadata)
@@ -118,8 +121,13 @@ export async function deployOpenMinterToken(
   }
 
   openMinter.state = minterState
+
+  // Bind Genesis contract to UTXO with metadata
+  genesis.bindToUtxo(genesisPsbt.getUtxo(0))
+
   const deployPsbt = new ExtPsbt({ network: await provider.getNetwork() })
-    .spendUTXO(genesisUtxo)
+    .addContractInput(genesis, genesisCheckDeploy())
+    .spendUTXO(genesisPsbt.getChangeUTXO()!)
     .addContractOutput(openMinter, Postage.MINTER_POSTAGE)
     .change(changeAddress, feeRate)
     .seal()
@@ -131,7 +139,7 @@ export async function deployOpenMinterToken(
   deployPsbt.combine(ExtPsbt.fromHex(signedDeployPsbt))
   deployPsbt.finalizeAllInputs()
 
-  const minterOutputIndex = 0
+  const minterOutputIndex = 0  // Minter is now at output index 0
   const deployUtxo = deployPsbt.getUtxo(minterOutputIndex)
 
   // build premine tx if applicable

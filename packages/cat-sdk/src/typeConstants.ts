@@ -35,6 +35,7 @@ export enum Postage {
   ADMIN_POSTAGE = 1,
   TOKEN_POSTAGE = 1,
   NFT_POSTAGE = 1,
+  GENESIS_POSTAGE = 1,
 }
 
 /**
