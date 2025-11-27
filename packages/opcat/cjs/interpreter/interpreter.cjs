@@ -1748,9 +1748,13 @@ Interpreter.prototype.step = function (scriptType) {
           return false;
         }
         // int isig = ++i;
+        // Note: OPCAT removes the dummy element requirement completely.
+        // We keep ++i for correct cleanup loop behavior, but check stack.length < i - 1
+        // because there's no dummy element on the stack.
         var isig = ++i;
         i += nSigsCount;
-        if (this.stack.length < i) {
+        // OPCAT: check i - 1 instead of i (no dummy)
+        if (this.stack.length < i - 1) {
           this.errstr = 'SCRIPT_ERR_INVALID_STACK_OPERATION';
           return false;
         }
@@ -1825,21 +1829,26 @@ Interpreter.prototype.step = function (scriptType) {
           this.stack.pop();
         }
 
+        // Note: OPCAT doesn't require the dummy OP_0 element that legacy Bitcoin
+        // CHECKMULTISIG requires due to an off-by-one bug. The following code
+        // that pops the dummy element has been removed for OPCAT implementation.
+        //
+        // Original Bitcoin behavior (commented out for OPCAT):
         // A bug causes CHECKMULTISIG to consume one extra argument
         // whose contents were not checked in any way.
         //
         // Unfortunately this is a potential source of mutability,
         // so optionally verify it is exactly equal to zero prior
         // to removing it from the stack.
-        if (this.stack.length < 1) {
-          this.errstr = 'SCRIPT_ERR_INVALID_STACK_OPERATION';
-          return false;
-        }
-        if (this.flags & Interpreter.SCRIPT_VERIFY_NULLDUMMY && stacktop(-1).length) {
-          this.errstr = 'SCRIPT_ERR_SIG_NULLDUMMY';
-          return false;
-        }
-        this.stack.pop();
+        // if (this.stack.length < 1) {
+        //   this.errstr = 'SCRIPT_ERR_INVALID_STACK_OPERATION';
+        //   return false;
+        // }
+        // if (this.flags & Interpreter.SCRIPT_VERIFY_NULLDUMMY && stacktop(-1).length) {
+        //   this.errstr = 'SCRIPT_ERR_SIG_NULLDUMMY';
+        //   return false;
+        // }
+        // this.stack.pop();
 
         this.stack.push(fSuccess ? Interpreter.getTrue() : Interpreter.getFalse());
 
