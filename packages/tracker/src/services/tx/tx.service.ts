@@ -14,7 +14,7 @@ import { LRUCache } from 'lru-cache';
 import { CommonService } from '../common/common.service';
 import { TxOutArchiveEntity } from 'src/entities/txOutArchive.entity';
 import { Cron } from '@nestjs/schedule';
-import { byteStringToInt, toHex, sha256, uint8ArrayToHex } from '@opcat-labs/scrypt-ts-opcat';
+import { byteStringToInt, toHex, sha256, uint8ArrayToHex, Genesis } from '@opcat-labs/scrypt-ts-opcat';
 import { ContractLib } from '../../common/contract';
 import { RpcService } from '../rpc/rpc.service';
 import { ZmqService } from '../zmq/zmq.service';
@@ -33,6 +33,8 @@ export class TxService {
   });
 
   private dataSource: DataSource;
+
+  private genesis: Genesis
 
   constructor(
     private readonly rpcService: RpcService,
@@ -58,6 +60,7 @@ export class TxService {
       this.logger.debug(`onHashBlock ${uint8ArrayToHex(blockHash)}`);
       this.logger.debug(`onHashBlock ${blockHash.toString('hex')}`);
     });
+    this.genesis = new Genesis()
   }
 
   /**
@@ -156,6 +159,9 @@ export class TxService {
     const promises: Promise<any>[] = [];
     const input = tx.inputs[0];
     const inputGenesis = input.output;
+    if (inputGenesis.script.toString() != this.genesis.lockingScript.toString()) {
+      return false
+    }
     const tokenId = `${input.prevTxId.toString('hex')}_${input.outputIndex}`;
     // const [, _name, _symbol, _decimals] = fields;
     let _name = ''
