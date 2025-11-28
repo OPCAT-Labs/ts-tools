@@ -1301,10 +1301,12 @@ function getUnlockingScript(
   let unlockingScript: Script;
   switch (scriptType) {
     case 'multisig':
-    { 
+    {
         const sigs = getSortedSigs(script, partialSig);
-        unlockingScript = Script.fromASM(`OP_0 ${sigs.map(sig => tools.toHex(sig)).join(' ')}`);
-        break; 
+        // Note: OP_0 is not needed for OPCAT multisig implementation
+        // (removed the dummy OP_0 required by legacy Bitcoin CHECKMULTISIG)
+        unlockingScript = Script.fromASM(`${sigs.map(sig => tools.toHex(sig)).join(' ')}`);
+        break;
     }
     case 'pubkey':
       {

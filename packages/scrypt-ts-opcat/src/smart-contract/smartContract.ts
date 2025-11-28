@@ -18,7 +18,7 @@ import {
   SupportedParamType,
 } from './types/primitives.js';
 import { hash256, sha256 } from './fns/hashes.js';
-import { slice } from './fns/byteString.js';
+import { slice, toByteString } from './fns/byteString.js';
 import { checkInputStateImpl } from './methods/checkInputState.js';
 import { deserializeOutputs } from './serializer.js';
 import { BacktraceInfo } from './types/structs.js';
@@ -75,6 +75,30 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return clazz.stateType;
   }
 
+  /**
+   * Get the data of the contract.
+   * @returns the data of the contract
+   */
+  get data(): ByteString {
+    return this._data;
+  }
+
+  /**
+   * Set the data of the contract.
+   * Only stateless contracts (without stateType) can set data.
+   * Stateful contracts should use the state property instead.
+   * @param value the data to set
+   */
+  set data(value: ByteString) {
+    if (this.getStateType() !== undefined) {
+      throw new Error(
+        `Cannot set data on stateful contract '${this.constructor.name}'. ` +
+          `Use 'state' property instead for stateful contracts.`,
+      );
+    }
+    this._data = value;
+  }
+
   utxo?: ExtUtxo;
 
   /**
@@ -82,6 +106,15 @@ export class SmartContract<StateT extends OpcatState = undefined>
    * @onchain
    */
   state: StateT;
+
+  /**
+   * Raw data for stateless contracts (contracts without stateType).
+   * For stateful contracts, use the `state` property instead.
+   * Access this field through the `data` getter/setter.
+   * @private
+   * @onchain
+   */
+  private _data: ByteString;
 
   // the header of the contract, prepended before contract lockingScript
   private contractHeader: ContractHeader
@@ -132,6 +165,8 @@ export class SmartContract<StateT extends OpcatState = undefined>
     if (!SmartContract.newFromCreate) {
       this.initLockingScript(...args);
     }
+    // init
+    this._data = toByteString('');
   }
 
   /**

@@ -7,13 +7,18 @@ dotenv.config({
 function createTestProvider(): ChainProvider & UtxoProvider {
   const network = process.env.NETWORK as SupportedNetwork
   if (!network) {
-    const provider = new DummyProvider('opcat-testnet')
-    const originalGetUtxos = provider.getUtxos.bind(provider)
-    provider.getUtxos = async (...args) => {
-      const utxos = await originalGetUtxos(...args)
-      return utxos.map(utxo => ({...utxo, txId: '5ba9527a949f223da586d2d2b4d49be54b61523ef1490c256ae69ee74a632877'}))
-    }
-    return provider
+    // Use DummyProvider which generates unique txIds for each getUtxos call
+    // Previously, all txIds were replaced with a hardcoded value for easier debugging,
+    // but this causes multi-token type tests (tokenType >= 2) to fail because
+    // different token types would be bound to the same UTXO
+    // const provider = new DummyProvider('opcat-testnet')
+    // const originalGetUtxos = provider.getUtxos.bind(provider)
+    // provider.getUtxos = async (...args) => {
+    //   const utxos = await originalGetUtxos(...args)
+    //   return utxos.map(utxo => ({...utxo, txId: '5ba9527a949f223da586d2d2b4d49be54b61523ef1490c256ae69ee74a632877'}))
+    // }
+    // return provider
+    return new DummyProvider('opcat-testnet')
   }
   const provider = new MempoolProvider(
     'opcat-testnet'

@@ -1,4 +1,4 @@
-import { ExtPsbt, Signer, ChainProvider, UtxoProvider, hexToUint8Array, markSpent } from '@opcat-labs/scrypt-ts-opcat'
+import { ExtPsbt, Signer, ChainProvider, UtxoProvider, markSpent, Genesis, genesisCheckDeploy } from '@opcat-labs/scrypt-ts-opcat'
 import { ClosedMinterCAT20Meta, NULL_ADMIN_SCRIPT_HASH } from '../../../contracts/index.js'
 import { CAT20TokenInfo, ImageMimeTypes, MetadataSerializer } from '../../../lib/metadata.js'
 import { checkState } from '../../../utils/check.js'
@@ -54,9 +54,14 @@ export async function deployClosedMinterToken(
     checkState(ImageMimeTypes.includes(metadata.icon.type), 'Invalid icon MIME type')
   }
 
+  // Create Genesis contract instance and set metadata in its data field
+  const genesis = new Genesis()
+  genesis.data = MetadataSerializer.serialize('Token', deployInfo)
+
   const genesisTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
-    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', deployInfo)))
+    .addContractOutput(genesis, Postage.GENESIS_POSTAGE)
+    .change(changeAddress, feeRate)
     .seal()
 
   const signedGenesisTx = await signer.signPsbt(
@@ -66,7 +71,7 @@ export async function deployClosedMinterToken(
   genesisTx.combine(ExtPsbt.fromHex(signedGenesisTx))
   genesisTx.finalizeAllInputs()
 
-  const genesisUtxo = genesisTx.getChangeUTXO()!
+  const genesisUtxo = genesisTx.getUtxo(0)!
   const tokenId = `${genesisUtxo.txId}_${genesisUtxo.outputIndex}`
   const closeMinter = new CAT20ClosedMinter(
     toTokenOwnerAddress(address),
@@ -93,8 +98,13 @@ export async function deployClosedMinterToken(
 
   closeMinter.state = minterState
   admin.state = adminState
+
+  // Bind Genesis contract to UTXO
+  genesis.bindToUtxo(genesisTx.getUtxo(0))
+
   const deployTx = new ExtPsbt({ network: await provider.getNetwork() })
-    .spendUTXO(genesisUtxo)
+    .addContractInput(genesis, genesisCheckDeploy())
+    .spendUTXO(genesisTx.getChangeUTXO()!)
     .addContractOutput(closeMinter, Postage.MINTER_POSTAGE)
 
   if (metadata.hasAdmin) {
@@ -102,7 +112,7 @@ export async function deployClosedMinterToken(
   }
 
   deployTx
-    .change(changeAddress, feeRate, hexToUint8Array(MetadataSerializer.serialize('Token', deployInfo)))
+    .change(changeAddress, feeRate)
     .seal()
 
   const signedDeployTx = await signer.signPsbt(
