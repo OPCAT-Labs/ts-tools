@@ -34,6 +34,12 @@ export class CollectionInfo {
   @ApiProperty({ example: 100000, description: 'First mint block height' })
   firstMintHeight: number | null;
 
+  @ApiProperty({ example: 'a1b2c3d4e5f6...', description: 'Collection deploy transaction ID' })
+  deployTxid: string;
+
+  @ApiProperty({ example: 95000, description: 'Collection deploy block height' })
+  deployHeight: number | null;
+
   @ApiProperty({ example: '0363617452554c8ca8637461676e3666373036333631373430313033646e616d6561636673796d626f6c61436b6465736372697074696f6e6163636d61781908346469636f6e60696d696e7465724d6435606d6973737565724164647265737378323736613931343633633137303233626235306235666664633531393161366433323765306233363864623164336338386163', description: 'Collection metadata in raw hex format' })
   metadata: string;
 }
@@ -47,11 +53,14 @@ export class NftInfo {
   @ApiProperty({ example: '70ae652604e657bed6b9f0cfe6ccee343539d498f79149023114bebe9439f05a_0', description: 'Collection ID' })
   collectionId: string;
 
-  @ApiProperty({ example: 0, description: 'Local ID' })
-  localId: number;
+  @ApiProperty({ example: '0', description: 'Local ID' })
+  localId: string;
 
   @ApiProperty({ example: '397c92cbef253ad43ef737bfd60d75e2d64da5598bcf6698bae2c8810cbab3ad', description: 'Mint transaction ID' })
   mintTxid: string;
+
+  @ApiProperty({ example: '397c92cbef253ad43ef737bfd60d75e2d64da5598bcf6698bae2c8810cbab3ad', description: 'Commit transaction ID' })
+  commitTxid: string;
 
   @ApiProperty({ example: 28456, description: 'Mint block height' })
   mintHeight: number | null;
@@ -129,8 +138,8 @@ export class CollectionBalance {
   @ApiProperty({ example: '70ae652604e657bed6b9f0cfe6ccee343539d498f79149023114bebe9439f05a_0', description: 'Collection ID' })
   collectionId: string;
 
-  @ApiProperty({ example: 5, description: 'NFT balance amount' })
-  confirmed: number;
+  @ApiProperty({ example: '5', description: 'NFT balance amount' })
+  confirmed: string;
 }
 
 export class CollectionBalanceData extends CollectionBalance {
@@ -153,26 +162,34 @@ export class CollectionMintAmountResponse extends BaseResponse<CollectionMintAmo
   data: CollectionMintAmount;
 }
 
-export class CollectionCirculation {
-  @ApiProperty({ example: '5000000000', description: 'Total circulation amount' })
-  amount: string
+export class CollectionTotalSupply {
+  @ApiProperty({ example: '5000000000', description: 'Total supply amount' })
+  totalSupply: string
   @ApiProperty({ example: 100000, description: 'Current tracker block height' })
   trackerBlockHeight: number
 }
-export class CollectionCirculationResponse extends BaseResponse<CollectionCirculation> {
-  @ApiProperty({ type: CollectionCirculation })
-  data: CollectionCirculation;
+export class CollectionTotalSupplyResponse extends BaseResponse<CollectionTotalSupply> {
+  @ApiProperty({ type: CollectionTotalSupply })
+  data: CollectionTotalSupply;
 }
 
 export class NftHolder {
-  @ApiProperty({ example: 'abc123......', description: 'p2pkh lockingScript or script hash' })
-  ownerPubKeyHash: string;
-  @ApiProperty({ example: '5', description: 'NFT amount' })
-  nftAmount: string;
+  @ApiProperty({ example: 'moP2wuUKQ5aqXswdeGX4VoRjbbyd6bc123', description: 'p2pkh address or script hash' })
+  address: string;
+  @ApiProperty({ example: '5', description: 'nft balance, how many NFTs held by the owner' })
+  balance: string;
+  @ApiProperty({ example: 1, description: 'Rank by NFT amount held' })
+  rank: number;
+  @ApiProperty({ example: 0.5, description: 'Percentage of total NFTs held' })
+  percentage: number;
 }
 export class NftHolderData {
   @ApiProperty({ type: [NftHolder], description: 'NFT holders' })
   holders: NftHolder[];
+
+  @ApiProperty({ example: 1000, description: 'Total number of token holders' })
+  total: number;
+
   @ApiProperty({ example: 100000, description: 'Current tracker block height' })
   trackerBlockHeight: number
 }
