@@ -6,7 +6,7 @@ import { TokenService } from '../token/token.service';
 import { Response } from 'express';
 import { TokenTypeScope } from '../../common/types';
 import { ErrorResponse } from '../token/dto/token-response.dto';
-import { CollectionInfoResponse, NftInfoResponse, CollectionUtxosResponse, NftUtxoResponse, CollectionBalanceResponse, CollectionMintAmountResponse, NftHolderResponse, CollectionNftLocalIdsResponse, CollectionTotalSupplyResponse } from './dto/collection-response.dto';
+import { CollectionInfoResponse, NftInfoResponse, CollectionUtxosResponse, NftUtxoResponse, CollectionBalanceResponse, CollectionMintAmountResponse, NftHolderResponse, CollectionNftLocalIdsResponse, CollectionTotalSupplyResponse, CollectionTotalTxsResponse, CollectionTxsResponse, CollectionTotalHoldersResponse } from './dto/collection-response.dto';
 
 @Controller('collections')
 export class CollectionController {
@@ -339,7 +339,7 @@ export class CollectionController {
     }
   }
 
-  @Get(':collectionIdOrAddr/mintAmount')
+  @Get(':collectionIdOrAddr/totalMintedAmount')
   @ApiTags('collection')
   @ApiOperation({
     summary: 'Get collection total mint amount by collection id or collection address',
@@ -434,6 +434,117 @@ export class CollectionController {
     try {
       const r = await this.tokenService.getTokenHolders(collectionIdOrAddr, TokenTypeScope.NonFungible, offset, limit);
       return okResponse(r);
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
+
+  @Get(':collectionIdOrAddr/totalTxs')
+  @ApiTags('collection')
+  @ApiOperation({
+    summary: 'Get total number of transactions for a collection',
+  })
+  @ApiParam({
+    name: 'collectionIdOrAddr',
+    required: true,
+    type: String,
+    description: 'collection id or collection address',
+  })
+  @ApiOkResponse({
+    description: 'Collection total transactions retrieved successfully',
+    type: CollectionTotalTxsResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid collection id or collection address',
+    type: ErrorResponse,
+  })
+  async getCollectionTotalTxs(@Param('collectionIdOrAddr') collectionIdOrAddr: string) {
+    try {
+      const totalTxs = await this.tokenService.getTokenTotalTxsByTokenIdOrTokenScriptHash(
+        collectionIdOrAddr,
+        TokenTypeScope.NonFungible,
+      );
+      return okResponse(totalTxs);
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
+
+  @Get(':collectionIdOrAddr/txs')
+  @ApiTags('collection')
+  @ApiOperation({
+    summary: 'Get paginated list of transactions for a collection',
+  })
+  @ApiParam({
+    name: 'collectionIdOrAddr',
+    required: true,
+    type: String,
+    description: 'collection id or collection address',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'paging offset',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'paging limit',
+  })
+  @ApiOkResponse({
+    description: 'Collection transactions retrieved successfully',
+    type: CollectionTxsResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid collection id or collection address',
+    type: ErrorResponse,
+  })
+  async getCollectionTxs(
+    @Param('collectionIdOrAddr') collectionIdOrAddr: string,
+    @Query('offset') offset?: number,
+    @Query('limit') limit?: number,
+  ) {
+    try {
+      const txs = await this.tokenService.getTokenTxsByTokenIdOrTokenScriptHash(
+        collectionIdOrAddr,
+        TokenTypeScope.NonFungible,
+        offset || 0,
+        limit || 10,
+      );
+      return okResponse(txs);
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
+
+  @Get(':collectionIdOrAddr/totalHolders')
+  @ApiTags('collection')
+  @ApiOperation({
+    summary: 'Get total number of unique holders for a collection',
+  })
+  @ApiParam({
+    name: 'collectionIdOrAddr',
+    required: true,
+    type: String,
+    description: 'collection id or collection address',
+  })
+  @ApiOkResponse({
+    description: 'Collection total holders retrieved successfully',
+    type: CollectionTotalHoldersResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid collection id or collection address',
+    type: ErrorResponse,
+  })
+  async getCollectionTotalHolders(@Param('collectionIdOrAddr') collectionIdOrAddr: string) {
+    try {
+      const totalHolders = await this.tokenService.getTokenTotalHolders(
+        collectionIdOrAddr,
+        TokenTypeScope.NonFungible,
+      );
+      return okResponse(totalHolders);
     } catch (e) {
       return errorResponse(e);
     }

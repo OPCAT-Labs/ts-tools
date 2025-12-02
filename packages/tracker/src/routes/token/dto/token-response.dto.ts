@@ -151,6 +151,22 @@ export class TotalTxsResponse extends BaseResponse<TotalTxsData> {
   data: TotalTxsData;
 }
 
+export class TokenTxsData {
+  @ApiProperty({ type: [String], description: 'list of transaction IDs', example: ['ade162290a77650375ccafe7afcad47bb81c4be4f169f77013ed106723f8b7ea'] })
+  list: string[];
+  
+  @ApiProperty({ example: 10, description: 'total number of transactions' })
+  total: number;
+
+  @ApiProperty({ example: 100000, description: 'Current tracker block height' })
+  trackerBlockHeight: number;
+}
+
+export class TokenTxsResponse extends BaseResponse<TokenTxsData> {
+  @ApiProperty({ type: TokenTxsData })
+  data: TokenTxsData;
+}
+
 export class TokenTotalSupplyData {
   @ApiProperty({ example: '4500000000', description: 'Current total supply amount' })
   totalSupply: string;

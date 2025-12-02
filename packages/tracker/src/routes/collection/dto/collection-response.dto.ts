@@ -197,3 +197,38 @@ export class NftHolderResponse extends BaseResponse<NftHolderData> {
   @ApiProperty({ type: NftHolderData })
   data: NftHolderData;
 }
+
+export class CollectionTotalTxs {
+  @ApiProperty({ example: 1500, description: 'Total number of transactions for this collection' })
+  totalTxs: number;
+  @ApiProperty({ example: 100000, description: 'Current tracker block height' })
+  trackerBlockHeight: number;
+}
+export class CollectionTotalTxsResponse extends BaseResponse<CollectionTotalTxs> {
+  @ApiProperty({ type: CollectionTotalTxs })
+  data: CollectionTotalTxs;
+}
+
+export class CollectionTxs {
+  @ApiProperty({ example: ['397c92cbef253ad43ef737bfd60d75e2d64da5598bcf6698bae2c8810cbab3ad', 'faf1b996e68d25ff6a3139dca22b5bb98d34ecb55be033222d9181034d470238'], description: 'List of transaction IDs' })
+  txs: string[];
+  @ApiProperty({ example: 1500, description: 'Total number of transactions for this collection' })
+  total: number;
+  @ApiProperty({ example: 100000, description: 'Current tracker block height' })
+  trackerBlockHeight: number;
+}
+export class CollectionTxsResponse extends BaseResponse<CollectionTxs> {
+  @ApiProperty({ type: CollectionTxs })
+  data: CollectionTxs;
+}
+
+export class CollectionTotalHolders {
+  @ApiProperty({ example: 500, description: 'Total number of unique holders for this collection' })
+  totalHolders: number;
+  @ApiProperty({ example: 100000, description: 'Current tracker block height' })
+  trackerBlockHeight: number;
+}
+export class CollectionTotalHoldersResponse extends BaseResponse<CollectionTotalHolders> {
+  @ApiProperty({ type: CollectionTotalHolders })
+  data: CollectionTotalHolders;
+}

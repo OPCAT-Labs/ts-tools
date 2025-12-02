@@ -504,10 +504,17 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
     const Contract = Object.getPrototypeOf(contract).constructor as typeof SmartContract;
 
+    let dataHex = '';
+    if (contract.getStateType() !== undefined) {
+      dataHex = Contract.serializeState(contract.state);
+    } else if (contract.data && contract.data.length > 0) {
+      dataHex = contract.data;
+    }
+
     this.addOutput({
       script: contract.lockingScript.toBuffer(),
       value: BigInt(satoshis),
-      data: contract.getStateType() !== undefined ? tools.fromHex(Contract.serializeState(contract.state)) : new Uint8Array(0),
+      data: hexToUint8Array(dataHex),
     });
 
     const outputIndex = this.txOutputs.length - 1;

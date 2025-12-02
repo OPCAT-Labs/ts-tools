@@ -13,8 +13,6 @@ import { CachedContent, TokenTypeScope } from '../../common/types';
 import { TokenMintEntity } from '../../entities/tokenMint.entity';
 import { HttpStatusCode } from 'axios';
 import { MetadataSerializer } from '@opcat-labs/cat-sdk';
-import { util as opcatUtil} from '@opcat-labs/opcat'
-import { of } from 'rxjs';
 import { Decimal } from 'decimal.js';
 import { SupportedNetwork } from '@opcat-labs/scrypt-ts-opcat';
 import { ConfigService } from '@nestjs/config';
@@ -65,6 +63,15 @@ export class TokenService {
     ttl: 5 * 60 * 1000,
     ttlAutopurge: true
   });
+  private static readonly txsCache = new LRUCache<string, {
+    total: number;
+    txs: string[];
+    trackerBlockHeight: number;
+  }>({
+    max: Constants.CACHE_MAX_SIZE,
+    ttl: 5 * 60 * 1000,
+    ttlAutopurge: true
+  })
 
   private static readonly mintedAmountCache = new LRUCache<string, any>({
     max: Constants.CACHE_MAX_SIZE,
@@ -258,7 +265,7 @@ export class TokenService {
    * @param tokenScriptHash - Token script hash to query
    * @returns Total count of unique transaction IDs
    */
-  private async queryTransactionCount(tokenScriptHash: string): Promise<number> {
+  private async queryTxCount(tokenScriptHash: string): Promise<number> {
     // Query both tx_out and tx_out_archive, then count distinct txids
     const query = `
       SELECT COUNT(DISTINCT txid) as count
@@ -271,6 +278,63 @@ export class TokenService {
 
     const result = await this.txOutRepository.query(query, [tokenScriptHash]);
     return Number(result[0]?.count || '0');
+  }
+
+  private async getTokenTxsByTokenScriptHash(
+    tokenScriptHash: string,
+    offset: number,
+    limit: number,
+  ): Promise<string[]> {
+    // Query both tx_out and tx_out_archive, then union and deduplicate txids
+    // order by block height desc, txindex desc if same block height, created_at if same txindex
+    // Note: UNION automatically deduplicates, so we don't need DISTINCT
+
+    const query = `
+      SELECT combined.txid
+      FROM (
+        SELECT txo.txid, tx.block_height, tx.tx_index, txo.created_at
+        FROM tx_out txo
+        INNER JOIN tx ON txo.txid = tx.txid
+        WHERE txo.locking_script_hash = $1
+        UNION
+        SELECT txoa.txid, tx.block_height, tx.tx_index, txoa.created_at
+        FROM tx_out_archive txoa
+        INNER JOIN tx ON txoa.txid = tx.txid
+        WHERE txoa.locking_script_hash = $1
+      ) as combined
+      ORDER BY combined.block_height DESC, combined.tx_index DESC, combined.created_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+    const result = await this.txOutRepository.query(query, [tokenScriptHash, limit, offset]);
+    return result.map((row: { txid: string }) => row.txid);
+  }
+
+  async getTokenTxsByTokenIdOrTokenScriptHash(
+    tokenIdOrTokenScriptHash: string,
+    scope: TokenTypeScope,
+    offset: number,
+    limit: number,
+  ): Promise<{total: number, txs: string[], trackerBlockHeight: number}> {
+    let txsKey = `txs-${tokenIdOrTokenScriptHash}-${scope}-${offset}-${limit}`;
+    let cache = TokenService.txsCache.get(txsKey);
+    if (cache !== null && cache !== undefined) {
+      return cache;
+    }
+    const tokenInfo = await this.getTokenInfoByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash, scope);
+    const lastProcessedHeight = await this.commonService.getLastProcessedBlockHeight();
+    if (!tokenInfo?.tokenScriptHash || lastProcessedHeight === null) {
+      return {
+        total: 0,
+        txs: [],
+        trackerBlockHeight: lastProcessedHeight,
+      }
+    }
+    const total = await this.queryTxCount(tokenInfo.tokenScriptHash);
+    const txs = await this.getTokenTxsByTokenScriptHash(tokenInfo.tokenScriptHash, offset, limit);
+    cache = { total, txs, trackerBlockHeight: lastProcessedHeight  };
+    TokenService.txsCache.set(txsKey, cache);
+    return cache;
   }
 
   async getTokenTotalTxsByTokenIdOrTokenScriptHash(tokenIdOrTokenScriptHash: string, scope: TokenTypeScope) {
@@ -289,7 +353,7 @@ export class TokenService {
       };
     }
 
-    const totalTxs = await this.queryTransactionCount(tokenInfo.tokenScriptHash);
+    const totalTxs = await this.queryTxCount(tokenInfo.tokenScriptHash);
     cache = { totalTxs, trackerBlockHeight: lastProcessedHeight };
 
     TokenService.totalTxsCache.set(totalTxsKey, cache);

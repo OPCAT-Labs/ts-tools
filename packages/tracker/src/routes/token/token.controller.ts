@@ -183,6 +183,45 @@ export class TokenController {
     }
   }
 
+  @Get(':tokenIdOrTokenScriptHash/txs')
+  @ApiTags('token')
+  @ApiOperation({ summary: 'Get token transactions by token id or token script hash with pagination' })
+  @ApiParam({
+    name: 'tokenIdOrTokenScriptHash',
+    required: true,
+    type: String,
+    description: 'token id or token script hash',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'paging offset',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'paging limit',
+  })
+  async getTokenTxs(
+    @Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string,
+    @Query('offset', new DefaultValuePipe(0)) offset: number,
+    @Query('limit', new DefaultValuePipe(10)) limit: number,
+  ) {
+    try {
+      const r = await this.tokenService.getTokenTxsByTokenIdOrTokenScriptHash(
+        tokenIdOrTokenScriptHash,
+        TokenTypeScope.Fungible,
+        offset,
+        limit,
+      );
+      return okResponse(r);
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
+
   @Get(':tokenIdOrTokenScriptHash/addresses/:ownerAddrOrPkh/utxos')
   @ApiTags('token')
   @ApiOperation({ summary: 'Get token utxos by owner address' })
