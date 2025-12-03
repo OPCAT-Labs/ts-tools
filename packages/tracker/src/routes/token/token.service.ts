@@ -532,7 +532,7 @@ export class TokenService {
         txId: utxo.txid,
         outputIndex: utxo.outputIndex,
         script: utxo.lockingScriptHash,
-        satoshis: utxo.satoshis,
+        satoshis: Number(utxo.satoshis),
         data: utxo.data,
       };
       if (utxo.ownerPubKeyHash !== null && utxo.tokenAmount !== null) {

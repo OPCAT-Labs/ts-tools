@@ -22,7 +22,7 @@ export class MinterUtxo {
   script: string;
 
   @ApiProperty({ example: 10000, description: 'Satoshi amount' })
-  satoshis: string;
+  satoshis: number;
 
   @ApiProperty({ example: 'abc123......', description: 'utxo.data' })
   data: string;

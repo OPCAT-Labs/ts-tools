@@ -90,8 +90,8 @@ export class Utxo {
   @ApiProperty({ example: '41e9db63597a36bd996496fda81f229c61afb696ee7e57bc652a48254fa2da9a', description: 'the utxo locking script hash' })
   script: string;
 
-  @ApiProperty({ example: '10000', description: 'Satoshi amount' })
-  satoshis: string;
+  @ApiProperty({ example: 10000, description: 'Satoshi amount' })
+  satoshis: number;
 
   @ApiProperty({ example: '07006f706361740105190076a91463c17023bb50b5ffdc5191a6d327e0b368db1d3c88ac0000311a4fef6e69aabb2fab5f1c818cf5359ea62f2b', description: 'utxo.data' })
   data: string;
