@@ -25,6 +25,11 @@ export type ChainTxVerifyResponse = {
  * @onchain
  */
 export class Backtrace extends SmartContractLib {
+  /**
+   * SHA256 hash of the Genesis contract script (including header).
+   * Used to validate that prevPrevScript is the Genesis contract when tracing back to genesis outpoint.
+   */
+  static readonly GENESIS_SCRIPT_HASH: ByteString = '925899a0465f06eb1c6e690bfe0425c99fa62486a85a6ba8978e220f0e4c9001';
 
   /**
    * Verifies that the transaction hash preimage matches the previous transaction hash 
@@ -60,6 +65,13 @@ export class Backtrace extends SmartContractLib {
     t_prevTxInputList: ByteString,
   ): void {
     const res = Backtrace.verifyChainTxs(backtraceInfo, t_prevTxInputList);
+    // When at genesis outpoint, verify the prevPrevScript (scriptHash) matches the Genesis contract
+    if (res.prevPrevOutpoint === t_genesisOutpoint) {
+      assert(
+        res.prevPrevScript == Backtrace.GENESIS_SCRIPT_HASH,
+        `prevPrevScript does not match Genesis contract script`,
+      );
+    }
     assert(
       res.prevPrevOutpoint === t_genesisOutpoint || res.prevPrevScript == t_selfScript,
       `can not backtrace to the genesis outpoint`,
