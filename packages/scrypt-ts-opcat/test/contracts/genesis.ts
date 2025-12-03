@@ -8,18 +8,28 @@ import {
   method,
   tags,
   len,
+  slice,
 } from '@opcat-labs/scrypt-ts-opcat';
+
+
+/**
+ * Maximum number of inputs to check during genesis deployment
+ */
+export const MAX_GENESIS_CHECK_INPUT = 6;
 
 /**
  * Maximum number of outputs to check during genesis deployment
  */
-export const MAX_GENESIS_CHECK_OUTPUT = 3;
+export const MAX_GENESIS_CHECK_OUTPUT = 6;
 
 /**
  * Genesis contract for validating initial deployment outputs.
  *
- * This contract ensures that during deployment, all non-empty outputs have
- * distinct script hashes, preventing duplicate deployments to the same address.
+ * This contract ensures that during deployment:
+ * 1. Genesis is unlocked at input index 0
+ * 2. The contract at output[0] has a unique scriptHash among all outputs
+ * 3. The contract at output[0] has a different scriptHash from all inputs
+ *
  * Empty scriptHashes (represented by empty ByteString) are treated as placeholders
  * and are not validated for uniqueness.
  *
@@ -38,20 +48,30 @@ export class Genesis extends SmartContract {
    * Validates the deployment transaction outputs.
    *
    * This method performs the following checks:
-   * 1. Serializes all non-empty output data (scriptHash, satoshis, dataHash)
-   * 2. Ensures all non-empty script hashes are unique
-   * 3. Verifies the serialized outputs match the transaction context
+   * 1. Verifies Genesis is unlocked at input index 0
+   * 2. Serializes all non-empty output data (scriptHash, satoshis, dataHash)
+   * 3. Ensures output[0] scriptHash is non-empty
+   * 4. Ensures output[0] scriptHash is different from all input scriptHashes
+   * 5. Ensures output[0] scriptHash is unique among all outputs
+   * 6. Verifies the serialized outputs match the transaction context
    *
    * Empty scriptHashes (len == 0) are treated as placeholders and are skipped
    * in both serialization and uniqueness validation.
    *
-   * @param outputs - Fixed array of 3 transaction outputs to validate
-   * @throws {Error} If any two non-empty outputs have the same scriptHash
+   * @param outputs - Fixed array of 6 transaction outputs to validate
+   * @throws {Error} If Genesis is not at input index 0
+   * @throws {Error} If output[0] scriptHash is empty
+   * @throws {Error} If output[0] has the same scriptHash as any input
+   * @throws {Error} If output[0] has the same scriptHash as any other output
    * @throws {Error} If outputs don't match the transaction context
    * @onchain
    */
   @method()
   public checkDeploy(outputs: FixedArray<TxOut, typeof MAX_GENESIS_CHECK_OUTPUT>) {
+
+    // Ensure Genesis is unlocked at input index 0
+    assert(this.ctx.inputIndex == 0n, 'Genesis must be unlocked at input index 0');
+
     // Serialize all outputs
     let outputBytes = toByteString('');
     for (let index = 0; index < MAX_GENESIS_CHECK_OUTPUT; index++) {
@@ -65,25 +85,36 @@ export class Genesis extends SmartContract {
       }
     }
 
-    // Ensure all non-empty script hashes are unique (no duplicate deployments)
-    // Empty scriptHashes (len == 0) are placeholders and should be skipped
-    if (len(outputs[0].scriptHash) > 0n && len(outputs[1].scriptHash) > 0n) {
-      assert(
-        outputs[0].scriptHash != outputs[1].scriptHash,
-        'Duplicate scriptHash: outputs[0] and outputs[1] have the same scriptHash',
-      );
+    // Ensure output[0] scriptHash is non-empty
+    const output0ScriptHash = outputs[0].scriptHash;
+    assert(len(output0ScriptHash) > 0n);
+
+    // Ensure output[0] scriptHash is different from all input scriptHashes
+    // This prevents deploying a contract that matches any input contract
+    let start = 0n;
+    for (let index = 0; index < MAX_GENESIS_CHECK_INPUT; index++) {
+      if (index < this.ctx.inputCount) {
+        const inputScriptHash = slice(this.ctx.spentScriptHashes, start, start + 32n);
+        assert(output0ScriptHash != inputScriptHash);
+        start += 32n;
+      }
     }
-    if (len(outputs[0].scriptHash) > 0n && len(outputs[2].scriptHash) > 0n) {
-      assert(
-        outputs[0].scriptHash != outputs[2].scriptHash,
-        'Duplicate scriptHash: outputs[0] and outputs[2] have the same scriptHash',
-      );
+
+    // Ensure output[0] scriptHash is unique (not equal to any other output's scriptHash)
+    if (len(outputs[1].scriptHash) > 0n) {
+      assert(output0ScriptHash != outputs[1].scriptHash);
     }
-    if (len(outputs[1].scriptHash) > 0n && len(outputs[2].scriptHash) > 0n) {
-      assert(
-        outputs[1].scriptHash != outputs[2].scriptHash,
-        'Duplicate scriptHash: outputs[1] and outputs[2] have the same scriptHash',
-      );
+    if (len(outputs[2].scriptHash) > 0n) {
+      assert(output0ScriptHash != outputs[2].scriptHash);
+    }
+    if (len(outputs[3].scriptHash) > 0n) {
+      assert(output0ScriptHash != outputs[3].scriptHash);
+    }
+    if (len(outputs[4].scriptHash) > 0n) {
+      assert(output0ScriptHash != outputs[4].scriptHash);
+    }
+    if (len(outputs[5].scriptHash) > 0n) {
+      assert(output0ScriptHash != outputs[5].scriptHash);
     }
 
     // Verify outputs match the transaction context
