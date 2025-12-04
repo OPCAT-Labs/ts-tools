@@ -192,9 +192,10 @@ export const UnlocksMetaKey = 'scrypt:unlocks';
 /**
  * Type for SmartContract constructor (class type).
  * Used to constrain the first parameter of @unlock decorator.
+ * Uses `SmartContract<any>` to accept contracts with any state type.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SmartContractConstructor = abstract new (...args: any[]) => SmartContract;
+type SmartContractConstructor = abstract new (...args: any[]) => SmartContract<any>;
 
 /**
  * Marks a static method as the unlock method for a corresponding public lock method.

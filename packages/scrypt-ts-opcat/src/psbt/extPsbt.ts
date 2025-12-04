@@ -435,10 +435,10 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       contractCall = contractCallOrMethodName;
     } else if (typeof contractCallOrMethodName === 'string') {
       // Mode 2: Lock method name provided, find paired unlock method
-      contractCall = this._createContractCallFromMethodName(contract, contractCallOrMethodName, extraParams);
+      contractCall = this._createContractCallFromMethodName(contract, contractCallOrMethodName, inputIndex, extraParams);
     } else if (contractCallOrMethodName === undefined) {
       // Mode 3: Auto-detection - find the single unlock method
-      contractCall = this._createContractCallFromAutoDetection(contract, extraParams);
+      contractCall = this._createContractCallFromAutoDetection(contract, inputIndex, extraParams);
     }
 
     if (contractCall) {
@@ -455,6 +455,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   private _createContractCallFromMethodName<Contract extends SmartContract<OpcatState>, ExtraParams extends Record<string, unknown>>(
     contract: Contract,
     lockMethodName: string,
+    capturedInputIndex: number,
     extraParams?: ExtraParams,
   ): ContractCall<Contract> {
     const ContractClass = contract.constructor as typeof SmartContract;
@@ -478,11 +479,10 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     }
 
     return (c: Contract, psbt: IExtPsbt, backtraceInfo?: BacktraceInfo) => {
-      const inputIndex = this.data.inputs.length - 1;
       const ctx: UnlockContext<Contract, ExtraParams> = {
         contract: c,
         psbt,
-        inputIndex,
+        inputIndex: capturedInputIndex,
         backtraceInfo,
         extraParams,
       };
@@ -496,6 +496,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    */
   private _createContractCallFromAutoDetection<Contract extends SmartContract<OpcatState>, ExtraParams extends Record<string, unknown>>(
     contract: Contract,
+    capturedInputIndex: number,
     extraParams?: ExtraParams,
   ): ContractCall<Contract> | undefined {
     const ContractClass = contract.constructor as typeof SmartContract;
@@ -516,7 +517,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
     // Get the single lock method name
     const [lockMethodName] = unlocks.keys();
-    return this._createContractCallFromMethodName(contract, lockMethodName, extraParams);
+    return this._createContractCallFromMethodName(contract, lockMethodName, capturedInputIndex, extraParams);
   }
 
   /**
