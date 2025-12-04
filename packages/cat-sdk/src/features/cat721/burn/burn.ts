@@ -1,10 +1,11 @@
-import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, PubKey, Signer, toHex, toByteString, UTXO, UtxoProvider, fill, sha256, markSpent } from "@opcat-labs/scrypt-ts-opcat";
-import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../../contracts/constants.js";
+import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, PubKey, Signer, UTXO, UtxoProvider, markSpent } from "@opcat-labs/scrypt-ts-opcat";
+import { TX_INPUT_COUNT_MAX } from "../../../contracts/constants.js";
 import { CAT721 } from "../../../contracts/cat721/cat721.js";
 import { CAT721StateLib } from "../../../contracts/cat721/cat721StateLib.js";
 import { Postage } from "../../../typeConstants.js";
-import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from "../../../utils/index.js";
-import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral.js";
+import { filterFeeUtxos, normalizeUtxoScripts } from "../../../utils/index.js";
+import { CAT721GuardPeripheral } from "../../../utils/contractPeripheral.js";
+import { CAT721GuardUnlockParams } from "../../../contracts/cat721/cat721GuardUnlock.js";
 
 /**
  * Burns a CAT721 NFT using `CAT721Guard` contract
@@ -101,38 +102,13 @@ export async function burnNft(
 
     // add guard input
     guard.bindToUtxo(guardUtxo);
-    burnPsbt.addContractInput(guard, (contract, tx) => {
-        const ownerAddrOrScript = fill(toByteString(''), txOutputCountMax)
-        applyFixedArray(
-            ownerAddrOrScript,
-            tx.txOutputs.map((output) =>
-                ContractPeripheral.scriptHash(toHex(output.script))
-            )
-        )
-        const outputLocalIds = fill(BigInt(-1), txOutputCountMax)
-        const nftScriptHashIndexes = fill(-1n, txOutputCountMax)
-        const outputSatoshis = fill(0n, txOutputCountMax)
-        applyFixedArray(
-            outputSatoshis,
-            tx.txOutputs.map((output) => BigInt(output.value))
-        )
-        const inputCAT721States = fill(CAT721StateLib.create(0n, toByteString('')), txInputCountMax)
-        applyFixedArray(inputCAT721States, inputNftStates)
-        const nextStateHashes = fill(toByteString(''), txOutputCountMax)
-        applyFixedArray(
-            nextStateHashes,
-            tx.txOutputs.map((output) => sha256(toHex(output.data)))
-        )
-        contract.unlock(
-            nextStateHashes as any,
-            ownerAddrOrScript as any,
-            outputLocalIds as any,
-            nftScriptHashIndexes as any,
-            outputSatoshis as any,
-            inputCAT721States as any,
-            BigInt(tx.txOutputs.length)
-        )
-    })
+    // For burn, outputNftStates is empty since all NFTs are burned
+    burnPsbt.addContractInput(guard, 'unlock', {
+        inputNftStates,
+        outputNftStates: [],
+        txInputCountMax,
+        txOutputCountMax,
+    } as CAT721GuardUnlockParams)
 
     // add fee input
     burnPsbt.spendUTXO(feeUtxo!)
