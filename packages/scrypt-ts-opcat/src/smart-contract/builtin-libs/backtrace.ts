@@ -28,6 +28,19 @@ export class Backtrace extends SmartContractLib {
   /**
    * SHA256 hash of the Genesis contract script (including header).
    * Used to validate that prevPrevScript is the Genesis contract when tracing back to genesis outpoint.
+   *
+   * ## How this hash is generated
+   * This is the SHA256 hash of the Genesis contract's full locking script, including:
+   * - Contract header (name, version metadata)
+   * - Compiled bytecode
+   *
+   * To verify or regenerate: `sha256(toByteString(new Genesis().lockingScript.toHex()))`
+   *
+   * ## Important
+   * If the Genesis contract is updated, this hash MUST be updated accordingly.
+   * Use the test in genesis.test.ts to verify this hash remains correct.
+   *
+   * @see packages/scrypt-ts-opcat/test/local-test/genesis.test.ts - GENESIS_SCRIPT_HASH validation tests
    */
   @prop()
   static readonly GENESIS_SCRIPT_HASH: ByteString = toByteString('925899a0465f06eb1c6e690bfe0425c99fa62486a85a6ba8978e220f0e4c9001');

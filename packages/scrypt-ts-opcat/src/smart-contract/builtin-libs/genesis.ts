@@ -5,10 +5,33 @@ import { FixedArray, TxOut } from '../types/index.js';
 import { TxUtils } from './txUtils.js';
 import { ContractCall } from '../../psbt/types.js';
 import { uint8ArrayToHex } from '../../utils/common.js';
+import { TX_OUTPUT_SCRIPT_HASH_LEN } from '../consts.js';
 
-export const MAX_GENESIS_CHECK_INPUT = 6;
 /**
- * Maximum number of outputs to check during genesis deployment
+ * Maximum number of inputs to check during genesis deployment.
+ *
+ * This limit balances security (checking enough inputs to prevent attacks) with
+ * script size constraints (each input check adds ~50 bytes to the script).
+ *
+ * ## Why 6?
+ * - Most legitimate deploy transactions have 1-3 inputs (Genesis + fee UTXOs)
+ * - 6 inputs provides sufficient coverage for edge cases
+ * - Adding more inputs would significantly increase script size and fees
+ * - Bitcoin Script loops must be unrolled, so larger limits increase bytecode size
+ *
+ * ## Security Note
+ * If a transaction has more than 6 inputs, only the first 6 are checked.
+ * This is acceptable because:
+ * 1. Attackers cannot benefit from additional inputs beyond the checked ones
+ * 2. The Genesis contract at input[0] is always validated
+ */
+export const MAX_GENESIS_CHECK_INPUT = 6;
+
+/**
+ * Maximum number of outputs to check during genesis deployment.
+ *
+ * This matches MAX_GENESIS_CHECK_INPUT for consistency and covers
+ * typical deployment scenarios (contract output + change outputs).
  */
 export const MAX_GENESIS_CHECK_OUTPUT = 6;
 
@@ -83,9 +106,9 @@ export class Genesis extends SmartContract {
     let start = 0n;
     for (let index = 0; index < MAX_GENESIS_CHECK_INPUT; index++) {
       if (index < this.ctx.inputCount) {
-        const inputScriptHash = slice(this.ctx.spentScriptHashes, start, start + 32n);
+        const inputScriptHash = slice(this.ctx.spentScriptHashes, start, start + TX_OUTPUT_SCRIPT_HASH_LEN);
         assert(output0ScriptHash != inputScriptHash);
-        start += 32n;
+        start += TX_OUTPUT_SCRIPT_HASH_LEN;
       }
     }
 

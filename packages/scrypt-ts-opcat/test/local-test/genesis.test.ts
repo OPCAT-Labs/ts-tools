@@ -13,6 +13,8 @@ import {
 } from '@opcat-labs/scrypt-ts-opcat';
 import { FixedArray } from '../../src/index.js';
 import { uint8ArrayToHex } from '../../src/utils/common.js';
+import { Genesis as GenesisLib } from '../../src/smart-contract/builtin-libs/genesis.js';
+import { Backtrace } from '../../src/smart-contract/builtin-libs/backtrace.js';
 
 use(chaiAsPromised);
 dotenv.config();
@@ -581,6 +583,104 @@ describe('Test Genesis', () => {
           .seal()
           .finalizeAllInputs();
       }).to.throw();
+    });
+  });
+
+  /**
+   * Test Genesis input index validation
+   * Ensures Genesis must be at input index 0
+   */
+  describe('Genesis input index validation', () => {
+    /**
+     * Test failure: Genesis at input index 1 (not 0)
+     * Genesis must be unlocked at input index 0
+     */
+    it('should fail when Genesis is not at input index 0', async () => {
+      const genesis = new Genesis();
+      genesis.bindToUtxo({
+        txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 10000,
+        data: '',
+      });
+
+      // Create another Genesis to use as the first input (wrong position)
+      const dummyGenesis = new Genesis();
+      dummyGenesis.bindToUtxo({
+        txId: 'a1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 5000,
+        data: '',
+      });
+
+      const script1 = toByteString('51');
+      const script2 = toByteString('52');
+
+      // Try to add another contract input BEFORE the Genesis input we want to test
+      // This should cause our target Genesis to be at index 1 instead of 0
+      expect(() => {
+        new ExtPsbt()
+          // First add dummy Genesis (this will be index 0)
+          .addContractInput(dummyGenesis, genesisCheckDeploy())
+          // Then add our target Genesis (this will be index 1 - should fail)
+          .addContractInput(genesis, genesisCheckDeploy())
+          .addOutput({
+            script: Buffer.from(script1, 'hex'),
+            value: 1000n,
+            data: new Uint8Array(),
+          })
+          .addOutput({
+            script: Buffer.from(script2, 'hex'),
+            value: 1000n,
+            data: new Uint8Array(),
+          })
+          .seal()
+          .finalizeAllInputs();
+      }).to.throw(/Genesis must be unlocked at input index 0/);
+    });
+  });
+
+  /**
+   * Test GENESIS_SCRIPT_HASH validation
+   * Verifies that the hardcoded GENESIS_SCRIPT_HASH in Backtrace matches
+   * the actual Genesis contract scriptHash
+   */
+  describe('GENESIS_SCRIPT_HASH validation', () => {
+    /**
+     * Verify that Backtrace.GENESIS_SCRIPT_HASH matches the actual Genesis contract scriptHash
+     * This test ensures the hardcoded hash is correct and remains in sync with the Genesis contract
+     */
+    it('should verify GENESIS_SCRIPT_HASH matches actual Genesis contract scriptHash', () => {
+      // Get the Genesis contract from the library (with embedded artifact)
+      const genesis = new GenesisLib();
+
+      // Calculate the actual scriptHash of the Genesis contract
+      // The scriptHash is sha256 of the locking script (including contract header)
+      const lockingScript = genesis.lockingScript.toHex();
+      const actualScriptHash = sha256(toByteString(lockingScript));
+
+      // Verify it matches the hardcoded GENESIS_SCRIPT_HASH in Backtrace
+      expect(actualScriptHash).to.equal(
+        Backtrace.GENESIS_SCRIPT_HASH,
+        `GENESIS_SCRIPT_HASH mismatch! Expected: ${actualScriptHash}, Got: ${Backtrace.GENESIS_SCRIPT_HASH}. ` +
+        `If the Genesis contract was updated, please update GENESIS_SCRIPT_HASH in backtrace.ts`
+      );
+    });
+
+    /**
+     * Verify that test Genesis contract also matches the GENESIS_SCRIPT_HASH
+     * This ensures both test and library Genesis contracts are in sync
+     */
+    it('should verify test Genesis contract scriptHash matches GENESIS_SCRIPT_HASH', () => {
+      const genesis = new Genesis();
+
+      const lockingScript = genesis.lockingScript.toHex();
+      const actualScriptHash = sha256(toByteString(lockingScript));
+
+      expect(actualScriptHash).to.equal(
+        Backtrace.GENESIS_SCRIPT_HASH,
+        `Test Genesis contract scriptHash mismatch! Expected: ${actualScriptHash}, Got: ${Backtrace.GENESIS_SCRIPT_HASH}`
+      );
     });
   });
 });

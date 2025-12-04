@@ -14,21 +14,46 @@ const GENESIS_POSTAGE = 330;
 
 /**
  * Deploys a smart contract, which can be traced back to genesis, to the blockchain.
- * This function uses a two-step deployment process:
- * 1. First deploys a Genesis contract
- * 2. Then deploys the target contract using the Genesis contract as input
  *
- * @param signer - The signer used to sign the transaction
+ * **IMPORTANT**: This function performs TWO blockchain transactions sequentially:
+ * 1. First deploys a Genesis contract (requires fees + 330 sat postage)
+ * 2. Then deploys the target contract using the Genesis contract as input (requires additional fees)
+ *
+ * ## Fee Implications
+ * Total cost = Genesis transaction fees + Deploy transaction fees + 330 sat Genesis postage
+ * The Genesis postage (330 sats) is consumed when the Genesis UTXO is spent in step 2.
+ *
+ * ## Atomicity Warning
+ * These two transactions are NOT atomic. If step 2 fails after step 1 broadcasts:
+ * - The Genesis UTXO will exist on-chain but remain unspent
+ * - The target contract will NOT be deployed
+ * - Manual recovery is possible by creating a new deploy transaction using the Genesis UTXO
+ *
+ * ## Error Recovery
+ * If an error occurs during step 2:
+ * - The Genesis transaction is already broadcast and cannot be reverted
+ * - The Genesis UTXO at `genesisPsbt.getUtxo(0)` can be used for retry
+ * - Provider state may be inconsistent (Genesis marked spent but deploy failed)
+ *
+ * @param signer - The signer used to sign both transactions
  * @param provider - The provider for chain and UTXO data
  * @param createContract - Factory function to create the contract instance with genesis outpoint
- * @param satoshis - Amount of satoshis to lock in the contract (default: 1)
+ * @param satoshis - Amount of satoshis to lock in the target contract (default: 1)
  * @returns Promise resolving to the deploy PSBT and deployed contract instance
  *
- * @remarks
- * This function:
- * 1. Creates and broadcasts a Genesis contract transaction
- * 2. Uses the Genesis contract as input to deploy the target contract
- * 3. Returns the finalized deploy PSBT and contract instance
+ * @throws {Error} If signing fails for either transaction
+ * @throws {Error} If broadcast fails for either transaction
+ * @throws {Error} If insufficient UTXOs are available
+ *
+ * @example
+ * ```typescript
+ * const { psbt, contract } = await deployGenesis(
+ *   signer,
+ *   provider,
+ *   (genesisOutpoint) => new MyContract(genesisOutpoint),
+ *   1000 // lock 1000 sats in contract
+ * );
+ * ```
  */
 export async function deployGenesis<Contract extends SmartContract<OpcatState>>(
   signer: Signer,
