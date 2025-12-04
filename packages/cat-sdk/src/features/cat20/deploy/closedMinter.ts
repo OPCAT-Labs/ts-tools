@@ -1,4 +1,4 @@
-import { ExtPsbt, Signer, ChainProvider, UtxoProvider, markSpent, Genesis, genesisCheckDeploy } from '@opcat-labs/scrypt-ts-opcat'
+import { ExtPsbt, Signer, ChainProvider, UtxoProvider, markSpent, Genesis } from '@opcat-labs/scrypt-ts-opcat'
 import { ClosedMinterCAT20Meta, NULL_ADMIN_SCRIPT_HASH } from '../../../contracts/index.js'
 import { CAT20TokenInfo, ImageMimeTypes, MetadataSerializer } from '../../../lib/metadata.js'
 import { checkState } from '../../../utils/check.js'
@@ -103,7 +103,7 @@ export async function deployClosedMinterToken(
   genesis.bindToUtxo(genesisTx.getUtxo(0))
 
   const deployTx = new ExtPsbt({ network: await provider.getNetwork() })
-    .addContractInput(genesis, genesisCheckDeploy())
+    .addContractInput(genesis, 'checkDeploy')
     .spendUTXO(genesisTx.getChangeUTXO()!)
     .addContractOutput(closeMinter, Postage.MINTER_POSTAGE)
 

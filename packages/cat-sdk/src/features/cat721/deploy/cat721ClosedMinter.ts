@@ -1,4 +1,4 @@
-import { ByteString, ChainProvider, ExtPsbt, markSpent, Signer, UTXO, UtxoProvider, Genesis, genesisCheckDeploy } from "@opcat-labs/scrypt-ts-opcat";
+import { ByteString, ChainProvider, ExtPsbt, markSpent, Signer, UTXO, UtxoProvider, Genesis } from "@opcat-labs/scrypt-ts-opcat";
 import { ClosedMinterCAT721Meta } from "../../../contracts/cat721/types.js";
 import { CAT721NftInfo } from "../../../lib/metadata.js";
 import { filterFeeUtxos, normalizeUtxoScripts } from "../../../utils/index.js";
@@ -80,7 +80,7 @@ export async function deployClosedMinterCollection(
     genesis.bindToUtxo(genesisPsbt.getUtxo(0))
 
     const deployPsbt = new ExtPsbt({ network: await provider.getNetwork() })
-        .addContractInput(genesis, genesisCheckDeploy())
+        .addContractInput(genesis, 'checkDeploy')
         .spendUTXO(genesisPsbt.getChangeUTXO()!)
         .addContractOutput(cat721ClosedMinter, Postage.MINTER_POSTAGE)
         .change(changeAddress, feeRate)

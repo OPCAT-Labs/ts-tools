@@ -1,11 +1,52 @@
-import { prop, ByteString, SmartContract, method, BacktraceInfo, assert, ContextUtils, len, sha256, SpentScriptHashes, tags, slice, byteStringToInt, FixedArray, Sha256 } from "@opcat-labs/scrypt-ts-opcat";
+import {
+  prop,
+  ByteString,
+  SmartContract,
+  method,
+  BacktraceInfo,
+  assert,
+  ContextUtils,
+  len,
+  SpentScriptHashes,
+  tags,
+  slice,
+  byteStringToInt,
+  FixedArray,
+  Sha256,
+  unlock,
+  UnlockContext,
+  PubKey,
+  getBackTraceInfo,
+  SpentDataHashes,
+} from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721ContractUnlockArgs } from "../types.js";
 import { CAT721GuardConstState, CAT721State } from "./types.js";
 import { CAT721GuardStateLib } from "./cat721GuardStateLib.js";
 import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN, NFT_GUARD_VARIANTS_COUNT } from "../constants.js";
 import { OwnerUtils } from "../utils/ownerUtils.js";
-import { SpentDataHashes } from "@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs";
 import { CatTags } from "../catTags.js";
+
+/**
+ * Parameters for unlocking a CAT721 NFT via the @unlock decorator pattern.
+ *
+ * @category CAT721
+ */
+export interface CAT721UnlockParams extends Record<string, unknown> {
+  /** The guard contract state */
+  guardState: CAT721GuardConstState;
+  /** The input index of the guard contract */
+  guardInputIndex: bigint;
+  /** The public key of the NFT owner */
+  publicKey: string;
+  /** The address of the NFT owner for signature lookup */
+  address: string;
+  /** Backtrace info: previous transaction hex */
+  prevTxHex: string;
+  /** Backtrace info: previous previous transaction hex */
+  prevPrevTxHex: string;
+  /** Backtrace info: previous transaction input index */
+  prevTxInput: number;
+}
 
 /**
  * The CAT721 contract
@@ -82,4 +123,57 @@ export class CAT721 extends SmartContract<CAT721State> {
     assert(guardState.nftScriptHashes[Number(cat721ScriptIndex)] == t_cat721ScriptHash, 'nft script hash is invalid')
   }
 
+  /**
+   * Paired unlock method for the `unlock` lock method.
+   *
+   * This static method is decorated with `@unlock(CAT721, 'unlock')` to create a pairing
+   * with the `unlock` lock method. When `addContractInput(cat721, 'unlock', params)` is called,
+   * this method will be automatically invoked.
+   *
+   * @param ctx - The unlock context containing the contract instance, PSBT, and extra parameters
+   *
+   * @example
+   * ```typescript
+   * sendPsbt.addContractInput(cat721Nft, 'unlock', {
+   *   guardState,
+   *   guardInputIndex: BigInt(guardInputIndex),
+   *   publicKey,
+   *   address,
+   *   prevTxHex: backtraces[index].prevTxHex,
+   *   prevPrevTxHex: backtraces[index].prevPrevTxHex,
+   *   prevTxInput: backtraces[index].prevTxInput,
+   * });
+   * ```
+   */
+  @unlock(CAT721, 'unlock')
+  static unlockUnlock(ctx: UnlockContext<CAT721, CAT721UnlockParams>): void {
+    const { contract, psbt, inputIndex, extraParams } = ctx;
+
+    if (!extraParams) {
+      throw new Error('CAT721.unlockUnlock requires extraParams');
+    }
+
+    const {
+      guardState,
+      guardInputIndex,
+      publicKey,
+      address,
+      prevTxHex,
+      prevPrevTxHex,
+      prevTxInput,
+    } = extraParams;
+
+    const sig = psbt.getSig(inputIndex, { address });
+
+    contract.unlock(
+      {
+        userPubKey: PubKey(publicKey),
+        userSig: sig,
+        contractInputIndex: -1n,
+      },
+      guardState,
+      guardInputIndex,
+      getBackTraceInfo(prevTxHex, prevPrevTxHex, prevTxInput)
+    );
+  }
 }

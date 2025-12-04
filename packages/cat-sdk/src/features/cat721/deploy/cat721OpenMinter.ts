@@ -1,4 +1,4 @@
-import { ByteString, ChainProvider, ExtPsbt, markSpent, Signer, UtxoProvider, Genesis, genesisCheckDeploy } from "@opcat-labs/scrypt-ts-opcat";
+import { ByteString, ChainProvider, ExtPsbt, markSpent, Signer, UtxoProvider, Genesis } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721OpenMinterState, OpenMinterCAT721Meta } from "../../../contracts/cat721/types.js";
 import { CAT721NftInfo, MetadataSerializer } from "../../../lib/metadata.js";
 import { checkState } from "../../../utils/check.js";
@@ -80,7 +80,7 @@ CAT721NftInfo<OpenMinterCAT721Meta> & {
     genesis.bindToUtxo(genesisPsbt.getUtxo(0))
 
     const deployPsbt = new ExtPsbt({network: await provider.getNetwork()})
-        .addContractInput(genesis, genesisCheckDeploy())
+        .addContractInput(genesis, 'checkDeploy')
         .spendUTXO(genesisPsbt.getChangeUTXO()!)
         .addContractOutput(cat721OpenMinter, Postage.MINTER_POSTAGE)
         .change(changeAddress, feeRate)

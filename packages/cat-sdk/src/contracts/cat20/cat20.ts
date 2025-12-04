@@ -13,16 +13,43 @@ import {
   Sha256,
   toByteString,
   slice,
-  SpentDataHashes
+  SpentDataHashes,
+  unlock,
+  UnlockContext,
+  PubKey,
+  getBackTraceInfo,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { OwnerUtils } from '../utils/ownerUtils.js'
 import { CAT20State, CAT20GuardConstState } from './types.js'
 import {
   CAT20ContractUnlockArgs,
+  SPEND_TYPE_USER_SPEND,
 } from '../types.js'
 import { GUARD_VARIANTS_COUNT } from '../constants.js'
 import { CAT20GuardStateLib } from './cat20GuardStateLib.js'
 import { CatTags } from '../catTags.js'
+
+/**
+ * Parameters for unlocking a CAT20 token via the @unlock decorator pattern.
+ *
+ * @category CAT20
+ */
+export interface CAT20UnlockParams extends Record<string, unknown> {
+  /** The guard contract state */
+  guardState: CAT20GuardConstState;
+  /** The input index of the guard contract */
+  guardInputIndex: bigint;
+  /** The public key of the token owner */
+  publicKey: string;
+  /** The address of the token owner for signature lookup */
+  address: string;
+  /** Backtrace info: previous transaction hex */
+  prevTxHex: string;
+  /** Backtrace info: previous previous transaction hex */
+  prevPrevTxHex: string;
+  /** Backtrace info: previous transaction input index */
+  prevTxInput: number;
+}
 
 /**
  * The CAT20 contract
@@ -139,5 +166,60 @@ export class CAT20 extends SmartContract<CAT20State> {
         t_cat20ScriptHash,
       'token script hash is invalid'
     )
+  }
+
+  /**
+   * Paired unlock method for the `unlock` lock method.
+   *
+   * This static method is decorated with `@unlock(CAT20, 'unlock')` to create a pairing
+   * with the `unlock` lock method. When `addContractInput(cat20, 'unlock', params)` is called,
+   * this method will be automatically invoked.
+   *
+   * @param ctx - The unlock context containing the contract instance, PSBT, and extra parameters
+   *
+   * @example
+   * ```typescript
+   * sendPsbt.addContractInput(cat20Token, 'unlock', {
+   *   guardState,
+   *   guardInputIndex: BigInt(guardInputIndex),
+   *   publicKey,
+   *   address,
+   *   prevTxHex: backtraces[index].prevTxHex,
+   *   prevPrevTxHex: backtraces[index].prevPrevTxHex,
+   *   prevTxInput: backtraces[index].prevTxInput,
+   * });
+   * ```
+   */
+  @unlock(CAT20, 'unlock')
+  static unlockUnlock(ctx: UnlockContext<CAT20, CAT20UnlockParams>): void {
+    const { contract, psbt, inputIndex, extraParams } = ctx;
+
+    if (!extraParams) {
+      throw new Error('CAT20.unlockUnlock requires extraParams');
+    }
+
+    const {
+      guardState,
+      guardInputIndex,
+      publicKey,
+      address,
+      prevTxHex,
+      prevPrevTxHex,
+      prevTxInput,
+    } = extraParams;
+
+    const sig = psbt.getSig(inputIndex, { address });
+
+    contract.unlock(
+      {
+        spendType: SPEND_TYPE_USER_SPEND,
+        userPubKey: PubKey(publicKey),
+        userSig: sig,
+        spendScriptInputIndex: -1n,
+      },
+      guardState,
+      guardInputIndex,
+      getBackTraceInfo(prevTxHex, prevPrevTxHex, prevTxInput)
+    );
   }
 }

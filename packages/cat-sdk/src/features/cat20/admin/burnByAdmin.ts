@@ -1,10 +1,6 @@
 import {
-  fill,
   PubKey,
-  sha256,
   Sig,
-  toByteString,
-  toHex,
   Signer,
   UtxoProvider,
   ChainProvider,
@@ -13,6 +9,7 @@ import {
   markSpent,
   getBackTraceInfo,
   Transaction,
+  toHex,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20 } from '../../../contracts/cat20/cat20.js'
 import { CAT20State } from '../../../contracts/cat20/types.js'
@@ -22,18 +19,16 @@ import {
 } from '../../../contracts/constants.js'
 import { Postage } from '../../../typeConstants.js'
 import {
-  applyFixedArray,
   filterFeeUtxos,
   toTokenOwnerAddress,
   normalizeUtxoScripts,
 } from '../../../utils/index.js'
 import {
   CAT20GuardPeripheral,
-  ContractPeripheral,
 } from '../../../utils/contractPeripheral.js'
-import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib.js'
-import { CAT20Admin } from '../../../contracts/cat20/cat20Admin.js'
+import { CAT20Admin, CAT20AdminAuthorizeParams } from '../../../contracts/cat20/cat20Admin.js'
 import { SPEND_TYPE_ADMIN_SPEND } from '../../../contracts/index.js'
+import { CAT20GuardUnlockParams } from '../../../contracts/cat20/cat20GuardUnlock.js'
 
 /**
  * Burns CAT20 tokens using admin privileges without requiring owner approval.
@@ -235,51 +230,12 @@ export async function burnByAdmin(
 
   // add guard input;
   guard.bindToUtxo(guardUtxo)
-  sendPsbt.addContractInput(guard, (contract, tx) => {
-    const ownerAddrOrScript = fill(toByteString(''), txOutputCountMax)
-    applyFixedArray(
-      ownerAddrOrScript,
-      tx.txOutputs.map((output, index) => {
-        return index < outputTokens.length
-          ? outputTokens[index].ownerAddr
-          : ContractPeripheral.scriptHash(toHex(output.script))
-      })
-    )
-    const outputTokenAmts = fill(BigInt(0), txOutputCountMax)
-    applyFixedArray(
-      outputTokenAmts,
-      outputTokens.map((t) => t.amount)
-    )
-    const tokenScriptIndexArray = fill(-1n, txOutputCountMax)
-    applyFixedArray(
-      tokenScriptIndexArray,
-      outputTokens.map(() => 0n)
-    )
-    const outputSatoshis = fill(0n, txOutputCountMax)
-    applyFixedArray(
-      outputSatoshis,
-      tx.txOutputs.map((output) => output.value)
-    )
-    const inputCAT20States = fill(
-      CAT20StateLib.create(0n, ''),
-      txInputCountMax
-    )
-    applyFixedArray(inputCAT20States, inputTokenStates)
-    const nextStateHashes = fill(toByteString(''), txOutputCountMax)
-    applyFixedArray(
-      nextStateHashes,
-      tx.txOutputs.map((output) => sha256(toHex(output.data)))
-    )
-    contract.unlock(
-      nextStateHashes as any,
-      ownerAddrOrScript as any,
-      outputTokenAmts as any,
-      tokenScriptIndexArray as any,
-      outputSatoshis as any,
-      inputCAT20States as any,
-      BigInt(tx.data.outputs.length)
-    )
-  })
+  sendPsbt.addContractInput(guard, 'unlock', {
+    inputTokenStates,
+    outputTokenStates: outputTokens,
+    txInputCountMax,
+    txOutputCountMax,
+  } as CAT20GuardUnlockParams)
 
   // add admin input
   cat20Admin.bindToUtxo(adminUtxo)
@@ -296,18 +252,13 @@ export async function burnByAdmin(
   const spentAdminPreTxHex = await provider.getRawTransaction(
     toHex(spentAdminTx.inputs[adminBacktraceInputIndex].prevTxId)
   )
-  const backTraceInfo = getBackTraceInfo(
-    spentAdminTxHex,
-    spentAdminPreTxHex,
-    adminBacktraceInputIndex
-  )
-  sendPsbt.addContractInput(cat20Admin, (contract, tx) => {
-    // Use the dynamically calculated adminInputIndex (from line 205)
-    const sig = tx.getSig(adminInputIndex, {
-      address: address.toString(),
-    })
-    contract.authorizeToSpendToken(PubKey(pubkey), sig, backTraceInfo)
-  })
+  sendPsbt.addContractInput(cat20Admin, 'authorizeToSpendToken', {
+    publicKey: pubkey,
+    address: address.toString(),
+    prevTxHex: spentAdminTxHex,
+    prevPrevTxHex: spentAdminPreTxHex,
+    prevTxInput: adminBacktraceInputIndex,
+  } as CAT20AdminAuthorizeParams)
 
   sendPsbt.addContractOutput(cat20Admin, adminUtxo.satoshis)
 

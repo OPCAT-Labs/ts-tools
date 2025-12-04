@@ -8,7 +8,8 @@ import { ConstantsLib, NFT_GUARD_COLLECTION_TYPE_MAX_2, NFT_GUARD_COLLECTION_TYP
 import { CAT721GuardStateLib } from "./cat721GuardStateLib.js";
 import { CAT721StateLib } from "./cat721StateLib.js";
 import { CAT721GuardConstState, CAT721State } from "./types.js";
-import { ByteString, ContextUtils, FixedArray, SmartContract, StdUtils, TxUtils, assert, byteStringToInt, fill, hash160, intToByteString, len, method, slice, tags, toByteString } from "@opcat-labs/scrypt-ts-opcat";
+import { ByteString, ContextUtils, FixedArray, SmartContract, StdUtils, TxUtils, assert, byteStringToInt, fill, hash160, intToByteString, len, method, slice, tags, toByteString, unlock, UnlockContext } from "@opcat-labs/scrypt-ts-opcat";
+import { CAT721GuardUnlockParams, buildCAT721GuardUnlockArgs } from './cat721GuardUnlock.js';
 import { CatTags } from "../catTags.js";
 /**
  * The CAT721 guard contract
@@ -167,5 +168,42 @@ export class CAT721Guard_12_12_2 extends SmartContract<CAT721GuardConstState> {
 
         // confine curTx outputs
         assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
+    }
+
+    /**
+     * Paired unlock method for the `unlock` lock method.
+     */
+    @unlock(CAT721Guard_12_12_2, 'unlock')
+    static unlockUnlock(ctx: UnlockContext<CAT721Guard_12_12_2, CAT721GuardUnlockParams>): void {
+        const { contract, psbt, extraParams } = ctx;
+
+        if (!extraParams) {
+            throw new Error('CAT721Guard.unlockUnlock requires extraParams');
+        }
+
+        const {
+            inputNftStates,
+            outputNftStates,
+            txInputCountMax,
+            txOutputCountMax,
+        } = extraParams;
+
+        const args = buildCAT721GuardUnlockArgs(
+            psbt,
+            inputNftStates,
+            outputNftStates,
+            txInputCountMax,
+            txOutputCountMax
+        );
+
+        contract.unlock(
+            args.nextStateHashes as any,
+            args.ownerAddrOrScriptHashes as any,
+            args.outputLocalIds as any,
+            args.nftScriptIndexArray as any,
+            args.outputSatoshis as any,
+            args.inputCAT721States as any,
+            args.outputCount
+        );
     }
 }
