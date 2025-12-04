@@ -72,6 +72,10 @@ export class Genesis extends SmartContract {
     // Ensure Genesis is unlocked at input index 0
     assert(this.ctx.inputIndex == 0n, 'Genesis must be unlocked at input index 0');
 
+    // Ensure input count does not exceed the maximum we can check
+    // This prevents attackers from placing duplicate scriptHashes at unchecked input indices
+    assert(this.ctx.inputCount <= BigInt(MAX_GENESIS_CHECK_INPUT), 'Too many inputs to validate');
+
     // Serialize all outputs
     let outputBytes = toByteString('');
     for (let index = 0; index < MAX_GENESIS_CHECK_OUTPUT; index++) {

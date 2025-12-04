@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { Genesis, MAX_GENESIS_CHECK_OUTPUT } from '../contracts/genesis.js';
-import { readArtifact } from '../utils/index.js';
+import { readArtifact, getDummyUtxo } from '../utils/index.js';
 import {
   ExtPsbt,
   bvmVerify,
@@ -23,7 +23,7 @@ dotenv.config();
  * Creates a contract call function for Genesis.checkDeploy that automatically
  * builds the TxOut array from the transaction outputs.
  */
-function genesisCheckDeploy() {
+function genesisCheckDeploy(debug = false) {
   return (contract: Genesis, psbt: ExtPsbt) => {
     // Create output array with empty placeholders
     const emptyOutput: TxOut = {
@@ -35,6 +35,9 @@ function genesisCheckDeploy() {
 
     // Fill with actual outputs from the transaction
     const txOutputs = psbt.txOutputs;
+    if (debug) {
+      console.log('genesisCheckDeploy: txOutputs.length =', txOutputs.length);
+    }
     for (let i = 0; i < txOutputs.length && i < MAX_GENESIS_CHECK_OUTPUT; i++) {
       const output = txOutputs[i];
       outputs[i] = {
@@ -637,6 +640,176 @@ describe('Test Genesis', () => {
           .seal()
           .finalizeAllInputs();
       }).to.throw(/Genesis must be unlocked at input index 0/);
+    });
+  });
+
+  /**
+   * Test inputCount boundary validation
+   * Ensures Genesis rejects transactions with more than MAX_GENESIS_CHECK_INPUT inputs
+   */
+  describe('inputCount boundary validation', () => {
+    /**
+     * Test failure: 7 inputs exceeds MAX_GENESIS_CHECK_INPUT (6)
+     * Genesis should reject transactions with too many inputs to prevent
+     * attackers from placing duplicate scriptHashes at unchecked input indices
+     */
+    it('should fail when transaction has 7 inputs (exceeds MAX_GENESIS_CHECK_INPUT)', async () => {
+      // Create 7 Genesis contracts to use as inputs
+      const genesisContracts: Genesis[] = [];
+      for (let i = 0; i < 7; i++) {
+        const g = new Genesis();
+        // Each txId must be exactly 64 hex chars
+        const txId = `${i}1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f8${i}`;
+        g.bindToUtxo({
+          txId,
+          outputIndex: 0,
+          satoshis: 1000,
+          data: '',
+        });
+        genesisContracts.push(g);
+      }
+
+      const script1 = toByteString('51');
+
+      // Try to create a transaction with 7 Genesis inputs
+      // This should fail because inputCount (7) > MAX_GENESIS_CHECK_INPUT (6)
+      expect(() => {
+        const psbt = new ExtPsbt();
+        // Add all 7 Genesis contracts as inputs
+        for (const g of genesisContracts) {
+          psbt.addContractInput(g, genesisCheckDeploy());
+        }
+        psbt
+          .addOutput({
+            script: Buffer.from(script1, 'hex'),
+            value: 1000n,
+            data: new Uint8Array(),
+          })
+          .seal()
+          .finalizeAllInputs();
+      }).to.throw(/Too many inputs to validate/);
+    });
+
+    /**
+     * Test success: 6 inputs equals MAX_GENESIS_CHECK_INPUT
+     * Genesis should accept transactions with exactly 6 inputs
+     * Note: Only 1 Genesis at index 0, plus 5 P2PKH inputs
+     */
+    it('should succeed when transaction has 6 inputs (equals MAX_GENESIS_CHECK_INPUT)', async () => {
+      // Create 1 Genesis contract at index 0
+      const genesis = new Genesis();
+      genesis.bindToUtxo({
+        txId: '02a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f80',
+        outputIndex: 0,
+        satoshis: 1000,
+        data: '',
+      });
+
+      const script1 = toByteString('51');
+
+      // Helper to create unique UTXOs with different txIds
+      const createUniqueUtxo = (index: number) => {
+        const utxo = getDummyUtxo();
+        // Modify txId to make it unique by changing last character
+        utxo.txId = utxo.txId.slice(0, -1) + index.toString(16);
+        return utxo;
+      };
+
+      // Transaction with 6 inputs (1 Genesis + 5 P2PKH) should succeed
+      // Note: We only verify seal() succeeds (which includes contract verification)
+      // finalizeAllInputs() would fail for P2PKH inputs without signatures
+      const psbt = new ExtPsbt()
+        .addContractInput(genesis, genesisCheckDeploy())
+        // Add 5 more P2PKH inputs with unique txIds to make total 6
+        .spendUTXO(createUniqueUtxo(1))
+        .spendUTXO(createUniqueUtxo(2))
+        .spendUTXO(createUniqueUtxo(3))
+        .spendUTXO(createUniqueUtxo(4))
+        .spendUTXO(createUniqueUtxo(5))
+        .addOutput({
+          script: Buffer.from(script1, 'hex'),
+          value: 1000n,
+          data: new Uint8Array(),
+        })
+        .seal();
+
+      // Verify the Genesis contract input was finalized successfully
+      // (seal() runs contract verification via BVM)
+      expect(psbt.txInputs.length).to.equal(6);
+    });
+  });
+
+  /**
+   * Test outputCount boundary validation
+   * Ensures Genesis handles transactions with more than MAX_GENESIS_CHECK_OUTPUT outputs
+   */
+  describe('outputCount boundary validation', () => {
+    /**
+     * Test failure: 7 outputs exceeds MAX_GENESIS_CHECK_OUTPUT (6)
+     *
+     * The Genesis contract uses checkOutputs() which verifies hash256(outputBytes) == hashOutputs.
+     * Since outputBytes only includes the first 6 outputs but hashOutputs contains all 7,
+     * the hash mismatch causes the transaction to fail.
+     *
+     * This is proper behavior - the contract correctly rejects transactions with more outputs
+     * than it can validate.
+     */
+    it('should fail when transaction has 7 outputs (exceeds MAX_GENESIS_CHECK_OUTPUT)', async () => {
+      const genesis = new Genesis();
+      genesis.bindToUtxo({
+        txId: 'd1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 10000,
+        data: '',
+      });
+
+      // Transaction with 7 outputs should fail because:
+      // 1. genesisCheckDeploy() only passes first 6 outputs to the contract
+      // 2. Contract serializes only 6 outputs
+      // 3. hashOutputs in context contains hash of all 7 outputs
+      // 4. checkOutputs() fails due to hash mismatch
+      expect(() => {
+        new ExtPsbt()
+          .addContractInput(genesis, genesisCheckDeploy())
+          // Add 7 unique outputs
+          .addOutput({ script: Buffer.from('51', 'hex'), value: 1000n, data: new Uint8Array() })
+          .addOutput({ script: Buffer.from('52', 'hex'), value: 1000n, data: new Uint8Array() })
+          .addOutput({ script: Buffer.from('53', 'hex'), value: 1000n, data: new Uint8Array() })
+          .addOutput({ script: Buffer.from('54', 'hex'), value: 1000n, data: new Uint8Array() })
+          .addOutput({ script: Buffer.from('55', 'hex'), value: 1000n, data: new Uint8Array() })
+          .addOutput({ script: Buffer.from('56', 'hex'), value: 1000n, data: new Uint8Array() })
+          .addOutput({ script: Buffer.from('57', 'hex'), value: 1000n, data: new Uint8Array() }) // 7th output
+          .seal()
+          .finalizeAllInputs();
+      }).to.throw(/Outputs mismatch with the transaction context/);
+    });
+
+    /**
+     * Test success: 6 outputs equals MAX_GENESIS_CHECK_OUTPUT
+     * Genesis should accept transactions with exactly 6 outputs
+     */
+    it('should succeed when transaction has 6 outputs (equals MAX_GENESIS_CHECK_OUTPUT)', async () => {
+      const genesis = new Genesis();
+      genesis.bindToUtxo({
+        txId: 'e1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 10000,
+        data: '',
+      });
+
+      // Transaction with exactly 6 outputs should succeed
+      const psbt = new ExtPsbt()
+        .addContractInput(genesis, genesisCheckDeploy())
+        // Add 6 unique outputs
+        .addOutput({ script: Buffer.from('51', 'hex'), value: 1000n, data: new Uint8Array() })
+        .addOutput({ script: Buffer.from('52', 'hex'), value: 1000n, data: new Uint8Array() })
+        .addOutput({ script: Buffer.from('53', 'hex'), value: 1000n, data: new Uint8Array() })
+        .addOutput({ script: Buffer.from('54', 'hex'), value: 1000n, data: new Uint8Array() })
+        .addOutput({ script: Buffer.from('55', 'hex'), value: 1000n, data: new Uint8Array() })
+        .addOutput({ script: Buffer.from('56', 'hex'), value: 1000n, data: new Uint8Array() })
+        .seal();
+
+      expect(psbt.txOutputs.length).to.equal(6);
     });
   });
 
