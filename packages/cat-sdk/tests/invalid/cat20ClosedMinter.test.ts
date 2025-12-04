@@ -4,7 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { isLocalTest } from '../utils';
 import { testProvider } from '../utils/testProvider';
 import { loadAllArtifacts } from '../features/cat20/utils';
-import { assert, DefaultSigner, ExtPsbt, fill, getBackTraceInfo, IExtPsbt, PubKey, sha256, Signer, toByteString, toHex, uint8ArrayToHex, UTXO, Genesis, genesisCheckDeploy } from '@opcat-labs/scrypt-ts-opcat';
+import { assert, DefaultSigner, ExtPsbt, fill, getBackTraceInfo, IExtPsbt, PubKey, sha256, Signer, toByteString, toHex, uint8ArrayToHex, UTXO, Genesis } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from '../utils/testSigner';
 import { getDummyUtxo, outpoint2ByteString, toTokenOwnerAddress } from "../../src/utils";
 import { ContractPeripheral, CAT20GuardPeripheral } from "../../src/utils/contractPeripheral";
@@ -131,7 +131,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat20ClosedMinter',
         genesis.bindToUtxo(genesisUtxo);
 
         const deployPsbt = new ExtPsbt({ network: await testProvider.getNetwork(), maximumFeeRate: 1e8 })
-            .addContractInput(genesis, genesisCheckDeploy())
+            .addContractInput(genesis, 'checkDeploy')
             .spendUTXO(genesisPsbt.getChangeUTXO()!)
             .addContractOutput(cat20ClosedMinter, Postage.MINTER_POSTAGE)
             .seal()

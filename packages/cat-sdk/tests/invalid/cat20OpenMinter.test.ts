@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { isLocalTest } from '../utils';
 import { testProvider } from '../utils/testProvider';
 import { loadAllArtifacts } from '../features/cat20/utils';
-import { assert, DefaultSigner, ExtPsbt, fill, getBackTraceInfo, IExtPsbt, PubKey, sha256, Signer, toByteString, toHex, uint8ArrayToHex, UTXO, Genesis, genesisCheckDeploy } from '@opcat-labs/scrypt-ts-opcat';
+import { assert, DefaultSigner, ExtPsbt, fill, getBackTraceInfo, IExtPsbt, PubKey, sha256, Signer, toByteString, toHex, uint8ArrayToHex, UTXO, Genesis } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from '../utils/testSigner';
 import { createCat721, TestCat721 } from '../utils/testCAT721Generator';
 import { CAT20, CAT20_AMOUNT, CAT20GuardStateLib, CAT20OpenMinter, CAT20OpenMinterState, CAT20State, CAT20StateLib, CAT721, CAT721GuardStateLib, CAT721State, CAT721StateLib, ConstantsLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, NULL_ADMIN_SCRIPT_HASH } from '../../src/contracts';
@@ -392,7 +392,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat20OpenMinter', (
         genesis.bindToUtxo(genesisUtxo);
 
         const deployPsbt = new ExtPsbt({ network: await testProvider.getNetwork(), maximumFeeRate: 1e8 })
-            .addContractInput(genesis, genesisCheckDeploy())
+            .addContractInput(genesis, 'checkDeploy')
             .spendUTXO(genesisPsbt.getChangeUTXO()!)
             .addContractOutput(cat20OpenMinter, Postage.MINTER_POSTAGE)
             .seal()
