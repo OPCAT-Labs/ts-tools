@@ -15,8 +15,8 @@ import {
   fill,
   ContractCall,
   UnlockContext,
-} from '../../src/index.js';
-import { uint8ArrayToHex } from '../../src/utils/common.js';
+  uint8ArrayToHex
+} from '@opcat-labs/scrypt-ts-opcat';
 
 /**
  * Maximum number of inputs to check during genesis deployment.
