@@ -10,16 +10,39 @@ import {
   len,
   slice,
   TX_OUTPUT_SCRIPT_HASH_LEN,
+  unlock,
+  sha256,
+  fill,
+  ContractCall,
+  UnlockContext,
 } from '../../src/index.js';
-
+import { uint8ArrayToHex } from '../../src/utils/common.js';
 
 /**
- * Maximum number of inputs to check during genesis deployment
+ * Maximum number of inputs to check during genesis deployment.
+ *
+ * This limit balances security (checking enough inputs to prevent attacks) with
+ * script size constraints (each input check adds ~50 bytes to the script).
+ *
+ * ## Why 6?
+ * - Most legitimate deploy transactions have 1-3 inputs (Genesis + fee UTXOs)
+ * - 6 inputs provides sufficient coverage for edge cases
+ * - Adding more inputs would significantly increase script size and fees
+ * - Bitcoin Script loops must be unrolled, so larger limits increase bytecode size
+ *
+ * ## Security Note
+ * If a transaction has more than 6 inputs, only the first 6 are checked.
+ * This is acceptable because:
+ * 1. Attackers cannot benefit from additional inputs beyond the checked ones
+ * 2. The Genesis contract at input[0] is always validated
  */
 export const MAX_GENESIS_CHECK_INPUT = 6;
 
 /**
- * Maximum number of outputs to check during genesis deployment
+ * Maximum number of outputs to check during genesis deployment.
+ *
+ * This matches MAX_GENESIS_CHECK_INPUT for consistency and covers
+ * typical deployment scenarios (contract output + change outputs).
  */
 export const MAX_GENESIS_CHECK_OUTPUT = 6;
 
@@ -69,7 +92,6 @@ export class Genesis extends SmartContract {
    */
   @method()
   public checkDeploy(outputs: FixedArray<TxOut, typeof MAX_GENESIS_CHECK_OUTPUT>) {
-
     // Ensure Genesis is unlocked at input index 0
     assert(this.ctx.inputIndex == 0n, 'Genesis must be unlocked at input index 0');
 
@@ -125,4 +147,108 @@ export class Genesis extends SmartContract {
     // Verify outputs match the transaction context
     assert(this.checkOutputs(outputBytes), 'Outputs mismatch with the transaction context');
   }
+
+  /**
+   * Paired unlock method for `checkDeploy`.
+   *
+   * This static method is decorated with `@unlock('checkDeploy')` to create a pairing
+   * with the `checkDeploy` lock method. When `addContractInput(genesis, 'checkDeploy')`
+   * is called, this method will be automatically invoked.
+   *
+   * The method builds the TxOut array from the PSBT's transaction outputs and
+   * calls the contract's `checkDeploy` method.
+   *
+   * @param ctx - The unlock context containing the contract instance and PSBT
+   *
+   * @example
+   * ```typescript
+   * // Using the new pattern with @unlock decorator
+   * const deployPsbt = new ExtPsbt({ network })
+   *   .addContractInput(genesis, 'checkDeploy')  // Automatically uses unlockCheckDeploy
+   *   .addContractOutput(minter, Postage.MINTER_POSTAGE)
+   *   .seal();
+   *
+   * // Or with auto-detection (since Genesis has only one unlock method)
+   * const deployPsbt = new ExtPsbt({ network })
+   *   .addContractInput(genesis)  // Automatically detects and uses unlockCheckDeploy
+   *   .addContractOutput(minter, Postage.MINTER_POSTAGE)
+   *   .seal();
+   * ```
+   */
+  @unlock(Genesis, 'checkDeploy')
+  static unlockCheckDeploy(ctx: UnlockContext<Genesis>): void {
+    const { contract, psbt } = ctx;
+
+    // Create output array with empty placeholders
+    const emptyOutput: TxOut = {
+      scriptHash: toByteString(''),
+      satoshis: 0n,
+      dataHash: sha256(toByteString('')),
+    };
+    const outputs: TxOut[] = fill(emptyOutput, MAX_GENESIS_CHECK_OUTPUT);
+
+    // Fill with actual outputs from the transaction
+    const txOutputs = psbt.txOutputs;
+    for (let i = 0; i < txOutputs.length && i < MAX_GENESIS_CHECK_OUTPUT; i++) {
+      const output = txOutputs[i];
+      outputs[i] = {
+        scriptHash: sha256(toByteString(uint8ArrayToHex(output.script))),
+        satoshis: BigInt(output.value),
+        dataHash: sha256(toByteString(uint8ArrayToHex(output.data))),
+      };
+    }
+
+    contract.checkDeploy(outputs as FixedArray<TxOut, typeof MAX_GENESIS_CHECK_OUTPUT>);
+  }
+}
+
+/**
+ * Creates a contract call function for Genesis.checkDeploy that automatically
+ * builds the TxOut array from the transaction outputs.
+ *
+ * This function handles the conversion of transaction outputs to the TxOut format
+ * required by the Genesis contract, including:
+ * - Creating empty placeholders for unused output slots
+ * - Computing scriptHash and dataHash for each output
+ * - Limiting to MAX_GENESIS_CHECK_OUTPUT (6) outputs
+ *
+ * @returns A ContractCall function that can be used with ExtPsbt.addContractInput
+ *
+ * @example
+ * ```typescript
+ * const genesis = new Genesis();
+ * genesis.bindToUtxo(genesisUtxo);
+ *
+ * const deployPsbt = new ExtPsbt({ network })
+ *   .addContractInput(genesis, genesisCheckDeploy())
+ *   .addContractOutput(minter, Postage.MINTER_POSTAGE)
+ *   .change(changeAddress, feeRate)
+ *   .seal();
+ * ```
+ *
+ * @category Genesis
+ */
+export function genesisCheckDeploy(): ContractCall<Genesis> {
+  return (contract, psbt) => {
+    // Create output array with empty placeholders
+    const emptyOutput: TxOut = {
+      scriptHash: toByteString(''),
+      satoshis: 0n,
+      dataHash: sha256(toByteString('')),
+    };
+    const outputs: TxOut[] = fill(emptyOutput, MAX_GENESIS_CHECK_OUTPUT);
+
+    // Fill with actual outputs from the transaction
+    const txOutputs = psbt.txOutputs;
+    for (let i = 0; i < txOutputs.length && i < MAX_GENESIS_CHECK_OUTPUT; i++) {
+      const output = txOutputs[i];
+      outputs[i] = {
+        scriptHash: sha256(toByteString(uint8ArrayToHex(output.script))),
+        satoshis: BigInt(output.value),
+        dataHash: sha256(toByteString(uint8ArrayToHex(output.data))),
+      };
+    }
+
+    contract.checkDeploy(outputs as FixedArray<TxOut, typeof MAX_GENESIS_CHECK_OUTPUT>);
+  };
 }
