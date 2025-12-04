@@ -9,6 +9,7 @@ import {
   tags,
   len,
   slice,
+  TX_OUTPUT_SCRIPT_HASH_LEN,
 } from '@opcat-labs/scrypt-ts-opcat';
 
 
@@ -98,9 +99,9 @@ export class Genesis extends SmartContract {
     let start = 0n;
     for (let index = 0; index < MAX_GENESIS_CHECK_INPUT; index++) {
       if (index < this.ctx.inputCount) {
-        const inputScriptHash = slice(this.ctx.spentScriptHashes, start, start + 32n);
+        const inputScriptHash = slice(this.ctx.spentScriptHashes, start, start + TX_OUTPUT_SCRIPT_HASH_LEN);
         assert(output0ScriptHash != inputScriptHash);
-        start += 32n;
+        start += TX_OUTPUT_SCRIPT_HASH_LEN;
       }
     }
 
