@@ -1,9 +1,9 @@
 import { SmartContract } from '../smartContract.js';
-import { method, tags } from '../decorators.js';
+import { method, tags, unlock } from '../decorators.js';
 import { assert, toByteString, len, sha256, fill, slice } from '../fns/index.js';
 import { FixedArray, TxOut } from '../types/index.js';
 import { TxUtils } from './txUtils.js';
-import { ContractCall } from '../../psbt/types.js';
+import { ContractCall, UnlockContext } from '../../psbt/types.js';
 import { uint8ArrayToHex } from '../../utils/common.js';
 import { TX_OUTPUT_SCRIPT_HASH_LEN } from '../consts.js';
 
@@ -135,6 +135,59 @@ export class Genesis extends SmartContract {
 
     // Verify outputs match the transaction context
     assert(this.checkOutputs(outputBytes), 'Outputs mismatch with the transaction context');
+  }
+
+  /**
+   * Paired unlock method for `checkDeploy`.
+   *
+   * This static method is decorated with `@unlock('checkDeploy')` to create a pairing
+   * with the `checkDeploy` lock method. When `addContractInput(genesis, 'checkDeploy')`
+   * is called, this method will be automatically invoked.
+   *
+   * The method builds the TxOut array from the PSBT's transaction outputs and
+   * calls the contract's `checkDeploy` method.
+   *
+   * @param ctx - The unlock context containing the contract instance and PSBT
+   *
+   * @example
+   * ```typescript
+   * // Using the new pattern with @unlock decorator
+   * const deployPsbt = new ExtPsbt({ network })
+   *   .addContractInput(genesis, 'checkDeploy')  // Automatically uses unlockCheckDeploy
+   *   .addContractOutput(minter, Postage.MINTER_POSTAGE)
+   *   .seal();
+   *
+   * // Or with auto-detection (since Genesis has only one unlock method)
+   * const deployPsbt = new ExtPsbt({ network })
+   *   .addContractInput(genesis)  // Automatically detects and uses unlockCheckDeploy
+   *   .addContractOutput(minter, Postage.MINTER_POSTAGE)
+   *   .seal();
+   * ```
+   */
+  @unlock(Genesis, 'checkDeploy')
+  static unlockCheckDeploy(ctx: UnlockContext<Genesis>): void {
+    const { contract, psbt } = ctx;
+
+    // Create output array with empty placeholders
+    const emptyOutput: TxOut = {
+      scriptHash: toByteString(''),
+      satoshis: 0n,
+      dataHash: sha256(toByteString('')),
+    };
+    const outputs: TxOut[] = fill(emptyOutput, MAX_GENESIS_CHECK_OUTPUT);
+
+    // Fill with actual outputs from the transaction
+    const txOutputs = psbt.txOutputs;
+    for (let i = 0; i < txOutputs.length && i < MAX_GENESIS_CHECK_OUTPUT; i++) {
+      const output = txOutputs[i];
+      outputs[i] = {
+        scriptHash: sha256(toByteString(uint8ArrayToHex(output.script))),
+        satoshis: BigInt(output.value),
+        dataHash: sha256(toByteString(uint8ArrayToHex(output.data))),
+      };
+    }
+
+    contract.checkDeploy(outputs as FixedArray<TxOut, typeof MAX_GENESIS_CHECK_OUTPUT>);
   }
 }
 

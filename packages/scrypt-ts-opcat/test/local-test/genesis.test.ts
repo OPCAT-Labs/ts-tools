@@ -10,10 +10,10 @@ import {
   sha256,
   TxOut,
   fill,
-} from '@opcat-labs/scrypt-ts-opcat';
-import { FixedArray } from '../../src/index.js';
+  FixedArray,
+} from '../../src/index.js';
 import { uint8ArrayToHex } from '../../src/utils/common.js';
-import { Genesis as GenesisLib } from '../../src/smart-contract/builtin-libs/genesis.js';
+import { Genesis as GenesisLib, genesisCheckDeploy as genesisCheckDeployLib } from '../../src/smart-contract/builtin-libs/genesis.js';
 import { Backtrace } from '../../src/smart-contract/builtin-libs/backtrace.js';
 
 use(chaiAsPromised);
@@ -854,6 +854,154 @@ describe('Test Genesis', () => {
         Backtrace.GENESIS_SCRIPT_HASH,
         `Test Genesis contract scriptHash mismatch! Expected: ${actualScriptHash}, Got: ${Backtrace.GENESIS_SCRIPT_HASH}`
       );
+    });
+  });
+
+  /**
+   * Test @unlock decorator pattern
+   * Tests the new pattern where unlock methods are paired with lock methods using @unlock decorator
+   */
+  describe('@unlock decorator pattern', () => {
+    /**
+     * Test using method name string to invoke paired unlock method
+     * This is the new pattern: addContractInput(contract, 'lockMethodName')
+     */
+    it('should unlock using method name string with @unlock decorator', async () => {
+      const genesis = new GenesisLib();
+      genesis.bindToUtxo({
+        txId: 'f1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 10000,
+        data: '',
+      });
+
+      const script1 = toByteString('51');
+      const script2 = toByteString('52');
+      const script3 = toByteString('53');
+
+      // Use the new pattern: pass method name string instead of ContractCall function
+      const psbt = new ExtPsbt()
+        .addContractInput(genesis, 'checkDeploy')  // <-- New pattern with autocompletion!
+        .addOutput({
+          script: Buffer.from(script1, 'hex'),
+          value: 1000n,
+          data: new Uint8Array(),
+        })
+        .addOutput({
+          script: Buffer.from(script2, 'hex'),
+          value: 1000n,
+          data: new Uint8Array(),
+        })
+        .addOutput({
+          script: Buffer.from(script3, 'hex'),
+          value: 1000n,
+          data: new Uint8Array(),
+        })
+        .seal()
+        .finalizeAllInputs();
+
+      expect(psbt.isFinalized).to.be.true;
+      expect(bvmVerify(psbt, 0)).to.eq(true);
+    });
+
+    /**
+     * Test auto-detection mode when contract has single unlock method
+     * This is the simplest pattern: addContractInput(contract)
+     */
+    it('should auto-detect single unlock method', async () => {
+      const genesis = new GenesisLib();
+      genesis.bindToUtxo({
+        txId: 'f2a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 10000,
+        data: '',
+      });
+
+      const script1 = toByteString('51');
+      const script2 = toByteString('52');
+
+      // Use auto-detection: no second argument
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const psbt = new ExtPsbt()
+        .addContractInput(genesis as any)  // <-- Auto-detect!
+        .addOutput({
+          script: Buffer.from(script1, 'hex'),
+          value: 1000n,
+          data: new Uint8Array(),
+        })
+        .addOutput({
+          script: Buffer.from(script2, 'hex'),
+          value: 1000n,
+          data: new Uint8Array(),
+        })
+        .seal()
+        .finalizeAllInputs();
+
+      expect(psbt.isFinalized).to.be.true;
+      expect(bvmVerify(psbt, 0)).to.eq(true);
+    });
+
+    /**
+     * Test backward compatibility: ContractCall function still works
+     */
+    it('should still work with ContractCall function (backward compatible)', async () => {
+      const genesis = new GenesisLib();
+      genesis.bindToUtxo({
+        txId: 'f3a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 10000,
+        data: '',
+      });
+
+      const script1 = toByteString('51');
+      const script2 = toByteString('52');
+
+      // Use the old pattern: pass ContractCall function directly
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const psbt = new ExtPsbt()
+        .addContractInput(genesis as any, genesisCheckDeployLib())  // <-- Old pattern still works!
+        .addOutput({
+          script: Buffer.from(script1, 'hex'),
+          value: 1000n,
+          data: new Uint8Array(),
+        })
+        .addOutput({
+          script: Buffer.from(script2, 'hex'),
+          value: 1000n,
+          data: new Uint8Array(),
+        })
+        .seal()
+        .finalizeAllInputs();
+
+      expect(psbt.isFinalized).to.be.true;
+      expect(bvmVerify(psbt, 0)).to.eq(true);
+    });
+
+    /**
+     * Test error handling: invalid method name
+     */
+    it('should throw error for non-existent lock method name', async () => {
+      const genesis = new GenesisLib();
+      genesis.bindToUtxo({
+        txId: 'f4a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 10000,
+        data: '',
+      });
+
+      const script1 = toByteString('51');
+
+      // Try to use a non-existent method name
+      expect(() => {
+        new ExtPsbt()
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .addContractInput(genesis, 'nonExistentMethod' as any)
+          .addOutput({
+            script: Buffer.from(script1, 'hex'),
+            value: 1000n,
+            data: new Uint8Array(),
+          });
+      }).to.throw(/No unlock method found for lock method 'nonExistentMethod'/);
     });
   });
 });

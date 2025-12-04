@@ -10,7 +10,7 @@ import {
   len,
   slice,
   TX_OUTPUT_SCRIPT_HASH_LEN,
-} from '@opcat-labs/scrypt-ts-opcat';
+} from '../../src/index.js';
 
 
 /**

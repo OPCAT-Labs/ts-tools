@@ -17,7 +17,8 @@ import {
   uint8ArrayToHex,
 } from '../utils/common.js';
 import { InputContext } from '../smart-contract/types/context.js';
-import { IExtPsbt, ContractCall } from './types.js';
+import { IExtPsbt, ContractCall, UnlockContext, LockMethodNames } from './types.js';
+import { UnlocksMetaKey } from '../smart-contract/decorators.js';
 import * as tools from 'uint8array-tools';
 import { toByteString } from '../smart-contract/fns/byteString.js';
 import { hash256, sha256 } from '../smart-contract/fns/index.js';
@@ -384,15 +385,24 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   /**
    * Adds a contract input to the PSBT (Partially Signed Bitcoin Transaction).
-   * 
+   *
+   * Supports three modes:
+   * 1. ContractCall function: `addContractInput(contract, (c, psbt) => c.method())`
+   * 2. Lock method name: `addContractInput(contract, 'checkDeploy', extraParams?)`
+   * 3. Auto-detection: `addContractInput(contract)` (only when contract has one unlock method)
+   *
    * @param contract - The smart contract instance to add as input.
-   * @param contractCall - The contract call containing the method and arguments.
+   * @param contractCallOrMethodName - Either a ContractCall function or the lock method name.
+   * @param extraParams - Optional extra parameters for the unlock method (only used with method name).
    * @returns The PSBT instance for method chaining.
    * @throws Error if the contract does not have a bound UTXO.
+   * @throws Error if using method name mode and no paired unlock method is found.
+   * @throws Error if using auto-detection mode and contract has zero or multiple unlock methods.
    */
-  addContractInput<Contract extends SmartContract<OpcatState>>(
+  addContractInput<Contract extends SmartContract<OpcatState>, ExtraParams extends Record<string, unknown> = Record<string, never>>(
     contract: Contract,
-    contractCall: ContractCall<Contract>,
+    contractCallOrMethodName?: ContractCall<Contract> | LockMethodNames<Contract>,
+    extraParams?: ExtraParams,
   ): this {
     const fromUtxo = contract.utxo;
     if (!fromUtxo) {
@@ -417,11 +427,96 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
       this._B2GUtxos.set(inputIndex, contract.utxo as B2GUTXO);
     }
 
+    // Determine the contract call based on the input type
+    let contractCall: ContractCall<Contract> | undefined;
+
+    if (typeof contractCallOrMethodName === 'function') {
+      // Mode 1: ContractCall function provided directly
+      contractCall = contractCallOrMethodName;
+    } else if (typeof contractCallOrMethodName === 'string') {
+      // Mode 2: Lock method name provided, find paired unlock method
+      contractCall = this._createContractCallFromMethodName(contract, contractCallOrMethodName, extraParams);
+    } else if (contractCallOrMethodName === undefined) {
+      // Mode 3: Auto-detection - find the single unlock method
+      contractCall = this._createContractCallFromAutoDetection(contract, extraParams);
+    }
+
     if (contractCall) {
       this.updateContractInput(inputIndex, contractCall);
     }
 
     return this;
+  }
+
+  /**
+   * Creates a ContractCall from a lock method name by finding the paired unlock method.
+   * @private
+   */
+  private _createContractCallFromMethodName<Contract extends SmartContract<OpcatState>, ExtraParams extends Record<string, unknown>>(
+    contract: Contract,
+    lockMethodName: string,
+    extraParams?: ExtraParams,
+  ): ContractCall<Contract> {
+    const ContractClass = contract.constructor as typeof SmartContract;
+    const unlocks: Map<string, string> | undefined = Reflect.getOwnMetadata(UnlocksMetaKey, ContractClass);
+
+    if (!unlocks || !unlocks.has(lockMethodName)) {
+      throw new Error(
+        `No unlock method found for lock method '${lockMethodName}' on contract '${ContractClass.name}'. ` +
+        `Make sure to use @unlock('${lockMethodName}') decorator on the unlock method.`
+      );
+    }
+
+    const unlockMethodName = unlocks.get(lockMethodName)!;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const unlockMethod = (ContractClass as any)[unlockMethodName];
+
+    if (typeof unlockMethod !== 'function') {
+      throw new Error(
+        `Unlock method '${unlockMethodName}' is not a function on contract '${ContractClass.name}'`
+      );
+    }
+
+    return (c: Contract, psbt: IExtPsbt, backtraceInfo?: BacktraceInfo) => {
+      const inputIndex = this.data.inputs.length - 1;
+      const ctx: UnlockContext<Contract, ExtraParams> = {
+        contract: c,
+        psbt,
+        inputIndex,
+        backtraceInfo,
+        extraParams,
+      };
+      unlockMethod.call(ContractClass, ctx);
+    };
+  }
+
+  /**
+   * Creates a ContractCall by auto-detecting the single unlock method on the contract.
+   * @private
+   */
+  private _createContractCallFromAutoDetection<Contract extends SmartContract<OpcatState>, ExtraParams extends Record<string, unknown>>(
+    contract: Contract,
+    extraParams?: ExtraParams,
+  ): ContractCall<Contract> | undefined {
+    const ContractClass = contract.constructor as typeof SmartContract;
+    const unlocks: Map<string, string> | undefined = Reflect.getOwnMetadata(UnlocksMetaKey, ContractClass);
+
+    if (!unlocks || unlocks.size === 0) {
+      // No unlock methods defined, return undefined (backward compatible)
+      return undefined;
+    }
+
+    if (unlocks.size > 1) {
+      const methodNames = Array.from(unlocks.keys()).join(', ');
+      throw new Error(
+        `Contract '${ContractClass.name}' has multiple unlock methods (${methodNames}). ` +
+        `Please specify which lock method to use: addContractInput(contract, 'methodName')`
+      );
+    }
+
+    // Get the single lock method name
+    const [lockMethodName] = unlocks.keys();
+    return this._createContractCallFromMethodName(contract, lockMethodName, extraParams);
   }
 
   /**
