@@ -1,5 +1,11 @@
 # @opcat-labs/opcat
 
+## 2.0.1
+
+### Patch Changes
+
+- fix: handle utxo.txHashPreimage in features
+
 ## 2.0.0
 
 ### Major Changes
