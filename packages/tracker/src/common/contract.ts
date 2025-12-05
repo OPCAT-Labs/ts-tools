@@ -1,4 +1,4 @@
-import { Transaction } from '@opcat-labs/opcat';
+import { Script, Transaction } from '@opcat-labs/opcat';
 import { ByteString, toByteString, byteStringToInt, ContractHeaderSerializer } from '@opcat-labs/scrypt-ts-opcat';
 import { MetadataSerializer, CatTags } from '@opcat-labs/cat-sdk';
 
@@ -105,5 +105,50 @@ export class ContractLib {
       }
     }
     return inputMetadatas;
+  }
+
+  static isP2pkhUnlockingScript(script: Script): boolean {
+    const chunks = script.chunks;
+    return (
+      chunks.length === 2 &&
+      chunks[0].len >= 32 &&
+      chunks[1].len >= 32
+    );
+  }
+
+  static isP2pkhLockingScript(script: Script): boolean {
+    const chunks = script.chunks;
+    return (
+      chunks.length === 5 &&
+      chunks[0].opcodenum === 0x76 && // OP_DUP
+      chunks[1].opcodenum === 0xa9 && // OP_HASH160
+      chunks[2].len === 20 && // Push 20 bytes
+      chunks[3].opcodenum === 0x88 && // OP_EQUALVERIFY
+      chunks[4].opcodenum === 0xac // OP_CHECKSIG
+    );
+  }
+
+  static txAllInputsAreP2pkh(tx: Transaction): boolean {
+    // Check if any input has a non-P2PKH unlocking script, which may indicate a contract interaction
+    // we roughly check the unlocking script pattern
+    for (const input of tx.inputs) {
+      const isP2pkh = ContractLib.isP2pkhUnlockingScript(input.script);
+      if (!isP2pkh) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  static txAllOutputsAreP2pkh(tx: Transaction): boolean {
+    // Check if any output has a non-P2PKH locking script, which may indicate a contract interaction
+    for (const output of tx.outputs) {
+      const script = output.script;
+      const isP2pkh = ContractLib.isP2pkhLockingScript(script);
+      if (!isP2pkh) {
+        return false;
+      }
+    }
+    return true;
   }
 }

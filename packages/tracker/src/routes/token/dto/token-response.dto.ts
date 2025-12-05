@@ -44,6 +44,13 @@ export class TokenInfo {
 
   @ApiProperty({ example: 'abcdef0102', description: 'Token metadata in raw hex format' })
   info: string;
+
+  @ApiProperty({ example: 1254, description: 'Deploy height' })
+  deployHeight: number;
+
+  @ApiProperty({ example: '45ee725c2c5993b3e4d308842d87e973bf1951f5f7a804b21e4dd964ecd12d6b', description: 'Deploy Txid' })
+  deployTxid: string;
+
 }
 
 export class TokenInfoResponse extends BaseResponse<TokenInfo> {
@@ -69,7 +76,7 @@ export class TokenUtxo {
   script: string;
 
   @ApiProperty({ example: 10000, description: 'Satoshi amount' })
-  satoshis: string;
+  satoshis: number;
 
   @ApiProperty({ example: 'abc123......', description: 'utxo.data' })
   data: string;
@@ -107,43 +114,93 @@ export class TokenBalanceResponse extends BaseResponse<TokenBalanceData> {
   data: TokenBalanceData;
 }
 
-export class TokenMintAmountData {
+export class TokenTotalMintedAmountData {
   @ApiProperty({ example: '5000000000', description: 'Total mint amount' })
-  amount: string;
+  totalMintedAmount: string;
 
   @ApiProperty({ example: 100000, description: 'Current tracker block height' })
   trackerBlockHeight: number;
 }
 
-export class TokenMintAmountResponse extends BaseResponse<TokenMintAmountData> {
-  @ApiProperty({ type: TokenMintAmountData })
-  data: TokenMintAmountData;
+export class TokenTotalMintedAmountResponse extends BaseResponse<TokenTotalMintedAmountData> {
+  @ApiProperty({ type: TokenTotalMintedAmountData })
+  data: TokenTotalMintedAmountData;
 }
 
-export class TokenCirculationData {
-  @ApiProperty({ example: '4500000000', description: 'Current circulation amount' })
-  amount: string;
+export class TotalHoldersData {
+  @ApiProperty({ example: 12000, description: 'Total holders number' })
+  totalHolders: number;
+  @ApiProperty({ example: 100000, description: 'Current tracker block height' })
+  trackerBlockHeight: number;
+}
+
+export class TotalHoldersResponse extends BaseResponse<TotalHoldersData> {
+  @ApiProperty({ type: TotalHoldersData })
+  data: TotalHoldersData;
+}
+
+export class TotalTxsData {
+  @ApiProperty({ example: 21000000, description: 'Total transaction number' })
+  totalTxs: number;
+  @ApiProperty({ example: 100000, description: 'Current tracker block height' })
+  trackerBlockHeight: number;
+}
+
+export class TotalTxsResponse extends BaseResponse<TotalTxsData> {
+  @ApiProperty({ type: TotalTxsData })
+  data: TotalTxsData;
+}
+
+export class TokenTxsData {
+  @ApiProperty({ type: [String], description: 'list of transaction IDs', example: ['ade162290a77650375ccafe7afcad47bb81c4be4f169f77013ed106723f8b7ea'] })
+  list: string[];
+  
+  @ApiProperty({ example: 10, description: 'total number of transactions' })
+  total: number;
 
   @ApiProperty({ example: 100000, description: 'Current tracker block height' })
   trackerBlockHeight: number;
 }
 
-export class TokenCirculationResponse extends BaseResponse<TokenCirculationData> {
-  @ApiProperty({ type: TokenCirculationData })
-  data: TokenCirculationData;
+export class TokenTxsResponse extends BaseResponse<TokenTxsData> {
+  @ApiProperty({ type: TokenTxsData })
+  data: TokenTxsData;
+}
+
+export class TokenTotalSupplyData {
+  @ApiProperty({ example: '4500000000', description: 'Current total supply amount' })
+  totalSupply: string;
+
+  @ApiProperty({ example: 100000, description: 'Current tracker block height' })
+  trackerBlockHeight: number;
+}
+
+export class TokenTotalSupplyResponse extends BaseResponse<TokenTotalSupplyData> {
+  @ApiProperty({ type: TokenTotalSupplyData })
+  data: TokenTotalSupplyData;
 }
 
 export class TokenHolder {
-  @ApiProperty({ example: 'abc123......', description: 'Owner public key hash' })
-  ownerPubKeyHash: string;
+  @ApiProperty({ example: 'moP2wuUKQ5aqXswdeGX4VoRjbbyd6bc123', description: 'p2pkh address or script hash' })
+  address: string;
 
   @ApiProperty({ example: '100', description: 'Token balance' })
   balance: string;
+
+  @ApiProperty({ example: 1, description: 'Token rank' })
+  rank: number;
+
+  @ApiProperty({ example: 0.05, description: 'Token percentage' })
+  percentage: number;
+
 }
 
 export class TokenHoldersData {
   @ApiProperty({ type: [TokenHolder], description: 'Token holders' })
   holders: TokenHolder[];
+
+  @ApiProperty({ example: 1000, description: 'Total number of token holders' })
+  total: number;
 
   @ApiProperty({ example: 100000, description: 'Current tracker block height' })
   trackerBlockHeight: number;
