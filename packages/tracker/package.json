@@ -1,6 +1,6 @@
 {
   "name": "@opcat-labs/cat-tracker",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "",
   "author": "OP_CAT Labs",
   "private": true,
@@ -35,8 +35,8 @@
     "@nestjs/schedule": "^4.1.1",
     "@nestjs/swagger": "^7.4.0",
     "@nestjs/typeorm": "^10.0.2",
-    "@opcat-labs/cat-sdk": "2.0.0",
-    "@opcat-labs/opcat": "^2.0.0",
+    "@opcat-labs/cat-sdk": "2.0.1",
+    "@opcat-labs/opcat": "^2.0.1",
     "axios": "^1.7.3",
     "js-yaml": "^4.1.0",
     "lru-cache": "^11.0.1",
