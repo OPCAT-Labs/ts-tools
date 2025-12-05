@@ -12,6 +12,7 @@ import {
   UTXO,
   markSpent,
   getBackTraceInfo,
+  Transaction,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20 } from '../../../contracts/cat20/cat20'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib'
@@ -103,18 +104,6 @@ export async function burnToken(
   const guardUtxo = guardPsbt.getUtxo(0)
   const feeUtxo = guardPsbt.getChangeUTXO()
 
-  const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
-    new CAT20(
-      minterScriptHash,
-      guardScriptHashes,
-      hasAdmin,
-      adminScriptHash
-    ).bindToUtxo(utxo)
-  )
-
-  const burnPsbt = new ExtPsbt({ network: await provider.getNetwork() })
-
-  const guardInputIndex = inputTokens.length
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
     inputTokenUtxos,
@@ -122,6 +111,18 @@ export async function burnToken(
     hasAdmin,
     adminScriptHash
   )
+  const inputTokens: CAT20[] = inputTokenUtxos.map((utxo, index) =>
+    new CAT20(
+      minterScriptHash,
+      guardScriptHashes,
+      hasAdmin,
+      adminScriptHash
+    ).bindToUtxo({...utxo, txHashPreimage: toHex(new Transaction(backtraces[index].prevTxHex).toTxHashPreimage())})
+  )
+
+  const burnPsbt = new ExtPsbt({ network: await provider.getNetwork() })
+
+  const guardInputIndex = inputTokens.length
 
   // add token inputs
   for (let index = 0; index < inputTokens.length; index++) {

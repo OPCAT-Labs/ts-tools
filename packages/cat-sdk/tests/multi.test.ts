@@ -4,7 +4,7 @@ import { isLocalTest } from './utils';
 import { testProvider } from './utils/testProvider';
 import { loadAllArtifacts } from './features/cat20/utils';
 import { loadAllArtifacts as loadAllArtifacts721} from './features/cat721/utils';
-import { ByteString, ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, slice, toByteString, toHex, uint8ArrayToHex, UTXO } from '@opcat-labs/scrypt-ts-opcat';
+import { ByteString, ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, slice, toByteString, toHex, Transaction, uint8ArrayToHex, UTXO } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from './utils/testSigner';
 import {createCat20, TestCat20, TestCAT20Generator} from './utils/testCAT20Generator';
 import { CAT20, CAT20GuardConstState, CAT20GuardStateLib, CAT20State, CAT20StateLib, CAT721, CAT721GuardConstState, CAT721GuardStateLib, CAT721StateLib, ConstantsLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, GUARD_TOKEN_TYPE_MAX } from '../src/contracts';
@@ -277,7 +277,10 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                 cat20TxOutputCountMax = txOutputCountMax;
 
                 this.cat20s.forEach(({ cat20, sendAmount, burnAmount }, index) => {
-                    const contract = new CAT20(cat20.generater.minterScriptHash, cat20GuardScriptHashes, cat20.generater.deployInfo.hasAdmin, cat20.generater.deployInfo.adminScriptHash).bindToUtxo(cat20.utxo);
+                    const contract = new CAT20(cat20.generater.minterScriptHash, cat20GuardScriptHashes, cat20.generater.deployInfo.hasAdmin, cat20.generater.deployInfo.adminScriptHash).bindToUtxo({
+                        ...cat20.utxo,
+                        txHashPreimage: toHex(new Transaction(cat20.trace.prevTxHex).toTxHashPreimage()),
+                    });
                     psbt.addContractInput(contract, (contract, curPsbt) => {
                         const localInputIndex = cat20InputStartIndex + index
                         contract.unlock(
@@ -416,7 +419,10 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                 this.cat721s.forEach(({ cat721, isBurn }, index) => {
                     inputIndex++;
 
-                    const cat721Contract = new CAT721(cat721.generater.minterScriptHash, cat721GuardScriptHashes).bindToUtxo(cat721.utxo);
+                    const cat721Contract = new CAT721(cat721.generater.minterScriptHash, cat721GuardScriptHashes).bindToUtxo({
+                        ...cat721.utxo,
+                        txHashPreimage: toHex(new Transaction(cat721.trace.prevTxHex).toTxHashPreimage()),
+                    });
                     psbt.addContractInput(cat721Contract, (contract, curPsbt) => {
                         const localInputIndex = cat721InputStartIndex + index
                         contract.unlock(
@@ -436,7 +442,10 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                     });
                     if (!isBurn) {
                         // transfer to main address
-                        const cat721Contract = new CAT721(cat721.generater.minterScriptHash, cat721GuardScriptHashes).bindToUtxo(cat721.utxo);
+                        const cat721Contract = new CAT721(cat721.generater.minterScriptHash, cat721GuardScriptHashes).bindToUtxo({
+                            ...cat721.utxo,
+                            txHashPreimage: toHex(new Transaction(cat721.trace.prevTxHex).toTxHashPreimage()),
+                        });
                         cat721Contract.state = {
                             ownerAddr: CAT721.deserializeState(cat721.utxo.data).ownerAddr,
                             localId: CAT721.deserializeState(cat721.utxo.data).localId,

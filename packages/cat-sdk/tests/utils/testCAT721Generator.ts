@@ -50,7 +50,11 @@ export class TestCAT721Generator {
     }
 
     private getCat721MinterUtxo() {
-        return this.minterPsbt.getUtxo(0)
+        const utxo = this.minterPsbt.getUtxo(0)
+
+        // remove txHashPreimage to ensure features depending on UTXO equality work correctly
+        delete (utxo as any).txHashPreimage
+        return utxo
     }
 
     async mintThenTransfer(addr: ByteString) {
@@ -90,7 +94,9 @@ export class TestCAT721Generator {
             [addr],
             await testProvider.getFeeRate()
         )
-        return transferInfo.newNftUtxos[0]
+        const utxo = transferInfo.newNftUtxos[0]
+        delete (utxo as any).txHashPreimage
+        return utxo
     }
     async mintNftToAddress(addr: ByteString) {
         return this.mintThenTransfer(toTokenOwnerAddress(addr))

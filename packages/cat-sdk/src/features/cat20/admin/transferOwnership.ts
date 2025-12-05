@@ -50,7 +50,6 @@ export async function transferOwnership(
   /// we use the fee input as contract input;
   const sendPsbt = new ExtPsbt({ network: await provider.getNetwork() })
   // add admin input
-  cat20Admin.bindToUtxo(adminUtxo)
   const adminPubKey = await adminSigner.getPublicKey()
   const adminAddress = await adminSigner.getAddress()
   const adminTxHex = await provider.getRawTransaction(adminUtxo.txId)
@@ -68,6 +67,10 @@ export async function transferOwnership(
     spentAdminPreTxHex,
     prevAdminInputIndex
   )
+  cat20Admin.bindToUtxo({
+    ...adminUtxo,
+    txHashPreimage: toHex(new Transaction(adminTxHex).toTxHashPreimage()),
+  })
   sendPsbt.addContractInput(cat20Admin, (contract, tx) => {
     // sign admin input
     const sig = tx.getSig(0, {

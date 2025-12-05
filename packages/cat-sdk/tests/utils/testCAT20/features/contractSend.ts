@@ -13,6 +13,7 @@ import {
     ExtPsbt,
     markSpent,
     getBackTraceInfo,
+    Transaction,
   } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20_AMOUNT, CAT20State } from '../../../../src/contracts/cat20/types'
 import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from '../../../../src/contracts/constants'
@@ -130,14 +131,6 @@ export async function contractSend(
     const guardUtxo = guardPsbt.getUtxo(0)
     const feeUtxo = guardPsbt.getChangeUTXO()!
     const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
-    const inputTokens: CAT20[] = inputTokenUtxos.map(
-      (utxo) => new CAT20(minterScriptHash, guardScriptHashes, hasAdmin, adminScriptHash).bindToUtxo(utxo)
-    )
-  
-    /// we use the fee input as contract input;
-    const sendPsbt = new ExtPsbt({network: await provider.getNetwork()})
-  
-    const guardInputIndex = inputTokens.length
     const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
       minterScriptHash,
       inputTokenUtxos,
@@ -145,6 +138,17 @@ export async function contractSend(
       hasAdmin,
       adminScriptHash
     )
+    const inputTokens: CAT20[] = inputTokenUtxos.map(
+      (utxo, index) => new CAT20(minterScriptHash, guardScriptHashes, hasAdmin, adminScriptHash).bindToUtxo({
+        ...utxo,
+        txHashPreimage: toHex(new Transaction(backtraces[index].prevTxHex).toTxHashPreimage()),
+      })
+    )
+  
+    /// we use the fee input as contract input;
+    const sendPsbt = new ExtPsbt({network: await provider.getNetwork()})
+  
+    const guardInputIndex = inputTokens.length
 
     // add token inputs
     for (let index = 0; index < inputTokens.length; index++) {

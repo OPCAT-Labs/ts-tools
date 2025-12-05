@@ -1,4 +1,4 @@
-import { ByteString, Ripemd160 } from '@opcat-labs/scrypt-ts-opcat'
+import { ByteString, ExtUtxo, Ripemd160 } from '@opcat-labs/scrypt-ts-opcat'
 import { toTokenOwnerAddress } from '../../src/utils'
 import { CAT20TokenInfo, formatMetadata } from '../../src/lib/metadata'
 import { ExtPsbt, UTXO } from '@opcat-labs/scrypt-ts-opcat'
@@ -53,17 +53,23 @@ export class TestCAT20Generator {
   }
 
   private getCat20MinterUtxo() {
-    return this.minterPsbt.getUtxo(0)
+    const utxo = this.minterPsbt.getUtxo(0)
+    delete utxo.txHashPreimage
+    return utxo;
   }
 
   getCat20AdminUtxo() {
+    let utxo: ExtUtxo
     // If adminPsbt is set (after admin operations), use it to get the updated admin UTXO
     // Otherwise, use the original admin UTXO from the deploy transaction
     if (this.adminPsbt) {
-      return this.adminPsbt.getUtxo(0)
+      utxo = this.adminPsbt.getUtxo(0)
+    } else {
+      // Admin UTXO is the second output (index 1) in the deploy transaction
+      utxo = this.deployInfo.deployPsbt.getUtxo(1)
     }
-    // Admin UTXO is the second output (index 1) in the deploy transaction
-    return this.deployInfo.deployPsbt.getUtxo(1)
+    delete utxo.txHashPreimage
+    return utxo;
   }
 
   updateAdminTx(psbt: ExtPsbt) {
@@ -105,7 +111,9 @@ export class TestCAT20Generator {
       this.deployInfo.hasAdmin,
       this.deployInfo.adminScriptHash
     )
-    return transferInfo.newCAT20Utxos[0]
+    const utxo = transferInfo.newCAT20Utxos[0]
+    delete (utxo as any).txHashPreimage
+    return utxo;
   }
 
   async mintTokenToAddr(addr: string, amount: CAT20_AMOUNT) {

@@ -98,7 +98,10 @@ export async function mintClosedMinterToken(
   )
   const utxos = await provider.getUtxos(address)
 
-  closedMinter.bindToUtxo(minterUtxo)
+  closedMinter.bindToUtxo({
+    ...minterUtxo,
+    txHashPreimage: toHex(new Transaction(spentMinterTxHex).toTxHashPreimage()),
+  })
   closedMinter.state = minterState
 
   const nextMinter = closedMinter.next(closedMinter.state)

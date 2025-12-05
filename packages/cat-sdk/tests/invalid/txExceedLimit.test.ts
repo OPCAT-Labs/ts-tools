@@ -1,4 +1,4 @@
-import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, uint8ArrayToHex } from "@opcat-labs/scrypt-ts-opcat";
+import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, Transaction, uint8ArrayToHex } from "@opcat-labs/scrypt-ts-opcat";
 import { loadAllArtifacts } from "../features/cat20/utils";
 import { createCat20, TestCat20 } from "../utils/testCAT20Generator";
 import { testSigner } from "../utils/testSigner";
@@ -123,7 +123,10 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         const guardInputIndex = cat20.utxos.length;
         const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8});
         cat20.utxos.forEach((utxo, inputIndex) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo({
+                ...utxo,
+                txHashPreimage: toHex(new Transaction(cat20.utxoTraces[inputIndex].prevTxHex).toTxHashPreimage()),
+            });
             psbt.addContractInput(cat20Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
@@ -238,7 +241,10 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         const guardInputIndex = cat20.utxos.length;
         const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8});
         cat20.utxos.forEach((utxo, inputIndex) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo({
+                ...utxo,
+                txHashPreimage: toHex(new Transaction(cat20.utxoTraces[inputIndex].prevTxHex).toTxHashPreimage()),
+            });
             psbt.addContractInput(cat20Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {

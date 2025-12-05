@@ -180,21 +180,6 @@ export async function burnByAdmin(
   guardPsbt.combine(ExtPsbt.fromHex(signedGuardPsbt))
   guardPsbt.finalizeAllInputs()
 
-  const guardUtxo = guardPsbt.getUtxo(0)
-  const feeUtxo = guardPsbt.getChangeUTXO()!
-  const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
-    new CAT20(
-      minterScriptHash,
-      guardScriptHashes,
-      true,
-      adminScriptHash
-    ).bindToUtxo(utxo)
-  )
-
-  /// we use the fee input as contract input;
-  const sendPsbt = new ExtPsbt({ network: await provider.getNetwork() })
-
-  const guardInputIndex = inputTokens.length
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
     inputTokenUtxos,
@@ -202,6 +187,24 @@ export async function burnByAdmin(
     hasAdmin,
     adminScriptHash
   )
+  const guardUtxo = guardPsbt.getUtxo(0)
+  const feeUtxo = guardPsbt.getChangeUTXO()!
+  const inputTokens: CAT20[] = inputTokenUtxos.map((utxo, index) =>
+    new CAT20(
+      minterScriptHash,
+      guardScriptHashes,
+      true,
+      adminScriptHash
+    ).bindToUtxo({
+      ...utxo,
+      txHashPreimage: toHex(new Transaction(backtraces[index].prevTxHex).toTxHashPreimage()),
+    })
+  )
+
+  /// we use the fee input as contract input;
+  const sendPsbt = new ExtPsbt({ network: await provider.getNetwork() })
+
+  const guardInputIndex = inputTokens.length
 
   // Transaction input structure:
   // - Token inputs: [0 to inputTokens.length - 1]
@@ -282,7 +285,6 @@ export async function burnByAdmin(
   })
 
   // add admin input
-  cat20Admin.bindToUtxo(adminUtxo)
   const pubkey = await signer.getPublicKey()
   const address = await signer.getAddress()
   const spentAdminTxHex = await provider.getRawTransaction(adminUtxo.txId)
@@ -301,6 +303,10 @@ export async function burnByAdmin(
     spentAdminPreTxHex,
     adminBacktraceInputIndex
   )
+  cat20Admin.bindToUtxo({
+    ...adminUtxo,
+    txHashPreimage: toHex(new Transaction(spentAdminTxHex).toTxHashPreimage()),
+  })
   sendPsbt.addContractInput(cat20Admin, (contract, tx) => {
     // Use the dynamically calculated adminInputIndex (from line 205)
     const sig = tx.getSig(adminInputIndex, {

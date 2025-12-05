@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { isLocalTest } from '../utils';
 import { testProvider } from '../utils/testProvider';
 import { loadAllArtifacts } from '../features/cat721/utils';
-import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, uint8ArrayToHex, slice, intToByteString } from '@opcat-labs/scrypt-ts-opcat';
+import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, uint8ArrayToHex, slice, intToByteString, Transaction } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from '../utils/testSigner';
 import {createCat721, TestCat721} from '../utils/testCAT721Generator';
 import { CAT721, CAT721State, CAT721StateLib, CAT721GuardStateLib, CAT721Guard_6_6_2, CAT721Guard_12_12_2 } from '../../src/contracts';
@@ -141,7 +141,10 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
         });
 
         cat721.utxos.forEach((utxo, inputIndex) => {
-            const cat721Contract = new CAT721(cat721.generator.minterScriptHash, cat721.generator.guardScriptHashes).bindToUtxo(utxo);
+            const cat721Contract = new CAT721(cat721.generator.minterScriptHash, cat721.generator.guardScriptHashes).bindToUtxo({
+                ...utxo,
+                txHashPreimage: toHex(new Transaction(cat721.utxoTraces[inputIndex].prevTxHex).toTxHashPreimage()),
+            });
             psbt.addContractInput(cat721Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {

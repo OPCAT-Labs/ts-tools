@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { isLocalTest } from '../utils';
 import { testProvider } from '../utils/testProvider';
 import { loadAllArtifacts } from '../features/cat20/utils';
-import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, uint8ArrayToHex, slice, intToByteString } from '@opcat-labs/scrypt-ts-opcat';
+import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, uint8ArrayToHex, slice, intToByteString, Transaction } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from '../utils/testSigner';
 import {createCat20, TestCat20} from '../utils/testCAT20Generator';
 import { CAT20, CAT20State, CAT20StateLib, CAT20GuardStateLib } from '../../src/contracts';
@@ -125,7 +125,10 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
         const guardInputIndex = cat20.utxos.length;
         const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8});
         cat20.utxos.forEach((utxo, inputIndex) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo({
+                ...utxo,
+                txHashPreimage: toHex(new Transaction(cat20.utxoTraces[inputIndex].prevTxHex).toTxHashPreimage()),
+            });
             psbt.addContractInput(cat20Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
