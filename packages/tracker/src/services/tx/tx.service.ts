@@ -178,7 +178,8 @@ export class TxService {
     const input = tx.inputs[inputIndex];
     const inputGenesis = input.output;
     if (inputGenesis.script.toString() != this.genesis.lockingScript.toString()) {
-      return false
+      // todo: enable this check after amm genesis is supported
+      // return false
     }
     const tokenId = `${input.prevTxId.toString('hex')}_${input.outputIndex}`;
     // const [, _name, _symbol, _decimals] = fields;
