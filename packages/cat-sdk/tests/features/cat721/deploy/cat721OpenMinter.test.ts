@@ -1,15 +1,25 @@
 import { bvmVerify, ExtPsbt, intToByteString, sha256, UTXO } from "@opcat-labs/scrypt-ts-opcat"
-import { CAT721MerkleLeaf, CAT721OpenMinter, CAT721OpenMinterMetadata, ConstantsLib, HEIGHT, MerkleProof, OpenMinterCAT721Meta, ProofNodePos } from "../../../../src/contracts"
-import { CAT721OpenMinterMerkleTreeData } from "../../../../src/lib/cat721OPenMinterMerkleTreeData"
-import { loadAllArtifacts, mintNft } from "../utils"
+import {
+    CAT721MerkleLeaf,
+    CAT721OpenMinter,
+    CAT721OpenMinterMetadata,
+    CAT721OpenMinterMerkleTree,
+    CAT721OpenMinterMerkleTreeData,
+    ConstantsLib,
+    HEIGHT,
+    MerkleProof,
+    OpenMinterCAT721Meta,
+    ProofNodePos,
+    MetadataSerializer,
+    deployOpenMinterCollection,
+    mintOpenMinterNft,
+    toTokenOwnerAddress,
+    loadAllArtifacts
+} from "../../../../src/index"
+import { mintNft } from "../utils"
 import { testSigner } from "../../../utils/testSigner"
-import { MetadataSerializer } from "../../../../src/lib/metadata"
-import { deployOpenMinterCollection } from '../../../../src/features/cat721/deploy/cat721OpenMinter'
-import { mintOpenMinterNft } from '../../../../src/features/cat721/mint/cat721OpenMinter'
 import { testProvider } from "../../../utils/testProvider"
 import { verifyTx } from "../../../utils"
-import { toTokenOwnerAddress } from "../../../../src/utils"
-import { CAT721OpenMinterMerkleTree } from "../../../../src/contracts/cat721/minters/cat721OpenMinterMerkleTree"
 import { expect, use } from "chai"
 import chaiAsPromised from "chai-as-promised"
 
