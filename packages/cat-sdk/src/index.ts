@@ -11,7 +11,11 @@ export {
   stringToHex,
   hexToString,
   getDummyUtxo,
+  applyFixedArray,
+  normalizeUtxoScripts,
 } from './utils/index'
+
+export { checkArgument, checkState } from './utils/check'
 
 export {
   ContractPeripheral,
@@ -20,6 +24,8 @@ export {
   CAT721GuardPeripheral,
 } from './utils/contractPeripheral'
 
-import { loadAllArtifacts } from './utils/loadAllArtifacts'
+export { loadAllArtifacts } from './utils/loadAllArtifacts'
 
-loadAllArtifacts()
+import { loadAllArtifacts as _loadAllArtifacts } from './utils/loadAllArtifacts'
+
+_loadAllArtifacts()
