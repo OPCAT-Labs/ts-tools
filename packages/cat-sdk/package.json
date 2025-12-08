@@ -1,6 +1,6 @@
 {
   "name": "@opcat-labs/cat-sdk",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A demo sCrypt smart contract.",
   "author": "OP_CAT Labs",
   "main": "./dist/cjs/index.js",
@@ -50,12 +50,12 @@
     ]
   },
   "dependencies": {
-    "@opcat-labs/opcat": "2.0.1",
-    "@opcat-labs/scrypt-ts-opcat": "2.0.1",
+    "@opcat-labs/opcat": "2.0.2",
+    "@opcat-labs/scrypt-ts-opcat": "2.0.2",
     "cbor2": "^2.0.1"
   },
   "devDependencies": {
-    "@opcat-labs/cli-opcat": "2.0.1",
+    "@opcat-labs/cli-opcat": "2.0.2",
     "@types/chai": "^4.3.4",
     "@types/chai-as-promised": "^7.1.5",
     "@types/mocha": "^10.0.0",

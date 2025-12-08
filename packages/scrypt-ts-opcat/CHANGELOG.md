@@ -1,5 +1,13 @@
 # @opcat-labs/scrypt-ts-opcat
 
+## 2.0.2
+
+### Patch Changes
+
+- add more exports in cat-sdk
+- Updated dependencies
+  - @opcat-labs/opcat@2.0.2
+
 ## 2.0.1
 
 ### Patch Changes
