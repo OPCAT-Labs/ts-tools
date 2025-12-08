@@ -1,5 +1,11 @@
 # @opcat-labs/opcat
 
+## 2.0.2
+
+### Patch Changes
+
+- add more exports in cat-sdk
+
 ## 2.0.1
 
 ### Patch Changes
