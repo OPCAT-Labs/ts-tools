@@ -92,4 +92,9 @@ export class DummyProvider implements ChainProvider, UtxoProvider {
     }
     return txHex;
   }
+
+  async getMedianTime(): Promise<number> {
+    // Return current timestamp minus 10 minutes (600 seconds)
+    return Math.floor(Date.now() / 1000) - 600;
+  }
 }

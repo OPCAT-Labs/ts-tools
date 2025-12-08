@@ -5,7 +5,7 @@ import { UtxoProvider, UtxoQueryOptions, getUtxoKey } from './utxoProvider.js';
 import { SupportedNetwork, TxId, UTXO } from '../globalTypes.js';
 import * as tools from 'uint8array-tools';
 import { duplicateFilter, uint8ArrayToHex } from '../utils/common.js';
-import { Script } from '../index.js';
+import { Script } from '@opcat-labs/opcat';
 import { ExtPsbt } from '../psbt/extPsbt.js';
 /**
  * The RPCProvider is backed by opcat RPC
@@ -309,5 +309,45 @@ export class RPCProvider implements ChainProvider, UtxoProvider {
   }
   addNewUTXO(utxo: UTXO) {
     this.newUTXOs.set(getUtxoKey(utxo), utxo);
+  }
+
+  async getMedianTime(): Promise<number> {
+    const Authorization = `Basic ${tools.toBase64(
+      tools.fromUtf8(`${this.getRpcUser()}:${this.getRpcPassword()}`),
+    )}`;
+
+    return fetch(this.getRpcUrl(null), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization,
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 'cat-cli',
+        method: 'getblockchaininfo',
+        params: [],
+      }),
+    })
+      .then((res) => {
+        const contentType = res.headers.get('content-type');
+        if (contentType.includes('json')) {
+          return res.json();
+        } else {
+          throw new Error(`invalid http content type : ${contentType}, status: ${res.status}`);
+        }
+      })
+      .then((res: any) => {
+        if (res.result === null) {
+          throw new Error(JSON.stringify(res));
+        }
+        if (typeof res.result.mediantime !== 'number') {
+          throw new Error(`Invalid blockchain info: mediantime not found`);
+        }
+        return res.result.mediantime;
+      })
+      .catch((e) => {
+        throw new Error(`Failed to get median time: ${e.message}`);
+      });
   }
 }

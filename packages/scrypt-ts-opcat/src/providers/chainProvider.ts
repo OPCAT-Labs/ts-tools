@@ -43,4 +43,11 @@ export interface ChainProvider {
    */
 
   getNetwork(): Promise<SupportedNetwork>;
+
+  /**
+   * Get the median time of the latest block.
+   * @returns A promise which resolves to the median time as a Unix timestamp.
+   */
+  getMedianTime(): Promise<number>;
+
 }

@@ -232,4 +232,43 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
         return e;
       });
   }
+
+  async getMedianTime(): Promise<number> {
+    // First get the tip block hash
+    const tipHashUrl = `${this.getMempoolApiHost()}/api/blocks/tip/hash`;
+    const tipHash = await fetch(tipHashUrl, {})
+      .then((res) => {
+        if (res.status !== 200) {
+          throw new Error(`invalid http response code: ${res.status}`);
+        }
+        return res.text();
+      })
+      .catch((e: Error) => {
+        throw new Error(`Failed to get tip block hash: ${e.message}`);
+      });
+
+    // Then get the block data to extract mediantime
+    const blockUrl = `${this.getMempoolApiHost()}/api/block/${tipHash}`;
+    return fetch(blockUrl, {})
+      .then((res) => {
+        if (res.status !== 200) {
+          throw new Error(`invalid http response code: ${res.status}`);
+        }
+        const contentType = res.headers.get('content-type');
+        if (contentType.includes('json')) {
+          return res.json();
+        } else {
+          throw new Error(`invalid http content type: ${contentType}`);
+        }
+      })
+      .then((blockData: any) => {
+        if (typeof blockData.mediantime !== 'number') {
+          throw new Error(`Invalid block data: mediantime not found`);
+        }
+        return blockData.mediantime;
+      })
+      .catch((e: Error) => {
+        throw new Error(`Failed to get median time: ${e.message}`);
+      });
+  }
 }
