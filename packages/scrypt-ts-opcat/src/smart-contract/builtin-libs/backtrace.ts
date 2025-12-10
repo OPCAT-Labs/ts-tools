@@ -43,7 +43,7 @@ export class Backtrace extends SmartContractLib {
    * @see packages/scrypt-ts-opcat/test/local-test/genesis.test.ts - GENESIS_SCRIPT_HASH validation tests
    */
   @prop()
-  static readonly GENESIS_SCRIPT_HASH: ByteString = toByteString('fd7af455b3dc36b23c99f0ab6708b871b40faf8f7ef4203587d2baa07f91cfee');
+  static readonly GENESIS_SCRIPT_HASH: ByteString = toByteString('8f6157664f8f7cd43e6bba7f3209bb803d4d0fb2fb6e59fdc548989ed3901f15');
 
   /**
    * Verifies that the transaction hash preimage matches the previous transaction hash 
@@ -84,6 +84,13 @@ export class Backtrace extends SmartContractLib {
       assert(
         res.prevPrevScript == Backtrace.GENESIS_SCRIPT_HASH,
         `prevPrevScript does not match Genesis contract script`,
+      );
+      // CRITICAL: Verify contract came from output[0] of Genesis deployment transaction
+      // Genesis only validates uniqueness of output[0], not other outputs (1, 2, 3...)
+      // This prevents attackers from deploying multiple identical contracts in one Genesis tx
+      assert(
+        backtraceInfo.prevTxInput.prevOutputIndex == 0n,
+        `Genesis deployment must use output[0], got output[${backtraceInfo.prevTxInput.prevOutputIndex}]`,
       );
     }
     assert(

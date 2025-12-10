@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { Genesis, MAX_GENESIS_CHECK_OUTPUT } from '../contracts/genesis.js';
+import { Genesis, MAX_GENESIS_CHECK_OUTPUT } from '../../src/smart-contract/builtin-libs/genesis.js';
 import { readArtifact, getDummyUtxo } from '../utils/index.js';
 import {
   ExtPsbt,
@@ -35,10 +35,14 @@ function genesisCheckDeploy(debug = false) {
 
     // Fill with actual outputs from the transaction
     const txOutputs = psbt.txOutputs;
+    const outputCount = Math.min(txOutputs.length, MAX_GENESIS_CHECK_OUTPUT);
+
     if (debug) {
       console.log('genesisCheckDeploy: txOutputs.length =', txOutputs.length);
+      console.log('genesisCheckDeploy: outputCount =', outputCount);
     }
-    for (let i = 0; i < txOutputs.length && i < MAX_GENESIS_CHECK_OUTPUT; i++) {
+
+    for (let i = 0; i < outputCount; i++) {
       const output = txOutputs[i];
       outputs[i] = {
         scriptHash: sha256(toByteString(uint8ArrayToHex(output.script))),
@@ -47,15 +51,14 @@ function genesisCheckDeploy(debug = false) {
       };
     }
 
-    contract.checkDeploy(outputs as FixedArray<TxOut, typeof MAX_GENESIS_CHECK_OUTPUT>);
+    contract.checkDeploy(
+      outputs as FixedArray<TxOut, typeof MAX_GENESIS_CHECK_OUTPUT>,
+      BigInt(outputCount)
+    );
   };
 }
 
 describe('Test Genesis', () => {
-  before(() => {
-    Genesis.loadArtifact(readArtifact('genesis.json'));
-  });
-
   /**
    * Test successful deployment with unique output[0]
    */
