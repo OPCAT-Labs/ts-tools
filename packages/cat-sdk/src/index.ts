@@ -13,9 +13,9 @@ export {
   getDummyUtxo,
   applyFixedArray,
   normalizeUtxoScripts,
-} from './utils/index'
+} from './utils/index.js'
 
-export { checkArgument, checkState } from './utils/check'
+export { checkArgument, checkState } from './utils/check.js'
 
 export {
   ContractPeripheral,
@@ -24,8 +24,8 @@ export {
   CAT721GuardPeripheral,
 } from './utils/contractPeripheral.js'
 
-export { loadAllArtifacts } from './utils/loadAllArtifacts'
+export { loadAllArtifacts } from './utils/loadAllArtifacts.js'
 
-import { loadAllArtifacts as _loadAllArtifacts } from './utils/loadAllArtifacts'
+import { loadAllArtifacts as _loadAllArtifacts } from './utils/loadAllArtifacts.js'
 
 _loadAllArtifacts()
