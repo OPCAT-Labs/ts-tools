@@ -9,6 +9,8 @@ export {
     singleSendStep2 as singleSendTokenStep2,
     singleSendStep3 as singleSendTokenStep3,
 } from './send/singleSend.js'
+export { burnByAdmin } from './admin/burnByAdmin.js'
+export { transferOwnership } from './admin/transferOwnership.js'
 
 // legacy exports
 /**

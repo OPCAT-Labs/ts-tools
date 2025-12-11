@@ -9,9 +9,13 @@ export {
   outpoint2ByteString,
   toTokenOwnerAddress,
   stringToHex,
-  hexToString,  
+  hexToString,
   getDummyUtxo,
+  applyFixedArray,
+  normalizeUtxoScripts,
 } from './utils/index.js'
+
+export { checkArgument, checkState } from './utils/check.js'
 
 export {
   ContractPeripheral,
@@ -20,6 +24,8 @@ export {
   CAT721GuardPeripheral,
 } from './utils/contractPeripheral.js'
 
-import { loadAllArtifacts } from './utils/loadAllArtifacts.js'
+export { loadAllArtifacts } from './utils/loadAllArtifacts.js'
 
-loadAllArtifacts()
+import { loadAllArtifacts as _loadAllArtifacts } from './utils/loadAllArtifacts.js'
+
+_loadAllArtifacts()

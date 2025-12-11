@@ -1,7 +1,7 @@
 {
   "name": "@opcat-labs/integration-examples",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.2",
   "type": "module",
   "author": "OP_CAT Labs",
   "scripts": {
@@ -11,8 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@opcat-labs/cat-sdk": "2.0.0",
-    "@opcat-labs/scrypt-ts-opcat": "2.0.0",
+    "@opcat-labs/cat-sdk": "2.0.2",
+    "@opcat-labs/scrypt-ts-opcat": "2.0.2",
     "axios": "^1.11.0",
     "jotai": "^2.12.5",
     "node-stdlib-browser": "^1.3.1",
