@@ -17,7 +17,9 @@ import {
     ContextUtils,
     tags,
     byteStringToInt,
-    slice
+    slice,
+    unlock,
+    UnlockContext,
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
     TX_INPUT_COUNT_MAX_12,
@@ -32,6 +34,7 @@ import { SafeMath } from '../utils/safeMath.js'
 import { CAT20GuardStateLib } from './cat20GuardStateLib.js'
 import { CAT20StateLib } from './cat20StateLib.js'
 import { CatTags } from '../catTags.js'
+import { CAT20GuardUnlockParams, buildCAT20GuardUnlockArgs } from './cat20GuardUnlock.js'
 /**
  * The CAT20 guard contract
  * @category Contract
@@ -222,5 +225,42 @@ export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
 
         // confine curTx outputs
         assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
+    }
+
+    /**
+     * Paired unlock method for the `unlock` lock method.
+     */
+    @unlock(CAT20Guard_12_12_4, 'unlock')
+    static unlockUnlock(ctx: UnlockContext<CAT20Guard_12_12_4, CAT20GuardUnlockParams>): void {
+        const { contract, psbt, extraParams } = ctx;
+
+        if (!extraParams) {
+            throw new Error('CAT20Guard.unlockUnlock requires extraParams');
+        }
+
+        const {
+            inputTokenStates,
+            outputTokenStates,
+            txInputCountMax,
+            txOutputCountMax,
+        } = extraParams;
+
+        const args = buildCAT20GuardUnlockArgs(
+            psbt,
+            inputTokenStates,
+            outputTokenStates,
+            txInputCountMax,
+            txOutputCountMax
+        );
+
+        contract.unlock(
+            args.nextStateHashes as any,
+            args.ownerAddrOrScriptHashes as any,
+            args.outputTokenAmts as any,
+            args.tokenScriptIndexArray as any,
+            args.outputSatoshis as any,
+            args.inputCAT20States as any,
+            args.outputCount
+        );
     }
 }

@@ -1,11 +1,11 @@
-import { method } from '../decorators.js';
+import { method, prop } from '../decorators.js';
 import { assert } from '../fns/assert.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import { ByteString } from '../types/index.js';
 import { BacktraceInfo, Prevouts, TxHashPreimage } from '../types/structs.js';
 import { TxUtils } from './txUtils.js';
 import { TX_INPUT_BYTE_LEN, TX_OUTPUT_BYTE_LEN, TX_OUTPUT_SATOSHI_BYTE_LEN, TX_OUTPUT_SCRIPT_HASH_LEN } from '../consts.js';
-import { slice } from '../fns/byteString.js';
+import { slice, toByteString } from '../fns/byteString.js';
 import { StdUtils } from './stdUtils.js';
 import { TxHashPreimageUtils } from './txHashPreimageUtils.js';
 
@@ -25,6 +25,25 @@ export type ChainTxVerifyResponse = {
  * @onchain
  */
 export class Backtrace extends SmartContractLib {
+  /**
+   * SHA256 hash of the Genesis contract script (including header).
+   * Used to validate that prevPrevScript is the Genesis contract when tracing back to genesis outpoint.
+   *
+   * ## How this hash is generated
+   * This is the SHA256 hash of the Genesis contract's full locking script, including:
+   * - Contract header (name, version metadata)
+   * - Compiled bytecode
+   *
+   * To verify or regenerate: `sha256(toByteString(new Genesis().lockingScript.toHex()))`
+   *
+   * ## Important
+   * If the Genesis contract is updated, this hash MUST be updated accordingly.
+   * Use the test in genesis.test.ts to verify this hash remains correct.
+   *
+   * @see packages/scrypt-ts-opcat/test/local-test/genesis.test.ts - GENESIS_SCRIPT_HASH validation tests
+   */
+  @prop()
+  static readonly GENESIS_SCRIPT_HASH: ByteString = toByteString('fd7af455b3dc36b23c99f0ab6708b871b40faf8f7ef4203587d2baa07f91cfee');
 
   /**
    * Verifies that the transaction hash preimage matches the previous transaction hash 
@@ -60,6 +79,13 @@ export class Backtrace extends SmartContractLib {
     t_prevTxInputList: ByteString,
   ): void {
     const res = Backtrace.verifyChainTxs(backtraceInfo, t_prevTxInputList);
+    // When at genesis outpoint, verify the prevPrevScript (scriptHash) matches the Genesis contract
+    if (res.prevPrevOutpoint === t_genesisOutpoint) {
+      assert(
+        res.prevPrevScript == Backtrace.GENESIS_SCRIPT_HASH,
+        `prevPrevScript does not match Genesis contract script`,
+      );
+    }
     assert(
       res.prevPrevOutpoint === t_genesisOutpoint || res.prevPrevScript == t_selfScript,
       `can not backtrace to the genesis outpoint`,

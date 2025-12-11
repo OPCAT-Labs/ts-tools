@@ -21,7 +21,6 @@ import {
   getBackTraceInfo,
   toHex,
   Genesis,
-  genesisCheckDeploy,
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
   CAT20GuardPeripheral,
@@ -126,7 +125,7 @@ export async function deployOpenMinterToken(
   genesis.bindToUtxo(genesisPsbt.getUtxo(0))
 
   const deployPsbt = new ExtPsbt({ network: await provider.getNetwork() })
-    .addContractInput(genesis, genesisCheckDeploy())
+    .addContractInput(genesis, 'checkDeploy')
     .spendUTXO(genesisPsbt.getChangeUTXO()!)
     .addContractOutput(openMinter, Postage.MINTER_POSTAGE)
     .change(changeAddress, feeRate)

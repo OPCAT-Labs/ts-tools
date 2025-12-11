@@ -1,5 +1,4 @@
 import {
-  PubKey,
   toHex,
   Signer,
   UtxoProvider,
@@ -7,13 +6,12 @@ import {
   UTXO,
   ExtPsbt,
   markSpent,
-  getBackTraceInfo,
   Transaction,
   PubKeyHash,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { TX_INPUT_COUNT_MAX } from '../../../contracts/constants.js'
 import { filterFeeUtxos } from '../../../utils/index.js'
-import { CAT20Admin } from '../../../contracts/cat20/cat20Admin.js'
+import { CAT20Admin, CAT20AdminTransferOwnershipParams } from '../../../contracts/cat20/cat20Admin.js'
 import { OwnerUtils } from '../../../contracts/index.js'
 
 /**
@@ -63,23 +61,14 @@ export async function transferOwnership(
   const spentAdminPreTxHex = await provider.getRawTransaction(
     toHex(adminTx.inputs[prevAdminInputIndex].prevTxId)
   )
-  const backTraceInfo = getBackTraceInfo(
-    adminTxHex,
-    spentAdminPreTxHex,
-    prevAdminInputIndex
-  )
-  sendPsbt.addContractInput(cat20Admin, (contract, tx) => {
-    // sign admin input
-    const sig = tx.getSig(0, {
-      address: adminAddress.toString(),
-    })
-    contract.transferOwnership(
-      PubKey(adminPubKey),
-      sig,
-      newPubKeyHash,
-      backTraceInfo
-    )
-  })
+  sendPsbt.addContractInput(cat20Admin, 'transferOwnership', {
+    publicKey: adminPubKey,
+    address: adminAddress.toString(),
+    newPubKeyHash,
+    prevTxHex: adminTxHex,
+    prevPrevTxHex: spentAdminPreTxHex,
+    prevTxInput: prevAdminInputIndex,
+  } as CAT20AdminTransferOwnershipParams)
   const newCat20Admin = cat20Admin.next({
     tag: cat20Admin.state.tag,
     adminAddress: OwnerUtils.pubKeyHashtoLockingScript(newPubKeyHash),

@@ -1,21 +1,48 @@
 import { SmartContract } from '../smartContract.js';
-import { method, tags } from '../decorators.js';
-import { assert, toByteString, len, sha256, fill } from '../fns/index.js';
+import { method, tags, unlock } from '../decorators.js';
+import { assert, toByteString, len, sha256, fill, slice } from '../fns/index.js';
 import { FixedArray, TxOut } from '../types/index.js';
 import { TxUtils } from './txUtils.js';
-import { ContractCall } from '../../psbt/types.js';
+import { ContractCall, UnlockContext } from '../../psbt/types.js';
 import { uint8ArrayToHex } from '../../utils/common.js';
+import { TX_OUTPUT_SCRIPT_HASH_LEN } from '../consts.js';
 
 /**
- * Maximum number of outputs to check during genesis deployment
+ * Maximum number of inputs to check during genesis deployment.
+ *
+ * This limit balances security (checking enough inputs to prevent attacks) with
+ * script size constraints (each input check adds ~50 bytes to the script).
+ *
+ * ## Why 6?
+ * - Most legitimate deploy transactions have 1-3 inputs (Genesis + fee UTXOs)
+ * - 6 inputs provides sufficient coverage for edge cases
+ * - Adding more inputs would significantly increase script size and fees
+ * - Bitcoin Script loops must be unrolled, so larger limits increase bytecode size
+ *
+ * ## Security Note
+ * If a transaction has more than 6 inputs, only the first 6 are checked.
+ * This is acceptable because:
+ * 1. Attackers cannot benefit from additional inputs beyond the checked ones
+ * 2. The Genesis contract at input[0] is always validated
  */
-export const MAX_GENESIS_CHECK_OUTPUT = 3;
+export const MAX_GENESIS_CHECK_INPUT = 6;
+
+/**
+ * Maximum number of outputs to check during genesis deployment.
+ *
+ * This matches MAX_GENESIS_CHECK_INPUT for consistency and covers
+ * typical deployment scenarios (contract output + change outputs).
+ */
+export const MAX_GENESIS_CHECK_OUTPUT = 6;
 
 /**
  * Genesis contract for validating initial deployment outputs.
  *
- * This contract ensures that during deployment, all non-empty outputs have
- * distinct script hashes, preventing duplicate deployments to the same address.
+ * This contract ensures that during deployment:
+ * 1. Genesis is unlocked at input index 0
+ * 2. The contract at output[0] has a unique scriptHash among all outputs
+ * 3. The contract at output[0] has a different scriptHash from all inputs
+ *
  * Empty scriptHashes (represented by empty ByteString) are treated as placeholders
  * and are not validated for uniqueness.
  *
@@ -34,20 +61,33 @@ export class Genesis extends SmartContract {
    * Validates the deployment transaction outputs.
    *
    * This method performs the following checks:
-   * 1. Serializes all non-empty output data (scriptHash, satoshis, dataHash)
-   * 2. Ensures all non-empty script hashes are unique
-   * 3. Verifies the serialized outputs match the transaction context
+   * 1. Verifies Genesis is unlocked at input index 0
+   * 2. Serializes all non-empty output data (scriptHash, satoshis, dataHash)
+   * 3. Ensures output[0] scriptHash is non-empty
+   * 4. Ensures output[0] scriptHash is different from all input scriptHashes
+   * 5. Ensures output[0] scriptHash is unique among all outputs
+   * 6. Verifies the serialized outputs match the transaction context
    *
    * Empty scriptHashes (len == 0) are treated as placeholders and are skipped
    * in both serialization and uniqueness validation.
    *
-   * @param outputs - Fixed array of 3 transaction outputs to validate
-   * @throws {Error} If any two non-empty outputs have the same scriptHash
+   * @param outputs - Fixed array of 6 transaction outputs to validate
+   * @throws {Error} If Genesis is not at input index 0
+   * @throws {Error} If output[0] scriptHash is empty
+   * @throws {Error} If output[0] has the same scriptHash as any input
+   * @throws {Error} If output[0] has the same scriptHash as any other output
    * @throws {Error} If outputs don't match the transaction context
    * @onchain
    */
   @method()
   public checkDeploy(outputs: FixedArray<TxOut, typeof MAX_GENESIS_CHECK_OUTPUT>) {
+    // Ensure Genesis is unlocked at input index 0
+    assert(this.ctx.inputIndex == 0n, 'Genesis must be unlocked at input index 0');
+
+    // Ensure input count does not exceed the maximum we can check
+    // This prevents attackers from placing duplicate scriptHashes at unchecked input indices
+    assert(this.ctx.inputCount <= BigInt(MAX_GENESIS_CHECK_INPUT), 'Too many inputs to validate');
+
     // Serialize all outputs
     let outputBytes = toByteString('');
     for (let index = 0; index < MAX_GENESIS_CHECK_OUTPUT; index++) {
@@ -61,29 +101,93 @@ export class Genesis extends SmartContract {
       }
     }
 
-    // Ensure all non-empty script hashes are unique (no duplicate deployments)
-    // Empty scriptHashes (len == 0) are placeholders and should be skipped
-    if (len(outputs[0].scriptHash) > 0n && len(outputs[1].scriptHash) > 0n) {
-      assert(
-        outputs[0].scriptHash != outputs[1].scriptHash,
-        'Duplicate scriptHash: outputs[0] and outputs[1] have the same scriptHash',
-      );
+    // Ensure output[0] scriptHash is non-empty
+    const output0ScriptHash = outputs[0].scriptHash;
+    assert(len(output0ScriptHash) > 0n);
+
+    // Ensure output[0] scriptHash is different from all input scriptHashes
+    // This prevents deploying a contract that matches any input contract
+    let start = 0n;
+    for (let index = 0; index < MAX_GENESIS_CHECK_INPUT; index++) {
+      if (index < this.ctx.inputCount) {
+        const inputScriptHash = slice(this.ctx.spentScriptHashes, start, start + TX_OUTPUT_SCRIPT_HASH_LEN);
+        assert(output0ScriptHash != inputScriptHash);
+        start += TX_OUTPUT_SCRIPT_HASH_LEN;
+      }
     }
-    if (len(outputs[0].scriptHash) > 0n && len(outputs[2].scriptHash) > 0n) {
-      assert(
-        outputs[0].scriptHash != outputs[2].scriptHash,
-        'Duplicate scriptHash: outputs[0] and outputs[2] have the same scriptHash',
-      );
+
+    // Ensure output[0] scriptHash is unique (not equal to any other output's scriptHash)
+    if (len(outputs[1].scriptHash) > 0n) {
+      assert(output0ScriptHash != outputs[1].scriptHash);
     }
-    if (len(outputs[1].scriptHash) > 0n && len(outputs[2].scriptHash) > 0n) {
-      assert(
-        outputs[1].scriptHash != outputs[2].scriptHash,
-        'Duplicate scriptHash: outputs[1] and outputs[2] have the same scriptHash',
-      );
+    if (len(outputs[2].scriptHash) > 0n) {
+      assert(output0ScriptHash != outputs[2].scriptHash);
+    }
+    if (len(outputs[3].scriptHash) > 0n) {
+      assert(output0ScriptHash != outputs[3].scriptHash);
+    }
+    if (len(outputs[4].scriptHash) > 0n) {
+      assert(output0ScriptHash != outputs[4].scriptHash);
+    }
+    if (len(outputs[5].scriptHash) > 0n) {
+      assert(output0ScriptHash != outputs[5].scriptHash);
     }
 
     // Verify outputs match the transaction context
     assert(this.checkOutputs(outputBytes), 'Outputs mismatch with the transaction context');
+  }
+
+  /**
+   * Paired unlock method for `checkDeploy`.
+   *
+   * This static method is decorated with `@unlock('checkDeploy')` to create a pairing
+   * with the `checkDeploy` lock method. When `addContractInput(genesis, 'checkDeploy')`
+   * is called, this method will be automatically invoked.
+   *
+   * The method builds the TxOut array from the PSBT's transaction outputs and
+   * calls the contract's `checkDeploy` method.
+   *
+   * @param ctx - The unlock context containing the contract instance and PSBT
+   *
+   * @example
+   * ```typescript
+   * // Using the new pattern with @unlock decorator
+   * const deployPsbt = new ExtPsbt({ network })
+   *   .addContractInput(genesis, 'checkDeploy')  // Automatically uses unlockCheckDeploy
+   *   .addContractOutput(minter, Postage.MINTER_POSTAGE)
+   *   .seal();
+   *
+   * // Or with auto-detection (since Genesis has only one unlock method)
+   * const deployPsbt = new ExtPsbt({ network })
+   *   .addContractInput(genesis)  // Automatically detects and uses unlockCheckDeploy
+   *   .addContractOutput(minter, Postage.MINTER_POSTAGE)
+   *   .seal();
+   * ```
+   */
+  @unlock(Genesis, 'checkDeploy')
+  static unlockCheckDeploy(ctx: UnlockContext<Genesis>): void {
+    const { contract, psbt } = ctx;
+
+    // Create output array with empty placeholders
+    const emptyOutput: TxOut = {
+      scriptHash: toByteString(''),
+      satoshis: 0n,
+      dataHash: sha256(toByteString('')),
+    };
+    const outputs: TxOut[] = fill(emptyOutput, MAX_GENESIS_CHECK_OUTPUT);
+
+    // Fill with actual outputs from the transaction
+    const txOutputs = psbt.txOutputs;
+    for (let i = 0; i < txOutputs.length && i < MAX_GENESIS_CHECK_OUTPUT; i++) {
+      const output = txOutputs[i];
+      outputs[i] = {
+        scriptHash: sha256(toByteString(uint8ArrayToHex(output.script))),
+        satoshis: BigInt(output.value),
+        dataHash: sha256(toByteString(uint8ArrayToHex(output.data))),
+      };
+    }
+
+    contract.checkDeploy(outputs as FixedArray<TxOut, typeof MAX_GENESIS_CHECK_OUTPUT>);
   }
 }
 
@@ -143,7 +247,7 @@ const desc = {
   version: 10,
   compilerVersion: '1.21.0+commit.2ada378',
   contract: 'Genesis',
-  md5: 'd3404c4b368255eec0f93e2d868e4510',
+  md5: '0b1e184a0aecd042ae661eb8d44a0483',
   structs: [
     {
       name: 'TxOut',
@@ -187,8 +291,10 @@ const desc = {
       name: 'checkDeploy',
       index: 0,
       params: [
-        { name: 'outputs', type: 'TxOut[3]' },
+        { name: 'outputs', type: 'TxOut[6]' },
         { name: '__scrypt_ts_shPreimage', type: 'SHPreimage' },
+        { name: '__scrypt_ts_spentAmounts', type: 'bytes' },
+        { name: '__scrypt_ts_spentScriptHashes', type: 'bytes' },
       ],
     },
     { type: 'constructor', params: [] },
@@ -196,7 +302,7 @@ const desc = {
   stateProps: [],
   buildType: 'release',
   file: '',
-  hex: '512097dfd76851bf465e8f715593b217714858bbe9570ff3bd5e33840a34e20ff0262102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec0382201008ce7480da41702918d1ec8e6849ba32b4d65b1e40dc669c31a1e6306b266c0111790111790111790111790111790111790111790111790111790111790111790111790111790111795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6c54797855795579210ac407f0e4bd44bfc207355a778b046225a7068fc59ee7eda43ad905aadbffc800206c266b30e6a1319c66dc401e5bd6b432ba49688eecd118297041da8074ce0810577956795679aa7676517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01007e817757795679567956795679537956795479577995939521414136d08c5ed2bf3ba048afe6dcaebafeffffffffffffffffffffffffffffff006e6e9776009f636e936776687777777b757c6e5296a0636e7c947b757c6853798277527982775379012080517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01205279947f77545379935279930130787e527e54797e58797e527e53797e52797e57797e6b6d6d6d6d6d6d6c765779ac6b6d6d6d6d6d6c776900011b766b796c766b796c766b796c755279827700a06370707c527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a537975686d750118766b796c766b796c766b796c755279827700a06370707c527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a537975686d750115766b796c766b796c766b796c755279827700a06370707c527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a537975686d75011b766b796c766b796c766b796c6d7c77827700a0630118766b796c766b796c766b796c6d7c77827700a067006863011b766b796c766b796c766b796c6d7c770119766b796c766b796c766b796c6d7c7787916968011b766b796c766b796c766b796c6d7c77827700a0630115766b796c766b796c766b796c6d7c77827700a067006863011b766b796c766b796c766b796c6d7c770116766b796c766b796c766b796c6d7c77879169680118766b796c766b796c766b796c6d7c77827700a0630115766b796c766b796c766b796c6d7c77827700a0670068630118766b796c766b796c766b796c6d7c770116766b796c766b796c766b796c6d7c778791696876aa5979876b6d6d6d6d6d6d6d6d6d6d6d6d6d6d6c',
+  hex: '512097dfd76851bf465e8f715593b217714858bbe9570ff3bd5e33840a34e20ff0262102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec0382201008ce7480da41702918d1ec8e6849ba32b4d65b1e40dc669c31a1e6306b266c6161011379011379011379011379011379011379011379011379011379011379011379011379011379011379615d798277549c695c79827701209c695b79827701209c695a79827701209c69597900a26958798277549c695779827701209c695679827701209c695579827701209c695479827701209c695379827701209c69527900a269517900a2690079519c640079529c675168640079539c6751686400790281009c6751686400790282009c6751686400790283009c675168695d795d797e5c797e5b797e5a7961007961007900a263007909ffffffffffffffff00a1670068690079586151795179519380007952797f75007f77517a75517a75517a7561517a7561517a75617e59797e58797e57797e56797e55797e54797e5379546151795179519380007952797f75007f77517a75517a75517a75617e5279546151795179519380007952797f75007f77517a75517a75517a75617e517954807e0079517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a7561547961517955795579210ac407f0e4bd44bfc207355a778b046225a7068fc59ee7eda43ad905aadbffc800206c266b30e6a1319c66dc401e5bd6b432ba49688eecd118297041da8074ce081057795679615679aa0079610079517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01007e81517a75615779567956795679567961537956795479577995939521414136d08c5ed2bf3ba048afe6dcaebafeffffffffffffffffffffffffffffff00517951796151795179970079009f63007952799367007968517a75517a75517a7561527a75517a517951795296a0630079527994527a75517a6853798277527982775379012080517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01205279947f7754537993527993013051797e527e54797e58797e527e53797e52797e57797e0079517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a75517a756100795779ac517a75517a75517a75517a75517a75517a75517a75517a75517a7561517a75517a75616955795e79615179aa5179876951795861517982770079527997009c690079527996517a75517a75517a7561517a75517a756155795e795279615279aa5279876900795379012061517982770079527997009c690079527996517a75517a75517a75619c6951517a75517a75517a7561755979009c69007956a169006101276b6c766b796c766b796c766b796c755279827700a0635379537952795479615279827751798277517901209c69007901209c69537900a269537961007961007900a263007909ffffffffffffffff00a1670068690079586151795179519380007952797f75007f77517a75517a75517a7561517a7561517a756155797e53797e517a75517a75517a75517a75517a75617e547a75537a537a537a537975687575756101246b6c766b796c766b796c766b796c755279827700a0635379537952795479615279827751798277517901209c69007901209c69537900a269537961007961007900a263007909ffffffffffffffff00a1670068690079586151795179519380007952797f75007f77517a75517a75517a7561517a7561517a756155797e53797e517a75517a75517a75517a75517a75617e547a75537a537a537a537975687575756101216b6c766b796c766b796c766b796c755279827700a0635379537952795479615279827751798277517901209c69007901209c69537900a269537961007961007900a263007909ffffffffffffffff00a1670068690079586151795179519380007952797f75007f77517a75517a75517a7561517a7561517a756155797e53797e517a75517a75517a75517a75517a75617e547a75537a537a537a5379756875757561011e6b6c766b796c766b796c766b796c755279827700a0635379537952795479615279827751798277517901209c69007901209c69537900a269537961007961007900a263007909ffffffffffffffff00a1670068690079586151795179519380007952797f75007f77517a75517a75517a7561517a7561517a756155797e53797e517a75517a75517a75517a75517a75617e547a75537a537a537a5379756875757561011b6b6c766b796c766b796c766b796c755279827700a0635379537952795479615279827751798277517901209c69007901209c69537900a269537961007961007900a263007909ffffffffffffffff00a1670068690079586151795179519380007952797f75007f77517a75517a75517a7561517a7561517a756155797e53797e517a75517a75517a75517a75517a75617e547a75537a537a537a537975687575756101186b6c766b796c766b796c766b796c755279827700a0635379537952795479615279827751798277517901209c69007901209c69537900a269537961007961007900a263007909ffffffffffffffff00a1670068690079586151795179519380007952797f75007f77517a75517a75517a7561517a7561517a756155797e53797e517a75517a75517a75517a75517a75617e547a75537a537a537a5379756875757501276b6c766b796c766b796c766b796c75527a527a527a75750079827700a06900610054799f63587951790120937f7551797f77527951798791695179012093527a75517a5179757568615154799f63587951790120937f7551797f77527951798791695179012093527a75517a5179757568615254799f63587951790120937f7551797f77527951798791695179012093527a75517a5179757568615354799f63587951790120937f7551797f77527951798791695179012093527a75517a5179757568615454799f63587951790120937f7551797f77527951798791695179012093527a75517a5179757568615554799f63587951790120937f7551797f77527951798791695179012093527a75517a517975756801266b6c766b796c766b796c766b796c75527a527a527a7575827700a063517901276b6c766b796c766b796c766b796c75527a527a527a75758791696801236b6c766b796c766b796c766b796c75527a527a527a7575827700a063517901246b6c766b796c766b796c766b796c75527a527a527a75758791696801206b6c766b796c766b796c766b796c75527a527a527a7575827700a063517901216b6c766b796c766b796c766b796c75527a527a527a757587916968011d6b6c766b796c766b796c766b796c75527a527a527a7575827700a0635179011e6b6c766b796c766b796c766b796c75527a527a527a757587916968011a6b6c766b796c766b796c766b796c75527a527a527a7575827700a0635179011b6b6c766b796c766b796c766b796c75527a527a527a7575879169685279aa5e7987777777777777777777777777777777777777777777777777777777777777777777777777777777777777',
   sourceMapFile: '',
 };
 

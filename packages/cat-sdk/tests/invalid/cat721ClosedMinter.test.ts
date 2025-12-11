@@ -4,7 +4,7 @@ import chaiAsPromised from 'chai-as-promised';
 import { isLocalTest } from '../utils';
 import { testProvider } from '../utils/testProvider';
 import { loadAllArtifacts } from '../features/cat721/utils';
-import { assert, DefaultSigner, ExtPsbt, fill, getBackTraceInfo, IExtPsbt, PubKey, sha256, Signer, toByteString, toHex, uint8ArrayToHex, UTXO } from '@opcat-labs/scrypt-ts-opcat';
+import { assert, DefaultSigner, ExtPsbt, fill, getBackTraceInfo, IExtPsbt, PubKey, sha256, Signer, toByteString, toHex, uint8ArrayToHex, UTXO, Genesis } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from '../utils/testSigner';
 import { getDummyUtxo, outpoint2ByteString, toTokenOwnerAddress } from "../../src/utils";
 import { ContractPeripheral, CAT721GuardPeripheral } from "../../src/utils/contractPeripheral";
@@ -224,9 +224,12 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721ClosedMinter'
         maxLocalId: bigint,
         nextLocalId: bigint,
     ): Promise<MinterInfo> {
+        // Create Genesis contract for proper backtrace validation
+        const genesis = new Genesis();
+
         const genesisPsbt = new ExtPsbt({ network: await testProvider.getNetwork() })
             .spendUTXO(getDummyUtxo(mainAddress, 1e8))
-            // do not deploy metadata in test
+            .addContractOutput(genesis, Postage.GENESIS_POSTAGE)
             .change(mainAddress, 1)
             .seal()
 
@@ -234,7 +237,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721ClosedMinter'
         genesisPsbt.combine(ExtPsbt.fromHex(signedGenesisPsbt))
         genesisPsbt.finalizeAllInputs()
 
-        const genesisUtxo = genesisPsbt.getUtxo(0)
+        const genesisUtxo = genesisPsbt.getUtxo(0)!
         const collectionId = `${genesisUtxo.txId}_${genesisUtxo.outputIndex}`
         const genesisOutpoint = outpoint2ByteString(collectionId)
         const cat721ClosedMinter = new CAT721ClosedMinter(toTokenOwnerAddress(mainAddress), genesisOutpoint, 100n)
@@ -251,8 +254,12 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721ClosedMinter'
         }
         cat721ClosedMinter.state = minterState;
 
+        // Bind Genesis contract to UTXO
+        genesis.bindToUtxo(genesisUtxo);
+
         const deployPsbt = new ExtPsbt({ network: await testProvider.getNetwork(), maximumFeeRate: 1e8 })
-            .spendUTXO(genesisUtxo)
+            .addContractInput(genesis, 'checkDeploy')
+            .spendUTXO(genesisPsbt.getChangeUTXO()!)
             .addContractOutput(cat721ClosedMinter, Postage.MINTER_POSTAGE)
             .seal()
         const signedDeployPsbt = await mainSigner.signPsbt(deployPsbt.toHex(), deployPsbt.psbtOptions())

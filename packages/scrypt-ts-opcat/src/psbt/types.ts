@@ -6,6 +6,7 @@ import { OpcatState, Sig } from '../smart-contract/types/primitives.js';
 import { Psbt } from './psbt.js';
 import { Transaction } from '@opcat-labs/opcat';
 import { BacktraceInfo } from '../smart-contract/types/structs.js';
+import { PublicMethodsOf } from '../smart-contract/decorators.js';
 
 /**
  * Type definition for a contract call function.
@@ -19,6 +20,55 @@ export type ContractCall<Contract> = (
   psbt: IExtPsbt,
   backtraceInfo?: BacktraceInfo,
 ) => void;
+
+/**
+ * Extracts lock method names from a contract type for use with addContractInput.
+ * Uses PublicMethodsOf to provide TypeScript autocompletion for method names.
+ *
+ * @example
+ * ```typescript
+ * // With autocompletion:
+ * psbt.addContractInput(genesis, 'checkDeploy')  // 'checkDeploy' is suggested
+ * ```
+ */
+export type LockMethodNames<Contract> = Contract extends SmartContract<OpcatState>
+  ? PublicMethodsOf<Contract>
+  : never;
+
+/**
+ * Context passed to unlock methods when using the @unlock decorator pattern.
+ *
+ * This interface provides all the information an unlock method needs to construct
+ * the parameters for calling the paired lock method.
+ *
+ * @template Contract - The contract type being unlocked
+ * @template ExtraParams - Optional additional parameters specific to the unlock method
+ *
+ * @example
+ * ```typescript
+ * @unlock('checkDeploy')
+ * static unlockCheckDeploy(ctx: UnlockContext<Genesis>): void {
+ *   const { contract, psbt } = ctx;
+ *   const outputs = buildOutputsFromPsbt(psbt);
+ *   contract.checkDeploy(outputs);
+ * }
+ * ```
+ */
+export interface UnlockContext<
+  Contract extends SmartContract<OpcatState>,
+  ExtraParams extends Record<string, unknown> = Record<string, never>,
+> {
+  /** The contract instance to unlock */
+  contract: Contract;
+  /** The PSBT being constructed */
+  psbt: IExtPsbt;
+  /** The input index of the contract in the transaction */
+  inputIndex: number;
+  /** Optional backtrace information for B2G (Backtrace to Genesis) contracts */
+  backtraceInfo?: BacktraceInfo;
+  /** Extra parameters passed by the caller */
+  extraParams?: ExtraParams;
+}
 
 /**
  * Extended PSBT (Partially Signed Bitcoin Transaction) interface with contract handling capabilities.
@@ -68,11 +118,40 @@ export type ContractCall<Contract> = (
  */
 export interface IExtPsbt extends Psbt, Contextual {
   /**
-   * Add an input to spend the contract.
+   * Add an input to spend the contract using a ContractCall function.
    * @param contract the contract
    * @param contractCall the contract call function, such as `(contract: Counter) => { contract.increase() }`, used to determine how to unlock the contract.
    */
   addContractInput<Contract extends SmartContract<OpcatState>>(contract: Contract, contractCall: ContractCall<Contract>): this;
+
+  /**
+   * Add an input to spend the contract using a paired unlock method name.
+   * The unlock method must be decorated with @unlock(ContractClass, lockMethodName) on the contract class.
+   *
+   * TypeScript provides autocompletion for method names based on the contract's public methods.
+   *
+   * @example
+   * ```typescript
+   * // 'checkDeploy' will be suggested by IDE autocompletion
+   * psbt.addContractInput(genesis, 'checkDeploy')
+   * ```
+   *
+   * @param contract the contract
+   * @param lockMethodName the name of the lock method (e.g., 'checkDeploy') - with autocompletion!
+   * @param extraParams optional extra parameters to pass to the unlock method
+   */
+  addContractInput<Contract extends SmartContract<OpcatState>, ExtraParams extends Record<string, unknown> = Record<string, never>>(
+    contract: Contract,
+    lockMethodName: LockMethodNames<Contract>,
+    extraParams?: ExtraParams
+  ): this;
+
+  /**
+   * Add an input to spend the contract using auto-detection.
+   * Only works when the contract has exactly one unlock method.
+   * @param contract the contract
+   */
+  addContractInput<Contract extends SmartContract<OpcatState>>(contract: Contract): this;
 
   /**
    * Add an output to create new contract.

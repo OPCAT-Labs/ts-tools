@@ -1,10 +1,6 @@
 import {
   ByteString,
-  fill,
   PubKey,
-  sha256,
-  toByteString,
-  toHex,
   ExtPsbt,
   UtxoProvider,
   ChainProvider,
@@ -14,20 +10,17 @@ import {
   getBackTraceInfo,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20 } from '../../../contracts/cat20/cat20.js'
-import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib.js'
 import {
-  ConstantsLib,
   NULL_ADMIN_SCRIPT_HASH,
   TX_INPUT_COUNT_MAX,
-  TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants.js'
-import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants.js'
-import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils/index.js'
+import { Postage } from '../../../typeConstants.js'
+import { filterFeeUtxos, normalizeUtxoScripts } from '../../../utils/index.js'
 import {
   CAT20GuardPeripheral,
-  ContractPeripheral,
 } from '../../../utils/contractPeripheral.js'
 import { SPEND_TYPE_USER_SPEND } from '../../../contracts/index.js'
+import { CAT20GuardUnlockParams } from '../../../contracts/cat20/cat20GuardUnlock.js'
 
 /**
  * Burns a CAT20 token using `CAT20Guard` contract
@@ -147,42 +140,13 @@ export async function burnToken(
 
   // add guard input
   guard.bindToUtxo(guardUtxo)
-  burnPsbt.addContractInput(guard, (contract, tx) => {
-      const ownerAddrOrScript = fill(toByteString(''), txOutputCountMax)
-      applyFixedArray(
-        ownerAddrOrScript,
-        tx.txOutputs.map((output) =>
-          ContractPeripheral.scriptHash(toHex(output.script))
-        )
-      )
-      const outputTokenAmts = fill(BigInt(0), txOutputCountMax)
-      const tokenScriptIndexArray = fill(-1n, txOutputCountMax)
-      const outputSatoshis = fill(0n, txOutputCountMax)
-      applyFixedArray(
-        outputSatoshis,
-        tx.txOutputs.map((output) => BigInt(output.value))
-      )
-      const inputCAT20States = fill(
-        CAT20StateLib.create(0n, toByteString('')),
-        txInputCountMax
-      )
-      applyFixedArray(inputCAT20States, inputTokenStates)
-      const nextStateHashes = fill(toByteString(''), txOutputCountMax)
-      applyFixedArray(
-        nextStateHashes,
-        tx.txOutputs.map((output) => sha256(toHex(output.data)))
-      )
-      contract.unlock(
-        nextStateHashes as any,
-        ownerAddrOrScript as any,
-        outputTokenAmts as any,
-        tokenScriptIndexArray as any,
-        outputSatoshis as any,
-        inputCAT20States as any,
-        BigInt(tx.txOutputs.length)
-      )
-    }
-  )
+  // For burn, outputTokenStates is empty since all tokens are burned
+  burnPsbt.addContractInput(guard, 'unlock', {
+    inputTokenStates,
+    outputTokenStates: [],
+    txInputCountMax,
+    txOutputCountMax,
+  } as CAT20GuardUnlockParams)
 
   // add fee input
   burnPsbt.spendUTXO(feeUtxo!)
