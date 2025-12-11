@@ -1,8 +1,9 @@
-import { SupportedNetwork, UTXO } from '../globalTypes.js';
+import { SupportedNetwork, TxId, UTXO } from '../globalTypes.js';
 import { ChainProvider } from './chainProvider.js';
 import { UtxoProvider, UtxoQueryOptions, getUtxoKey } from './utxoProvider.js';
 import * as utils from '@noble/hashes/utils';
 import { Script, Transaction } from '@opcat-labs/opcat';
+import { ExtPsbt } from '../psbt/extPsbt.js';
 
 /**
  * A DummyProvider is build for test purpose only, it always returns a dummy utxo for `getUtxos` request.
@@ -70,10 +71,16 @@ export class DummyProvider implements ChainProvider, UtxoProvider {
   async getConfirmations(_txId: string): Promise<number> {
     return Promise.resolve(1);
   }
-  async broadcast(txHex: string): Promise<string> {
+  async broadcast(txHex: string): Promise<TxId> {
     const tx = Transaction.fromString(txHex);
     this.broadcastedTxs.set(tx.id, txHex);
     return tx.id;
+  }
+
+  async broadcastPsbt(psbtBase64: string, metadata?: Record<string, unknown>): Promise<TxId> {
+    const psbt = ExtPsbt.fromBase64(psbtBase64);
+    const txHex = psbt.extractTransaction().toHex();
+    return this.broadcast(txHex);
   }
 
   async getRawTransaction(txId: string): Promise<string> {
@@ -84,5 +91,10 @@ export class DummyProvider implements ChainProvider, UtxoProvider {
       );
     }
     return txHex;
+  }
+
+  async getMedianTime(): Promise<number> {
+    // Return current timestamp minus 10 minutes (600 seconds)
+    return Math.floor(Date.now() / 1000) - 600;
   }
 }

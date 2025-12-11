@@ -8,6 +8,7 @@ import { Input, Transaction } from '@opcat-labs/opcat';
 import { TxOutEntity } from 'src/entities/txOut.entity';
 import { TokenInfoEntity } from 'src/entities/tokenInfo.entity';
 import { ABICoder, ABIEntityType, ContractHeaderSerializer, sha256 } from '@opcat-labs/scrypt-ts-opcat';
+import { LRUCache } from 'lru-cache';
 
 @Injectable()
 export class CommonService {
@@ -15,6 +16,12 @@ export class CommonService {
 
   public readonly FT_GUARD_SCRIPT_HASHES: string[];
   public readonly NFT_GUARD_SCRIPT_HASHES: string[];
+  
+
+  private static readonly rawtxCache = new LRUCache<string, string>({
+    max: 5000,
+    ttl: 1000 * 60 * 60, // 1 hour
+  })
 
   constructor(
     private readonly rpcService: RpcService,
@@ -171,14 +178,24 @@ export class CommonService {
     return this.FT_GUARD_SCRIPT_HASHES.includes(scriptHash);
   }
 
-  public async getRawTx(txid: string, verbose: boolean = false): Promise<string | undefined> {
-    const resp = await this.rpcService.getRawTx(txid, verbose);
-    return resp?.data?.result;
+  public async getRawTx(txid: string): Promise<string | undefined> {
+    const cached = CommonService.rawtxCache.get(txid);
+    if (cached) {
+      return cached;
+    }
+    const resp = await this.rpcService.getRawTx(txid, false);
+    const rawtx = resp?.data?.result;
+    const err = resp?.data?.error;
+    if (rawtx) {
+      CommonService.rawtxCache.set(txid, rawtx);
+      return rawtx;
+    }
+    throw new Error(`failed to get raw tx ${txid}: ${err?.message || err || 'unknown error'}`);
   }
 
   checkMinterBacktrace(
     txOut: TxOutEntity,
-    tokenInfo: TokenInfoEntity,
+    tokenInfo: {tokenId: string},
     tx: Transaction
   ) {
     const txPrevouts = tx.inputs.map((input) => {
@@ -195,7 +212,7 @@ export class CommonService {
 
   checkTokenBacktrace(
     txOut: TxOutEntity,
-    tokenInfo: TokenInfoEntity,
+    tokenInfo: {tokenId: string, minterScriptHash: string},
     tx: Transaction
   ) {
     const txPrevScriptHashes = this.getInputScriptHashes(tx);
@@ -212,11 +229,13 @@ export class CommonService {
   }
 
   async txAddPrevouts(tx: Transaction) {
+    CommonService.rawtxCache.set(tx.id, tx.toHex());
+    
     for (const input of tx.inputs) {
       const prevTxid = input.prevTxId.toString('hex');
       const outputIndex = input.outputIndex;
-      const resp = await this.getRawTx(prevTxid, true);
-      const preTx = new Transaction(resp['hex']);
+      const resp = await this.getRawTx(prevTxid);
+      const preTx = new Transaction(resp!);
       input.output = preTx.outputs[outputIndex];
     }
   }

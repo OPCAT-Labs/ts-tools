@@ -29,8 +29,6 @@ describe('Test the feature `burn` for `CAT721`', () => {
             symbol: 'C',
             description: 'c',
             max: 2100n,
-            icon: '',
-            minterMd5: '',
             issuerAddress: toReceiverAddr,
         }
         cat721Generater = await TestCAT721Generator.init(metadata)

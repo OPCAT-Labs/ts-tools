@@ -13,19 +13,19 @@ export class BaseResponse<T> {
 
 export class MinterUtxo {
   @ApiProperty({ example: 'abc123...', description: 'Transaction ID' })
-  txid: string;
+  txId: string;
 
   @ApiProperty({ example: 0, description: 'Output index' })
   outputIndex: number;
 
   @ApiProperty({ example: '456def...', description: 'Locking script' })
-  lockingScript: string;
+  script: string;
 
   @ApiProperty({ example: 10000, description: 'Satoshi amount' })
-  satoshis: string;
+  satoshis: number;
 
-  @ApiProperty({ example: 100000, description: 'Block height' })
-  blockHeight: number;
+  @ApiProperty({ example: 'abc123......', description: 'utxo.data' })
+  data: string;
 }
 
 export class MinterUtxosData {

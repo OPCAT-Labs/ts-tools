@@ -44,7 +44,7 @@ describe('Test AccessContext onchain', () => {
     });
     expect(psbt.isFinalized).to.be.true;
 
-    const txid = await provider.broadcast(psbt.extractTransaction().toHex());
+    const txid = await provider.broadcastPsbt(psbt.toBase64());
     logger.info('unlocked successfully, txid: ', txid);
   });
 });

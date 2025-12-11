@@ -1,5 +1,7 @@
 name: Release Beta
 
+run-name: 'Release Beta ${{ inputs.version_core }}-beta-${{ inputs.commit_sha }}'
+
 on:
   workflow_dispatch:
     inputs:
@@ -18,7 +20,21 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       full_version: ${{ steps.version.outputs.full_version }}
+      commit_message: ${{ steps.get_commit.outputs.commit_message }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get commit message
+        id: get_commit
+        run: |
+          COMMIT_SHA="${{ inputs.commit_sha }}"
+          COMMIT_MSG=$(git log -1 --format=%s ${COMMIT_SHA})
+          echo "commit_message=$COMMIT_MSG" >> $GITHUB_OUTPUT
+          echo "📝 Commit message: $COMMIT_MSG"
+
       - name: Construct full version
         id: version
         run: |
@@ -31,6 +47,19 @@ jobs:
           FULL_VERSION="${{ inputs.version_core }}-beta-${SHORT_SHA}-${COMMIT_DATE}"
           echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
           echo "📦 Full version: $FULL_VERSION"
+          echo "📝 Commit: ${{ steps.get_commit.outputs.commit_message }}"
+
+      - name: Generate summary
+        run: |
+          echo "## 📦 Release Beta Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Full Version:** \`${{ steps.version.outputs.full_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit SHA:** \`${{ inputs.commit_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit Message:** ${{ steps.get_commit.outputs.commit_message }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Core Version:** \`${{ inputs.version_core }}\`" >> $GITHUB_STEP_SUMMARY
 
   publish-npm:
     name: Publish NPM Packages

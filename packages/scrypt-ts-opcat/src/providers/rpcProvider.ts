@@ -2,10 +2,11 @@
 import Decimal from 'decimal.js';
 import { ChainProvider } from './chainProvider.js';
 import { UtxoProvider, UtxoQueryOptions, getUtxoKey } from './utxoProvider.js';
-import { SupportedNetwork, UTXO } from '../globalTypes.js';
+import { SupportedNetwork, TxId, UTXO } from '../globalTypes.js';
 import * as tools from 'uint8array-tools';
 import { duplicateFilter, uint8ArrayToHex } from '../utils/common.js';
-import { Script } from '../index.js';
+import { Script } from '@opcat-labs/opcat';
+import { ExtPsbt } from '../psbt/extPsbt.js';
 /**
  * The RPCProvider is backed by opcat RPC
  * @category Provider
@@ -174,13 +175,19 @@ export class RPCProvider implements ChainProvider, UtxoProvider {
       });
   }
 
-  async broadcast(txHex: string): Promise<string> {
+  async broadcast(txHex: string): Promise<TxId> {
     const res = await this._broadcast(txHex);
     if (res instanceof Error) {
       throw res;
     }
     this.broadcastedTxs.set(res, txHex);
     return res;
+  }
+
+  async broadcastPsbt(psbtBase64: string, metadata?: Record<string, unknown>): Promise<TxId> {
+    const psbt = ExtPsbt.fromBase64(psbtBase64);
+    const txHex = psbt.extractTransaction().toHex();
+    return this.broadcast(txHex);
   }
 
   async getRawTransaction(txId: string): Promise<string> {
@@ -283,9 +290,9 @@ export class RPCProvider implements ChainProvider, UtxoProvider {
     return utxos
       .concat(Array.from(this.newUTXOs.values()))
       .filter((utxo) => this.isUnSpent(utxo.txId, utxo.outputIndex))
-      .filter(duplicateFilter((utxo) => `${utxo.txId}:${utxo.outputIndex}`))      
+      .filter(duplicateFilter((utxo) => `${utxo.txId}:${utxo.outputIndex}`))
       .filter(utxo => utxo.script === script)
-      .sort((a, b) => a.satoshi - b.satoshi);
+      .sort((a, b) => a.satoshis - b.satoshis);
   }
 
   private isUnSpent(txId: string, vout: number) {
@@ -302,5 +309,45 @@ export class RPCProvider implements ChainProvider, UtxoProvider {
   }
   addNewUTXO(utxo: UTXO) {
     this.newUTXOs.set(getUtxoKey(utxo), utxo);
+  }
+
+  async getMedianTime(): Promise<number> {
+    const Authorization = `Basic ${tools.toBase64(
+      tools.fromUtf8(`${this.getRpcUser()}:${this.getRpcPassword()}`),
+    )}`;
+
+    return fetch(this.getRpcUrl(null), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization,
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 'cat-cli',
+        method: 'getblockchaininfo',
+        params: [],
+      }),
+    })
+      .then((res) => {
+        const contentType = res.headers.get('content-type');
+        if (contentType.includes('json')) {
+          return res.json();
+        } else {
+          throw new Error(`invalid http content type : ${contentType}, status: ${res.status}`);
+        }
+      })
+      .then((res: any) => {
+        if (res.result === null) {
+          throw new Error(JSON.stringify(res));
+        }
+        if (typeof res.result.mediantime !== 'number') {
+          throw new Error(`Invalid blockchain info: mediantime not found`);
+        }
+        return res.result.mediantime;
+      })
+      .catch((e) => {
+        throw new Error(`Failed to get median time: ${e.message}`);
+      });
   }
 }

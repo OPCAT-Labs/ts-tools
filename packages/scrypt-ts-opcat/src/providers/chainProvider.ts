@@ -11,6 +11,15 @@ export interface ChainProvider {
    * @returns A promise which resolves to the hash of the transaction that has been sent.
    */
   broadcast(txHex: string): Promise<TxId>;
+
+  /**
+  * Send a PSBT.
+  * @param psbtBase64 The PSBT to send.
+  * @param metadata Optional metadata to attach to the transaction.
+  * @returns A promise which resolves to the hash of the transaction that has been sent.
+  */
+  broadcastPsbt(psbtBase64: string, metadata?: Record<string, unknown>): Promise<TxId>;
+
   /**
    * Get a transaction raw hex from the network.
    * @param txHash The hash value of the transaction.
@@ -34,4 +43,11 @@ export interface ChainProvider {
    */
 
   getNetwork(): Promise<SupportedNetwork>;
+
+  /**
+   * Get the median time of the latest block.
+   * @returns A promise which resolves to the median time as a Unix timestamp.
+   */
+  getMedianTime(): Promise<number>;
+
 }

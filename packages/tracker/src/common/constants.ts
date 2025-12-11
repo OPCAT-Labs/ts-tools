@@ -90,6 +90,10 @@ export class Constants {
   static readonly CONTENT_ENVELOPE = /OP_0 OP_IF 636174 (.+?) OP_ENDIF/;
 
   static readonly CAT721_DECIMALS = -1;
+
+  // 2^31 - 1: Maximum value for 32-bit signed integer
+  // Used as the default block height for unconfirmed transactions
+  static readonly UNCONFIRMED_BLOCK_HEIGHT = 2147483647;
 }
 
 const _network = process.env.NETWORK || 'mainnet';

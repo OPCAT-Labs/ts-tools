@@ -8,19 +8,67 @@ import {
   TokenInfoResponse,
   TokenUtxosResponse,
   TokenBalanceResponse,
-  TokenMintAmountResponse,
-  TokenCirculationResponse,
+  TokenTotalMintedAmountResponse,
+  TokenTotalSupplyResponse,
   TokenHoldersResponse,
   ErrorResponse,
+  TotalHoldersResponse,
+  TotalTxsResponse,
 } from './dto/token-response.dto';
-import { ok } from 'assert';
-import { IntegerType } from 'typeorm';
 import { Response } from 'express';
 
 @Controller('tokens')
-@UseInterceptors(ResponseHeaderInterceptor)
 export class TokenController {
   constructor(private readonly tokenService: TokenService) { }
+
+  @Get('/search')
+  @ApiTags('token')
+  @ApiOperation({ summary: 'Search tokens by token id or token name with pagination' })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    type: String,
+    description: 'search query (token id or token name), empty for all tokens',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'paging offset',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'paging limit',
+  })
+  @ApiOkResponse({
+    description: 'Token list retrieved successfully',
+    type: [TokenInfoResponse],
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid parameters',
+    type: ErrorResponse,
+  })
+  async searchTokens(
+    @Query('q') query?: string,
+    @Query('offset') offset?: number,
+    @Query('limit') limit?: number,
+  ) {
+    try {
+
+      const result = await this.tokenService.searchTokens(
+        query,
+        TokenTypeScope.Fungible,
+        offset,
+        limit,
+      );
+
+      return okResponse(result);
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
 
   @Get(':tokenIdOrTokenScriptHash')
   @ApiTags('token')
@@ -80,6 +128,97 @@ export class TokenController {
       }
     } catch (e) {
       return res.send(errorResponse(e));
+    }
+  }
+
+  @Get(':tokenIdOrTokenScriptHash/totalHolders')
+  @ApiTags('token')
+  @ApiOperation({ summary: 'Get token holders number by token id or token script hash' })
+  @ApiOkResponse({
+    description: 'Token holders number retrieved successfully',
+    type: TotalHoldersResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid token id or token script hash',
+    type: ErrorResponse,
+  })
+  async getTokenTotalHolders(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
+    try {
+      const r = await this.tokenService.getTokenTotalHolders(
+        tokenIdOrTokenScriptHash,
+        TokenTypeScope.Fungible,
+      );
+      return okResponse(r);
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
+
+  @Get(':tokenIdOrTokenScriptHash/totalTxs')
+  @ApiTags('token')
+  @ApiOperation({ summary: 'Get token total transaction number by token id or token script hash' })
+  @ApiParam({
+    name: 'tokenIdOrTokenScriptHash',
+    required: true,
+    type: String,
+    description: 'token id or token script hash',
+  })
+  @ApiOkResponse({
+    description: 'Token total transaction number retrieved successfully',
+    type: TotalTxsResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid token id or token script hash',
+    type: ErrorResponse,
+  })
+  async getTokenTotalTxs(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
+    try {
+      const r = await this.tokenService.getTokenTotalTxsByTokenIdOrTokenScriptHash(
+        tokenIdOrTokenScriptHash,
+        TokenTypeScope.Fungible,
+      );
+      return okResponse(r);
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
+
+  @Get(':tokenIdOrTokenScriptHash/txs')
+  @ApiTags('token')
+  @ApiOperation({ summary: 'Get token transactions by token id or token script hash with pagination' })
+  @ApiParam({
+    name: 'tokenIdOrTokenScriptHash',
+    required: true,
+    type: String,
+    description: 'token id or token script hash',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'paging offset',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'paging limit',
+  })
+  async getTokenTxs(
+    @Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string,
+    @Query('offset', new DefaultValuePipe(0)) offset: number,
+    @Query('limit', new DefaultValuePipe(10)) limit: number,
+  ) {
+    try {
+      const r = await this.tokenService.getTokenTxsByTokenIdOrTokenScriptHash(
+        tokenIdOrTokenScriptHash,
+        TokenTypeScope.Fungible,
+        offset,
+        limit,
+      );
+      return okResponse(r);
+    } catch (e) {
+      return errorResponse(e);
     }
   }
 
@@ -177,7 +316,7 @@ export class TokenController {
     }
   }
 
-  @Get(':tokenIdOrTokenScriptHash/mintAmount')
+  @Get(':tokenIdOrTokenScriptHash/totalMintedAmount')
   @ApiTags('token')
   @ApiOperation({
     summary: 'Get token total mint amount by token id or token address',
@@ -190,25 +329,25 @@ export class TokenController {
   })
   @ApiOkResponse({
     description: 'Token mint amount retrieved successfully',
-    type: TokenMintAmountResponse,
+    type: TokenTotalMintedAmountResponse,
   })
   @ApiBadRequestResponse({
     description: 'Invalid token id or token address',
     type: ErrorResponse,
   })
-  async getTokenMintAmount(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
+  async getTokenTotalMintedAmount(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
-      const mintCount = await this.tokenService.getTokenMintAmount(tokenIdOrTokenScriptHash, TokenTypeScope.Fungible);
+      const mintCount = await this.tokenService.getTokenTotalMintedAmount(tokenIdOrTokenScriptHash, TokenTypeScope.Fungible);
       return okResponse(mintCount);
     } catch (e) {
       return errorResponse(e);
     }
   }
 
-  @Get(':tokenIdOrTokenScriptHash/circulation')
+  @Get(':tokenIdOrTokenScriptHash/totalSupply')
   @ApiTags('token')
   @ApiOperation({
-    summary: 'Get token current circulation by token id or token address',
+    summary: 'Get token current total supply by token id or token address',
   })
   @ApiParam({
     name: 'tokenIdOrTokenScriptHash',
@@ -217,20 +356,20 @@ export class TokenController {
     description: 'token id or token address',
   })
   @ApiOkResponse({
-    description: 'Token circulation retrieved successfully',
-    type: TokenCirculationResponse,
+    description: 'Token total supply retrieved successfully',
+    type: TokenTotalSupplyResponse,
   })
   @ApiBadRequestResponse({
     description: 'Invalid token id or token address',
     type: ErrorResponse,
   })
-  async getTokenCirculation(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
+  async getTokenTotalSupply(@Param('tokenIdOrTokenScriptHash') tokenIdOrTokenScriptHash: string) {
     try {
-      const circulation = await this.tokenService.getTokenCirculation(
+      const totalSupply = await this.tokenService.getTokenTotalSupply(
         tokenIdOrTokenScriptHash,
         TokenTypeScope.Fungible,
       );
-      return okResponse(circulation);
+      return okResponse(totalSupply);
     } catch (e) {
       return errorResponse(e);
     }
@@ -279,50 +418,7 @@ export class TokenController {
         offset,
         limit,
       );
-      const holders = r.holders.map((holder) => {
-        return {
-          ownerPubKeyHash: holder.ownerPubKeyHash,
-          balance: holder.tokenAmount!,
-        };
-      });
-      return okResponse({
-        holders,
-        trackerBlockHeight: r.trackerBlockHeight,
-      });
-    } catch (e) {
-      return errorResponse(e);
-    }
-  }
-  @Get(':tokenName/getTokensByNamePrefix')
-  @ApiTags('token')
-  @ApiOperation({ summary: 'fuzzy search tokens by token names' })
-  @ApiParam({
-    name: 'tokenName',
-    required: true,
-    type: String,
-    description: 'token name',
-  })
-
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    schema: {type: 'number', default: 10, minimum: 1, maximum: 100},
-    description: 'number limit',
-  })
-  @ApiOkResponse({
-    description: 'Tokens retrieved successfully',
-    type: [TokenInfoResponse],
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid token name or limit',
-    type: ErrorResponse,
-  })
-  async getTokensByName(@Param('tokenName') tokenName: string, @Query('limit', new DefaultValuePipe(10)) limit: number){
-    // To be implemented
-    try {
-      const tokens = await this.tokenService.getTokenInfosByNamePrefix(tokenName, limit, TokenTypeScope.Fungible);
-      return okResponse(tokens);
-      
+      return okResponse(r);
     } catch (e) {
       return errorResponse(e);
     }
