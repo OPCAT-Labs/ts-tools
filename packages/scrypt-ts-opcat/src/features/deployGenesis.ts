@@ -6,22 +6,24 @@ import { SmartContract } from '../smart-contract/smartContract.js';
 import { ByteString, OpcatState } from '../smart-contract/types/primitives.js';
 import { toGenesisOutpoint } from '../utils/proof.js';
 import { Genesis, genesisCheckDeploy } from '../smart-contract/builtin-libs/genesis.js';
+import { toByteString } from '../smart-contract/fns/index.js';
 
 /**
- * Default postage amount for Genesis contract output (in satoshis)
+ * Default postage amount for Genesis contract output (in satoshis).
+ * Set to minimum value since Genesis is consumed immediately in step 2.
  */
-const GENESIS_POSTAGE = 330;
+const GENESIS_POSTAGE = 1;
 
 /**
  * Deploys a smart contract, which can be traced back to genesis, to the blockchain.
  *
  * **IMPORTANT**: This function performs TWO blockchain transactions sequentially:
- * 1. First deploys a Genesis contract (requires fees + 330 sat postage)
+ * 1. First deploys a Genesis contract (requires fees + 1 sat postage)
  * 2. Then deploys the target contract using the Genesis contract as input (requires additional fees)
  *
  * ## Fee Implications
- * Total cost = Genesis transaction fees + Deploy transaction fees + 330 sat Genesis postage
- * The Genesis postage (330 sats) is consumed when the Genesis UTXO is spent in step 2.
+ * Total cost = Genesis transaction fees + Deploy transaction fees + 1 sat Genesis postage
+ * The Genesis postage (1 sat) is consumed when the Genesis UTXO is spent in step 2.
  *
  * ## Atomicity Warning
  * These two transactions are NOT atomic. If step 2 fails after step 1 broadcasts:
@@ -39,6 +41,7 @@ const GENESIS_POSTAGE = 330;
  * @param provider - The provider for chain and UTXO data
  * @param createContract - Factory function to create the contract instance with genesis outpoint
  * @param satoshis - Amount of satoshis to lock in the target contract (default: 1)
+ * @param metadata - Optional metadata (hex string) to attach to the Genesis contract output
  * @returns Promise resolving to the deploy PSBT and deployed contract instance
  *
  * @throws {Error} If signing fails for either transaction
@@ -60,6 +63,7 @@ export async function deployGenesis<Contract extends SmartContract<OpcatState>>(
   provider: UtxoProvider & ChainProvider,
   createContract: (genesisOutpoint: ByteString) => Contract,
   satoshis: number = 1,
+  metadata?: string,
 ): Promise<{
   psbt: ExtPsbt;
   contract: Contract;
@@ -71,6 +75,9 @@ export async function deployGenesis<Contract extends SmartContract<OpcatState>>(
 
   // Step 1: Create and deploy Genesis contract
   const genesis = new Genesis();
+  if (metadata) {
+    genesis.data = toByteString(metadata);
+  }
 
   const genesisPsbt = new ExtPsbt({ network });
   genesisPsbt
