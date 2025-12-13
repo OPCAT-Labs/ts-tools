@@ -11,6 +11,7 @@ import {
   sha256,
   Genesis,
   genesisCheckDeploy,
+  bvmVerify,
 } from '@opcat-labs/scrypt-ts-opcat';
 import { MAX_GENESIS_CHECK_OUTPUT } from '../../src/smart-contract/builtin-libs/genesis.js';
 import { B2GCounter } from '../contracts/b2GCounter.js';
@@ -120,11 +121,9 @@ describe('Test Backtrace Genesis Validation', () => {
     B2GCounter.loadArtifact(readArtifact('b2GCounter.json'));
   });
 
-  // ============================================================================
-  // 1. Genesis Input Index Validation
-  // ============================================================================
-  describe('Genesis input index validation', () => {
-    it('should succeed when contract is deployed from Genesis input[0]', async () => {
+  describe('Core validation tests', () => {
+    // 1. Success case: contract deployed from Genesis at input[0] and output[0]
+    it('should succeed when contract is deployed from Genesis at input[0] and output[0]', async () => {
       const { psbt, contract: counter } = await deployGenesis(
         signer,
         provider,
@@ -149,14 +148,13 @@ describe('Test Backtrace Genesis Validation', () => {
       );
 
       expect(callPsbt.isFinalized).to.be.true;
+      expect(bvmVerify(callPsbt, 0)).to.eq(true);
     });
 
-    it('should fail when contract is deployed from Genesis input[i] for i > 0', async () => {
-      // Genesis contract enforces that it must be at input[0]
-      // This test verifies that the Genesis contract itself rejects being at input[i] for i > 0
+    // 2. Genesis input[i] for i > 0 - failure
+    it('should fail when contract is deployed from a Genesis input[i] for all i > 0', async () => {
       const network = await provider.getNetwork();
 
-      // Create a Genesis contract
       const genesis = new Genesis();
       genesis.bindToUtxo({
         txId: 'a1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
@@ -165,7 +163,6 @@ describe('Test Backtrace Genesis Validation', () => {
         data: '',
       });
 
-      // Create another Genesis to occupy input[0]
       const dummyGenesis = new Genesis();
       dummyGenesis.bindToUtxo({
         txId: 'b1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
@@ -174,11 +171,10 @@ describe('Test Backtrace Genesis Validation', () => {
         data: '',
       });
 
-      // Try to place target Genesis at input[1] - should fail
       expect(() => {
         new ExtPsbt({ network })
-          .addContractInput(dummyGenesis, genesisCheckDeploy()) // input[0]
-          .addContractInput(genesis, genesisCheckDeploy()) // input[1] - should fail
+          .addContractInput(dummyGenesis, genesisCheckDeploy())
+          .addContractInput(genesis, genesisCheckDeploy())
           .addOutput({
             script: Buffer.from('51', 'hex'),
             value: 1000n,
@@ -188,41 +184,8 @@ describe('Test Backtrace Genesis Validation', () => {
           .finalizeAllInputs();
       }).to.throw(/Genesis must be unlocked at input index 0/);
     });
-  });
 
-  // ============================================================================
-  // 2. Output Index Validation
-  // ============================================================================
-  describe('Output index validation', () => {
-    it('should succeed when contract is deployed at output[0]', async () => {
-      const { psbt, contract: counter } = await deployGenesis(
-        signer,
-        provider,
-        (genesisOutpoint) => {
-          const counter = new B2GCounter(genesisOutpoint);
-          counter.state = { count: 0n };
-          return counter;
-        }
-      );
-
-      expect(psbt.isFinalized).to.be.true;
-
-      const newContract = counter.next({ count: counter.state.count + 1n });
-      const callPsbt = await call(
-        signer,
-        provider,
-        counter,
-        (contract: B2GCounter, _psbt: IExtPsbt, backtraceInfo: BacktraceInfo) => {
-          contract.increase(backtraceInfo);
-        },
-        { contract: newContract, satoshis: 1, withBackTraceInfo: true }
-      );
-
-      expect(callPsbt.isFinalized).to.be.true;
-    });
-
-    // Dynamically generate tests for all output indices > 0
-    // Limited to MAX_GENESIS_CHECK_OUTPUT - 1 because Genesis only validates up to MAX outputs
+    // 3. Contract at output[i] for i > 0 - dynamic failure tests
     for (let outputIndex = 1; outputIndex < MAX_GENESIS_CHECK_OUTPUT - 1; outputIndex++) {
       it(`should fail when contract is deployed at output[${outputIndex}]`, async () => {
         const { counter } = await deployContractAtOutputIndex(signer, provider, outputIndex);
@@ -242,43 +205,22 @@ describe('Test Backtrace Genesis Validation', () => {
 
           expect.fail(`Expected backtrace validation to fail for contract at output[${outputIndex}]`);
         } catch (error: any) {
-          // Contract deployed at output[i] for i > 0 should fail to backtrace
-          // This is the expected security behavior
+          // Expected: Contract deployed at output[i] for i > 0 should fail backtrace validation
         }
       });
     }
-  });
 
-  // ============================================================================
-  // 3. Genesis Source Validation
-  // ============================================================================
-  describe('Genesis source validation', () => {
-    it('should verify GENESIS_SCRIPT_HASH matches actual Genesis contract scriptHash', () => {
-      const genesis = new Genesis();
-      const actualScriptHash = sha256(toByteString(genesis.lockingScript.toHex()));
-
-      const { Backtrace } = require('../../src/smart-contract/builtin-libs/backtrace.js');
-
-      expect(actualScriptHash).to.equal(
-        Backtrace.GENESIS_SCRIPT_HASH,
-        'GENESIS_SCRIPT_HASH constant does not match actual Genesis contract scriptHash'
-      );
-    });
-
+    // 5. Contract not from Genesis - failure
     it('should fail when contract is not deployed from a Genesis', async () => {
-      // This test verifies that a contract deployed directly (without Genesis)
-      // cannot pass backtrace validation because its prevPrevScript won't match GENESIS_SCRIPT_HASH
       const address = await signer.getAddress();
       const utxos = await provider.getUtxos(address);
       const feeRate = await provider.getFeeRate();
       const network = await provider.getNetwork();
 
-      // Create a fake genesisOutpoint (not from a real Genesis transaction)
       const fakeGenesisOutpoint = toByteString(
         'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' + '00000000'
       );
 
-      // Deploy contract directly without Genesis
       const counter = new B2GCounter(fakeGenesisOutpoint);
       counter.state = { count: 0n };
 
@@ -296,15 +238,12 @@ describe('Test Backtrace Genesis Validation', () => {
       await provider.broadcast(deployTx.toHex());
       markSpent(provider, deployTx);
 
-      // Bind counter to the UTXO
       const contractUtxo = deployPsbt.getUtxo(0);
       if (!contractUtxo) {
         throw new Error('Contract UTXO not found');
       }
       counter.bindToUtxo(contractUtxo);
 
-      // Try to call the contract with backtrace - should FAIL
-      // because the parent transaction is not a Genesis transaction
       const newContract = counter.next({ count: counter.state.count + 1n });
 
       try {
@@ -321,15 +260,10 @@ describe('Test Backtrace Genesis Validation', () => {
         expect.fail('Expected backtrace validation to fail for contract not deployed from Genesis');
       } catch (error: any) {
         // Expected: Contract not deployed from Genesis should fail backtrace validation
-        // The failure occurs because the parent transaction's scriptHash doesn't match GENESIS_SCRIPT_HASH
       }
     });
-  });
 
-  // ============================================================================
-  // 4. Genesis Instance Validation
-  // ============================================================================
-  describe('Genesis instance validation', () => {
+    // 6. Same Genesis instance - success
     it('should succeed when contract instance is from the same Genesis', async () => {
       const { psbt, contract: counter } = await deployGenesis(
         signer,
@@ -343,7 +277,6 @@ describe('Test Backtrace Genesis Validation', () => {
 
       expect(psbt.isFinalized).to.be.true;
 
-      // Call the contract multiple times to verify backtrace chain
       let currentContract = counter;
       for (let i = 0; i < 3; i++) {
         const newContract = currentContract.next({ count: currentContract.state.count + 1n });
@@ -359,12 +292,13 @@ describe('Test Backtrace Genesis Validation', () => {
         );
 
         expect(callPsbt.isFinalized).to.be.true;
+        expect(bvmVerify(callPsbt, 0)).to.eq(true);
         currentContract = newContract;
       }
     });
 
+    // 7. Different Genesis instance - failure
     it('should fail when contract instance is not from the same Genesis', async () => {
-      // Deploy first contract from Genesis A
       const { contract: counterA } = await deployGenesis(
         signer,
         provider,
@@ -375,18 +309,16 @@ describe('Test Backtrace Genesis Validation', () => {
         }
       );
 
-      // Deploy second contract from Genesis B (different Genesis)
       const { contract: counterB } = await deployGenesis(
         signer,
         provider,
         (genesisOutpoint) => {
           const counter = new B2GCounter(genesisOutpoint);
-          counter.state = { count: 100n }; // Different initial state
+          counter.state = { count: 100n };
           return counter;
         }
       );
 
-      // First, make a valid call on counterA to advance its state
       const counterANext = counterA.next({ count: counterA.state.count + 1n });
       await call(
         signer,
@@ -398,8 +330,6 @@ describe('Test Backtrace Genesis Validation', () => {
         { contract: counterANext, satoshis: 1, withBackTraceInfo: true }
       );
 
-      // Now try to call counterB but pretend it continues from counterA's chain
-      // This should fail because counterB has a different genesisOutpoint
       const counterBNext = counterB.next({ count: counterB.state.count + 1n });
 
       try {
@@ -413,12 +343,6 @@ describe('Test Backtrace Genesis Validation', () => {
           { contract: counterBNext, satoshis: 1, withBackTraceInfo: true }
         );
 
-        // counterB should work fine with its own genesis - this is expected
-        // The real test is that counterB cannot claim to be from counterA's genesis
-
-        // To truly test "not from same genesis", we need to verify that
-        // the genesisOutpoint baked into the contract is validated
-        // Since B2GCounter stores genesisOutpoint, calling it will validate against its own genesis
         expect(counterA.genesisOutpoint).to.not.equal(
           counterB.genesisOutpoint,
           'Two contracts from different Genesis should have different genesisOutpoints'
@@ -427,82 +351,105 @@ describe('Test Backtrace Genesis Validation', () => {
         // If it fails, that's also acceptable - means validation caught the mismatch
       }
     });
-  });
 
-  // ============================================================================
-  // 5. Output Index Check Unit Test
-  // ============================================================================
-  describe('Output index check unit test', () => {
-    it('should accept Genesis deployment from output[0] (output index check passes)', () => {
-      const { Backtrace } = require('../../src/smart-contract/builtin-libs/backtrace.js');
+    // 8. Multiple Genesis in one transaction - verify backtrace for each
+    it('should correctly backtrace multiple contracts deployed from different Genesis outputs in same tx', async () => {
+      const address = await signer.getAddress();
+      const utxos = await provider.getUtxos(address);
+      const feeRate = await provider.getFeeRate();
+      const network = await provider.getNetwork();
 
-      const genesisOutpoint = toByteString(
-        '1111111111111111111111111111111111111111111111111111111111111111' + '00000000'
-      );
-      const mockBacktraceInfo = {
-        prevTxInput: {
-          prevTxHash: toByteString('1111111111111111111111111111111111111111111111111111111111111111'),
-          prevOutputIndex: 0n,
-          scriptLen: 0n,
-          scriptHashOrPubkey: Backtrace.GENESIS_SCRIPT_HASH,
-          sequence: 0n,
-        },
-        prevTxInputIndex: 0n,
-        prevPrevTxPreimage: toByteString(''),
-      };
+      // Step 1: Create transaction with multiple Genesis outputs
+      const genesisCount = 3;
+      const genesisContracts: Genesis[] = [];
+      const genesisPsbt = new ExtPsbt({ network });
 
-      const selfScript = toByteString('5151');
-      const prevTxInputList = toByteString('');
+      genesisPsbt.spendUTXO(utxos.slice(0, 10));
 
-      try {
-        Backtrace.verifyFromOutpoint(mockBacktraceInfo, genesisOutpoint, selfScript, prevTxInputList);
-      } catch (error: any) {
-        const errorMsg = error.message || String(error);
-        const failedOnOutputIndex =
-          errorMsg.includes('Genesis deployment must use output[0]') ||
-          errorMsg.includes('got output[0]');
+      for (let i = 0; i < genesisCount; i++) {
+        const genesis = new Genesis();
+        genesisContracts.push(genesis);
+        genesisPsbt.addContractOutput(genesis, 330);
+      }
 
-        expect(failedOnOutputIndex).to.be.false,
-          `Should not fail on output index check for prevOutputIndex == 0n, but got: ${errorMsg}`;
+      genesisPsbt.change(address, feeRate).seal();
+
+      const signedGenesisPsbt = await signer.signPsbt(genesisPsbt.toHex(), genesisPsbt.psbtOptions());
+      genesisPsbt.combine(ExtPsbt.fromHex(signedGenesisPsbt)).finalizeAllInputs();
+
+      const genesisTx = genesisPsbt.extractTransaction();
+      await provider.broadcast(genesisTx.toHex());
+      markSpent(provider, genesisTx);
+
+      // Step 2: Deploy contracts from each Genesis (each in separate tx)
+      const counters: B2GCounter[] = [];
+      let changeUtxo = genesisPsbt.getChangeUTXO();
+
+      for (let i = 0; i < genesisCount; i++) {
+        const genesisUtxo = genesisPsbt.getUtxo(i)!;
+        const genesisOutpoint = toGenesisOutpoint(genesisUtxo);
+        genesisContracts[i].bindToUtxo(genesisUtxo);
+
+        const counter = new B2GCounter(genesisOutpoint);
+        counter.state = { count: BigInt(i * 100) };
+
+        const deployPsbt = new ExtPsbt({ network });
+        deployPsbt.addContractInput(genesisContracts[i], genesisCheckDeploy());
+
+        if (changeUtxo) {
+          deployPsbt.spendUTXO(changeUtxo);
+        }
+
+        deployPsbt.addContractOutput(counter, 1);
+        deployPsbt.change(address, feeRate).seal();
+
+        const signedDeployPsbt = await signer.signPsbt(deployPsbt.toHex(), deployPsbt.psbtOptions());
+        deployPsbt.combine(ExtPsbt.fromHex(signedDeployPsbt)).finalizeAllInputs();
+
+        const deployTx = deployPsbt.extractTransaction();
+        await provider.broadcast(deployTx.toHex());
+        markSpent(provider, deployTx);
+
+        const contractUtxo = deployPsbt.getUtxo(0)!;
+        counter.bindToUtxo(contractUtxo);
+        counters.push(counter);
+
+        changeUtxo = deployPsbt.getChangeUTXO();
+      }
+
+      // Step 3: Verify backtrace for each contract
+      for (let i = 0; i < genesisCount; i++) {
+        const counter = counters[i];
+        const newContract = counter.next({ count: counter.state.count + 1n });
+
+        const callPsbt = await call(
+          signer,
+          provider,
+          counter,
+          (contract: B2GCounter, _psbt: IExtPsbt, backtraceInfo: BacktraceInfo) => {
+            contract.increase(backtraceInfo);
+          },
+          { contract: newContract, satoshis: 1, withBackTraceInfo: true }
+        );
+
+        expect(callPsbt.isFinalized).to.be.true;
+        expect(bvmVerify(callPsbt, 0)).to.eq(true);
       }
     });
 
-    // Test that non-zero output indices are rejected
-    for (let outputIndex = 1; outputIndex < MAX_GENESIS_CHECK_OUTPUT; outputIndex++) {
-      it(`should reject Genesis deployment from output[${outputIndex}] (output index check fails)`, () => {
-        const { Backtrace } = require('../../src/smart-contract/builtin-libs/backtrace.js');
+  });
 
-        // Create output index as little-endian 4-byte hex
-        const outputIndexHex = outputIndex.toString(16).padStart(8, '0');
-        const genesisOutpoint = toByteString(
-          '1111111111111111111111111111111111111111111111111111111111111111' + outputIndexHex
-        );
+  describe('Genesis source validation', () => {
+    it('should verify GENESIS_SCRIPT_HASH matches actual Genesis contract scriptHash', () => {
+      const genesis = new Genesis();
+      const actualScriptHash = sha256(toByteString(genesis.lockingScript.toHex()));
 
-        const mockBacktraceInfo = {
-          prevTxInput: {
-            prevTxHash: toByteString('1111111111111111111111111111111111111111111111111111111111111111'),
-            prevOutputIndex: BigInt(outputIndex), // Non-zero output index
-            scriptLen: 0n,
-            scriptHashOrPubkey: Backtrace.GENESIS_SCRIPT_HASH,
-            sequence: 0n,
-          },
-          prevTxInputIndex: 0n,
-          prevPrevTxPreimage: toByteString(''),
-        };
+      const { Backtrace } = require('../../src/smart-contract/builtin-libs/backtrace.js');
 
-        const selfScript = toByteString('5151');
-        const prevTxInputList = toByteString('');
-
-        try {
-          Backtrace.verifyFromOutpoint(mockBacktraceInfo, genesisOutpoint, selfScript, prevTxInputList);
-          // If no error thrown, check if it should have failed on output index
-          // The test may pass through output index check but fail on other validations
-        } catch (error: any) {
-          const errorMsg = error.message || String(error);
-          // Either it fails on output index check (expected) or other validation
-          // Both are acceptable as the contract cannot be used
-        }
-      });
-    }
+      expect(actualScriptHash).to.equal(
+        Backtrace.GENESIS_SCRIPT_HASH,
+        'GENESIS_SCRIPT_HASH constant does not match actual Genesis contract scriptHash'
+      );
+    });
   });
 });

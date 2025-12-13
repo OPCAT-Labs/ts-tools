@@ -66,6 +66,37 @@ export class Backtrace extends SmartContractLib {
   /**
    * Back-to-genesis backtrace verification for a contract which can be backtraced to the genesis outpoint.
    * It will be a valid backtraceInfo if the prevPrevOutpoint is the genesis outpoint or the prevPrevScript is the selfScript.
+   *
+   * ## Multiple Genesis Support
+   * A single transaction can create multiple Genesis outputs at different indices (output[0], output[1], etc.).
+   * Each Genesis output can be spent separately to deploy a different contract, with each contract having
+   * its own unique genesisOutpoint. This allows batch creation of Genesis contracts in one transaction
+   * while maintaining independent contract lineages.
+   *
+   * ```
+   *                         Genesis Creation Tx
+   *                        +-------------------+
+   *                        |    output[0]      |---> Genesis_0 (outpoint: txid:0)
+   *   UTXOs -------------->|    output[1]      |---> Genesis_1 (outpoint: txid:1)
+   *                        |    output[2]      |---> Genesis_2 (outpoint: txid:2)
+   *                        +-------------------+
+   *                                 |
+   *          +----------------------+----------------------+
+   *          |                      |                      |
+   *          v                      v                      v
+   *   +-------------+        +-------------+        +-------------+
+   *   | Deploy Tx A |        | Deploy Tx B |        | Deploy Tx C |
+   *   +-------------+        +-------------+        +-------------+
+   *   | spend Gen_0 |        | spend Gen_1 |        | spend Gen_2 |
+   *   | output[0]:  |        | output[0]:  |        | output[0]:  |
+   *   | Contract_A  |        | Contract_B  |        | Contract_C  |
+   *   +-------------+        +-------------+        +-------------+
+   *          |                      |                      |
+   *          v                      v                      v
+   *   genesisOutpoint:       genesisOutpoint:       genesisOutpoint:
+   *      txid:0                 txid:1                 txid:2
+   * ```
+   *
    * @param backtraceInfo backtrace info to verify, including prevTx and prevPrevTx informations
    * @param t_genesisOutpoint expected genesis outpoint of the contract which usually is a contract property and trustable
    * @param t_selfScript expected self locking script, i.e. this.ctx.spentScript, of the currect spending UTXO context which is trustable
@@ -84,13 +115,6 @@ export class Backtrace extends SmartContractLib {
       assert(
         res.prevPrevScript == Backtrace.GENESIS_SCRIPT_HASH,
         `prevPrevScript does not match Genesis contract script`,
-      );
-      // CRITICAL: Verify contract came from output[0] of Genesis deployment transaction
-      // Genesis only validates uniqueness of output[0], not other outputs (1, 2, 3...)
-      // This prevents attackers from deploying multiple identical contracts in one Genesis tx
-      assert(
-        backtraceInfo.prevTxInput.prevOutputIndex == 0n,
-        `Genesis deployment must use output[0], got output[${backtraceInfo.prevTxInput.prevOutputIndex}]`,
       );
     }
     assert(
