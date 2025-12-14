@@ -6,7 +6,7 @@ import { TokenService } from '../token/token.service';
 import { Response } from 'express';
 import { TokenTypeScope } from '../../common/types';
 import { ErrorResponse } from '../token/dto/token-response.dto';
-import { CollectionInfoResponse, NftInfoResponse, CollectionUtxosResponse, NftUtxoResponse, CollectionBalanceResponse, CollectionMintAmountResponse, NftHolderResponse, CollectionNftLocalIdsResponse, CollectionTotalSupplyResponse, CollectionTotalTxsResponse, CollectionTxsResponse, CollectionTotalHoldersResponse } from './dto/collection-response.dto';
+import { CollectionInfoResponse, NftInfoResponse, CollectionUtxosResponse, NftUtxoResponse, CollectionBalanceResponse, CollectionMintAmountResponse, NftHolderResponse, CollectionNftLocalIdsResponse, CollectionTotalSupplyResponse, CollectionTotalTxsResponse, CollectionTxsResponse, CollectionTotalHoldersResponse, CollectionListResponse } from './dto/collection-response.dto';
 
 @Controller('collections')
 export class CollectionController {
@@ -14,6 +14,70 @@ export class CollectionController {
     private readonly collectionService: CollectionService,
     private readonly tokenService: TokenService,
   ) {}
+
+  @Get()
+  @ApiTags('collection')
+  @ApiOperation({ summary: 'Get collections with pagination' })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'paging offset',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'paging limit (max: 100, default: 50)',
+  })
+  @ApiOkResponse({
+    description: 'Collection list retrieved successfully',
+    type: CollectionListResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid parameters',
+    type: ErrorResponse,
+  })
+  async getCollections(
+    @Query('offset') offset: number = 0,
+    @Query('limit') limit: number = 50,
+  ) {
+    try {
+      const result = await this.tokenService.searchTokens(
+        undefined,
+        TokenTypeScope.NonFungible,
+        offset,
+        limit,
+      );
+
+      // Transform token info to collection info format
+      const collections = result.tokens.map(token => {
+        if (token) {
+          return {
+            collectionId: token.tokenId,
+            collectionScriptHash: token.tokenScriptHash,
+            genesisTxid: token.genesisTxid,
+            name: token.name,
+            symbol: token.symbol,
+            minterScriptHash: token.minterScriptHash,
+            firstMintHeight: token.firstMintHeight,
+            deployTxid: token.deployTxid,
+            deployHeight: token.deployHeight,
+            metadata: token.info,
+          };
+        }
+        return null;
+      }).filter(c => c !== null);
+
+      return okResponse({
+        list: collections,
+        total: result.total,
+        trackerBlockHeight: result.trackerBlockHeight,
+      });
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
 
   @Get(':collectionIdOrAddr')
   @ApiTags('collection')
