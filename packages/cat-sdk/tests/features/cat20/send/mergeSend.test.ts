@@ -235,7 +235,7 @@ describe('Test the feature `mergeSend` for `Cat20`', () => {
         cat20Generator.deployInfo.adminScriptHash
       )
 
-      // Should have 1 merge operation
+      // Should have 2 merge operations
       expect(result.merges.length).to.eq(2)
 
       // Verify all merge transactions
