@@ -161,17 +161,19 @@ export class Backtrace extends SmartContractLib {
     // check if the passed prevTxInput and prevTxInputIndexVal are matched
     assert(
       slice(
-        t_prevTxInputList, 
+        t_prevTxInputList,
         backtraceInfo.prevTxInputIndex * TX_INPUT_BYTE_LEN,
         (backtraceInfo.prevTxInputIndex + 1n) * TX_INPUT_BYTE_LEN
       ) ==
       TxUtils.mergeInput(backtraceInfo.prevTxInput),
+      'prevTxInput does not match prevTxInputList at specified index',
     );
     // check if prevTxHash of passed prevTxInput and prevPrevTx are matched
     const prevPrevTxHash = backtraceInfo.prevTxInput.prevTxHash;
     assert(
       prevPrevTxHash ==
         TxHashPreimageUtils.getTxHashFromTxHashPreimage(backtraceInfo.prevPrevTxPreimage),
+      'prevPrevTxHash mismatch: prevTxInput.prevTxHash does not match prevPrevTxPreimage hash',
     );
     // all fields in backtraceInfo have been verified
     const prevPrevScript =

@@ -13,9 +13,9 @@ import {
   genesisCheckDeploy,
   bvmVerify,
 } from '@opcat-labs/scrypt-ts-opcat';
-import { MAX_GENESIS_CHECK_OUTPUT } from '../../src/smart-contract/builtin-libs/genesis.js';
+import { MAX_GENESIS_CHECK_OUTPUT, MAX_GENESIS_CHECK_INPUT } from '../../src/smart-contract/builtin-libs/genesis.js';
 import { B2GCounter } from '../contracts/b2GCounter.js';
-import { getDefaultSigner, getDefaultProvider, readArtifact } from '../utils/index.js';
+import { getDefaultSigner, getDefaultProvider, readArtifact, getDummyUtxo } from '../utils/index.js';
 import { toGenesisOutpoint } from '../../src/utils/proof.js';
 import { markSpent } from '../../src/providers/utxoProvider.js';
 
@@ -151,39 +151,56 @@ describe('Test Backtrace Genesis Validation', () => {
       expect(bvmVerify(callPsbt, 0)).to.eq(true);
     });
 
-    // 2. Genesis input[i] for i > 0 - failure
-    it('should fail when contract is deployed from a Genesis input[i] for all i > 0', async () => {
-      const network = await provider.getNetwork();
-
+    // 2. Genesis input[i] for i > 0 - dynamic failure tests
+    // Helper function to create unique Genesis contract
+    function createGenesisWithIndex(index: number): Genesis {
       const genesis = new Genesis();
+      const txId = index.toString(16).padStart(2, '0') + 'a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f8' + index.toString(16).padStart(2, '0');
       genesis.bindToUtxo({
-        txId: 'a1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        txId,
         outputIndex: 0,
         satoshis: 10000,
         data: '',
       });
+      return genesis;
+    }
 
-      const dummyGenesis = new Genesis();
-      dummyGenesis.bindToUtxo({
-        txId: 'b1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
-        outputIndex: 0,
-        satoshis: 5000,
-        data: '',
+    for (let genesisInputIndex = 1; genesisInputIndex < MAX_GENESIS_CHECK_INPUT; genesisInputIndex++) {
+      it(`should fail when Genesis is at input[${genesisInputIndex}]`, async () => {
+        const network = await provider.getNetwork();
+        const address = await signer.getAddress();
+
+        const psbt = new ExtPsbt({ network });
+
+        // Add dummy P2PKH UTXOs before the target Genesis to push it to input[genesisInputIndex]
+        for (let i = 0; i < genesisInputIndex; i++) {
+          const dummyUtxo = getDummyUtxo(address, 10000);
+          dummyUtxo.txId = dummyUtxo.txId.slice(0, -2) + i.toString(16).padStart(2, '0');
+          dummyUtxo.outputIndex = i;
+          psbt.spendUTXO(dummyUtxo);
+        }
+
+        // Add target Genesis at input[genesisInputIndex]
+        const targetGenesis = createGenesisWithIndex(genesisInputIndex);
+        psbt.addContractInput(targetGenesis, genesisCheckDeploy());
+
+        psbt.addOutput({
+          script: Buffer.from('51', 'hex'),
+          value: 1000n,
+          data: new Uint8Array(),
+        });
+
+        psbt.seal();
+
+        // Sign P2PKH inputs before finalizing
+        const signedHex = await signer.signPsbt(psbt.toHex(), psbt.psbtOptions());
+        psbt.combine(ExtPsbt.fromHex(signedHex));
+
+        expect(() => {
+          psbt.finalizeAllInputs();
+        }).to.throw(/Genesis must be unlocked at input index 0/);
       });
-
-      expect(() => {
-        new ExtPsbt({ network })
-          .addContractInput(dummyGenesis, genesisCheckDeploy())
-          .addContractInput(genesis, genesisCheckDeploy())
-          .addOutput({
-            script: Buffer.from('51', 'hex'),
-            value: 1000n,
-            data: new Uint8Array(),
-          })
-          .seal()
-          .finalizeAllInputs();
-      }).to.throw(/Genesis must be unlocked at input index 0/);
-    });
+    }
 
     // 3. Contract at output[i] for i > 0 - dynamic failure tests
     for (let outputIndex = 1; outputIndex < MAX_GENESIS_CHECK_OUTPUT - 1; outputIndex++) {
@@ -217,16 +234,32 @@ describe('Test Backtrace Genesis Validation', () => {
       const feeRate = await provider.getFeeRate();
       const network = await provider.getNetwork();
 
-      const fakeGenesisOutpoint = toByteString(
-        'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' + '00000000'
-      );
+      // Step 1: Create a P2PKH transaction to generate a fake genesis outpoint
+      const fakePsbt = new ExtPsbt({ network });
+      fakePsbt
+        .spendUTXO(utxos.slice(0, 5))
+        .change(address, feeRate)
+        .seal();
 
+      const signedFakePsbt = await signer.signPsbt(fakePsbt.toHex(), fakePsbt.psbtOptions());
+      fakePsbt.combine(ExtPsbt.fromHex(signedFakePsbt)).finalizeAllInputs();
+
+      const fakeTx = fakePsbt.extractTransaction();
+      await provider.broadcast(fakeTx.toHex());
+      markSpent(provider, fakeTx);
+
+      // Use the P2PKH output as fake genesis outpoint
+      const fakeGenesisUtxo = fakePsbt.getUtxo(0)!;
+      const fakeGenesisOutpoint = toGenesisOutpoint(fakeGenesisUtxo);
+
+      // Step 2: Deploy contract using fake genesis outpoint
       const counter = new B2GCounter(fakeGenesisOutpoint);
       counter.state = { count: 0n };
 
+      const changeUtxo = fakePsbt.getChangeUTXO();
       const deployPsbt = new ExtPsbt({ network });
       deployPsbt
-        .spendUTXO(utxos.slice(0, 5))
+        .spendUTXO(changeUtxo ? [changeUtxo] : [])
         .addContractOutput(counter, 1)
         .change(address, feeRate)
         .seal();
@@ -314,17 +347,26 @@ describe('Test Backtrace Genesis Validation', () => {
         provider,
         (genesisOutpoint) => {
           const counter = new B2GCounter(genesisOutpoint);
-          counter.state = { count: 100n };
+          counter.state = { count: 0n };
           return counter;
         }
       );
 
+      expect(counterA.genesisOutpoint).to.not.equal(
+        counterB.genesisOutpoint,
+        'Two contracts from different Genesis should have different genesisOutpoints'
+      );
+
       const counterANext = counterA.next({ count: counterA.state.count + 1n });
+      let shareBacktraceInfo: BacktraceInfo;
       await call(
         signer,
         provider,
         counterA,
         (contract: B2GCounter, _psbt: IExtPsbt, backtraceInfo: BacktraceInfo) => {
+          if (!shareBacktraceInfo) {
+            shareBacktraceInfo = backtraceInfo
+          }
           contract.increase(backtraceInfo);
         },
         { contract: counterANext, satoshis: 1, withBackTraceInfo: true }
@@ -338,17 +380,14 @@ describe('Test Backtrace Genesis Validation', () => {
           provider,
           counterB,
           (contract: B2GCounter, _psbt: IExtPsbt, backtraceInfo: BacktraceInfo) => {
-            contract.increase(backtraceInfo);
+            contract.increase(shareBacktraceInfo!);
           },
           { contract: counterBNext, satoshis: 1, withBackTraceInfo: true }
         );
-
-        expect(counterA.genesisOutpoint).to.not.equal(
-          counterB.genesisOutpoint,
-          'Two contracts from different Genesis should have different genesisOutpoints'
-        );
+        expect.fail('Expected backtrace validation to fail when using backtraceInfo from different Genesis');
       } catch (error: any) {
-        // If it fails, that's also acceptable - means validation caught the mismatch
+        // Verify error contains expected message about prevTxInput mismatch
+        expect(error.message).to.match(/prevTxInput does not match prevTxInputList at specified index/);
       }
     });
 
