@@ -1,374 +1,280 @@
 import * as dotenv from 'dotenv';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
-import { Genesis } from '../contracts/genesis.js';
-import { readArtifact } from '../utils/index.js';
+import {
+  Genesis,
+  MAX_GENESIS_CHECK_OUTPUT,
+  MAX_GENESIS_CHECK_INPUT,
+} from '../../src/smart-contract/builtin-libs/genesis.js';
+import { getDummyUtxo, getDefaultSigner } from '../utils/index.js';
 import {
   ExtPsbt,
   bvmVerify,
   toByteString,
-  genesisCheckDeploy,
+  sha256,
+  TxOut,
+  fill,
+  Signer,
 } from '@opcat-labs/scrypt-ts-opcat';
+import { FixedArray } from '../../src/index.js';
+import { uint8ArrayToHex } from '../../src/utils/common.js';
+import { Backtrace } from '../../src/smart-contract/builtin-libs/backtrace.js';
 
 use(chaiAsPromised);
 dotenv.config();
 
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Creates a contract call function for Genesis.checkDeploy that automatically
+ * builds the TxOut array from the transaction outputs.
+ */
+function genesisCheckDeploy(debug = false) {
+  return (contract: Genesis, psbt: ExtPsbt) => {
+    const emptyOutput: TxOut = {
+      scriptHash: toByteString(''),
+      satoshis: 0n,
+      dataHash: sha256(toByteString('')),
+    };
+    const outputs: TxOut[] = fill(emptyOutput, MAX_GENESIS_CHECK_OUTPUT);
+
+    const txOutputs = psbt.txOutputs;
+    const outputCount = Math.min(txOutputs.length, MAX_GENESIS_CHECK_OUTPUT);
+
+    if (debug) {
+      console.log('genesisCheckDeploy: txOutputs.length =', txOutputs.length);
+      console.log('genesisCheckDeploy: outputCount =', outputCount);
+    }
+
+    for (let i = 0; i < outputCount; i++) {
+      const output = txOutputs[i];
+      outputs[i] = {
+        scriptHash: sha256(toByteString(uint8ArrayToHex(output.script))),
+        satoshis: BigInt(output.value),
+        dataHash: sha256(toByteString(uint8ArrayToHex(output.data))),
+      };
+    }
+
+    contract.checkDeploy(
+      outputs as FixedArray<TxOut, typeof MAX_GENESIS_CHECK_OUTPUT>,
+      BigInt(outputCount)
+    );
+  };
+}
+
+/**
+ * Creates a Genesis contract bound to a unique UTXO
+ */
+function createGenesis(index: number = 0): Genesis {
+  const genesis = new Genesis();
+  const txId = `${index.toString(16).padStart(2, '0')}a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f8${index.toString(16).padStart(2, '0')}`;
+  genesis.bindToUtxo({
+    txId,
+    outputIndex: 0,
+    satoshis: 10000,
+    data: '',
+  });
+  return genesis;
+}
+
+/**
+ * Creates a unique script hex string for output index
+ * Uses hex values 51-5f (OP_1 to OP_15+) to create unique scripts
+ */
+function getUniqueScript(index: number): string {
+  return (0x51 + index).toString(16);
+}
+
+// ============================================================================
+// Test Suite
+// ============================================================================
+
 describe('Test Genesis', () => {
-  before(() => {
-    Genesis.loadArtifact(readArtifact('genesis.json'));
-  });
+  describe('Core validation tests', () => {
+    // 1. Genesis input index validation
+    it('should fail when Genesis is not at input index 0', async () => {
+      const genesis = createGenesis(0);
+      const dummyGenesis = createGenesis(1);
 
-  /**
-   * Test successful deployment with 3 unique outputs
-   */
-  it('should call `checkDeploy` method successfully.', async () => {
-    const genesis: Genesis = new Genesis();
-    genesis.bindToUtxo({
-      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
-      outputIndex: 0,
-      satoshis: 10000,
-      data: '',
+      expect(() => {
+        new ExtPsbt()
+          .addContractInput(dummyGenesis, genesisCheckDeploy())
+          .addContractInput(genesis, genesisCheckDeploy())
+          .addOutput({
+            script: Buffer.from(getUniqueScript(0), 'hex'),
+            value: 1000n,
+            data: new Uint8Array(),
+          })
+          .seal()
+          .finalizeAllInputs();
+      }).to.throw(/Genesis must be unlocked at input index 0/);
     });
 
-    const script1 = toByteString('51');
-    const script2 = toByteString('52');
-    const script3 = toByteString('53');
+    // 2. Output[0] uniqueness - success case
+    it('should succeed without duplicate scriptHash (outputs[0] != outputs[i]) for all i > 0', async () => {
+      const genesis = createGenesis(0);
+      const psbt = new ExtPsbt().addContractInput(genesis, genesisCheckDeploy());
 
-    const psbt = new ExtPsbt()
-      .addContractInput(genesis, genesisCheckDeploy())
-      .addOutput({
-        script: Buffer.from(script1, 'hex'),
-        value: 1000n,
-        data: new Uint8Array(),
-      })
-      .addOutput({
-        script: Buffer.from(script2, 'hex'),
-        value: 1000n,
-        data: new Uint8Array(),
-      })
-      .addOutput({
-        script: Buffer.from(script3, 'hex'),
-        value: 1000n,
-        data: new Uint8Array(),
-      })
-      .seal()
-      .finalizeAllInputs();
+      for (let i = 0; i < MAX_GENESIS_CHECK_OUTPUT; i++) {
+        psbt.addOutput({
+          script: Buffer.from(getUniqueScript(i), 'hex'),
+          value: 1000n,
+          data: new Uint8Array(),
+        });
+      }
 
-    expect(psbt.isFinalized).to.be.true;
-    expect(bvmVerify(psbt, 0)).to.eq(true);
-  });
-
-  /**
-   * Test failure: outputs[0] and outputs[1] have same scriptHash
-   */
-  it('should fail with duplicate scriptHash (outputs[0] == outputs[1])', async () => {
-    const genesis = new Genesis();
-    genesis.bindToUtxo({
-      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
-      outputIndex: 0,
-      satoshis: 10000,
-      data: '',
+      psbt.seal().finalizeAllInputs();
+      expect(psbt.isFinalized).to.be.true;
+      expect(bvmVerify(psbt, 0)).to.eq(true);
     });
 
-    // outputs[0] and outputs[1] use the same script (duplicate)
-    const script1 = toByteString('51');
-    const script2 = toByteString('51'); // Same as script1 - duplicate!
-    const script3 = toByteString('53');
+    // 3. Output[0] uniqueness - dynamic failure tests for all i > 0
+    for (let dupIndex = 1; dupIndex < MAX_GENESIS_CHECK_OUTPUT; dupIndex++) {
+      it(`should fail with duplicate scriptHash (outputs[0] == outputs[${dupIndex}])`, async () => {
+        const genesis = createGenesis(0);
+        const psbt = new ExtPsbt().addContractInput(genesis, genesisCheckDeploy());
+        for (let i = 0; i <= dupIndex; i++) {
+          const scriptIndex = i === dupIndex ? 0 : i;
+          psbt.addOutput({ script: Buffer.from(getUniqueScript(scriptIndex), 'hex'), value: 1000n, data: new Uint8Array() });
+        }
+        expect(() => psbt.seal().finalizeAllInputs()).to.throw();
+      });
+    }
 
-    expect(() => {
-      new ExtPsbt()
-        .addContractInput(genesis, genesisCheckDeploy())
-        .addOutput({
-          script: Buffer.from(script1, 'hex'),
-          value: 1000n,
-          data: new Uint8Array(),
-        })
-        .addOutput({
-          script: Buffer.from(script2, 'hex'),
-          value: 1000n,
-          data: new Uint8Array(),
-        })
-        .addOutput({
-          script: Buffer.from(script3, 'hex'),
-          value: 1000n,
-          data: new Uint8Array(),
-        })
-        .seal()
-        .finalizeAllInputs();
-    }).to.throw();
-  });
+    // 4. Non-output[0] duplication allowed - dynamic tests for all i,j > 0 where i < j
+    for (let i = 1; i < MAX_GENESIS_CHECK_OUTPUT - 1; i++) {
+      for (let j = i + 1; j < MAX_GENESIS_CHECK_OUTPUT; j++) {
+        it(`should succeed with duplicate scriptHash (outputs[${i}] == outputs[${j}])`, async () => {
+          const genesis = createGenesis(0);
+          const psbt = new ExtPsbt().addContractInput(genesis, genesisCheckDeploy());
+          for (let k = 0; k <= j; k++) {
+            const scriptIndex = k === j ? i : k;
+            psbt.addOutput({ script: Buffer.from(getUniqueScript(scriptIndex), 'hex'), value: 1000n, data: new Uint8Array() });
+          }
+          psbt.seal().finalizeAllInputs();
+          expect(psbt.isFinalized).to.be.true;
+          expect(bvmVerify(psbt, 0)).to.eq(true);
+        });
+      }
+    }
 
-  /**
-   * Test failure: outputs[0] and outputs[2] have same scriptHash
-   */
-  it('should fail with duplicate scriptHash (outputs[0] == outputs[2])', async () => {
-    const genesis = new Genesis();
-    genesis.bindToUtxo({
-      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
-      outputIndex: 0,
-      satoshis: 10000,
-      data: '',
+    // 5. Output count boundary - dynamic tests for all counts 1 to MAX
+    for (let outputCount = 1; outputCount <= MAX_GENESIS_CHECK_OUTPUT; outputCount++) {
+      it(`should succeed when outputs count == ${outputCount}`, async () => {
+        const genesis = createGenesis(0);
+        const psbt = new ExtPsbt().addContractInput(genesis, genesisCheckDeploy());
+        for (let i = 0; i < outputCount; i++) {
+          psbt.addOutput({ script: Buffer.from(getUniqueScript(i), 'hex'), value: 1000n, data: new Uint8Array() });
+        }
+        psbt.seal().finalizeAllInputs();
+        expect(psbt.isFinalized).to.be.true;
+        expect(bvmVerify(psbt, 0)).to.eq(true);
+      });
+    }
+
+    // 6. Output count boundary - failure when exceeds MAX
+    it(`should fail when outputs count == ${MAX_GENESIS_CHECK_OUTPUT + 1}`, async () => {
+      const genesis = createGenesis(0);
+      expect(() => {
+        const psbt = new ExtPsbt().addContractInput(genesis, genesisCheckDeploy());
+        for (let i = 0; i <= MAX_GENESIS_CHECK_OUTPUT; i++) {
+          psbt.addOutput({ script: Buffer.from(getUniqueScript(i), 'hex'), value: 1000n, data: new Uint8Array() });
+        }
+        psbt.seal().finalizeAllInputs();
+      }).to.throw();
     });
 
-    // outputs[0] and outputs[2] use the same script (duplicate)
-    const script1 = toByteString('51');
-    const script2 = toByteString('52');
-    const script3 = toByteString('51'); // Same as script1 - duplicate!
+    // 7. Input count boundary - dynamic tests for all counts 1 to MAX
+    for (let inputCount = 1; inputCount <= MAX_GENESIS_CHECK_INPUT; inputCount++) {
+      it(`should succeed when inputs count == ${inputCount}`, async () => {
+        const signer: Signer = getDefaultSigner();
+        const address = await signer.getAddress();
+        const genesis = createGenesis(0);
+        const psbt = new ExtPsbt().addContractInput(genesis, genesisCheckDeploy());
 
-    expect(() => {
-      new ExtPsbt()
-        .addContractInput(genesis, genesisCheckDeploy())
-        .addOutput({
-          script: Buffer.from(script1, 'hex'),
-          value: 1000n,
-          data: new Uint8Array(),
-        })
-        .addOutput({
-          script: Buffer.from(script2, 'hex'),
-          value: 1000n,
-          data: new Uint8Array(),
-        })
-        .addOutput({
-          script: Buffer.from(script3, 'hex'),
-          value: 1000n,
-          data: new Uint8Array(),
-        })
-        .seal()
-        .finalizeAllInputs();
-    }).to.throw();
+        // Create unique signable UTXOs using signer's address
+        for (let i = 1; i < inputCount; i++) {
+          const utxo = getDummyUtxo(address, 10000);
+          utxo.txId = utxo.txId.slice(0, -2) + i.toString(16).padStart(2, '0');
+          utxo.outputIndex = i;
+          psbt.spendUTXO(utxo);
+        }
+
+        psbt.addOutput({ script: Buffer.from(getUniqueScript(0), 'hex'), value: 1000n, data: new Uint8Array() }).seal();
+        expect(psbt.txInputs.length).to.equal(inputCount);
+
+        // Sign P2PKH inputs (skip contract input at index 0)
+        if (inputCount > 1) {
+          const signedHex = await signer.signPsbt(psbt.toHex(), psbt.psbtOptions());
+          psbt.combine(ExtPsbt.fromHex(signedHex));
+        }
+
+        psbt.finalizeAllInputs();
+        expect(psbt.isFinalized).to.be.true;
+        expect(bvmVerify(psbt, 0)).to.eq(true);
+      });
+    }
+
+    // 8. Input count boundary - failure when exceeds MAX
+    it(`should fail when inputs count == ${MAX_GENESIS_CHECK_INPUT + 1}`, async () => {
+      const genesisContracts: Genesis[] = [];
+      for (let i = 0; i <= MAX_GENESIS_CHECK_INPUT; i++) {
+        genesisContracts.push(createGenesis(i));
+      }
+      expect(() => {
+        const psbt = new ExtPsbt();
+        for (const g of genesisContracts) {
+          psbt.addContractInput(g, genesisCheckDeploy());
+        }
+        psbt.addOutput({ script: Buffer.from(getUniqueScript(0), 'hex'), value: 1000n, data: new Uint8Array() }).seal().finalizeAllInputs();
+      }).to.throw(/Too many inputs to validate/);
+    });
   });
 
-  /**
-   * Test failure: outputs[1] and outputs[2] have same scriptHash
-   */
-  it('should fail with duplicate scriptHash (outputs[1] == outputs[2])', async () => {
-    const genesis = new Genesis();
-    genesis.bindToUtxo({
-      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
-      outputIndex: 0,
-      satoshis: 10000,
-      data: '',
+  describe('Input scriptHash validation', () => {
+    it('should fail when output[0] scriptHash matches input[0] scriptHash', async () => {
+      const genesis = createGenesis(0);
+      const genesisScript = genesis.lockingScript.toBuffer();
+
+      expect(() => {
+        new ExtPsbt()
+          .addContractInput(genesis, genesisCheckDeploy())
+          .addOutput({
+            script: genesisScript,
+            value: 1000n,
+            data: new Uint8Array(),
+          })
+          .seal()
+          .finalizeAllInputs();
+      }).to.throw();
     });
-
-    // outputs[1] and outputs[2] use the same script (duplicate)
-    const script1 = toByteString('51');
-    const script2 = toByteString('52');
-    const script3 = toByteString('52'); // Same as script2 - duplicate!
-
-    expect(() => {
-      new ExtPsbt()
-        .addContractInput(genesis, genesisCheckDeploy())
-        .addOutput({
-          script: Buffer.from(script1, 'hex'),
-          value: 1000n,
-          data: new Uint8Array(),
-        })
-        .addOutput({
-          script: Buffer.from(script2, 'hex'),
-          value: 1000n,
-          data: new Uint8Array(),
-        })
-        .addOutput({
-          script: Buffer.from(script3, 'hex'),
-          value: 1000n,
-          data: new Uint8Array(),
-        })
-        .seal()
-        .finalizeAllInputs();
-    }).to.throw();
   });
 
-  /**
-   * Test with 1 real output and 2 empty placeholders
-   * Empty scriptHash should be skipped in uniqueness validation
-   */
-  it('should succeed with 1 real output and 2 empty placeholders', async () => {
-    const genesis = new Genesis();
-    genesis.bindToUtxo({
-      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
-      outputIndex: 0,
-      satoshis: 10000,
-      data: '',
+  describe('Output[0] non-empty validation', () => {
+    it('should fail when output[0] is empty (no outputs)', async () => {
+      const genesis = createGenesis(0);
+
+      expect(() => {
+        new ExtPsbt()
+          .addContractInput(genesis, genesisCheckDeploy())
+          .seal()
+          .finalizeAllInputs();
+      }).to.throw();
     });
-
-    const script1 = toByteString('51');
-
-    const psbt = new ExtPsbt()
-      .addContractInput(genesis, genesisCheckDeploy())
-      .addOutput({
-        script: Buffer.from(script1, 'hex'),
-        value: 1000n,
-        data: new Uint8Array(),
-      })
-      .seal()
-      .finalizeAllInputs();
-
-    expect(psbt.isFinalized).to.be.true;
-    expect(bvmVerify(psbt, 0)).to.eq(true);
   });
 
-  /**
-   * Test with 2 real outputs and 1 empty placeholder
-   */
-  it('should succeed with 2 real outputs and 1 empty placeholder', async () => {
-    const genesis = new Genesis();
-    genesis.bindToUtxo({
-      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
-      outputIndex: 0,
-      satoshis: 10000,
-      data: '',
+  describe('GENESIS_SCRIPT_HASH validation', () => {
+    it('should verify GENESIS_SCRIPT_HASH matches Genesis contract', () => {
+      const genesis = new Genesis();
+      const lockingScript = genesis.lockingScript.toHex();
+      const actualScriptHash = sha256(toByteString(lockingScript));
+
+      expect(actualScriptHash).to.equal(
+        Backtrace.GENESIS_SCRIPT_HASH,
+        `GENESIS_SCRIPT_HASH mismatch! Expected: ${actualScriptHash}, Got: ${Backtrace.GENESIS_SCRIPT_HASH}`
+      );
     });
-
-    const script1 = toByteString('51');
-    const script2 = toByteString('52');
-
-    const psbt = new ExtPsbt()
-      .addContractInput(genesis, genesisCheckDeploy())
-      .addOutput({
-        script: Buffer.from(script1, 'hex'),
-        value: 1000n,
-        data: new Uint8Array(),
-      })
-      .addOutput({
-        script: Buffer.from(script2, 'hex'),
-        value: 1000n,
-        data: new Uint8Array(),
-      })
-      .seal()
-      .finalizeAllInputs();
-
-    expect(psbt.isFinalized).to.be.true;
-    expect(bvmVerify(psbt, 0)).to.eq(true);
-  });
-
-  /**
-   * Test failure: duplicate non-empty scriptHashes
-   * genesisCheckDeploy will detect duplicates in actual outputs
-   */
-  it('should fail with duplicate scriptHash when outputs are duplicated', async () => {
-    const genesis = new Genesis();
-    genesis.bindToUtxo({
-      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
-      outputIndex: 0,
-      satoshis: 10000,
-      data: '',
-    });
-
-    const script1 = toByteString('51');
-
-    expect(() => {
-      new ExtPsbt()
-        .addContractInput(genesis, genesisCheckDeploy())
-        .addOutput({
-          script: Buffer.from(script1, 'hex'),
-          value: 1000n,
-          data: new Uint8Array(),
-        })
-        .addOutput({
-          script: Buffer.from(script1, 'hex'), // Duplicate!
-          value: 1000n,
-          data: new Uint8Array(),
-        })
-        .seal()
-        .finalizeAllInputs();
-    }).to.throw();
-  });
-
-  /**
-   * Test with outputs containing data
-   */
-  it('should succeed with outputs containing data', async () => {
-    const genesis = new Genesis();
-    genesis.bindToUtxo({
-      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
-      outputIndex: 0,
-      satoshis: 10000,
-      data: '',
-    });
-
-    const script1 = toByteString('51');
-    const script2 = toByteString('52');
-    const data1 = toByteString('deadbeef');
-    const data2 = toByteString('cafebabe');
-
-    const psbt = new ExtPsbt()
-      .addContractInput(genesis, genesisCheckDeploy())
-      .addOutput({
-        script: Buffer.from(script1, 'hex'),
-        value: 1000n,
-        data: Buffer.from(data1, 'hex'),
-      })
-      .addOutput({
-        script: Buffer.from(script2, 'hex'),
-        value: 2000n,
-        data: Buffer.from(data2, 'hex'),
-      })
-      .seal()
-      .finalizeAllInputs();
-
-    expect(psbt.isFinalized).to.be.true;
-    expect(bvmVerify(psbt, 0)).to.eq(true);
-  });
-
-  /**
-   * Test with all 3 empty placeholders - should succeed
-   * This is an edge case where no real outputs are validated
-   */
-  it('should succeed with all 3 empty placeholders (no outputs)', async () => {
-    const genesis = new Genesis();
-    genesis.bindToUtxo({
-      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
-      outputIndex: 0,
-      satoshis: 10000,
-      data: '',
-    });
-
-    const psbt = new ExtPsbt()
-      .addContractInput(genesis, genesisCheckDeploy())
-      .seal()
-      .finalizeAllInputs();
-
-    expect(psbt.isFinalized).to.be.true;
-    expect(bvmVerify(psbt, 0)).to.eq(true);
-  });
-
-  /**
-   * Test with different satoshi amounts
-   */
-  it('should succeed with varying satoshi amounts', async () => {
-    const genesis = new Genesis();
-    genesis.bindToUtxo({
-      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
-      outputIndex: 0,
-      satoshis: 10000,
-      data: '',
-    });
-
-    const script1 = toByteString('51');
-    const script2 = toByteString('52');
-    const script3 = toByteString('53');
-
-    const psbt = new ExtPsbt()
-      .addContractInput(genesis, genesisCheckDeploy())
-      .addOutput({
-        script: Buffer.from(script1, 'hex'),
-        value: 546n, // Dust limit
-        data: new Uint8Array(),
-      })
-      .addOutput({
-        script: Buffer.from(script2, 'hex'),
-        value: 5000n, // Moderate amount
-        data: new Uint8Array(),
-      })
-      .addOutput({
-        script: Buffer.from(script3, 'hex'),
-        value: 1000n, // Small amount
-        data: new Uint8Array(),
-      })
-      .seal()
-      .finalizeAllInputs();
-
-    expect(psbt.isFinalized).to.be.true;
-    expect(bvmVerify(psbt, 0)).to.eq(true);
   });
 });

@@ -47,17 +47,17 @@
   {
    "symbol": "B2G",
    "path": "contracts/b2G.scrypt.tpl",
-   "md5": "0791b5e98288934577a523e94f7b8fa1"
+   "md5": "dddb594afcf4d6b7c96a9cccde6a0c89"
   },
   {
    "symbol": "B2G2",
    "path": "contracts/b2G2.scrypt.tpl",
-   "md5": "d6cb19add1e80e1f7b9884a132a677c3"
+   "md5": "b8878d714bb1d16da402601b2b3bb4af"
   },
   {
    "symbol": "B2GState",
    "path": "contracts/b2GState.scrypt.tpl",
-   "md5": "da7bd44baaa58f3f8e4b0b1701adb3b5",
+   "md5": "da87b33f52b0f9123ab50c53cbeab625",
    "stateType": "State"
   },
   {

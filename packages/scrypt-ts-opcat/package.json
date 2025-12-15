@@ -41,6 +41,7 @@
     "build:esm": "tsc -p tsconfig.esm.json",
     "build": "yarn run build:cjs && yarn run build:esm",
     "gen:assets": "tspc -p tsconfig.assets.json && node injectAsm.cjs",
+    "gen:contract": "tsx scripts/genContract.ts",
     "prebuild": "yarn run clean",
     "beta": "yarn publish  --tag beta  --access public",
     "genkey": "tsx test/utils/privateKey.ts",
