@@ -10,6 +10,7 @@ import {
   getBackTraceInfo,
   Transaction,
   PubKeyHash,
+  addChangeUtxoToProvider,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { TX_INPUT_COUNT_MAX } from '../../../contracts/constants.js'
 import { filterFeeUtxos } from '../../../utils/index.js'
@@ -107,12 +108,11 @@ export async function transferOwnership(
   }
   sendPsbt.finalizeAllInputs()
 
-  const newFeeUtxo = sendPsbt.getChangeUTXO()!
 
   // broadcast
   await provider.broadcast(sendPsbt.extractTransaction().toHex())
   markSpent(provider, sendPsbt.extractTransaction())
-  provider.addNewUTXO(newFeeUtxo)
+  addChangeUtxoToProvider(provider, sendPsbt)
 
   return {
     sendTxId: sendPsbt.extractTransaction().id,

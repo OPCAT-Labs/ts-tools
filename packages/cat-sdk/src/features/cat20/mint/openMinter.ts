@@ -10,6 +10,7 @@ import {
   markSpent,
   ByteString,
   toHex,
+  addChangeUtxoToProvider,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { Transaction } from '@opcat-labs/opcat'
 import { CAT20OpenMinter } from '../../../contracts/index.js'
@@ -95,6 +96,7 @@ export async function mintOpenMinterToken(
 
   await provider.broadcast(mintPsbt.extractTransaction().toHex())
   markSpent(provider, mintPsbt.extractTransaction())
+  addChangeUtxoToProvider(provider, mintPsbt)
 
   return {
     mintPsbt,

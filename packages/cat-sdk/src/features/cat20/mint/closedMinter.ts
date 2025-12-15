@@ -1,5 +1,5 @@
 
-import { ByteString, PubKey, toHex } from '@opcat-labs/scrypt-ts-opcat'
+import { addChangeUtxoToProvider, ByteString, PubKey, toHex } from '@opcat-labs/scrypt-ts-opcat'
 import { ExtPsbt, Signer, ChainProvider, UtxoProvider, UTXO, getBackTraceInfo, markSpent } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20_AMOUNT } from '../../../contracts/cat20/types.js'
 import { CAT20ClosedMinterState, CAT20State } from '../../../contracts/cat20/types.js'
@@ -134,6 +134,7 @@ export async function mintClosedMinterToken(
 
   await provider.broadcast(mintTx.extractTransaction().toHex())
   markSpent(provider, mintTx.extractTransaction())
+  addChangeUtxoToProvider(provider, mintTx)
 
   return {
     mintPsbt: mintTx,

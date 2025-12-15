@@ -11,6 +11,7 @@ import {
   UTXO,
   ExtPsbt,
   markSpent,
+  addChangeUtxoToProvider,
   getBackTraceInfo,
   Transaction,
 } from '@opcat-labs/scrypt-ts-opcat'
@@ -324,14 +325,13 @@ export async function burnByAdmin(
   sendPsbt.finalizeAllInputs()
 
   const newCAT20Utxos = outputTokens.map((_, index) => sendPsbt.getUtxo(index))
-  const newFeeUtxo = sendPsbt.getChangeUTXO()!
 
   // broadcast
   await provider.broadcast(guardPsbt.extractTransaction().toHex())
   markSpent(provider, guardPsbt.extractTransaction())
   await provider.broadcast(sendPsbt.extractTransaction().toHex())
   markSpent(provider, sendPsbt.extractTransaction())
-  provider.addNewUTXO(newFeeUtxo)
+  addChangeUtxoToProvider(provider, sendPsbt)
 
   return {
     sendTxId: sendPsbt.extractTransaction().id,

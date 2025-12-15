@@ -1,4 +1,4 @@
-import { ByteString, ChainProvider, ExtPsbt, markSpent, Signer, UTXO, UtxoProvider, Genesis, genesisCheckDeploy } from "@opcat-labs/scrypt-ts-opcat";
+import { ByteString, ChainProvider, ExtPsbt, markSpent, Signer, UTXO, UtxoProvider, Genesis, genesisCheckDeploy, addChangeUtxoToProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { ClosedMinterCAT721Meta } from "../../../contracts/cat721/types.js";
 import { CAT721NftInfo } from "../../../lib/metadata.js";
 import { filterFeeUtxos, normalizeUtxoScripts } from "../../../utils/index.js";
@@ -94,6 +94,7 @@ export async function deployClosedMinterCollection(
     markSpent(provider, genesisPsbt.extractTransaction())
     await provider.broadcast(deployPsbt.extractTransaction().toHex())
     markSpent(provider, deployPsbt.extractTransaction())
+    addChangeUtxoToProvider(provider, deployPsbt)
 
     const minterScript = cat721ClosedMinter.lockingScript.toHex()
     let minterUtxo = deployPsbt.getUtxo(0)

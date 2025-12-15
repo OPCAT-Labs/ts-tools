@@ -1,4 +1,4 @@
-import { ChainProvider, ExtPsbt, hexToUint8Array, sha256, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
+import { addChangeUtxoToProvider, ChainProvider, ExtPsbt, hexToUint8Array, sha256, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721OpenMintInfo } from "../../../contracts/cat721/minters/cat721OpenMintInfo.js";
 import { MetadataSerializer } from "../../../lib/metadata.js";
 
@@ -45,6 +45,7 @@ export async function createNft(
     const signedPsbt = await signer.signPsbt(psbt.toHex(), psbt.psbtOptions())
     psbt.combine(ExtPsbt.fromHex(signedPsbt))
     psbt.finalizeAllInputs()
+    addChangeUtxoToProvider(provider, psbt)
 
     return {
         createNftPsbt: psbt,

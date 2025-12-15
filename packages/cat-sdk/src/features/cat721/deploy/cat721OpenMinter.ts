@@ -1,4 +1,4 @@
-import { ByteString, ChainProvider, ExtPsbt, markSpent, Signer, UtxoProvider, Genesis, genesisCheckDeploy } from "@opcat-labs/scrypt-ts-opcat";
+import { ByteString, ChainProvider, ExtPsbt, markSpent, Signer, UtxoProvider, Genesis, genesisCheckDeploy, addChangeUtxoToProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721OpenMinterState, OpenMinterCAT721Meta } from "../../../contracts/cat721/types.js";
 import { CAT721NftInfo, MetadataSerializer } from "../../../lib/metadata.js";
 import { checkState } from "../../../utils/check.js";
@@ -94,6 +94,7 @@ CAT721NftInfo<OpenMinterCAT721Meta> & {
     markSpent(provider, genesisPsbt.extractTransaction())
     await provider.broadcast(deployPsbt.extractTransaction().toHex())
     markSpent(provider, deployPsbt.extractTransaction())
+    addChangeUtxoToProvider(provider, deployPsbt)
 
     return {
         collectionId: collectionId,

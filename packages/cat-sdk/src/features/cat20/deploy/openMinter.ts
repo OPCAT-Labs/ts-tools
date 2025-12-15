@@ -22,6 +22,7 @@ import {
   toHex,
   Genesis,
   genesisCheckDeploy,
+  addChangeUtxoToProvider,
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
   CAT20GuardPeripheral,
@@ -183,6 +184,9 @@ export async function deployOpenMinterToken(
   if (preminePsbt) {
     await provider.broadcast(preminePsbt.extractTransaction().toHex())
     markSpent(provider, preminePsbt.extractTransaction())
+    addChangeUtxoToProvider(provider, preminePsbt)
+  } else {
+    addChangeUtxoToProvider(provider, deployPsbt)
   }
 
   return {

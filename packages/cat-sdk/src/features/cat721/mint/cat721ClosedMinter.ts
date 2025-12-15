@@ -1,5 +1,5 @@
 
-import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, markSpent, PubKey, Signer, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
+import { addChangeUtxoToProvider, ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, markSpent, PubKey, Signer, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721, CAT721State, ClosedMinterCAT721Meta, ConstantsLib } from "../../../contracts/index.js";
 import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral.js";
 import { CAT721ClosedMinter } from "../../../contracts/cat721/minters/cat721ClosedMinter.js";
@@ -118,6 +118,7 @@ export async function mintClosedMinterNft(
     markSpent(provider, createNftRes.createNftPsbt.extractTransaction())
     await provider.broadcast(minterPsbt.extractTransaction().toHex())
     markSpent(provider, minterPsbt.extractTransaction())
+    addChangeUtxoToProvider(provider, minterPsbt)
 
     return {
         createNftPsbt: createNftRes.createNftPsbt,

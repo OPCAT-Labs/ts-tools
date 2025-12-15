@@ -13,6 +13,7 @@ import {
   markSpent,
   fromSupportedNetwork,
   getBackTraceInfo,
+  addChangeUtxoToProvider,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types.js'
 import {
@@ -404,8 +405,8 @@ export async function singleSendStep3(
   await provider.broadcast(finalizedSendPsbt.extractTransaction().toHex())
   markSpent(provider, finalizedSendPsbt.extractTransaction())
   const newFeeUtxo = finalizedSendPsbt.getChangeUTXO()!
-  provider.addNewUTXO(newFeeUtxo)
 
+  addChangeUtxoToProvider(provider, finalizedSendPsbt)
 
   const newCAT20Utxos = outputTokenStates.map((_, index) => finalizedSendPsbt.getUtxo(index))
 

@@ -12,6 +12,7 @@ import {
   UTXO,
   markSpent,
   getBackTraceInfo,
+  addChangeUtxoToProvider,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20 } from '../../../contracts/cat20/cat20.js'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib.js'
@@ -201,7 +202,7 @@ export async function burnToken(
   markSpent(provider, guardPsbt.extractTransaction())
   await provider.broadcast(burnPsbt.extractTransaction().toHex())
   markSpent(provider, burnPsbt.extractTransaction())
-  provider.addNewUTXO(burnPsbt.getChangeUTXO()!)
+  addChangeUtxoToProvider(provider, burnPsbt)
 
   return {
     guardPsbt,

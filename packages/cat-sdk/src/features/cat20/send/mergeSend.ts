@@ -1,7 +1,7 @@
 import { ByteString, ChainProvider, min, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT20_AMOUNT, NULL_ADMIN_SCRIPT_HASH, TX_INPUT_COUNT_MAX } from "../../../contracts";
-import { toTokenOwnerAddress } from "../../../utils";
-import { singleSend } from "./singleSend";
+import { CAT20_AMOUNT, NULL_ADMIN_SCRIPT_HASH, TX_INPUT_COUNT_MAX } from "../../../contracts/index.js";
+import { toTokenOwnerAddress } from "../../../utils/index.js";
+import { singleSend } from "./singleSend.js";
 
 
 const MAX_INPUT_TOKEN_UTXOS_PER_TRANSFER = TX_INPUT_COUNT_MAX - 2; // 2 for guard input and fee input;
