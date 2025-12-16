@@ -1,7 +1,7 @@
-import { ByteString, ChainProvider, ExtPsbt, markSpent, Signer, UTXO, UtxoProvider, Genesis, genesisCheckDeploy } from "@opcat-labs/scrypt-ts-opcat";
+import { ByteString, ChainProvider, ExtPsbt, markSpent, Signer, UTXO, UtxoProvider, Genesis, genesisCheckDeploy, addChangeUtxoToProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { ClosedMinterCAT721Meta } from "../../../contracts/cat721/types.js";
 import { CAT721NftInfo } from "../../../lib/metadata.js";
-import { filterFeeUtxos, normalizeUtxoScripts } from "../../../utils/index.js";
+import { filterFeeUtxos, normalizeUtxoScripts, createFeatureWithDryRun } from "../../../utils/index.js";
 import { checkState } from "../../../utils/check.js";
 import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral.js";
 import { TX_INPUT_COUNT_MAX } from "../../../contracts/constants.js";
@@ -23,7 +23,7 @@ import { MetadataSerializer } from "../../../lib/metadata.js";
  * @param changeAddress the address for the change output
  * @returns the collection info and the PSBTs for the genesis and deploy transactions
  */
-export async function deployClosedMinterCollection(
+export const deployClosedMinterCollection = createFeatureWithDryRun(async function(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
     deployInfo: {
@@ -94,6 +94,7 @@ export async function deployClosedMinterCollection(
     markSpent(provider, genesisPsbt.extractTransaction())
     await provider.broadcast(deployPsbt.extractTransaction().toHex())
     markSpent(provider, deployPsbt.extractTransaction())
+    addChangeUtxoToProvider(provider, deployPsbt)
 
     const minterScript = cat721ClosedMinter.lockingScript.toHex()
     let minterUtxo = deployPsbt.getUtxo(0)
@@ -112,4 +113,4 @@ export async function deployClosedMinterCollection(
         deployPsbt,
         minterUtxo: minterUtxo,
     }
-}
+})

@@ -1,5 +1,5 @@
 
-import { ByteString, PubKey, toHex } from '@opcat-labs/scrypt-ts-opcat'
+import { addChangeUtxoToProvider, ByteString, PubKey, toHex } from '@opcat-labs/scrypt-ts-opcat'
 import { ExtPsbt, Signer, ChainProvider, UtxoProvider, UTXO, getBackTraceInfo, markSpent } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20_AMOUNT } from '../../../contracts/cat20/types.js'
 import { CAT20ClosedMinterState, CAT20State } from '../../../contracts/cat20/types.js'
@@ -7,7 +7,7 @@ import { ContractPeripheral, CAT20GuardPeripheral } from '../../../utils/contrac
 import { CAT20 } from '../../../contracts/cat20/cat20.js'
 import { checkArgument } from '../../../utils/check.js'
 import { CAT20ClosedMinter } from '../../../contracts/cat20/minters/cat20ClosedMinter.js'
-import { outpoint2ByteString, toTokenOwnerAddress, normalizeUtxoScripts } from '../../../utils/index.js'
+import { outpoint2ByteString, toTokenOwnerAddress, normalizeUtxoScripts, createFeatureWithDryRun } from '../../../utils/index.js'
 import { Postage } from '../../../typeConstants.js'
 import { Transaction } from '@opcat-labs/opcat'
 import { ConstantsLib } from '../../../contracts/index.js'
@@ -29,7 +29,7 @@ import { ConstantsLib } from '../../../contracts/index.js'
  * @param feeRate the fee rate for the transaction
  * @returns the mint Psbt and the UTXO of the minted token
  */
-export async function mintClosedMinterToken(
+export const mintClosedMinterToken = createFeatureWithDryRun(async function(
   signer: Signer,
   provider: ChainProvider & UtxoProvider,
   minterUtxo: UTXO,
@@ -134,10 +134,11 @@ export async function mintClosedMinterToken(
 
   await provider.broadcast(mintTx.extractTransaction().toHex())
   markSpent(provider, mintTx.extractTransaction())
+  addChangeUtxoToProvider(provider, mintTx)
 
   return {
     mintPsbt: mintTx,
     cat20Utxo: mintTx.getUtxo(1),
     mintTxId: mintTx.extractTransaction().id,
   }
-}
+})

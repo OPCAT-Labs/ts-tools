@@ -1,9 +1,10 @@
-import { ChainProvider, ExtPsbt, hexToUint8Array, sha256, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
+import { addChangeUtxoToProvider, ChainProvider, ExtPsbt, hexToUint8Array, sha256, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721OpenMintInfo } from "../../../contracts/cat721/minters/cat721OpenMintInfo.js";
 import { MetadataSerializer } from "../../../lib/metadata.js";
+import { createFeatureWithDryRun } from "../../../utils/index.js";
 
 
-export async function createNft(
+export const createNft = createFeatureWithDryRun(async function(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
     localId: bigint,
@@ -14,7 +15,11 @@ export async function createNft(
     },
     feeUtxos: UTXO[],
     feeRate: number
-) {
+): Promise<{
+    createNftPsbt: ExtPsbt
+    contentUtxo: UTXO
+    mintInfoUtxo: UTXO
+}> {
     const address = await signer.getAddress()
 
     const nftStr = MetadataSerializer.serialize(
@@ -45,11 +50,11 @@ export async function createNft(
     const signedPsbt = await signer.signPsbt(psbt.toHex(), psbt.psbtOptions())
     psbt.combine(ExtPsbt.fromHex(signedPsbt))
     psbt.finalizeAllInputs()
+    addChangeUtxoToProvider(provider, psbt)
 
     return {
         createNftPsbt: psbt,
         contentUtxo: psbt.getUtxo(0),
         mintInfoUtxo: psbt.getUtxo(1),
     }
-    
-}
+})

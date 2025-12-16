@@ -10,7 +10,7 @@ import { toTokenOwnerAddress } from "../../../../src/utils";
 import { ConstantsLib } from "../../../../src/contracts";
 import { testProvider } from "../../../utils/testProvider";
 import { burnNft } from "../../../../src/features/cat721/burn/burn";
-import { verifyTx } from "../../../utils";
+import { runWithDryCheck, verifyTx } from "../../../utils";
 
 use(chaiAsPromised)
 
@@ -58,7 +58,7 @@ describe('Test the feature `burn` for `CAT721`', () => {
     })
 
     async function testBurnResult(cat721Utxos: UTXO[]) {
-        const { guardPsbt, burnPsbt } = await burnNft(
+        const { guardPsbt, burnPsbt } = await  runWithDryCheck(testProvider, burnNft)(
             testSigner,
             testProvider,
             cat721Generater.deployInfo.minterScriptHash,

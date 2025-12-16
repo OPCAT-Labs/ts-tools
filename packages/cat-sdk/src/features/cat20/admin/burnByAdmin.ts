@@ -11,6 +11,7 @@ import {
   UTXO,
   ExtPsbt,
   markSpent,
+  addChangeUtxoToProvider,
   getBackTraceInfo,
   Transaction,
 } from '@opcat-labs/scrypt-ts-opcat'
@@ -26,6 +27,7 @@ import {
   filterFeeUtxos,
   toTokenOwnerAddress,
   normalizeUtxoScripts,
+  createFeatureWithDryRun,
 } from '../../../utils/index.js'
 import {
   CAT20GuardPeripheral,
@@ -99,7 +101,7 @@ import { SPEND_TYPE_ADMIN_SPEND } from '../../../contracts/index.js'
  * @see {@link CAT20Admin} for admin contract details
  * @see {@link burn} for user-initiated token burning with owner approval
  */
-export async function burnByAdmin(
+export const burnByAdmin = createFeatureWithDryRun(async function(
   signer: Signer,
   cat20Admin: CAT20Admin,
   adminUtxo: UTXO,
@@ -324,14 +326,13 @@ export async function burnByAdmin(
   sendPsbt.finalizeAllInputs()
 
   const newCAT20Utxos = outputTokens.map((_, index) => sendPsbt.getUtxo(index))
-  const newFeeUtxo = sendPsbt.getChangeUTXO()!
 
   // broadcast
   await provider.broadcast(guardPsbt.extractTransaction().toHex())
   markSpent(provider, guardPsbt.extractTransaction())
   await provider.broadcast(sendPsbt.extractTransaction().toHex())
   markSpent(provider, sendPsbt.extractTransaction())
-  provider.addNewUTXO(newFeeUtxo)
+  addChangeUtxoToProvider(provider, sendPsbt)
 
   return {
     sendTxId: sendPsbt.extractTransaction().id,
@@ -341,4 +342,4 @@ export async function burnByAdmin(
     newCAT20Utxos,
     changeTokenOutputIndex,
   }
-}
+})

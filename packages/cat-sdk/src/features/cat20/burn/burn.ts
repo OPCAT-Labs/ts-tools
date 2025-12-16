@@ -12,6 +12,7 @@ import {
   UTXO,
   markSpent,
   getBackTraceInfo,
+  addChangeUtxoToProvider,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20 } from '../../../contracts/cat20/cat20.js'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib.js'
@@ -22,7 +23,7 @@ import {
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants.js'
 import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants.js'
-import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils/index.js'
+import { applyFixedArray, createFeatureWithDryRun, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils/index.js'
 import {
   CAT20GuardPeripheral,
   ContractPeripheral,
@@ -41,7 +42,7 @@ import { SPEND_TYPE_USER_SPEND } from '../../../contracts/index.js'
  * @param adminScriptHash the admin script hash of the CAT20 token
  * @returns the PSBTs for the guard and burn transactions
  */
-export async function burnToken(
+export const burnToken = createFeatureWithDryRun(async function(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
@@ -201,7 +202,7 @@ export async function burnToken(
   markSpent(provider, guardPsbt.extractTransaction())
   await provider.broadcast(burnPsbt.extractTransaction().toHex())
   markSpent(provider, burnPsbt.extractTransaction())
-  provider.addNewUTXO(burnPsbt.getChangeUTXO()!)
+  addChangeUtxoToProvider(provider, burnPsbt)
 
   return {
     guardPsbt,
@@ -209,4 +210,4 @@ export async function burnToken(
     guardTxid: guardPsbt.extractTransaction().id,
     burnTxid: burnPsbt.extractTransaction().id,
   }
-}
+})

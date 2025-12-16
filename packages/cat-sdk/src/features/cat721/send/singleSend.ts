@@ -1,7 +1,7 @@
-import { ByteString, ChainProvider, ExtPsbt, fill, fromSupportedNetwork, getBackTraceInfo, PubKey, Script, toByteString, toHex, Transaction, UTXO, UtxoProvider, markSpent, Signer, sha256 } from "@opcat-labs/scrypt-ts-opcat";
+import { ByteString, ChainProvider, ExtPsbt, fill, fromSupportedNetwork, getBackTraceInfo, PubKey, Script, toByteString, toHex, Transaction, UTXO, UtxoProvider, markSpent, Signer, sha256, addChangeUtxoToProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, CAT721, CAT721StateLib, CAT721State } from "../../../contracts/index.js";
 import { Postage } from "../../../typeConstants.js";
-import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from "../../../utils/index.js";
+import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts, createFeatureWithDryRun } from "../../../utils/index.js";
 import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral.js";
 
 
@@ -16,7 +16,7 @@ import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contra
  * @param feeRate the fee rate for the transaction
  * @returns the PSBTs for the guard and send transactions, the UTXOs of the new tokens
  */
-export async function singleSendNft(
+export const singleSendNft = createFeatureWithDryRun(async function(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
     minterScriptHash: ByteString,
@@ -78,7 +78,7 @@ export async function singleSendNft(
         sendTxId: sendPsbt.extractTransaction().id,
         newNftUtxos,
     }
-}
+})
 
 /**
  * Helper function for singleSendNft, create the guard psbt but do not sign it
@@ -294,7 +294,7 @@ export async function singleSendNftStep3(
     await provider.broadcast(finalizedSendPsbt.extractTransaction().toHex())
     markSpent(provider, finalizedSendPsbt.extractTransaction())
     const newFeeUtxo = finalizedSendPsbt.getChangeUTXO()!
-    provider.addNewUTXO(newFeeUtxo)
+    addChangeUtxoToProvider(provider, finalizedSendPsbt)
 
     const newNftUtxos = outputNftStates.map((_, index) => finalizedSendPsbt.getUtxo(index))
 

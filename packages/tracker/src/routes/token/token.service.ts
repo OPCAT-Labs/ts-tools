@@ -1,7 +1,7 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { TokenInfoEntity } from '../../entities/tokenInfo.entity';
-import { IsNull, LessThanOrEqual, Repository, MoreThanOrEqual, LessThan, Like, ILike, FindOptionsWhere } from 'typeorm';
+import { IsNull, LessThanOrEqual, Repository, MoreThanOrEqual, LessThan, Like, ILike, FindOptionsWhere, Not } from 'typeorm';
 import { ownerAddressToPubKeyHash, parseBlockchainIdentifier, pubKeyHashToOwnerAddress } from '../../common/utils';
 import { TxOutEntity } from '../../entities/txOut.entity';
 import { TxOutArchiveEntity } from '../../entities/txOutArchive.entity';
@@ -86,7 +86,7 @@ export class TokenService {
 
   private static readonly searchTokensCache = new LRUCache<string, any>({
     max: Constants.CACHE_MAX_SIZE,
-    ttl: 5 * 60 * 1000,
+    ttl: 30 * 1000, // 30 seconds cache to prevent DOS attacks
     ttlAutopurge: true
   });
 
@@ -192,7 +192,9 @@ export class TokenService {
 
     try {
       // Build base condition for scope filtering
-      const baseCondition: FindOptionsWhere<TokenInfoEntity> = {};
+      const baseCondition: FindOptionsWhere<TokenInfoEntity> = {
+        tokenScriptHash: Not(IsNull()), // Always filter for tokens with valid tokenScriptHash
+      };
       if (scope === TokenTypeScope.Fungible) {
         baseCondition.decimals = MoreThanOrEqual(0);
       } else if (scope === TokenTypeScope.NonFungible) {
@@ -237,7 +239,7 @@ export class TokenService {
         skip: finalOffset,
         take: finalLimit,
         order: {
-          deployHeight: 'DESC'
+          updatedAt: 'DESC'
         }
       });
 
@@ -246,6 +248,10 @@ export class TokenService {
         total: total,
         trackerBlockHeight: lastProcessedHeight
       };
+
+      // Cache the result to prevent DOS attacks
+      TokenService.searchTokensCache.set(cacheKey, result);
+
       return result;
     } catch (error) {
       console.error('Error in searchTokens:', error);

@@ -1,11 +1,11 @@
 
-import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, markSpent, PubKey, Signer, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
+import { addChangeUtxoToProvider, ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, markSpent, PubKey, Signer, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721, CAT721State, ClosedMinterCAT721Meta, ConstantsLib } from "../../../contracts/index.js";
 import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral.js";
 import { CAT721ClosedMinter } from "../../../contracts/cat721/minters/cat721ClosedMinter.js";
 import { createNft } from "./nft.js";
 import { Postage } from "../../../typeConstants.js";
-import { normalizeUtxoScripts } from "../../../utils/index.js";
+import { normalizeUtxoScripts, createFeatureWithDryRun } from "../../../utils/index.js";
 
 
 /**
@@ -25,7 +25,7 @@ import { normalizeUtxoScripts } from "../../../utils/index.js";
  * @param feeRate the fee rate for the transaction
  * @returns the PSBTs for the create and mint transactions
  */
-export async function mintClosedMinterNft(
+export const mintClosedMinterNft = createFeatureWithDryRun(async function(
     issuerSigner: Signer,
     feeSigner: Signer,
     provider: UtxoProvider & ChainProvider,
@@ -118,6 +118,7 @@ export async function mintClosedMinterNft(
     markSpent(provider, createNftRes.createNftPsbt.extractTransaction())
     await provider.broadcast(minterPsbt.extractTransaction().toHex())
     markSpent(provider, minterPsbt.extractTransaction())
+    addChangeUtxoToProvider(provider, minterPsbt)
 
     return {
         createNftPsbt: createNftRes.createNftPsbt,
@@ -125,4 +126,4 @@ export async function mintClosedMinterNft(
         mintPsbt: minterPsbt,
         mintTxId: minterPsbt.extractTransaction().id,
     }
-}
+})

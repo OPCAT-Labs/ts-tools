@@ -10,10 +10,11 @@ import {
   markSpent,
   ByteString,
   toHex,
+  addChangeUtxoToProvider,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { Transaction } from '@opcat-labs/opcat'
 import { CAT20OpenMinter } from '../../../contracts/index.js'
-import { normalizeUtxoScripts } from '../../../utils/index.js'
+import { normalizeUtxoScripts, createFeatureWithDryRun } from '../../../utils/index.js'
 
 /**
  * Mints a CAT20 token using `CAT20OpenMinter` contract
@@ -30,7 +31,7 @@ import { normalizeUtxoScripts } from '../../../utils/index.js'
  * @param feeRate the fee rate for constructing transactions
  * @returns the mint transaction
  */
-export async function mintOpenMinterToken(
+export const mintOpenMinterToken = createFeatureWithDryRun(async function(
   signer: Signer,
   preminerSigner: Signer,
   provider: UtxoProvider & ChainProvider,
@@ -95,9 +96,10 @@ export async function mintOpenMinterToken(
 
   await provider.broadcast(mintPsbt.extractTransaction().toHex())
   markSpent(provider, mintPsbt.extractTransaction())
+  addChangeUtxoToProvider(provider, mintPsbt)
 
   return {
     mintPsbt,
     mintTxid: mintPsbt.extractTransaction().id,
   }
-}
+})

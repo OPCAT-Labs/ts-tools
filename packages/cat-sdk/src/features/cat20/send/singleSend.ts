@@ -13,6 +13,7 @@ import {
   markSpent,
   fromSupportedNetwork,
   getBackTraceInfo,
+  addChangeUtxoToProvider,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types.js'
 import {
@@ -20,7 +21,7 @@ import {
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants.js'
-import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils/index.js'
+import { applyFixedArray, createFeatureWithDryRun, dryRunFeature, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils/index.js'
 import {
   CAT20GuardPeripheral,
   ContractPeripheral,
@@ -47,7 +48,7 @@ import { SPEND_TYPE_USER_SPEND } from '../../../contracts/index.js'
  * @param sendChangeData the change data for the transaction
  * @returns the PSBTs for the guard and send transactions, the UTXOs of the new tokens, and the index of the change token output
  */
-export async function singleSend(
+export const singleSend = createFeatureWithDryRun(async function(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
@@ -126,7 +127,7 @@ export async function singleSend(
     newCAT20Utxos,
     changeTokenOutputIndex,
   }
-}
+})
 
 /**
  * Helper function for singleSend, create the send psbt but do not sign it
@@ -404,8 +405,7 @@ export async function singleSendStep3(
   await provider.broadcast(finalizedSendPsbt.extractTransaction().toHex())
   markSpent(provider, finalizedSendPsbt.extractTransaction())
   const newFeeUtxo = finalizedSendPsbt.getChangeUTXO()!
-  provider.addNewUTXO(newFeeUtxo)
-
+  addChangeUtxoToProvider(provider, finalizedSendPsbt)
 
   const newCAT20Utxos = outputTokenStates.map((_, index) => finalizedSendPsbt.getUtxo(index))
 

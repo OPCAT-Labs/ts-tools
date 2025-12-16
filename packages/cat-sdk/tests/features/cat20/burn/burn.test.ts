@@ -11,7 +11,7 @@ import { loadAllArtifacts } from '../utils'
 import { ByteString, UTXO } from '@opcat-labs/scrypt-ts-opcat'
 import { toTokenOwnerAddress } from '../../../../src/utils'
 import { CAT20ClosedMinter } from '../../../../src/contracts/cat20/minters/cat20ClosedMinter'
-import { verifyTx } from '../../../utils'
+import { runWithDryCheck, verifyTx } from '../../../utils'
 import { formatMetadata } from '../../../../src/lib/metadata'
 import { ConstantsLib } from '../../../../src/contracts'
 use(chaiAsPromised)
@@ -76,7 +76,7 @@ describe('Test the feature `burn` for `CAT20`', () => {
   })
 
   async function testBurnResult(cat20Utxos: UTXO[]) {
-    const { guardPsbt, burnPsbt } = await burnToken(
+    const { guardPsbt, burnPsbt } = await  runWithDryCheck(testProvider, burnToken)(
       testSigner,
       testProvider,
       cat20Generater.deployInfo.minterScriptHash,

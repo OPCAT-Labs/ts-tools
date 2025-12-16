@@ -232,3 +232,19 @@ export class CollectionTotalHoldersResponse extends BaseResponse<CollectionTotal
   @ApiProperty({ type: CollectionTotalHolders })
   data: CollectionTotalHolders;
 }
+
+export class CollectionListData {
+  @ApiProperty({ type: [CollectionInfo], description: 'Collection list' })
+  list: CollectionInfo[];
+
+  @ApiProperty({ example: 100, description: 'Total number of collections' })
+  total: number;
+
+  @ApiProperty({ example: 100000, description: 'Current tracker block height' })
+  trackerBlockHeight: number;
+}
+
+export class CollectionListResponse extends BaseResponse<CollectionListData> {
+  @ApiProperty({ type: CollectionListData })
+  data: CollectionListData;
+}

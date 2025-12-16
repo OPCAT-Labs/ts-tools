@@ -1,6 +1,7 @@
 import { UTXO, ExtUtxo} from '../globalTypes.js';
 import { getTxId } from '../utils/common.js';
 import { Transaction } from '@opcat-labs/opcat';
+import { ExtPsbt } from '../psbt/extPsbt.js';
 
 /**
  * The optional conditions for querying UTXO.
@@ -51,6 +52,14 @@ export function markSpent(utxoProvider: UtxoProvider, tx: Transaction) {
   for (let i = 0; i < tx.inputs.length; i++) {
     const input = tx.inputs[i];
     utxoProvider.markSpent(getTxId(input), input.outputIndex);
+  }
+}
+
+/** @ignore */
+export function addChangeUtxoToProvider(utxoProvider: UtxoProvider, psbt: ExtPsbt) {
+  const changeUtxo = psbt.getChangeUTXO();
+  if (changeUtxo) {
+    utxoProvider.addNewUTXO(changeUtxo);
   }
 }
 

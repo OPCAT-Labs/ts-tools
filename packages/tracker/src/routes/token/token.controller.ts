@@ -14,6 +14,7 @@ import {
   ErrorResponse,
   TotalHoldersResponse,
   TotalTxsResponse,
+  TokenListResponse,
 } from './dto/token-response.dto';
 import { Response } from 'express';
 
@@ -21,12 +22,57 @@ import { Response } from 'express';
 export class TokenController {
   constructor(private readonly tokenService: TokenService) { }
 
+  @Get()
+  @ApiTags('token')
+  @ApiOperation({ summary: 'Get tokens with pagination' })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    type: Number,
+    description: 'paging offset',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'paging limit (max: 100, default: 50)',
+  })
+  @ApiOkResponse({
+    description: 'Token list retrieved successfully',
+    type: TokenListResponse,
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid parameters',
+    type: ErrorResponse,
+  })
+  async getTokens(
+    @Query('offset') offset: number = 0,
+    @Query('limit') limit: number = 50,
+  ) {
+    try {
+      const result = await this.tokenService.searchTokens(
+        undefined,
+        TokenTypeScope.Fungible,
+        offset,
+        limit,
+      );
+
+      return okResponse({
+        list: result.tokens,
+        total: result.total,
+        trackerBlockHeight: result.trackerBlockHeight,
+      });
+    } catch (e) {
+      return errorResponse(e);
+    }
+  }
+
   @Get('/search')
   @ApiTags('token')
   @ApiOperation({ summary: 'Search tokens by token id or token name with pagination' })
   @ApiQuery({
     name: 'q',
-    required: false,
+    required: true,
     type: String,
     description: 'search query (token id or token name), empty for all tokens',
   })
@@ -55,8 +101,11 @@ export class TokenController {
     @Query('offset') offset?: number,
     @Query('limit') limit?: number,
   ) {
+    
+    if (!query || !query.trim()) {
+      return errorResponse(new Error('Search query cannot be empty'));
+    }
     try {
-
       const result = await this.tokenService.searchTokens(
         query,
         TokenTypeScope.Fungible,

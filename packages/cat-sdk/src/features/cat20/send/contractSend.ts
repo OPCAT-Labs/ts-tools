@@ -13,6 +13,7 @@ import {
   ExtPsbt,
   markSpent,
   getBackTraceInfo,
+  addChangeUtxoToProvider,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20 } from '../../../contracts/cat20/cat20.js'
 import { CAT20_AMOUNT, CAT20State } from '../../../contracts/cat20/types.js'
@@ -27,6 +28,7 @@ import {
   filterFeeUtxos,
   toTokenOwnerAddress,
   normalizeUtxoScripts,
+  createFeatureWithDryRun,
 } from '../../../utils/index.js'
 import {
   CAT20GuardPeripheral,
@@ -47,7 +49,7 @@ import { SPEND_TYPE_CONTRACT_SPEND } from '../../../contracts/index.js'
  * @param feeRate the fee rate for constructing transactions
  * @returns the guard transaction, the send transaction and the CAT20 token outputs
  */
-export async function contractSend(
+export const contractSend = createFeatureWithDryRun(async function(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: string,
@@ -282,14 +284,13 @@ export async function contractSend(
   sendPsbt.finalizeAllInputs()
 
   const newCAT20Utxos = outputTokens.map((_, index) => sendPsbt.getUtxo(index))
-  const newFeeUtxo = sendPsbt.getChangeUTXO()!
 
   // broadcast
   await provider.broadcast(guardPsbt.extractTransaction().toHex())
   markSpent(provider, guardPsbt.extractTransaction())
   await provider.broadcast(sendPsbt.extractTransaction().toHex())
   markSpent(provider, sendPsbt.extractTransaction())
-  provider.addNewUTXO(newFeeUtxo)
+  addChangeUtxoToProvider(provider, sendPsbt)
 
   return {
     sendTxId: sendPsbt.extractTransaction().id,
@@ -299,4 +300,4 @@ export async function contractSend(
     newCAT20Utxos,
     changeTokenOutputIndex,
   }
-}
+})

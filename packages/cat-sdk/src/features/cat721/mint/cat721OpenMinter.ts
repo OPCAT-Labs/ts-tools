@@ -1,4 +1,4 @@
-import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, markSpent, PubKey, Script, Sig, Signer, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
+import { addChangeUtxoToProvider, ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, markSpent, PubKey, Script, Sig, Signer, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721State, MerkleProof, OpenMinterCAT721Meta, ProofNodePos } from "../../../contracts/cat721/types.js";
 import { ConstantsLib } from "../../../contracts/constants.js";
 import { CAT721OpenMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral.js";
@@ -6,7 +6,7 @@ import { createNft } from "./nft.js";
 import { CAT721OpenMintInfo } from "../../../contracts/cat721/minters/cat721OpenMintInfo.js";
 import { Postage } from "../../../typeConstants.js";
 import { CAT721 } from "../../../contracts/index.js";
-import { normalizeUtxoScripts } from "../../../utils/index.js";
+import { normalizeUtxoScripts, createFeatureWithDryRun } from "../../../utils/index.js";
 
 
 /**
@@ -26,7 +26,7 @@ import { normalizeUtxoScripts } from "../../../utils/index.js";
  * @param feeRate the fee rate for the transaction
  * @returns the PSBTs for the create and mint transactions
  */
-export async function mintOpenMinterNft(
+export const mintOpenMinterNft = createFeatureWithDryRun(async function(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
     minterUtxo: UTXO,
@@ -135,6 +135,7 @@ export async function mintOpenMinterNft(
     markSpent(provider, createNftRes.createNftPsbt.extractTransaction())
     await provider.broadcast(mintPsbt.extractTransaction().toHex())
     markSpent(provider, mintPsbt.extractTransaction())
+    addChangeUtxoToProvider(provider, mintPsbt)
 
     return {
         createNftPsbt: createNftRes.createNftPsbt,
@@ -142,4 +143,4 @@ export async function mintOpenMinterNft(
         mintPsbt,
         mintTxId: mintPsbt.extractTransaction().id,
     }
-}
+})

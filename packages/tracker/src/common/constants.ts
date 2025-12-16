@@ -83,7 +83,7 @@ export class Constants {
 
   static readonly QUERY_PAGING_DEFAULT_OFFSET = 0;
   static readonly QUERY_PAGING_DEFAULT_LIMIT = 100;
-  static readonly QUERY_PAGING_MAX_LIMIT = 500;
+  static readonly QUERY_PAGING_MAX_LIMIT = 100;
 
   static readonly CONTENT_TYPE_CAT721_DELEGATE_V1 = 'application/vnd.cat721.delegate.v1+text';
 

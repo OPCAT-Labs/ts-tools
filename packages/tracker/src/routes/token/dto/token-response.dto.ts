@@ -211,6 +211,22 @@ export class TokenHoldersResponse extends BaseResponse<TokenHoldersData> {
   data: TokenHoldersData;
 }
 
+export class TokenListData {
+  @ApiProperty({ type: [TokenInfo], description: 'Token list' })
+  list: TokenInfo[];
+
+  @ApiProperty({ example: 100, description: 'Total number of tokens' })
+  total: number;
+
+  @ApiProperty({ example: 100000, description: 'Current tracker block height' })
+  trackerBlockHeight: number;
+}
+
+export class TokenListResponse extends BaseResponse<TokenListData> {
+  @ApiProperty({ type: TokenListData })
+  data: TokenListData;
+}
+
 export class ErrorResponse extends BaseResponse<null> {
   @ApiProperty({ example: 100, description: 'Error code' })
   code: number;

@@ -22,6 +22,7 @@ import {
   toHex,
   Genesis,
   genesisCheckDeploy,
+  addChangeUtxoToProvider,
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
   CAT20GuardPeripheral,
@@ -32,6 +33,7 @@ import { Transaction } from '@opcat-labs/opcat'
 import {
   NULL_ADMIN_SCRIPT_HASH,
 } from '../../../contracts/constants.js'
+import { createFeatureWithDryRun } from '../../../utils/index.js'
 
 /**
  * Deploys a CAT20 token and its metadata using `CAT20OpenMinter` contract, and premines the token if applicable.
@@ -46,7 +48,7 @@ import {
  * @param changeAddress the address for the change output
  * @returns the token info and the PSBTs for the genesis, deploy, and premine transactions
  */
-export async function deployOpenMinterToken(
+export const deployOpenMinterToken = createFeatureWithDryRun(async function(
   // signer for deployer
   signer: Signer,
   // signer for preminer
@@ -183,6 +185,9 @@ export async function deployOpenMinterToken(
   if (preminePsbt) {
     await provider.broadcast(preminePsbt.extractTransaction().toHex())
     markSpent(provider, preminePsbt.extractTransaction())
+    addChangeUtxoToProvider(provider, preminePsbt)
+  } else {
+    addChangeUtxoToProvider(provider, deployPsbt)
   }
 
   return {
@@ -201,7 +206,7 @@ export async function deployOpenMinterToken(
     deployPsbt,
     preminePsbt,
   }
-}
+})
 
 export function buildMintPsbt(
   spentMinterPreTxHex: string,
