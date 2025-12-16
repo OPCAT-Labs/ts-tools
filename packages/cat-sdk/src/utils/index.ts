@@ -7,6 +7,8 @@ import {
   sha256,
   toByteString,
   UTXO,
+  createDryRunProvider,
+  ExtPsbt,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { TX_OUTPUT_COUNT_MAX } from '../contracts/constants.js'
 import { Outpoint } from '../typeConstants.js'
@@ -256,4 +258,48 @@ export function normalizeUtxoScripts(utxo: UTXO[], script: ByteString): UTXO[] {
     });
   }
   return ret;
+}
+
+
+/**
+ * Executes a feature function with a dry run provider instead of the real provider.
+ * This allows testing feature functions without broadcasting transactions to the blockchain.
+ * All broadcasts are intercepted and stored in-memory, allowing subsequent calls to retrieve them.
+ *
+ * @category Utils
+ * @param fn - A callback function that calls the feature function. Inside fn, use createDryRunProvider
+ *             to wrap your provider before passing it to the feature function.
+ * @returns The result of the feature function execution
+ *
+ * @example
+ * ```typescript
+ * const result = await dryRunFeature(() => {
+ *   const dryProvider = createDryRunProvider(realProvider);
+ *   return burnToken(signer, dryProvider, minterScriptHash, inputTokenUtxos, feeRate);
+ * })
+ * // Transactions are not broadcasted to the blockchain, but are available via dryProvider.getRawTransaction()
+ * ```
+ */
+export function dryRunFeature<FeatureFunction extends (...args: any[]) => any>(fn: FeatureFunction): FeatureFunction {
+  // identify the provider argument in fn, and replace it with a dry run provider
+  return function(...args: any[]) {
+    for (let i = 0; i < args.length; i++) {
+      // detect if the argument is a provider
+      if (typeof args[i]?.broadcast === 'function' &&
+          typeof args[i]?.getRawTransaction === 'function'
+      ) {
+        args[i] = createDryRunProvider(args[i]);
+      }
+    }
+    return fn(...args);
+  } as FeatureFunction;
+}
+
+
+export function createFeatureWithDryRun<T>(
+    fn: T
+): T & { dryRun: T } {
+  return Object.assign(fn as any, {
+      dryRun: dryRunFeature(fn as any)
+  });
 }

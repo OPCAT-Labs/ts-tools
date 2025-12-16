@@ -6,7 +6,7 @@ import { CAT20ClosedMinter } from '../../../src/contracts/cat20/minters/cat20Clo
 import { CAT20OpenMinter } from '../../../src/contracts/cat20/minters/cat20OpenMinter'
 import { CAT20 } from '../../../src/contracts/cat20/cat20'
 import { CAT20Admin } from '../../../src/contracts/cat20/cat20Admin'
-import { readArtifact } from '../../utils/index'
+import { runWithDryCheck, isLocalTest, readArtifact } from '../../utils/index'
 import { OpenMinterCAT20Meta } from '../../../src/contracts/cat20/types'
 import { deployOpenMinterToken } from '../../../src/features/cat20/deploy/openMinter'
 import { testSigner } from '../../utils/testSigner'
@@ -19,6 +19,7 @@ import { ByteString } from '@opcat-labs/scrypt-ts-opcat'
 import { singleSend } from '../../../src/features/cat20/send/singleSend'
 import { CAT20StateLib } from '../../../src/contracts/cat20/cat20StateLib'
 import { CAT20GuardStateLib } from '../../../src/contracts/cat20/cat20GuardStateLib'
+import { expect, use } from 'chai'
 export const loadAllArtifacts = function () {
   //
   CAT20ClosedMinter.loadArtifact(
@@ -39,7 +40,7 @@ export const loadAllArtifacts = function () {
 }
 
 export async function deployToken(info: OpenMinterCAT20Meta) {
-  return deployOpenMinterToken(
+  return runWithDryCheck(testProvider, deployOpenMinterToken)(
     testSigner,
     testSigner,
     testProvider,
@@ -56,7 +57,7 @@ export async function mintToken(
   const changeAddress = await testSigner.getAddress()
   const tokenReceiverAddr = toTokenOwnerAddress(changeAddress)
 
-  return mintOpenMinterToken(
+  return runWithDryCheck(testProvider, mintOpenMinterToken)(
     testSigner,
     testSigner,
     testProvider,
@@ -79,7 +80,11 @@ export async function singleSendToken(
 ) {
   const address = await testSigner.getAddress()
   const tokenChangeAddr = toTokenOwnerAddress(address)
-  return singleSend(
+
+  return runWithDryCheck(
+    testProvider,
+    singleSend
+  )(
     testSigner,
     testProvider,
     minterScriptHash,

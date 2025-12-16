@@ -23,7 +23,7 @@ import {
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants.js'
 import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants.js'
-import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils/index.js'
+import { applyFixedArray, createFeatureWithDryRun, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils/index.js'
 import {
   CAT20GuardPeripheral,
   ContractPeripheral,
@@ -42,7 +42,7 @@ import { SPEND_TYPE_USER_SPEND } from '../../../contracts/index.js'
  * @param adminScriptHash the admin script hash of the CAT20 token
  * @returns the PSBTs for the guard and burn transactions
  */
-export async function burnToken(
+export const burnToken = createFeatureWithDryRun(async function(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
@@ -210,4 +210,4 @@ export async function burnToken(
     guardTxid: guardPsbt.extractTransaction().id,
     burnTxid: burnPsbt.extractTransaction().id,
   }
-}
+})

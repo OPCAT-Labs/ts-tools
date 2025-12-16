@@ -5,7 +5,7 @@ import { CAT721ClosedMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral
 import { CAT721ClosedMinter } from "../../../contracts/cat721/minters/cat721ClosedMinter.js";
 import { createNft } from "./nft.js";
 import { Postage } from "../../../typeConstants.js";
-import { normalizeUtxoScripts } from "../../../utils/index.js";
+import { normalizeUtxoScripts, createFeatureWithDryRun } from "../../../utils/index.js";
 
 
 /**
@@ -25,7 +25,7 @@ import { normalizeUtxoScripts } from "../../../utils/index.js";
  * @param feeRate the fee rate for the transaction
  * @returns the PSBTs for the create and mint transactions
  */
-export async function mintClosedMinterNft(
+export const mintClosedMinterNft = createFeatureWithDryRun(async function(
     issuerSigner: Signer,
     feeSigner: Signer,
     provider: UtxoProvider & ChainProvider,
@@ -126,4 +126,4 @@ export async function mintClosedMinterNft(
         mintPsbt: minterPsbt,
         mintTxId: minterPsbt.extractTransaction().id,
     }
-}
+})

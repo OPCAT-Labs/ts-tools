@@ -6,7 +6,7 @@ import { createNft } from "./nft.js";
 import { CAT721OpenMintInfo } from "../../../contracts/cat721/minters/cat721OpenMintInfo.js";
 import { Postage } from "../../../typeConstants.js";
 import { CAT721 } from "../../../contracts/index.js";
-import { normalizeUtxoScripts } from "../../../utils/index.js";
+import { normalizeUtxoScripts, createFeatureWithDryRun } from "../../../utils/index.js";
 
 
 /**
@@ -26,7 +26,7 @@ import { normalizeUtxoScripts } from "../../../utils/index.js";
  * @param feeRate the fee rate for the transaction
  * @returns the PSBTs for the create and mint transactions
  */
-export async function mintOpenMinterNft(
+export const mintOpenMinterNft = createFeatureWithDryRun(async function(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
     minterUtxo: UTXO,
@@ -143,4 +143,4 @@ export async function mintOpenMinterNft(
         mintPsbt,
         mintTxId: mintPsbt.extractTransaction().id,
     }
-}
+})

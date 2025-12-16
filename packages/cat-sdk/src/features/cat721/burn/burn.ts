@@ -3,7 +3,7 @@ import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../../contracts/cons
 import { CAT721 } from "../../../contracts/cat721/cat721.js";
 import { CAT721StateLib } from "../../../contracts/cat721/cat721StateLib.js";
 import { Postage } from "../../../typeConstants.js";
-import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts } from "../../../utils/index.js";
+import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts, createFeatureWithDryRun } from "../../../utils/index.js";
 import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral.js";
 
 /**
@@ -16,7 +16,7 @@ import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contra
  * @param feeRate the fee rate for the transaction
  * @returns the PSBTs for the guard and burn transactions
  */
-export async function burnNft(
+export const burnNft = createFeatureWithDryRun(async function(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
     minterScriptHash: ByteString,
@@ -156,4 +156,4 @@ export async function burnNft(
         guardTxid: guardPsbt.extractTransaction().id,
         burnTxid: burnPsbt.extractTransaction().id,
     }
-}
+})

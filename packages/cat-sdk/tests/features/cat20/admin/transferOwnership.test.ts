@@ -16,7 +16,7 @@ import { outpoint2ByteString, toTokenOwnerAddress } from '../../../../src/utils'
 import { CAT20OpenMinter } from '../../../../src/contracts/cat20/minters/cat20OpenMinter'
 import { transferOwnership } from '../../../../src/features/cat20/admin/transferOwnership'
 import { testProvider } from '../../../utils/testProvider'
-import { verifyTx } from '../../../utils'
+import { runWithDryCheck, verifyTx } from '../../../utils'
 import { formatMetadata } from '../../../../src/lib/metadata'
 import { ConstantsLib } from '../../../../src/contracts'
 import { CAT20Admin } from '../../../../src/contracts/cat20/cat20Admin'
@@ -74,7 +74,7 @@ describe('Test the feature `transferOwnership` for `Cat20`', () => {
       outpoint2ByteString(cat20Generator.deployInfo.tokenId)
     )
     cat20Admin.bindToUtxo(cat20Generator.getCat20AdminUtxo())
-    const { sendPsbt } = await transferOwnership(
+    const { sendPsbt } = await  runWithDryCheck(testProvider, transferOwnership)(
       currentSigner,
       testSigner,
       cat20Admin,

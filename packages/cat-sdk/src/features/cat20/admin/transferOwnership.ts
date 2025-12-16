@@ -13,7 +13,7 @@ import {
   addChangeUtxoToProvider,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { TX_INPUT_COUNT_MAX } from '../../../contracts/constants.js'
-import { filterFeeUtxos } from '../../../utils/index.js'
+import { filterFeeUtxos, createFeatureWithDryRun } from '../../../utils/index.js'
 import { CAT20Admin } from '../../../contracts/cat20/cat20Admin.js'
 import { OwnerUtils } from '../../../contracts/index.js'
 
@@ -27,7 +27,7 @@ import { OwnerUtils } from '../../../contracts/index.js'
  * @param feeRate the fee rate for constructing transactions
  * @returns a transferOwnership transaction
  */
-export async function transferOwnership(
+export const transferOwnership = createFeatureWithDryRun(async function(
   adminSigner: Signer,
   feeSigner: Signer,
   cat20Admin: CAT20Admin,
@@ -118,4 +118,4 @@ export async function transferOwnership(
     sendTxId: sendPsbt.extractTransaction().id,
     sendPsbt,
   }
-}
+})

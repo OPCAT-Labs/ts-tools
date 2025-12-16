@@ -13,6 +13,7 @@ import {
 } from '../../../contracts/cat20/types.js'
 import { Postage } from '../../../typeConstants.js'
 import { ConstantsLib } from '../../../contracts/index.js'
+import { createFeatureWithDryRun } from '../../../utils/index.js'
 
 
 /**
@@ -26,7 +27,7 @@ import { ConstantsLib } from '../../../contracts/index.js'
  * @param changeAddress the address for the change output
  * @returns the token info and the PSBTs for the genesis and deploy transactions
  */
-export async function deployClosedMinterToken(
+export const deployClosedMinterToken = createFeatureWithDryRun(async function(
   signer: Signer,
   provider: ChainProvider & UtxoProvider,
   deployInfo: {
@@ -141,4 +142,4 @@ export async function deployClosedMinterToken(
     metadata,
     timestamp: Date.now(),
   }
-}
+})

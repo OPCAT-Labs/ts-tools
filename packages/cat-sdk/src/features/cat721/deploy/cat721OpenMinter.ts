@@ -7,7 +7,7 @@ import { CAT721OpenMinter } from "../../../contracts/cat721/minters/cat721OpenMi
 import { CAT721OpenMinterPeripheral, ContractPeripheral, CAT721GuardPeripheral } from "../../../utils/contractPeripheral.js";
 import { TX_INPUT_COUNT_MAX } from "../../../contracts/constants.js";
 import { Postage } from "../../../typeConstants.js";
-import { filterFeeUtxos } from "../../../utils/index.js";
+import { filterFeeUtxos, createFeatureWithDryRun } from "../../../utils/index.js";
 
 
 /**
@@ -21,7 +21,7 @@ import { filterFeeUtxos } from "../../../utils/index.js";
  * @param changeAddress the address for the change output
  * @returns the collection info and the PSBTs for the genesis and deploy transactions
  */
-export async function deployOpenMinterCollection(
+export const deployOpenMinterCollection = createFeatureWithDryRun(async function(
     signer: Signer,
     provider: UtxoProvider & ChainProvider,
     deployInfo: {
@@ -109,5 +109,4 @@ CAT721NftInfo<OpenMinterCAT721Meta> & {
         deployPsbt,
         minter: cat721OpenMinter,
     }
-
-}
+})

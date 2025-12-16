@@ -4,3 +4,4 @@ export { type UtxoQueryOptions, type UtxoProvider, markSpent, getUtxoKey, addCha
 export { MempoolProvider } from './mempoolProvider.js';
 export { RPCProvider } from './rpcProvider.js';
 export { DummyProvider } from './dummyProvider.js';
+export { createDryRunProvider } from './dryRunProvider.js';

@@ -10,7 +10,7 @@ import {
 } from '../../src/contracts/cat20/types'
 import { mintClosedMinterToken } from '../../src/features/cat20/mint/closedMinter'
 import { singleSend } from '../../src/features/cat20/send/singleSend'
-import { verifyTx } from '.'
+import { runWithDryCheck, verifyTx } from '.'
 import { expect } from 'chai'
 import { testProvider } from './testProvider'
 import { CAT20GuardPeripheral, ContractPeripheral } from '../../src/utils/contractPeripheral'
@@ -89,7 +89,7 @@ export class TestCAT20Generator {
     )
     verifyTx(mintInfo.mintPsbt, expect)
     this.minterPsbt = mintInfo.mintPsbt
-    const transferInfo = await singleSend(
+    const transferInfo = await  runWithDryCheck(testProvider, singleSend)(
       testSigner,
       testProvider,
       this.deployInfo.minterScriptHash,

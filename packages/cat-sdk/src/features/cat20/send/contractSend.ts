@@ -28,6 +28,7 @@ import {
   filterFeeUtxos,
   toTokenOwnerAddress,
   normalizeUtxoScripts,
+  createFeatureWithDryRun,
 } from '../../../utils/index.js'
 import {
   CAT20GuardPeripheral,
@@ -48,7 +49,7 @@ import { SPEND_TYPE_CONTRACT_SPEND } from '../../../contracts/index.js'
  * @param feeRate the fee rate for constructing transactions
  * @returns the guard transaction, the send transaction and the CAT20 token outputs
  */
-export async function contractSend(
+export const contractSend = createFeatureWithDryRun(async function(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: string,
@@ -299,4 +300,4 @@ export async function contractSend(
     newCAT20Utxos,
     changeTokenOutputIndex,
   }
-}
+})

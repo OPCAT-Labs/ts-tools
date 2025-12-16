@@ -7,7 +7,7 @@ import { testProvider } from "./testProvider"
 import { toTokenOwnerAddress } from "../../src/utils"
 import { ByteString } from "@opcat-labs/scrypt-ts-opcat"
 import { mintClosedMinterNft } from "../../src/features/cat721/mint/cat721ClosedMinter"
-import { verifyTx } from "../utils"
+import { runWithDryCheck, verifyTx } from "../utils"
 import { expect } from "chai"
 import { singleSendNft } from "../../src/features/cat721/send/singleSend"
 import { CAT721ClosedMinterPeripheral, CAT721GuardPeripheral, ContractPeripheral } from "../../src/utils/contractPeripheral"
@@ -40,7 +40,7 @@ export class TestCAT721Generator {
     }
 
     static async init(info: ClosedMinterCAT721Meta) {
-        const deployInfo = await deployClosedMinterCollection(
+        const deployInfo = await runWithDryCheck(testProvider, deployClosedMinterCollection)(
             testSigner,
             testProvider,
             { metadata: info },
@@ -58,7 +58,7 @@ export class TestCAT721Generator {
         const signerOwnerAddr = toTokenOwnerAddress(signerAddr)
         const state = CAT721ClosedMinter.deserializeState(this.getCat721MinterUtxo().data)
         const feeUtxos = await testProvider.getUtxos(signerAddr)
-        const mintInfo = await mintClosedMinterNft(
+        const mintInfo = await runWithDryCheck(testProvider, mintClosedMinterNft)(
             testSigner,
             testSigner,
             testProvider,
@@ -81,7 +81,7 @@ export class TestCAT721Generator {
         )
         verifyTx(mintInfo.mintPsbt, expect)
         this.minterPsbt = mintInfo.mintPsbt
-        const transferInfo = await singleSendNft(
+        const transferInfo = await  runWithDryCheck(testProvider, singleSendNft)(
             testSigner,
             testProvider,
             this.deployInfo.minterScriptHash,
@@ -120,8 +120,6 @@ export async function createCat721(
         symbol: `cat721_${symbol}`,
         description: `cat721_${symbol}`,
         max: 2100n,
-        icon: '',
-        minterMd5: '',
         issuerAddress: toTokenOwnerAddress(toAddress),
     }
     const cat721Generator = await TestCAT721Generator.init(metadata)

@@ -1,6 +1,6 @@
 import { ByteString, ChainProvider, min, Signer, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT20_AMOUNT, NULL_ADMIN_SCRIPT_HASH, TX_INPUT_COUNT_MAX } from "../../../contracts/index.js";
-import { toTokenOwnerAddress } from "../../../utils/index.js";
+import { toTokenOwnerAddress, createFeatureWithDryRun } from "../../../utils/index.js";
 import { singleSend } from "./singleSend.js";
 
 
@@ -17,7 +17,7 @@ export function calculateTokenTransferCount(inputTokenUtxos: number): number {
 
 type SingleSendResult = Awaited<ReturnType<typeof singleSend>>;
 
-export async function mergeSendToken(
+export const mergeSendToken = createFeatureWithDryRun(async function(
   signer: Signer,
   provider: UtxoProvider & ChainProvider,
   minterScriptHash: ByteString,
@@ -78,4 +78,4 @@ export async function mergeSendToken(
         merges: mergeResults,
         finalSend
     }
-}
+})

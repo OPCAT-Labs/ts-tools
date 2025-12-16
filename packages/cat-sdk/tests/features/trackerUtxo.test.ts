@@ -24,7 +24,7 @@ import { mintOpenMinterNft } from '../../src/features/cat721/mint/cat721OpenMint
 import { CAT721OpenMinterMerkleTreeData } from '../../src/lib/cat721OPenMinterMerkleTreeData'
 import { CAT721OpenMinter } from '../../src/contracts/cat721/minters/cat721OpenMinter'
 import { MetadataSerializer } from '../../src/lib/metadata'
-import { isLocalTest } from '../utils'
+import { isLocalTest, runWithDryCheck } from '../utils'
 
 use(chaiAsPromised)
 
@@ -230,7 +230,7 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
       const trackerTokenUtxo = toTrackerUtxo(tokenUtxo)
 
       // Burn should work with tracker UTXO
-      const result = await burnToken(
+      const result = await runWithDryCheck(testProvider, burnToken)(
         testSigner,
         testProvider,
         cat20Generator.deployInfo.minterScriptHash,
@@ -254,7 +254,7 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
       const trackerToken2 = toTrackerUtxo(token2)
 
       // Burn should work with multiple tracker UTXOs
-      const result = await burnToken(
+      const result = await runWithDryCheck(testProvider, burnToken)(
         testSigner,
         testProvider,
         cat20Generator.deployInfo.minterScriptHash,
@@ -316,7 +316,7 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
       const trackerNft2 = toTrackerUtxo(nft2)
 
       // Send should work with multiple tracker UTXOs
-      const result = await singleSendNft(
+      const result = await runWithDryCheck(testProvider, singleSendNft)(
         testSigner,
         testProvider,
         cat721Generator.minterScriptHash,
@@ -353,7 +353,7 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
       // Mint should work with tracker UTXO
       const state = CAT721ClosedMinter.deserializeState(trackerMinterUtxo.data)
       const feeUtxos = await testProvider.getUtxos(address)
-      const result = await mintClosedMinterNft(
+      const result = await runWithDryCheck(testProvider, mintClosedMinterNft)(
         testSigner,
         testSigner,
         testProvider,
@@ -418,7 +418,7 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
       nftOpenMinterMerkleTreeData = new CAT721OpenMinterMerkleTreeData(nftMerkleLeafList, HEIGHT)
 
       // Deploy collection
-      const deployResult = await deployOpenMinterCollection(
+      const deployResult = await runWithDryCheck(testProvider, deployOpenMinterCollection)(
         testSigner,
         testProvider,
         { metadata: openMinterMetadata },
@@ -448,7 +448,7 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
       }
 
       // Mint should work with tracker UTXO
-      const result = await mintOpenMinterNft(
+      const result = await runWithDryCheck(testProvider, mintOpenMinterNft)(
         testSigner,
         testProvider,
         trackerMinterUtxo,
@@ -492,7 +492,7 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
       const trackerNftUtxo = toTrackerUtxo(nftUtxo)
 
       // Burn should work with tracker UTXO
-      const result = await burnNft(
+      const result = await runWithDryCheck(testProvider, burnNft)(
         testSigner,
         testProvider,
         cat721Generator.minterScriptHash,
