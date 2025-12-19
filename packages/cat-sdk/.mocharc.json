@@ -5,7 +5,7 @@
     "ts"
   ],
   "spec": [
-    "./tests/**/trackerUtxo.test.ts"
+    "./tests/**/*.test.ts"
   ],
   "package": "./package.json",
   "reporter": "spec",

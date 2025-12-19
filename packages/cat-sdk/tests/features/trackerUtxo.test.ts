@@ -42,7 +42,7 @@ function toTrackerUtxo(utxo: UTXO): UTXO {
     script: sha256(utxo.script),
   }
   delete (u as any).txHashPreimage
-  return u;
+  return u
 }
 
 isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {

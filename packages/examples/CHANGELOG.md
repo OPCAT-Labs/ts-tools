@@ -4,7 +4,10 @@
 
 ### Minor Changes
 
-- 1. back to genesis now trace to genesis contract.\n 2. add dryRun for cat-sdk features.\n 3. add mergeSendToken feature for cat20. \n 3. lots of bugfixes
+- back to genesis now trace to genesis contract
+- add dryRun for cat-sdk features
+- add mergeSendToken feature for cat20
+- lots of bugfixes
 
 ### Patch Changes
 
