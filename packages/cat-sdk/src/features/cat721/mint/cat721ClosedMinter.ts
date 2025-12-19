@@ -57,7 +57,12 @@ export const mintClosedMinterNft = createFeatureWithDryRun(async function(
     const closedMinter = CAT721ClosedMinterPeripheral.createMinter(collectionId, metadata)
     const minterScript = closedMinter.lockingScript.toHex()
     minterUtxo = normalizeUtxoScripts([minterUtxo], minterScript)[0]
-    closedMinter.bindToUtxo(minterUtxo)
+    closedMinter.bindToUtxo({
+        ...minterUtxo,
+        txHashPreimage: toHex(
+            new Transaction(spentMinterTxHex).toTxHashPreimage()
+        )
+    })
 
     const createNftRes = await createNft(
         feeSigner,

@@ -62,7 +62,12 @@ export const mintOpenMinterNft = createFeatureWithDryRun(async function(
     const openMinter = CAT721OpenMinterPeripheral.createMinter(collectionId, metadata)
     const minterScript = openMinter.lockingScript.toHex()
     minterUtxo = normalizeUtxoScripts([minterUtxo], minterScript)[0]
-    openMinter.bindToUtxo(minterUtxo)
+    openMinter.bindToUtxo({
+        ...minterUtxo,
+        txHashPreimage: toHex(
+            new Transaction(spentMinterTxHex).toTxHashPreimage()
+        )
+    })
 
     const createNftRes = await createNft(
         signer,
@@ -78,12 +83,6 @@ export const mintOpenMinterNft = createFeatureWithDryRun(async function(
     }
 
     const preminerPubKey = await signer.getPublicKey()
-    const backtraceInfo = getBackTraceInfo(
-        spentMinterTxHex,
-        minterPreTxHex,
-        // minter is always the first input
-        0
-    )
     const nextMinter = openMinter.next({
         ...openMinter.state,
         nextLocalId: openMinter.state.nextLocalId + 1n,
@@ -91,6 +90,14 @@ export const mintOpenMinterNft = createFeatureWithDryRun(async function(
     })
     const cat721 = new CAT721(ContractPeripheral.scriptHash(openMinter), CAT721GuardPeripheral.getGuardVariantScriptHashes())
     cat721.state = nftState
+
+    const backtraceInfo = getBackTraceInfo(
+        spentMinterTxHex,
+        minterPreTxHex,
+        // minter is always the first input
+        0
+    )
+
     const mintPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .addContractInput(openMinter, (contract, tx) => {
             const mintInfo = CAT721OpenMintInfo.deserializeState(createNftRes.mintInfoUtxo.data)

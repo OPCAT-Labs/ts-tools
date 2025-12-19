@@ -4,7 +4,7 @@ import { sha256, UTXO, ExtPsbt } from '@opcat-labs/scrypt-ts-opcat'
 import { testSigner } from '../utils/testSigner'
 import { loadAllArtifacts as loadCAT20Artifacts, deployToken, mintToken } from './cat20/utils'
 import { loadAllArtifacts as loadCAT721Artifacts } from './cat721/utils'
-import { OpenMinterCAT20Meta } from '../../src/contracts/cat20/types'
+import { ClosedMinterCAT20Meta, OpenMinterCAT20Meta } from '../../src/contracts/cat20/types'
 import { OpenMinterCAT721Meta, CAT721MerkleLeaf, MerkleProof, ProofNodePos, HEIGHT } from '../../src/contracts/cat721/types'
 import { toTokenOwnerAddress } from '../../src/utils'
 import { formatMetadata } from '../../src/lib/metadata'
@@ -25,6 +25,8 @@ import { CAT721OpenMinterMerkleTreeData } from '../../src/lib/cat721OPenMinterMe
 import { CAT721OpenMinter } from '../../src/contracts/cat721/minters/cat721OpenMinter'
 import { MetadataSerializer } from '../../src/lib/metadata'
 import { isLocalTest, runWithDryCheck } from '../utils'
+import { deployClosedMinterToken } from '../../src/features/cat20/deploy/closedMinter'
+import { mintClosedMinterToken } from '../../src/features/cat20/mint/closedMinter'
 
 use(chaiAsPromised)
 
@@ -35,10 +37,12 @@ use(chaiAsPromised)
  * to simulate what a tracker would return.
  */
 function toTrackerUtxo(utxo: UTXO): UTXO {
-  return {
+  const u = {
     ...utxo,
     script: sha256(utxo.script),
   }
+  delete (u as any).txHashPreimage
+  return u
 }
 
 isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
@@ -50,6 +54,41 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
     loadCAT721Artifacts()
     address = await testSigner.getAddress()
     tokenReceiverAddr = toTokenOwnerAddress(address)
+  })
+
+  describe('CAT20 ClosedMinter with tracker UTXOs', () => {
+    let metadata: ClosedMinterCAT20Meta;
+    before(async () => {
+      metadata = formatMetadata({
+        name: 'Tracker Test Token',
+        symbol: 'TTT',
+        decimals: 0n,
+        hasAdmin: false,
+      })
+    })
+
+    it('should mint token with tracker-style minter UTXO', async () => {
+      const deployRes = await deployClosedMinterToken(
+        testSigner,
+        testProvider,
+        {metadata},
+        await testProvider.getFeeRate()
+      )
+      const trackerMinterUtxo = toTrackerUtxo(deployRes.deployPsbt.getUtxo(0))
+      const mintRes = await mintClosedMinterToken(
+        testSigner,
+        testProvider,
+        trackerMinterUtxo,
+        deployRes.metadata.hasAdmin,
+        deployRes.adminScriptHash,
+        deployRes.tokenId,
+        tokenReceiverAddr,
+        100n,
+        address,
+        await testProvider.getFeeRate()
+      )
+      expect(mintRes.mintTxId).to.be.a('string')
+    })
   })
 
   describe('CAT20 OpenMinter with tracker UTXOs', () => {
@@ -269,7 +308,7 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
     })
   })
 
-  describe('CAT721 NFT with tracker UTXOs', () => {
+  describe('CAT721 send with tracker UTXOs', () => {
     let cat721Generator: TestCAT721Generator
 
     before(async () => {
@@ -329,7 +368,7 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
     })
   })
 
-  describe('CAT721 mint with tracker UTXOs', () => {
+  describe('CAT721 ClosedMinter with tracker UTXOs', () => {
     let cat721Generator: TestCAT721Generator
 
     before(async () => {

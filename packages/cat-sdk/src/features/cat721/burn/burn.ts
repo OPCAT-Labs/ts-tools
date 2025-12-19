@@ -1,4 +1,4 @@
-import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, PubKey, Signer, toHex, toByteString, UTXO, UtxoProvider, fill, sha256, markSpent, addChangeUtxoToProvider } from "@opcat-labs/scrypt-ts-opcat";
+import { ByteString, ChainProvider, ExtPsbt, getBackTraceInfo, PubKey, Signer, toHex, toByteString, UTXO, UtxoProvider, fill, sha256, markSpent, addChangeUtxoToProvider, Transaction } from "@opcat-labs/scrypt-ts-opcat";
 import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../../contracts/constants.js";
 import { CAT721 } from "../../../contracts/cat721/cat721.js";
 import { CAT721StateLib } from "../../../contracts/cat721/cat721StateLib.js";
@@ -64,18 +64,22 @@ export const burnNft = createFeatureWithDryRun(async function(
     const guardUtxo = guardPsbt.getUtxo(0)
     const feeUtxo = guardPsbt.getChangeUTXO()
 
-    const inputNfts: CAT721[] = inputNftUtxos.map(
-        (utxo) => new CAT721(minterScriptHash, guardScriptHashes).bindToUtxo(utxo)
-    )
-    const burnPsbt = new ExtPsbt({ network: await provider.getNetwork() })
-
-    const guardInputIndex = inputNfts.length;
     const backtraces = await CAT721GuardPeripheral.getBackTraceInfo(
         minterScriptHash,
         inputNftUtxos,
         provider,
     )
+    const inputNfts: CAT721[] = inputNftUtxos.map(
+        (utxo, index) => new CAT721(minterScriptHash, guardScriptHashes).bindToUtxo({
+            ...utxo,
+            txHashPreimage: toHex(
+                new Transaction(backtraces[index].prevTxHex).toTxHashPreimage()
+            )
+        })
+    )
+    const burnPsbt = new ExtPsbt({ network: await provider.getNetwork() })
 
+    const guardInputIndex = inputNfts.length;
     // add nft inputs
     for (let index = 0; index < inputNfts.length; index++) {
         burnPsbt.addContractInput(
