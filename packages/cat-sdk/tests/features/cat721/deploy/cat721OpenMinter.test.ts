@@ -1,4 +1,4 @@
-import { bvmVerify, ExtPsbt, intToByteString, sha256, UTXO } from "@opcat-labs/scrypt-ts-opcat"
+import { B2GUTXO, bvmVerify, ExtPsbt, intToByteString, sha256, UTXO } from "@opcat-labs/scrypt-ts-opcat"
 import {
     CAT721MerkleLeaf,
     CAT721OpenMinter,
@@ -63,7 +63,7 @@ describe('Test the feature `deploy` for `CAT721OpenMinter`', () => {
         genesisTx = dpeloyResult.genesisPsbt
         deployTx = dpeloyResult.deployPsbt
         collectionId = dpeloyResult.collectionId
-        minterUtxo = deployTx.getUtxo(0)
+        minterUtxo = deployTx.getUtxo(0);
     })
 
     describe('should deploy successfully', () => {
@@ -84,6 +84,7 @@ describe('Test the feature `deploy` for `CAT721OpenMinter`', () => {
                 const updateLeafInfo = nftOpenMinterMerkleTreeData.updateLeaf(newLeaf, index)
                 const nftStorage = getNftStorage(BigInt(index))
                 
+                delete (minterUtxo as any).txHashPreimage;
                 const mintResult = await mintOpenMinterNft(
                     testSigner,
                     testProvider,

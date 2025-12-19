@@ -1,5 +1,17 @@
 # @opcat-labs/cat-tracker
 
+## 2.1.0
+
+### Minor Changes
+
+- 1. back to genesis now trace to genesis contract.\n 2. add dryRun for cat-sdk features.\n 3. add mergeSendToken feature for cat20. \n 3. lots of bugfixes
+
+### Patch Changes
+
+- Updated dependencies
+  - @opcat-labs/cat-sdk@2.1.0
+  - @opcat-labs/opcat@2.1.0
+
 ## 2.0.2
 
 ### Patch Changes

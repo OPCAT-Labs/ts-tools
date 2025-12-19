@@ -59,10 +59,22 @@ export const mintOpenMinterNft = createFeatureWithDryRun(async function(
         toHex(spentMinterTx.inputs[minterInputIndex].prevTxId)
     )
 
+    
+    const backtraceInfo = getBackTraceInfo(
+        spentMinterTxHex,
+        minterPreTxHex,
+        // minter is always the first input
+        0
+    )
     const openMinter = CAT721OpenMinterPeripheral.createMinter(collectionId, metadata)
     const minterScript = openMinter.lockingScript.toHex()
     minterUtxo = normalizeUtxoScripts([minterUtxo], minterScript)[0]
-    openMinter.bindToUtxo(minterUtxo)
+    openMinter.bindToUtxo({
+        ...minterUtxo,
+        txHashPreimage: toHex(
+            new Transaction(spentMinterTxHex).toTxHashPreimage()
+        )
+    })
 
     const createNftRes = await createNft(
         signer,
@@ -78,12 +90,6 @@ export const mintOpenMinterNft = createFeatureWithDryRun(async function(
     }
 
     const preminerPubKey = await signer.getPublicKey()
-    const backtraceInfo = getBackTraceInfo(
-        spentMinterTxHex,
-        minterPreTxHex,
-        // minter is always the first input
-        0
-    )
     const nextMinter = openMinter.next({
         ...openMinter.state,
         nextLocalId: openMinter.state.nextLocalId + 1n,
