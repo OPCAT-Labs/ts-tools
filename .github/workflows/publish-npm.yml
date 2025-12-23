@@ -80,8 +80,8 @@ jobs:
       # 10. Configure GitHub Packages authentication
       - name: Configure GitHub Packages authentication
         run: |
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
-          echo "registry=https://npm.pkg.github.com/" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+          echo "@opcat-labs:registry=https://npm.pkg.github.com/" >> ~/.npmrc
 
       # 11. Publish to GitHub Packages
       - name: Publish packages to GitHub Packages
