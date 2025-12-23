@@ -1,21 +1,42 @@
 #!/usr/bin/env node
 
 /**
- * Publish packages to npm
- * Usage: node scripts/publish-packages.js <tag>
+ * Publish packages to npm registry
+ * Usage: node scripts/publish-packages.js <tag> [registry]
  * Example: node scripts/publish-packages.js beta
+ * Example: node scripts/publish-packages.js beta github
  */
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// Get tag argument
-const [tag] = process.argv.slice(2);
+// Get tag and registry arguments
+const [tag, registry = 'npm'] = process.argv.slice(2);
 
 if (!tag) {
-  console.error('Usage: node scripts/publish-packages.js <tag>');
+  console.error('Usage: node scripts/publish-packages.js <tag> [registry]');
   console.error('Example: node scripts/publish-packages.js beta');
+  console.error('Example: node scripts/publish-packages.js beta github');
+  process.exit(1);
+}
+
+// Registry configurations
+const registries = {
+  npm: {
+    url: 'https://registry.npmjs.org/',
+    name: 'npm'
+  },
+  github: {
+    url: 'https://npm.pkg.github.com/',
+    name: 'GitHub Packages'
+  }
+};
+
+const registryConfig = registries[registry];
+if (!registryConfig) {
+  console.error(`Unknown registry: ${registry}`);
+  console.error(`Available registries: ${Object.keys(registries).join(', ')}`);
   process.exit(1);
 }
 
@@ -26,7 +47,7 @@ const packageDirs = fs.readdirSync(packagesDir).filter(dir => {
   return fs.existsSync(packageJsonPath);
 });
 
-console.log(`📦 Publishing packages to npm with tag: ${tag}\n`);
+console.log(`📦 Publishing packages to ${registryConfig.name} with tag: ${tag}\n`);
 
 const published = [];
 const failed = [];
@@ -48,16 +69,16 @@ for (const dir of packageDirs) {
   console.log(`📤 Publishing ${packageName}@${version}...`);
 
   try {
-    // Publish to npm
-    execSync(`npm publish --tag ${tag} --access public`, {
+    // Publish to specified registry
+    execSync(`npm publish --registry=${registryConfig.url} --tag ${tag} --access public`, {
       cwd: packagePath,
       stdio: 'inherit'
     });
 
-    console.log(`✅ Successfully published ${packageName}@${version}\n`);
+    console.log(`✅ Successfully published ${packageName}@${version} to ${registryConfig.name}\n`);
     published.push(`${packageName}@${version}`);
   } catch (error) {
-    console.error(`❌ Failed to publish ${packageName}@${version}`);
+    console.error(`❌ Failed to publish ${packageName}@${version} to ${registryConfig.name}`);
     console.error(`   Error: ${error.message}\n`);
     failed.push(`${packageName}@${version}`);
   }
@@ -65,7 +86,7 @@ for (const dir of packageDirs) {
 
 // Print summary
 console.log('\n' + '='.repeat(60));
-console.log('📊 PUBLISH SUMMARY');
+console.log(`📊 PUBLISH SUMMARY - ${registryConfig.name.toUpperCase()}`);
 console.log('='.repeat(60));
 console.log(`✅ Successfully published: ${published.length}`);
 if (published.length > 0) {
@@ -78,6 +99,6 @@ if (failed.length > 0) {
   console.log();
   process.exit(1);
 } else {
-  console.log('\n🎉 All packages published successfully!');
+  console.log(`\n🎉 All packages published successfully to ${registryConfig.name}!`);
   process.exit(0);
 }
