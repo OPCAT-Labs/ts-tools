@@ -75,7 +75,7 @@ jobs:
 
       # 9. Publish to npm
       - name: Publish packages to npm
-        run: node scripts/publish-packages.js ${{ inputs.npmTag }}
+        run: node scripts/publish-packages.js ${{ inputs.npmTag }} npm
 
       # 10. Configure GitHub Packages authentication
       - name: Configure GitHub Packages authentication
