@@ -11,7 +11,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 // Get tag argument
-const [tag] = process.argv.slice(2);
+const [tag, registry, access = 'public'] = process.argv.slice(2);
 
 if (!tag) {
   console.error('Usage: node scripts/publish-packages.js <tag>');
@@ -49,15 +49,15 @@ for (const dir of packageDirs) {
 
   try {
     // Publish to npm
-    execSync(`npm publish --tag ${tag} --access public`, {
+    execSync(`npm publish --tag ${tag} --access ${access}`, {
       cwd: packagePath,
       stdio: 'inherit'
     });
 
-    console.log(`✅ Successfully published ${packageName}@${version}\n`);
+    console.log(`✅ Successfully published ${packageName}@${version} to ${registry || 'npm'} with access: ${access}\n`);
     published.push(`${packageName}@${version}`);
   } catch (error) {
-    console.error(`❌ Failed to publish ${packageName}@${version}`);
+    console.error(`❌ Failed to publish ${packageName}@${version} to ${registry || 'npm'} with access: ${access}`);
     console.error(`   Error: ${error.message}\n`);
     failed.push(`${packageName}@${version}`);
   }

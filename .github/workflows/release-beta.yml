@@ -64,6 +64,9 @@ jobs:
   publish-npm:
     name: Publish NPM Packages
     needs: construct_version
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/publish-npm.yml
     with:
       commit_sha: ${{ inputs.commit_sha }}

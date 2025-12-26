@@ -1,4 +1,4 @@
-name: Build and Publish to npmjs.com
+name: Build and Publish to npmjs.com and GitHub Packages
 
 on:
   workflow_call:
@@ -24,8 +24,11 @@ env:
 
 jobs:
   build-and-publish:
-    name: Build and Publish (${{ inputs.npmTag }}) @ ${{ inputs.commit_sha }} to npmjs.com
+    name: Build and Publish (${{ inputs.npmTag }}) @ ${{ inputs.commit_sha }} to npmjs.com and GitHub Packages
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       # 1. Checkout repository with full history
@@ -72,9 +75,19 @@ jobs:
 
       # 9. Publish to npm
       - name: Publish packages to npm
-        run: node scripts/publish-packages.js ${{ inputs.npmTag }}
+        run: node scripts/publish-packages.js ${{ inputs.npmTag }} npm
 
-      # 10. Create summary
+      # 10. Configure GitHub Packages authentication
+      - name: Configure GitHub Packages authentication
+        run: |
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> ~/.npmrc
+          echo "@opcat-labs:registry=https://npm.pkg.github.com/" >> ~/.npmrc
+
+      # 11. Publish to GitHub Packages
+      - name: Publish packages to GitHub Packages
+        run: node scripts/publish-packages.js ${{ inputs.npmTag }} github
+
+      # 12. Create summary
       - name: Create job summary
         if: always()
         run: |
@@ -83,6 +96,7 @@ jobs:
           echo "- **Full Version:** \`${{ inputs.full_version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **NPM Tag:** \`${{ inputs.npmTag }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit SHA:** \`${{ inputs.commit_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Published to:** npmjs.com & GitHub Packages" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Package Versions" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
