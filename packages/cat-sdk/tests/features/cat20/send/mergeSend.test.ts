@@ -257,6 +257,87 @@ describe('Test the feature `mergeSend` for `Cat20`', () => {
       expect(totalOutput).to.eq(totalInput)
     })
 
+    it('should handle exactly 20 input token UTXOs with progress callback', async () => {
+      const toReceiverAmount = 100n
+      const tokenUtxos = await getTokenUtxos(cat20Generator, address, 20)
+      const totalInput = calculateTotalAmount(tokenUtxos)
+
+      // Track callback invocations
+      const startCalls: Array<{ currentIndex: number; totalTransfers: number; isFinalSend: boolean }> = []
+      const endCalls: Array<{ currentIndex: number; totalTransfers: number; isFinalSend: boolean; result: unknown }> = []
+
+      const result = await mergeSendToken(
+        testSigner,
+        testProvider,
+        cat20Generator.deployInfo.minterScriptHash,
+        tokenUtxos,
+        [{ address: tokenReceiverAddr, amount: toReceiverAmount }],
+        tokenChangeAddr,
+        await testProvider.getFeeRate(),
+        cat20Generator.deployInfo.hasAdmin,
+        cat20Generator.deployInfo.adminScriptHash,
+        undefined, // sendChangeData
+        {
+          onTransferStart: (progress) => {
+            startCalls.push(progress)
+          },
+          onTransferEnd: (progress) => {
+            endCalls.push(progress)
+          },
+        }
+      )
+
+      // Should have 2 merge operations
+      expect(result.merges.length).to.eq(2)
+
+      // Verify progressCallbacks were called correctly
+      // For 20 inputs, we expect 3 transfers: 2 merges + 1 final send
+      const expectedTotalTransfers = 3
+      expect(startCalls.length).to.eq(expectedTotalTransfers)
+      expect(endCalls.length).to.eq(expectedTotalTransfers)
+
+      // Verify each callback has correct parameters
+      for (let i = 0; i < expectedTotalTransfers; i++) {
+        const isFinal = i === expectedTotalTransfers - 1
+
+        // Verify onTransferStart
+        expect(startCalls[i].currentIndex).to.eq(i)
+        expect(startCalls[i].totalTransfers).to.eq(expectedTotalTransfers)
+        expect(startCalls[i].isFinalSend).to.eq(isFinal)
+
+        // Verify onTransferEnd
+        expect(endCalls[i].currentIndex).to.eq(i)
+        expect(endCalls[i].totalTransfers).to.eq(expectedTotalTransfers)
+        expect(endCalls[i].isFinalSend).to.eq(isFinal)
+        expect(endCalls[i].result).to.not.be.null
+      }
+
+      // Verify merge results match callback results
+      for (let i = 0; i < result.merges.length; i++) {
+        expect(endCalls[i].result).to.eq(result.merges[i])
+      }
+      // Verify final send result matches callback result
+      expect(endCalls[expectedTotalTransfers - 1].result).to.eq(result.finalSend)
+
+      // Verify all merge transactions
+      for (const merge of result.merges) {
+        expect(merge.guardPsbt).to.not.be.null
+        verifyTx(merge.guardPsbt, expect)
+        expect(merge.sendPsbt).to.not.be.null
+        verifyTx(merge.sendPsbt, expect)
+      }
+
+      // Verify final send transaction
+      expect(result.finalSend.guardPsbt).to.not.be.null
+      verifyTx(result.finalSend.guardPsbt, expect)
+      expect(result.finalSend.sendPsbt).to.not.be.null
+      verifyTx(result.finalSend.sendPsbt, expect)
+
+      // Verify total amount is preserved
+      const totalOutput = calculateTotalAmount(result.finalSend.newCAT20Utxos)
+      expect(totalOutput).to.eq(totalInput)
+    })
+
     isLocalTest(testProvider) && it('should handle exactly 21 input token UTXOs', async () => {
       const toReceiverAmount = 100n
       const tokenUtxos = await getTokenUtxos(cat20Generator, address, 21)
@@ -295,6 +376,7 @@ describe('Test the feature `mergeSend` for `Cat20`', () => {
       const totalOutput = calculateTotalAmount(result.finalSend.newCAT20Utxos)
       expect(totalOutput).to.eq(totalInput)
     })
+    
 
     isLocalTest(testProvider) && it('should handle 100 input token UTXOs', async () => {
       const toReceiverAmount = 100n

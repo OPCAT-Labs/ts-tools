@@ -30,7 +30,11 @@ export const mergeSendToken = createFeatureWithDryRun(async function(
   feeRate: number,
   hasAdmin: boolean = false,
   adminScriptHash: ByteString = NULL_ADMIN_SCRIPT_HASH,
-  sendChangeData?: Buffer
+  sendChangeData?: Buffer,
+  progressCallbacks?: {
+    onTransferStart?: (progress: { currentIndex: number; totalTransfers: number; isFinalSend: boolean }) => void;
+    onTransferEnd?: (progress: { currentIndex: number; totalTransfers: number; isFinalSend: boolean; result: SingleSendResult }) => void;
+  }
 ): Promise<{
     merges: SingleSendResult[],
     finalSend: SingleSendResult
@@ -44,6 +48,8 @@ export const mergeSendToken = createFeatureWithDryRun(async function(
     // merges
     let mergeResults:  SingleSendResult[] = [];
     for (let i = 0; i < transferCount - 1; i++) {
+        progressCallbacks?.onTransferStart?.({ currentIndex: i, totalTransfers: transferCount, isFinalSend: false });
+
         const mergeInputUtxos = inputTokenUtxos.splice(0, MAX_INPUT_TOKEN_UTXOS_PER_TRANSFER);
         const singleSendRes = await singleSend(
             signer,
@@ -56,11 +62,16 @@ export const mergeSendToken = createFeatureWithDryRun(async function(
             hasAdmin,
             adminScriptHash,
         );
-        inputTokenUtxos.push(...singleSendRes.newCAT20Utxos)   
+        inputTokenUtxos.push(...singleSendRes.newCAT20Utxos)
         mergeResults.push(singleSendRes);
+
+        progressCallbacks?.onTransferEnd?.({ currentIndex: i, totalTransfers: transferCount, isFinalSend: false, result: singleSendRes });
     }
 
     // final send
+    const finalSendIndex = transferCount - 1;
+    progressCallbacks?.onTransferStart?.({ currentIndex: finalSendIndex, totalTransfers: transferCount, isFinalSend: true });
+
     const finalSend = await singleSend(
         signer,
         provider,
@@ -73,6 +84,8 @@ export const mergeSendToken = createFeatureWithDryRun(async function(
         adminScriptHash,
         sendChangeData
     );
+
+    progressCallbacks?.onTransferEnd?.({ currentIndex: finalSendIndex, totalTransfers: transferCount, isFinalSend: true, result: finalSend });
 
     return {
         merges: mergeResults,
