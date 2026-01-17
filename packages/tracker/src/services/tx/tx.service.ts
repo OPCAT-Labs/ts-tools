@@ -328,7 +328,7 @@ export class TxService {
           promises.push(this.tokenInfoEntityRepository.save(tokenInfoToUpdate));
         }
 
-        const inputTokenInfo = inputTokenInfos.find((m) => m.tokenScriptHash == lockingScriptHash);
+        const inputTokenInfo = tokenInfoToUpdate || inputTokenInfos.find((m) => m.tokenScriptHash == lockingScriptHash);
         // if we cannot find the minter from the tx inputs, it's not new minted token/nft, skip it here
         const thisTokenOrNftIsMinted = inputTokenInfo != undefined;
         if (!thisTokenOrNftIsMinted) {
