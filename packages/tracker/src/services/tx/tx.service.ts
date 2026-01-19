@@ -99,7 +99,7 @@ export class TxService {
       for (let inputIndex = 0; inputIndex < inputMetadatas.length; inputIndex++) {
         const inputMetadata = inputMetadatas[inputIndex];
         if (inputMetadata?.type === 'Token' || inputMetadata?.type === 'Collection') {
-          const shouldSave = await this.processMetaTx(tx, outputTags, inputIndex, inputMetadata, blockHeader);
+          const shouldSave = await this.processMetaTx(tx, outputTags, inputTags, inputIndex, inputMetadata, blockHeader);
           isSaveTx = isSaveTx || shouldSave;
           this.logger.log(`[OK] genesis tx ${tx.id}, type: ${inputMetadata?.type}`);
         }
@@ -108,8 +108,26 @@ export class TxService {
       const hasMinterInputTag = inputTags.some((tags) =>
         tags.includes(CatTags.CAT20_MINTER_TAG) || tags.includes(CatTags.CAT721_MINTER_TAG)
       );
-      
-      if (hasMinterInputTag) {
+
+      // Check if any input spends a known minter (even without CAT20_MINTER_TAG)
+      // This handles custom deployment flows where minter contracts don't have proper tags
+      let hasMinterInput = hasMinterInputTag;
+      if (!hasMinterInputTag) {
+        // Get input script hashes
+        const uniqueInputScriptHashes = Array.from(
+          new Set(tx.inputs.map((input) => sha256(input.output.script.toHex())))
+        );
+        // Query tokenInfo to check if any input matches a known minterScriptHash
+        const inputTokenInfos = await this.tokenInfoEntityRepository.find({
+          select: ['minterScriptHash'],
+          where: {
+            minterScriptHash: In(uniqueInputScriptHashes),
+          },
+        });
+        hasMinterInput = inputTokenInfos.length > 0;
+      }
+
+      if (hasMinterInput) {
         // if there are minter input tags, process as a mint tx, only process the minting part, if there are token/nft outputs, they will be processed in processTransferTx()
         const shouldSave = await this.processMintTx(tx, outputTags, inputMetadatas, blockHeader, outputFields);
         isSaveTx = isSaveTx || shouldSave;
@@ -170,11 +188,21 @@ export class TxService {
   private async processMetaTx(
     tx: Transaction,
     outputTags: string[][],
+    inputTags: string[][],
     inputIndex: number,
     inputMetadata: ReturnType<typeof MetadataSerializer.deserialize>,
     blockHeader: BlockHeader | null,
   ) {
     const promises: Promise<any>[] = [];
+
+    // Check if input has token/minter tag - if so, it's not a genesis transaction
+    const inputTag = inputTags[inputIndex];
+    if (inputTag.includes(CatTags.CAT20_TAG) || inputTag.includes(CatTags.CAT20_MINTER_TAG) ||
+        inputTag.includes(CatTags.CAT721_TAG) || inputTag.includes(CatTags.CAT721_MINTER_TAG)) {
+      this.logger.log(`[processMetaTx] Input ${inputIndex} has token/minter tag, skipping genesis processing for tx ${tx.id}`);
+      return false;
+    }
+
     const input = tx.inputs[inputIndex];
     const inputGenesis = input.output;
     if (inputGenesis.script.toString() != this.genesis.lockingScript.toString()) {
@@ -213,14 +241,19 @@ export class TxService {
       adminScriptHash = sha256(tx.outputs[adminIndex].script.toHex());
     }
     // promises.push(p);
+
+    // Track if we found a minter output with proper tag
+    let foundMinterWithTag = false;
+
     for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
       const output = tx.outputs[outputIndex];
       const outputTag = outputTags[outputIndex];
       const lockingScriptHash = sha256(tx.outputs[outputIndex].script.toHex());
       if (
         outputTag.includes(CatTags.CAT20_MINTER_TAG) ||
-        outputTag.includes(CatTags.CAT721_MINTER_TAG) 
+        outputTag.includes(CatTags.CAT721_MINTER_TAG)
       ) {
+        foundMinterWithTag = true;
         const txOut = this.txOutEntityRepository.create();
         tokenInfoEntity.minterScriptHash = lockingScriptHash;
         tokenInfoEntity.adminScriptHash = adminScriptHash;
@@ -238,6 +271,38 @@ export class TxService {
         // Use upsert() instead of save() for composite primary key (txid, outputIndex)
         // to avoid duplicate key errors when transaction is processed multiple times
         // See: https://github.com/typeorm/typeorm/issues/720
+        promises.push(this.txOutEntityRepository.upsert(txOut, ['txid', 'outputIndex']));
+      }
+    }
+
+    // Handle special case: minter output without CAT20_MINTER_TAG
+    // This can happen with custom deployment flows where the minter contract
+    // is created without the proper tag. In such cases, we assume Output 0
+    // is the minter if:
+    // 1. No minter with proper tag was found
+    // 2. Output 0 has 1 satoshi (typical for contract outputs)
+    // 3. The token has no admin (suggesting open minter pattern)
+    if (!foundMinterWithTag && tx.outputs.length > 0 && !hasAdmin) {
+      const output0 = tx.outputs[0];
+      if (BigInt(output0.satoshis) === 1n) {
+        const lockingScriptHash = sha256(output0.script.toHex());
+        this.logger.log(`[processMetaTx] No CAT20_MINTER_TAG found, assuming Output 0 is minter for tx ${tx.id}`);
+
+        const txOut = this.txOutEntityRepository.create();
+        tokenInfoEntity.minterScriptHash = lockingScriptHash;
+        tokenInfoEntity.adminScriptHash = adminScriptHash;
+        tokenInfoEntity.deployTxid = tx.hash;
+        tokenInfoEntity.deployHeight = blockHeader ? blockHeader.height : Constants.UNCONFIRMED_BLOCK_HEIGHT;
+
+        txOut.txid = tx.hash;
+        txOut.outputIndex = 0;
+        txOut.blockHeight = blockHeader ? blockHeader.height : Constants.UNCONFIRMED_BLOCK_HEIGHT;
+        txOut.satoshis = BigInt(output0.satoshis);
+        txOut.lockingScriptHash = lockingScriptHash;
+        txOut.isFromMint = true;
+        txOut.tokenAmount = 0n;
+        txOut.data = toHex(output0.data);
+
         promises.push(this.txOutEntityRepository.upsert(txOut, ['txid', 'outputIndex']));
       }
     }
@@ -323,13 +388,19 @@ export class TxService {
         // We verify this is the correct tokenScriptHash by querying the database
         // using lockingScriptHash. If no matching tokenInfo is found in the output,
         // it confirms this is a new token and we can safely update tokenScriptHash.
-        if (tokenInfoToUpdate && !outputTokenInfo) {
-          tokenInfoToUpdate.tokenScriptHash = lockingScriptHash;
-          promises.push(this.tokenInfoEntityRepository.save(tokenInfoToUpdate));
+        if (tokenInfoToUpdate) {
+          // If outputTokenInfo exists, check if it's from the same minter
+          const isSameMinter = outputTokenInfo &&
+            outputTokenInfo.minterScriptHash === tokenInfoToUpdate.minterScriptHash;
+
+          if (!outputTokenInfo || isSameMinter) {
+            tokenInfoToUpdate.tokenScriptHash = lockingScriptHash;
+            promises.push(this.tokenInfoEntityRepository.save(tokenInfoToUpdate));
+          }
         }
 
         const inputTokenInfo = tokenInfoToUpdate || inputTokenInfos.find((m) => m.tokenScriptHash == lockingScriptHash);
-        // if we cannot find the minter from the tx inputs, it's not new minted token/nft, skip it here
+        // If we cannot find the minter from the tx inputs, it's not a newly minted token/NFT, skip it here
         const thisTokenOrNftIsMinted = inputTokenInfo != undefined;
         if (!thisTokenOrNftIsMinted) {
           continue;
