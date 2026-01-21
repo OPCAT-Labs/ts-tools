@@ -8,13 +8,8 @@ import { ExtPsbt } from '../psbt/extPsbt.js';
  * @category Provider
  */
 export interface UtxoQueryOptions {
+  // the satoshis you want
   unspentValue: number;
-  estimateSize: number;
-  feePerKb: number;
-
-  /* For each additional UTXO, the additional size */
-  additional?: number;
-  stateProvable?: boolean;
 }
 
 /**
