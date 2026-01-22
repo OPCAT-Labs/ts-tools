@@ -38,6 +38,7 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
       const contentType = resp.headers.get('content-type')
       if (contentType.includes('json')) {
         const res = await resp.json();
+        if (res['error']) throw new Error(res['error']);
         const utxos: UTXO[] = res.map(utxo => ({
           txId: utxo.txid,
           outputIndex: utxo.vout,
