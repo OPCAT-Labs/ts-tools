@@ -33,7 +33,7 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
     let after_txid: string
     let after_vout: number
     while(true) {
-      const query = after_txid ? `?after_txid=${after_txid}&after_vout=${after_vout}` : ''
+      const query = after_txid ? `?max_utxos=${limit}&after_txid=${after_txid}&after_vout=${after_vout}` : `?max_utxos=${limit}`
       const resp = await fetch(url + query);
       const contentType = resp.headers.get('content-type')
       if (contentType.includes('json')) {
