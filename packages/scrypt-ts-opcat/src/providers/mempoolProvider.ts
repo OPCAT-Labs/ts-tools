@@ -26,46 +26,45 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
     const script = uint8ArrayToHex(Script.fromAddress(address).toBuffer());
 
     const url = `${this.getMempoolApiHost()}/api/address/${address}/utxo`;
-
-    const utxos: Array<UTXO> = await fetch(url)
-      .then(async (res) => {
-        const contentType = res.headers.get('content-type');
-        if (contentType.includes('json')) {
-          return res.json();
-        } else {
-          throw new Error(`invalid http content type : ${contentType}, status: ${res.status}`);
+    const requiredSat = _options?.unspentValue || 0; // 0 means fetch all utxos
+    let totalUtxos: UTXO[] = []
+    
+    const limit = 50;
+    let after_txid: string
+    let after_vout: number
+    while(true) {
+      const query = after_txid ? `?max_utxos=${limit}&after_txid=${after_txid}&after_vout=${after_vout}` : `?max_utxos=${limit}`
+      const resp = await fetch(url + query);
+      const contentType = resp.headers.get('content-type')
+      if (contentType.includes('json')) {
+        const res = await resp.json();
+        if (res['error']) throw new Error(res['error']);
+        const utxos: UTXO[] = res.map(utxo => ({
+          txId: utxo.txid,
+          outputIndex: utxo.vout,
+          script: utxo.script || script,
+          satoshis: utxo.value,
+          data: utxo.data || ''
+        }))
+        totalUtxos = [...totalUtxos, ...utxos]
+          .concat(Array.from(this.newUTXOs.values()))
+          .filter((utxo) => this.isUnSpent(utxo.txId, utxo.outputIndex))
+          .filter(duplicateFilter((utxo) => `${utxo.txId}:${utxo.outputIndex}`))
+          .filter(utxo => utxo.script === script)
+          .sort((a, b) => a.satoshis - b.satoshis);
+        const lastUtxo = utxos.at(-1)
+        if (lastUtxo) {
+          after_txid = lastUtxo.txId
+          after_vout = lastUtxo.outputIndex
         }
-      })
-      .then(
-        (
-          utxos: Array<{
-            txid: string;
-            vout: number;
-            script: string;
-            value: number;
-            data: string;
-          }>,
-        ) =>
-          utxos.map((utxo) => {
-            return {
-              txId: utxo.txid,
-              outputIndex: utxo.vout,
-              script: utxo.script || script,
-              satoshis: utxo.value,
-              data: utxo.data || '',
-            };
-          }),
-      )
-      .catch((_e) => {
-        return [];
-      });
-
-    return utxos
-      .concat(Array.from(this.newUTXOs.values()))
-      .filter((utxo) => this.isUnSpent(utxo.txId, utxo.outputIndex))
-      .filter(duplicateFilter((utxo) => `${utxo.txId}:${utxo.outputIndex}`))
-      .filter(utxo => utxo.script === script)
-      .sort((a, b) => a.satoshis - b.satoshis);
+        if (utxos.length < limit) break;
+        const totalSatoshis = totalUtxos.reduce((total, utxo) => total + utxo.satoshis, 0)
+        if (requiredSat > 0 && totalSatoshis >= requiredSat) break;
+      } else {
+        throw new Error(`invalid http content type : ${contentType}, status: ${resp.status}`);
+      }
+    }
+    return totalUtxos;
   }
 
   private isUnSpent(txId: string, vout: number) {
@@ -151,6 +150,22 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
       });
   }
 
+  private async _getTipHeight(): Promise<number> {
+    
+    const tipHeightUrl = `${this.getMempoolApiHost()}/api/blocks/tip/height`;
+    const tipHeight = await fetch(tipHeightUrl, {})
+      .then((res) => {
+        if (res.status !== 200) {
+          throw new Error(`invalid http response code: ${res.status}`);
+        }
+        return res.text();
+      })
+      .catch((e: Error) => {
+        throw new Error(`Failed to get tip block hash: ${e.message}`);
+      });
+    return Number(tipHeight)
+  }
+
   private async _getConfirmations(txid: string): Promise<
     | {
         blockhash: string;
@@ -158,6 +173,7 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
       }
     | Error
   > {
+    const tipHeight = await this._getTipHeight()
     const url = `${this.getMempoolApiHost()}/api/tx/${txid}/status`;
     return fetch(url, {})
       .then(async (res) => {
@@ -170,9 +186,12 @@ export class MempoolProvider implements ChainProvider, UtxoProvider {
       })
       .then(async (data) => {
         if (typeof data === 'object') {
+          if (data['error']) {
+            throw new Error(data['error'])
+          }
           return {
             blockhash: data['block_hash'],
-            confirmations: data['confirmed'] ? 1 : -1,
+            confirmations: data['confirmed'] ? tipHeight - data['block_height'] + 1 : -1,
           };
         } else if (typeof data === 'string') {
           throw new Error(data);
