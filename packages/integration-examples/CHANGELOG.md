@@ -1,5 +1,14 @@
 # @opcat-labs/integration-examples
 
+## 2.1.1
+
+### Patch Changes
+
+- fix mempoolProvider getUtxos, fix mempoolProvider getConfirmations
+- Updated dependencies
+  - @opcat-labs/cat-sdk@2.1.1
+  - @opcat-labs/scrypt-ts-opcat@2.1.1
+
 ## 2.1.0
 
 ### Minor Changes
