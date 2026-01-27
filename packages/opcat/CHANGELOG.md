@@ -1,5 +1,11 @@
 # @opcat-labs/opcat
 
+## 2.1.1
+
+### Patch Changes
+
+- fix mempoolProvider getUtxos, fix mempoolProvider getConfirmations
+
 ## 2.1.0
 
 ### Minor Changes
