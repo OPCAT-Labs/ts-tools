@@ -221,4 +221,38 @@ describe('Test ExtPsbt Serialization', () => {
       });
     }).to.throw("This ExtPsbt is not modifiable(sealed or finalized), can't add more output");
   });
+
+  it('fee releated api should works fine and return int', async () => {
+    const address = await testSigner.getAddress();
+    const targetFeeRate = 0.01
+
+    let psbt1 = new ExtPsbt({network: testSigner.network})
+      .spendUTXO(getDummyUtxo(address, 1e8))
+      .change(address, targetFeeRate, '')
+      .seal()
+    await psbt1.signAndFinalize(testSigner)
+
+    let psbt2 = new ExtPsbt({network: testSigner.network})
+      .spendUTXO(getDummyUtxo(address, 1e8))
+      .change(address, targetFeeRate, '01')
+      .seal()
+    await psbt2.signAndFinalize(testSigner)
+
+    console.log('finalize', psbt1.isFinalized)
+
+    const estimateFee1 = psbt1.estimateFee(targetFeeRate)
+    const estimateFee2 = psbt2.estimateFee(targetFeeRate)
+    const fee1 = psbt1.getFee()
+    const fee2 = psbt2.getFee()
+    const feeRate1 = psbt1.getFeeRate()
+    const feeRate2 = psbt2.getFeeRate()
+
+    expect(estimateFee1).to.eq(Math.ceil(estimateFee1))
+    expect(estimateFee2).to.eq(Math.ceil(estimateFee2))
+    expect(estimateFee1).to.lessThanOrEqual(estimateFee2)
+
+    expect(Number(fee1)).to.lessThanOrEqual(Number(fee2))
+    expect(feeRate1).to.greaterThanOrEqual(targetFeeRate)
+    expect(feeRate2).to.greaterThanOrEqual(targetFeeRate)
+  })
 });

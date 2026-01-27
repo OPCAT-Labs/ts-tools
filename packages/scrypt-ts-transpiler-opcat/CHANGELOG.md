@@ -1,5 +1,13 @@
 # @opcat-labs/scrypt-ts-transpiler-opcat
 
+## 2.1.2
+
+### Patch Changes
+
+- fix estimate fee return float number
+- Updated dependencies
+  - @opcat-labs/scrypt-ts-opcat@2.1.2
+
 ## 2.1.1
 
 ### Patch Changes

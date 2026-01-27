@@ -1,5 +1,11 @@
 # @opcat-labs/opcat
 
+## 2.1.2
+
+### Patch Changes
+
+- fix estimate fee return float number
+
 ## 2.1.1
 
 ### Patch Changes
