@@ -662,7 +662,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
    * @returns The estimated fee amount in satoshis.
    */
   estimateFee(feeRate: number): number {
-    return this.estimateSize() * feeRate;
+    return Math.ceil(this.estimateSize() * feeRate);
   }
 
   private _setInputFinalizer(inputIndex: InputIndex, finalizer: Finalizer): this {

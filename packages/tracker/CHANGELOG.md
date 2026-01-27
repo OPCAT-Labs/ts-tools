@@ -1,5 +1,14 @@
 # @opcat-labs/cat-tracker
 
+## 2.1.2
+
+### Patch Changes
+
+- fix estimate fee return float number
+- Updated dependencies
+  - @opcat-labs/cat-sdk@2.1.2
+  - @opcat-labs/opcat@2.1.2
+
 ## 2.1.1
 
 ### Patch Changes
