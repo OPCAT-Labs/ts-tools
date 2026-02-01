@@ -264,6 +264,10 @@ Opcode.map = {
   OP_CHECKLOCKTIMEVERIFY: 177,
   OP_CHECKSEQUENCEVERIFY: 178,
 
+  // OPCAT signature from stack
+  OP_CHECKSIGFROMSTACK: 186,      // 0xba
+  OP_CHECKSIGFROMSTACKVERIFY: 187, // 0xbb
+
   // expansion
   OP_NOP1: 176,
   OP_NOP2: 177,

@@ -83,8 +83,9 @@ describe('Opcode', function () {
   });
 
   describe('@map', function () {
-    it('should have a map containing 118 elements', function () {
-      Object.keys(Opcode.map).length.should.equal(118);
+    it('should have a map containing 120 elements', function () {
+      // 118 base opcodes + 2 new CHECKSIGFROMSTACK opcodes
+      Object.keys(Opcode.map).length.should.equal(120);
     });
   });
 

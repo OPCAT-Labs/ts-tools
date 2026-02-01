@@ -24,3 +24,5 @@ export * as scriptNumber from './script_number.js';
 export * from './contractHeader.js';
 
 export {MAX_OP_PUSH_DATA_SIZE} from './constants.js';
+
+export { signPreimage, signSHPreimage, verifyPreimageSig } from './sigUtils.js';

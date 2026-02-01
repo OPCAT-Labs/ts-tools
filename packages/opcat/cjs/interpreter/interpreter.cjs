@@ -8,6 +8,7 @@ var BN = require('../crypto/bn.cjs');
 var Hash = require('../crypto/hash.cjs');
 var Signature = require('../crypto/signature.cjs');
 var PublicKey = require('../publickey.cjs');
+var ECDSA = require('../crypto/ecdsa.cjs');
 var Stack = require('./stack.cjs');
 var Transaction = require('../transaction/index.cjs');
 
@@ -1976,6 +1977,62 @@ Interpreter.prototype.step = function (scriptType) {
         if (!Interpreter._isMinimallyEncoded(buf2)) {
           this.errstr = 'SCRIPT_ERR_INVALID_NUMBER_RANGE';
           return false;
+        }
+        break;
+
+      case Opcode.OP_CHECKSIGFROMSTACK:
+      case Opcode.OP_CHECKSIGFROMSTACKVERIFY:
+        // Stack order (bottom to top): <sig> <msg> <pubKey>
+        // (sig msg pubkey -- bool) for OP_CHECKSIGFROMSTACK
+        // (sig msg pubkey -- ) for OP_CHECKSIGFROMSTACKVERIFY
+        if (this.stack.length < 3) {
+          this.errstr = 'SCRIPT_ERR_INVALID_STACK_OPERATION';
+          return false;
+        }
+
+        bufPubkey = stacktop(-1);  // pubKey at top
+        var bufMsg = stacktop(-2); // msg in middle
+        bufSig = stacktop(-3);     // sig at bottom
+
+        if (!this.checkSignatureEncoding(bufSig) || !this.checkPubkeyEncoding(bufPubkey)) {
+          return false;
+        }
+
+        fSuccess = false;
+        try {
+          // Compute SHA256 of msg (single hash, not double)
+          // Reverse to little-endian format (same as checkSig) for signature verification
+          var hashbuf = Hash.sha256(bufMsg).reverse();
+
+          sig = Signature.fromTxFormat(bufSig);
+          pubkey = PublicKey.fromBuffer(bufPubkey, false);
+
+          // Verify signature using ECDSA with little endian
+          fSuccess = ECDSA.verify(hashbuf, sig, pubkey, 'little');
+        } catch (e) {
+          // invalid sig or pubkey
+          fSuccess = false;
+        }
+
+        if (!fSuccess && this.flags & Interpreter.SCRIPT_VERIFY_NULLFAIL && bufSig.length) {
+          this.errstr = 'SCRIPT_ERR_NULLFAIL';
+          return false;
+        }
+
+        // Pop all 3 elements
+        this.stack.pop();
+        this.stack.pop();
+        this.stack.pop();
+
+        if (opcodenum === Opcode.OP_CHECKSIGFROMSTACKVERIFY) {
+          if (!fSuccess) {
+            this.errstr = 'SCRIPT_ERR_CHECKSIGFROMSTACKVERIFY';
+            return false;
+          }
+          // VERIFY variant doesn't push anything on success
+        } else {
+          // Push result for OP_CHECKSIGFROMSTACK
+          this.stack.push(fSuccess ? Interpreter.getTrue() : Interpreter.getFalse());
         }
         break;
 

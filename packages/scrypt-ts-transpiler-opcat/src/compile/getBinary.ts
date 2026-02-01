@@ -11,7 +11,7 @@ import chalk from 'chalk';
 import { promisify } from 'util';
 import { pipeline } from 'stream';
 
-const DEFAULT_COMPILER_VERSION = '1.21.0';
+const DEFAULT_COMPILER_VERSION = '1.22.0';
 
 export function safeCompilerVersion(cmd) {
   try {

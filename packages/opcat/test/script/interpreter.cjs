@@ -731,4 +731,171 @@ describe('Interpreter', function () {
     testTxs(txValid, true);
     //testTxs(txInvalid, false);
   });
+
+  describe('OP_CHECKSIGFROMSTACK', function () {
+    var crypto = opcat.crypto;
+    var Hash = crypto.Hash;
+    var ECDSA = crypto.ECDSA;
+
+    it('should verify a valid signature with OP_CHECKSIGFROMSTACK', function () {
+      // Generate keypair
+      var privKey = opcat.PrivateKey.fromRandom();
+      var pubKey = privKey.toPublicKey();
+
+      // Message to sign
+      var message = Buffer.from('Test message for OP_CHECKSIGFROMSTACK', 'utf8');
+
+      // Hash the message with SHA256 (single hash) and reverse for little-endian
+      // The BVM does sha256(msg).reverse() before ECDSA.verify
+      var msgHash = Hash.sha256(message).reverse();
+
+      // Sign the hash
+      var signature = ECDSA.sign(msgHash, privKey, 'little');
+
+      // Create DER signature with sighash type appended (0x01 = SIGHASH_ALL)
+      var sigDER = signature.toDER();
+      var sigWithType = Buffer.concat([sigDER, Buffer.from([0x01])]);
+
+      // Build script: <sig> <msg> <pubkey> OP_CHECKSIGFROMSTACK
+      var scriptSig = new Script()
+        .add(sigWithType)
+        .add(message)
+        .add(pubKey.toBuffer());
+
+      var scriptPubkey = new Script()
+        .add(Opcode.OP_CHECKSIGFROMSTACK);
+
+      // Create interpreter and verify
+      var interp = new Interpreter();
+      var result = interp.verify(scriptSig, scriptPubkey);
+
+      result.should.equal(true);
+      interp.errstr.should.equal('');
+    });
+
+    it('should fail with invalid signature using OP_CHECKSIGFROMSTACK', function () {
+      // Generate two keypairs
+      var privKey = opcat.PrivateKey.fromRandom();
+      var pubKey = privKey.toPublicKey();
+      var wrongPrivKey = opcat.PrivateKey.fromRandom();
+
+      // Message to sign
+      var message = Buffer.from('Test message', 'utf8');
+
+      // Hash the message with SHA256 and reverse for little-endian
+      var msgHash = Hash.sha256(message).reverse();
+
+      // Sign with wrong private key
+      var signature = ECDSA.sign(msgHash, wrongPrivKey, 'little');
+      var sigWithType = Buffer.concat([signature.toDER(), Buffer.from([0x01])]);
+
+      // Build script with correct pubkey but wrong signature
+      var scriptSig = new Script()
+        .add(sigWithType)
+        .add(message)
+        .add(pubKey.toBuffer());
+
+      var scriptPubkey = new Script()
+        .add(Opcode.OP_CHECKSIGFROMSTACK);
+
+      var interp = new Interpreter();
+      var result = interp.verify(scriptSig, scriptPubkey);
+
+      result.should.equal(false);
+    });
+
+    it('should verify with OP_CHECKSIGFROMSTACKVERIFY and continue execution', function () {
+      // Generate keypair
+      var privKey = opcat.PrivateKey.fromRandom();
+      var pubKey = privKey.toPublicKey();
+
+      // Message to sign
+      var message = Buffer.from('VERIFY test', 'utf8');
+      var msgHash = Hash.sha256(message).reverse();
+      var signature = ECDSA.sign(msgHash, privKey, 'little');
+      var sigWithType = Buffer.concat([signature.toDER(), Buffer.from([0x01])]);
+
+      // Build script: <sig> <msg> <pubkey> OP_CHECKSIGFROMSTACKVERIFY OP_1
+      var scriptSig = new Script()
+        .add(sigWithType)
+        .add(message)
+        .add(pubKey.toBuffer());
+
+      var scriptPubkey = new Script()
+        .add(Opcode.OP_CHECKSIGFROMSTACKVERIFY)
+        .add(Opcode.OP_1);
+
+      var interp = new Interpreter();
+      var result = interp.verify(scriptSig, scriptPubkey);
+
+      result.should.equal(true);
+    });
+
+    it('should fail OP_CHECKSIGFROMSTACKVERIFY with invalid signature', function () {
+      // Generate keypair
+      var privKey = opcat.PrivateKey.fromRandom();
+      var pubKey = privKey.toPublicKey();
+      var wrongPrivKey = opcat.PrivateKey.fromRandom();
+
+      var message = Buffer.from('VERIFY fail test', 'utf8');
+      var msgHash = Hash.sha256(message).reverse();
+      var signature = ECDSA.sign(msgHash, wrongPrivKey, 'little');
+      var sigWithType = Buffer.concat([signature.toDER(), Buffer.from([0x01])]);
+
+      var scriptSig = new Script()
+        .add(sigWithType)
+        .add(message)
+        .add(pubKey.toBuffer());
+
+      var scriptPubkey = new Script()
+        .add(Opcode.OP_CHECKSIGFROMSTACKVERIFY)
+        .add(Opcode.OP_1);
+
+      var interp = new Interpreter();
+      var result = interp.verify(scriptSig, scriptPubkey);
+
+      result.should.equal(false);
+      interp.errstr.should.equal('SCRIPT_ERR_CHECKSIGFROMSTACKVERIFY');
+    });
+
+    it('should fail with insufficient stack elements', function () {
+      // Only provide 2 elements instead of 3
+      var scriptSig = new Script()
+        .add(Buffer.from('signature', 'utf8'))
+        .add(Buffer.from('message', 'utf8'));
+
+      var scriptPubkey = new Script()
+        .add(Opcode.OP_CHECKSIGFROMSTACK);
+
+      var interp = new Interpreter();
+      var result = interp.verify(scriptSig, scriptPubkey);
+
+      result.should.equal(false);
+      interp.errstr.should.equal('SCRIPT_ERR_INVALID_STACK_OPERATION');
+    });
+
+    it('should work with empty message', function () {
+      var privKey = opcat.PrivateKey.fromRandom();
+      var pubKey = privKey.toPublicKey();
+
+      // Empty message
+      var message = Buffer.from('', 'utf8');
+      var msgHash = Hash.sha256(message).reverse();
+      var signature = ECDSA.sign(msgHash, privKey, 'little');
+      var sigWithType = Buffer.concat([signature.toDER(), Buffer.from([0x01])]);
+
+      var scriptSig = new Script()
+        .add(sigWithType)
+        .add(message)
+        .add(pubKey.toBuffer());
+
+      var scriptPubkey = new Script()
+        .add(Opcode.OP_CHECKSIGFROMSTACK);
+
+      var interp = new Interpreter();
+      var result = interp.verify(scriptSig, scriptPubkey);
+
+      result.should.equal(true);
+    });
+  });
 });

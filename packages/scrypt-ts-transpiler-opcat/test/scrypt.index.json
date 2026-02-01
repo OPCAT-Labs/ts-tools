@@ -104,6 +104,15 @@
    "md5": "f15ffbbf622f26d5fac1574f40cbc1c0"
   },
   {
+   "symbol": "CheckDataSig",
+   "path": "contracts/checkDataSig.scrypt.tpl"
+  },
+  {
+   "symbol": "CheckDataSigAndSig",
+   "path": "contracts/checkDataSig.scrypt.tpl",
+   "md5": "3e38285ac561931e0062babfe1053b38"
+  },
+  {
    "symbol": "CheckMultiSig",
    "path": "contracts/checkMultisig.scrypt.tpl",
    "md5": "82503eee8993d3ae409f8c03aa8a7d6c"

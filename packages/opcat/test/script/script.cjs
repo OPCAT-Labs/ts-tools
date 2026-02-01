@@ -871,7 +871,8 @@ describe('Script', function () {
 
   describe('#add and #prepend', function () {
     it('should add these ops', function () {
-      Script().add(1).add(10).add(186).toString().should.equal('1 0x0a 0xba');
+      // 186 (0xba) is now OP_CHECKSIGFROMSTACK
+      Script().add(1).add(10).add(186).toString().should.equal('1 0x0a OP_CHECKSIGFROMSTACK');
       Script().add(Buffer.from('03e8', 'hex')).toString().should.equal('2 0x03e8');
       Script().add('OP_CHECKMULTISIG').toString().should.equal('OP_CHECKMULTISIG');
       Script().add('OP_1').add('OP_2').toString().should.equal('OP_1 OP_2');
