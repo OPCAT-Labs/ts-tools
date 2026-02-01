@@ -752,13 +752,12 @@ describe('Interpreter', function () {
       // Sign the hash
       var signature = ECDSA.sign(msgHash, privKey, 'little');
 
-      // Create DER signature with sighash type appended (0x01 = SIGHASH_ALL)
+      // Use pure DER signature (NO sighash type for OP_CHECKSIGFROMSTACK)
       var sigDER = signature.toDER();
-      var sigWithType = Buffer.concat([sigDER, Buffer.from([0x01])]);
 
       // Build script: <sig> <msg> <pubkey> OP_CHECKSIGFROMSTACK
       var scriptSig = new Script()
-        .add(sigWithType)
+        .add(sigDER)
         .add(message)
         .add(pubKey.toBuffer());
 
@@ -785,13 +784,13 @@ describe('Interpreter', function () {
       // Hash the message with SHA256 and reverse for little-endian
       var msgHash = Hash.sha256(message).reverse();
 
-      // Sign with wrong private key
+      // Sign with wrong private key - use pure DER (no sighash type)
       var signature = ECDSA.sign(msgHash, wrongPrivKey, 'little');
-      var sigWithType = Buffer.concat([signature.toDER(), Buffer.from([0x01])]);
+      var sigDER = signature.toDER();
 
       // Build script with correct pubkey but wrong signature
       var scriptSig = new Script()
-        .add(sigWithType)
+        .add(sigDER)
         .add(message)
         .add(pubKey.toBuffer());
 
@@ -813,11 +812,12 @@ describe('Interpreter', function () {
       var message = Buffer.from('VERIFY test', 'utf8');
       var msgHash = Hash.sha256(message).reverse();
       var signature = ECDSA.sign(msgHash, privKey, 'little');
-      var sigWithType = Buffer.concat([signature.toDER(), Buffer.from([0x01])]);
+      // Use pure DER signature (no sighash type)
+      var sigDER = signature.toDER();
 
       // Build script: <sig> <msg> <pubkey> OP_CHECKSIGFROMSTACKVERIFY OP_1
       var scriptSig = new Script()
-        .add(sigWithType)
+        .add(sigDER)
         .add(message)
         .add(pubKey.toBuffer());
 
@@ -840,10 +840,11 @@ describe('Interpreter', function () {
       var message = Buffer.from('VERIFY fail test', 'utf8');
       var msgHash = Hash.sha256(message).reverse();
       var signature = ECDSA.sign(msgHash, wrongPrivKey, 'little');
-      var sigWithType = Buffer.concat([signature.toDER(), Buffer.from([0x01])]);
+      // Use pure DER signature (no sighash type)
+      var sigDER = signature.toDER();
 
       var scriptSig = new Script()
-        .add(sigWithType)
+        .add(sigDER)
         .add(message)
         .add(pubKey.toBuffer());
 
@@ -882,10 +883,11 @@ describe('Interpreter', function () {
       var message = Buffer.from('', 'utf8');
       var msgHash = Hash.sha256(message).reverse();
       var signature = ECDSA.sign(msgHash, privKey, 'little');
-      var sigWithType = Buffer.concat([signature.toDER(), Buffer.from([0x01])]);
+      // Use pure DER signature (no sighash type)
+      var sigDER = signature.toDER();
 
       var scriptSig = new Script()
-        .add(sigWithType)
+        .add(sigDER)
         .add(message)
         .add(pubKey.toBuffer());
 
