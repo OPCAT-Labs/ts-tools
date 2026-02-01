@@ -1,0 +1,234 @@
+name: Deploy Tracker to GCP
+
+on:
+  push:
+    tags:
+      - 'deploy-tracker-[0-9]*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to deploy (e.g., deploy-tracker-20260131)'
+        required: false
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  build:
+    name: Build Tracker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Enable Corepack and Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@stable --activate
+
+      - name: Setup .npmrc for GitHub Packages
+        run: |
+          cat > .npmrc << EOF
+          @opcat-labs:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}
+          EOF
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build project
+        run: yarn build
+
+      - name: Create deployment package
+        run: |
+          echo "🔧 Creating deployment package..."
+          cd packages/tracker
+          mkdir -p deploy
+
+          # Copy compiled code
+          cp -r dist deploy/
+
+          # Copy package files
+          cp package.json deploy/
+          cp ecosystem.prod.config.js deploy/
+
+          # Copy scripts directory (for postinstall)
+          cp -r scripts deploy/
+
+          # Copy .env.example (for postinstall)
+          cp .env.example deploy/
+
+          # Create deployment archive
+          tar -czf deployment.tar.gz -C deploy .
+          echo "✅ Deployment package created: $(du -h deployment.tar.gz)"
+
+      - name: Verify deployment package
+        run: |
+          echo "📦 Verifying deployment package:"
+          cd packages/tracker
+          if [ ! -f "deployment.tar.gz" ]; then
+            echo "❌ deployment.tar.gz was not created!"
+            exit 1
+          fi
+          echo "📋 Package contents:"
+          tar -tzf deployment.tar.gz
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tracker-deployment
+          path: packages/tracker/deployment.tar.gz
+          retention-days: 7
+
+  deploy:
+    name: Deploy to GCP
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ needs.build.result == 'success' }}
+    environment:
+      name: mainnet-prod
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCE_ZONE: ${{ vars.GCE_ZONE }}
+      GCE_INSTANCE: ${{ vars.GCE_INSTANCE }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: tracker-deployment
+          path: ./artifacts/
+
+      - name: Verify artifact download
+        run: |
+          echo "📦 Checking downloaded artifacts:"
+          ls -la ./artifacts/
+          if [ ! -f "./artifacts/deployment.tar.gz" ]; then
+            echo "❌ deployment.tar.gz not found!"
+            exit 1
+          fi
+          echo "✅ Deployment package ready: $(du -h ./artifacts/deployment.tar.gz)"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
+      - name: Install NumPy for IAP tunnel performance
+        run: |
+          # Install numpy to gcloud's bundled Python
+          GCLOUD_PYTHON=$(gcloud info --format='value(basic.python_location)')
+          $GCLOUD_PYTHON -m pip install numpy --quiet 2>/dev/null || pip3 install numpy --quiet || true
+
+      - name: Upload deployment package to VM
+        run: |
+          echo "📤 Uploading deployment package to VM..."
+          gcloud compute scp ./artifacts/deployment.tar.gz \
+            ${GCE_INSTANCE}:/tmp/ \
+            --zone=${GCE_ZONE} \
+            --tunnel-through-iap
+          echo "✅ Upload complete"
+
+      - name: Create env file content
+        id: env_content
+        env:
+          DATABASE_TYPE: ${{ vars.DATABASE_TYPE }}
+          DATABASE_HOST: ${{ vars.DATABASE_HOST }}
+          DATABASE_PORT: ${{ vars.DATABASE_PORT }}
+          DATABASE_DB: ${{ vars.DATABASE_DB }}
+          DATABASE_USERNAME: ${{ vars.DATABASE_USERNAME }}
+          DATABASE_SSL: ${{ vars.DATABASE_SSL }}
+          RPC_HOST: ${{ vars.RPC_HOST }}
+          RPC_PORT: ${{ vars.RPC_PORT }}
+          RPC_USER: ${{ vars.RPC_USER }}
+          NETWORK: ${{ vars.NETWORK }}
+          API_PORT: ${{ vars.API_PORT }}
+          WORKER_PORT: ${{ vars.WORKER_PORT }}
+          GENESIS_BLOCK_HEIGHT: ${{ vars.GENESIS_BLOCK_HEIGHT }}
+          ZMQ_SERVER: ${{ vars.ZMQ_SERVER }}
+        run: |
+          cat > /tmp/env.prod << EOF
+          DATABASE_TYPE=${DATABASE_TYPE}
+          DATABASE_HOST=${DATABASE_HOST}
+          DATABASE_PORT=${DATABASE_PORT}
+          DATABASE_DB=${DATABASE_DB}
+          DATABASE_USERNAME=${DATABASE_USERNAME}
+          DATABASE_SSL=${DATABASE_SSL}
+          RPC_HOST=${RPC_HOST}
+          RPC_PORT=${RPC_PORT}
+          RPC_USER=${RPC_USER}
+          NETWORK=${NETWORK}
+          API_PORT=${API_PORT}
+          WORKER_PORT=${WORKER_PORT}
+          GENESIS_BLOCK_HEIGHT=${GENESIS_BLOCK_HEIGHT}
+          ZMQ_SERVER=${ZMQ_SERVER}
+          EOF
+          echo "ENV_B64=$(base64 -w0 /tmp/env.prod)" >> $GITHUB_OUTPUT
+
+      - name: Upload env file to VM
+        run: |
+          echo "${{ steps.env_content.outputs.ENV_B64 }}" | base64 -d > /tmp/env.prod
+          gcloud compute scp /tmp/env.prod ${GCE_INSTANCE}:/tmp/env.prod --zone=${GCE_ZONE} --tunnel-through-iap
+
+      - name: Checkout internal actions
+        uses: actions/checkout@v4
+        with:
+          repository: OPCAT-Labs/internal
+          path: .github/actions/internal
+          token: ${{ secrets.INTERNAL_REPO_TOKEN }}
+
+      - name: Generate fetch-secrets script
+        uses: ./.github/actions/internal/fetch-secrets
+        with:
+          vars_json: ${{ toJSON(vars) }}
+          output_path: /tmp/fetch-secrets.sh
+
+      - name: Upload fetch-secrets script to VM
+        run: |
+          gcloud compute scp /tmp/fetch-secrets.sh ${GCE_INSTANCE}:/tmp/fetch-secrets.sh --zone=${GCE_ZONE} --tunnel-through-iap
+
+      - name: Deploy to server
+        run: |
+          echo "📂 Ensuring deploy directory exists..."
+          gcloud compute ssh ${GCE_INSTANCE} --zone=${GCE_ZONE} --tunnel-through-iap --command "sudo mkdir -p ${DEPLOY_DIR} && sudo chown ${DEPLOY_USER}:${DEPLOY_USER} ${DEPLOY_DIR}"
+          echo "📂 Moving deployment files..."
+          gcloud compute ssh ${GCE_INSTANCE} --zone=${GCE_ZONE} --tunnel-through-iap --command "set -euo pipefail && sudo mv /tmp/deployment.tar.gz ${DEPLOY_DIR}/ && sudo chown ${DEPLOY_USER}:${DEPLOY_USER} ${DEPLOY_DIR}/deployment.tar.gz && sudo mv /tmp/env.prod ${DEPLOY_DIR}/.env.prod && sudo chown ${DEPLOY_USER}:${DEPLOY_USER} ${DEPLOY_DIR}/.env.prod && sudo mv /tmp/fetch-secrets.sh ${DEPLOY_DIR}/fetch-secrets.sh && sudo chown ${DEPLOY_USER}:${DEPLOY_USER} ${DEPLOY_DIR}/fetch-secrets.sh && sudo chmod 700 ${DEPLOY_DIR}/fetch-secrets.sh"
+          echo "🛑 Stopping current services..."
+          gcloud compute ssh ${GCE_INSTANCE} --zone=${GCE_ZONE} --tunnel-through-iap --command "sudo su - ${DEPLOY_USER} -c 'source ~/.nvm/nvm.sh && pm2 stop cat-tracker-api 2>/dev/null && echo ✅ API stopped || echo ⏭️ No API to stop'"
+          gcloud compute ssh ${GCE_INSTANCE} --zone=${GCE_ZONE} --tunnel-through-iap --command "sudo su - ${DEPLOY_USER} -c 'source ~/.nvm/nvm.sh && pm2 stop cat-tracker-worker 2>/dev/null && echo ✅ Worker stopped || echo ⏭️ No Worker to stop'"
+          echo "📦 Extracting deployment package..."
+          gcloud compute ssh ${GCE_INSTANCE} --zone=${GCE_ZONE} --tunnel-through-iap --command "sudo su - ${DEPLOY_USER} -c 'cd ${DEPLOY_DIR} && tar -xzf deployment.tar.gz && rm -f deployment.tar.gz'"
+          echo "📥 Installing dependencies..."
+          gcloud compute ssh ${GCE_INSTANCE} --zone=${GCE_ZONE} --tunnel-through-iap --command "sudo su - ${DEPLOY_USER} -c 'source ~/.nvm/nvm.sh && cd ${DEPLOY_DIR} && mkdir -p logs && yarn install --production'"
+          echo "🔐 Fetching secrets from GCP..."
+          gcloud compute ssh ${GCE_INSTANCE} --zone=${GCE_ZONE} --tunnel-through-iap --command "sudo su - ${DEPLOY_USER} -c 'source ~/.nvm/nvm.sh && cd ${DEPLOY_DIR} && ./fetch-secrets.sh'"
+          echo "🚀 Starting services with PM2..."
+          gcloud compute ssh ${GCE_INSTANCE} --zone=${GCE_ZONE} --tunnel-through-iap --command "sudo su - ${DEPLOY_USER} -c 'source ~/.nvm/nvm.sh && cd ${DEPLOY_DIR} && pm2 start ecosystem.prod.config.js && pm2 save'"
+          echo "📋 Checking PM2 status..."
+          gcloud compute ssh ${GCE_INSTANCE} --zone=${GCE_ZONE} --tunnel-through-iap --command "sleep 5 && sudo su - ${DEPLOY_USER} -c 'source ~/.nvm/nvm.sh && pm2 list'"
+          echo "🎉 Deployment completed!"
+
+      - name: Health check
+        env:
+          API_PORT: ${{ vars.API_PORT }}
+        run: |
+          echo "🔍 Running health check..."
+          gcloud compute ssh ${GCE_INSTANCE} --zone=${GCE_ZONE} --tunnel-through-iap --command "sleep 3 && curl -sf http://localhost:${API_PORT:-3000}/api > /dev/null && echo '✅ Health check passed!' || (echo '❌ Health check failed' && sudo -u ${DEPLOY_USER} pm2 logs --lines 20 && exit 1)"

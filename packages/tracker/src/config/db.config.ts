@@ -12,6 +12,10 @@ const baseConfig: DataSourceOptions = {
   password: process.env.DATABASE_PASSWORD,
   database: process.env.DATABASE_DB,
   synchronize: true,
+  ssl:
+    process.env.DATABASE_SSL === 'true'
+      ? { rejectUnauthorized: false }
+      : false,
 };
 
 export const ormConfig: DataSourceOptions = {
