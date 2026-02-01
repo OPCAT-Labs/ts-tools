@@ -81,6 +81,48 @@ export function signSHPreimage(shPreimage: SHPreimage, sigHashType: number = 0x0
 }
 
 /**
+ * Signs arbitrary data off-chain for use with checkDataSig (OP_CHECKSIGFROMSTACK).
+ *
+ * This function generates a pure DER-encoded ECDSA signature (NO sighash type)
+ * that can be verified on-chain using checkDataSig. The message is hashed with
+ * single SHA256 to match OP_CHECKSIGFROMSTACK behavior.
+ *
+ * @param message - The message bytes to sign
+ * @returns A pure DER-encoded signature (no sighash type appended)
+ */
+export function signDataForCheckDataSig(message: ByteString): Sig {
+  // Compute single SHA256 of the message for checkDataSig compatibility
+  // Reverse the hash for little-endian format (same as OP_CHECKSIGFROMSTACK)
+  const hash = Buffer.from(sha256(message), 'hex').reverse();
+
+  // Create private key from hex (using mainnet network)
+  const privateKey = PrivateKey.fromHex(PRIVATE_KEY_HEX, Networks.defaultNetwork);
+
+  // Sign the hash using ECDSA
+  const signature = ECDSA.sign(hash, privateKey, 'little');
+
+  // Get pure DER encoded signature (NO sighash type for OP_CHECKSIGFROMSTACK)
+  const derSig = signature.toDER();
+
+  return Sig(derSig.toString('hex'));
+}
+
+/**
+ * Signs a SHPreimage off-chain for use with checkDataSig (OP_CHECKSIGFROMSTACK).
+ *
+ * This is a convenience wrapper that serializes the SHPreimage and signs it
+ * using single SHA256 (matching checkDataSig behavior).
+ *
+ * @param shPreimage - The SHPreimage struct to sign
+ * @returns A pure DER-encoded signature (no sighash type appended)
+ */
+export function signSHPreimageForCheckDataSig(shPreimage: SHPreimage): Sig {
+  // Serialize the SHPreimage using encodeSHPreimage
+  const preimage = encodeSHPreimage(shPreimage);
+  return signDataForCheckDataSig(preimage);
+}
+
+/**
  * Verifies a preimage signature off-chain.
  *
  * This function can be used to verify signatures before submitting
