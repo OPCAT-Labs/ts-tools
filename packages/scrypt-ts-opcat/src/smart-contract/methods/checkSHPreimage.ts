@@ -3,6 +3,7 @@ import { SHPreimage, Sig } from '../types/index.js';
 import { ContextUtils } from '../builtin-libs/contextUtils.js';
 import { SmartContract } from '../smartContract.js';
 import { sha256 } from '../fns/hashes.js';
+import { slice, len } from '../fns/byteString.js';
 import { encodeSHPreimage } from '../../utils/preimage.js';
 
 
@@ -36,13 +37,19 @@ export function checkSHPreimageImpl(self: AbstractContract, shPreimage: SHPreima
   // Use encodeSHPreimage which is the same serialization used in checkSigImpl
   const preimage = encodeSHPreimage(shPreimage);
 
+  // For checkDataSig (OP_CHECKSIGFROMSTACK), we need pure DER signature without sighash type.
+  // The injected signature includes sighash type at the end, so we strip it using slice.
+  // This uses scrypt-ts slice function which works both in JS runtime and on-chain.
+  const pureDerSig = Sig(slice(sig, 0n, len(sig) - 1n));
+
   // Verify using checkDataSig with sha256(preimage) as message
   // The signature was created over hash256(preimage).reverse()
   // checkDataSig internally applies sha256: sha256(sha256(preimage)) = hash256(preimage)
   // Then reverses to match the signature format
-  const dataCheck = self.checkDataSig(sig, sha256(preimage), ContextUtils.pubKey);
+  const dataCheck = self.checkDataSig(pureDerSig, sha256(preimage), ContextUtils.pubKey);
 
   // Verify using checkSig (signature against transaction preimage which uses hash256)
+  // checkSig expects signature with sighash type appended
   const sigCheck = self.checkSig(sig, ContextUtils.pubKey);
 
   return dataCheck && sigCheck;

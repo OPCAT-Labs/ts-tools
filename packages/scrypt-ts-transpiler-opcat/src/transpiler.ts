@@ -5416,15 +5416,18 @@ export class Transpiler {
     const { shouldAccessThis } = this.shouldAutoAppendSighashPreimage(methodNode);
     const prefix = shouldAccessThis ? 'this.' : '';
 
-    // Transform to: checkDataSig(preimageSig, sha256(ContextUtils.serializeSHPreimage(shPreimage)), ContextUtils.pubKey)
+    // Transform to: checkDataSig(Sig(preimageSig[0 : len(preimageSig) - 1]), sha256(ContextUtils.serializeSHPreimage(shPreimage)), ContextUtils.pubKey)
     //            && checkSig(preimageSig, ContextUtils.pubKey)
     // Using sha256(preimage) as the message for checkDataSig means:
     // checkDataSig internally computes sha256(sha256(preimage)) = hash256(preimage)
     // This matches checkSig which also uses hash256(preimage)
+    // Note: checkDataSig (OP_CHECKSIGFROMSTACK) requires pure DER signature without sighash type,
+    // while checkSig (OP_CHECKSIG) requires signature with sighash type appended.
+    // We use sig[0 : len(sig) - 1] to strip the sighash type byte for checkDataSig.
     this._accessBuiltinsSymbols.add('ContextUtils');
 
-    toSection.append('(checkDataSig(', srcLoc);
-    toSection.append(`${prefix}${InjectedParam_PreimageSig}, `);
+    toSection.append('(checkDataSig(Sig(', srcLoc);
+    toSection.append(`${prefix}${InjectedParam_PreimageSig}[0 : len(${prefix}${InjectedParam_PreimageSig}) - 1]), `);
     toSection.append('sha256(ContextUtils.serializeSHPreimage(');
     // Transform the shPreimage argument
     if (node.arguments.length > 0) {
