@@ -1,11 +1,11 @@
 {
   "version": 10,
-  "compilerVersion": "1.20.0+commit.693498a",
-  "contract": "P2PKH",
+  "compilerVersion": "1.22.0+commit.47800da",
+  "contract": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__P2PKH",
   "md5": "c5af93cb4966b9a0201c93e84ac386be",
   "structs": [],
+  "library": [],
   "alias": [],
-  "staticAbi": [],
   "abi": [
     {
       "type": "function",
@@ -32,7 +32,6 @@
       ]
     }
   ],
-  "library": [],
   "stateProps": [],
   "buildType": "release",
   "file": "../p2pkh.scrypt",

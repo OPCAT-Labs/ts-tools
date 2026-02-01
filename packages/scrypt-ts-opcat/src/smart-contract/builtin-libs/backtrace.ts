@@ -43,7 +43,7 @@ export class Backtrace extends SmartContractLib {
    * @see packages/scrypt-ts-opcat/test/local-test/genesis.test.ts - GENESIS_SCRIPT_HASH validation tests
    */
   @prop()
-  static readonly GENESIS_SCRIPT_HASH: ByteString = toByteString('8f6157664f8f7cd43e6bba7f3209bb803d4d0fb2fb6e59fdc548989ed3901f15');
+  static readonly GENESIS_SCRIPT_HASH: ByteString = toByteString('786e54f4c61f4496e78364a7c5ad97d9d25d7d0d35719974436d5ab048b959c7');
 
   /**
    * Verifies that the transaction hash preimage matches the previous transaction hash 

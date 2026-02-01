@@ -1,0 +1,69 @@
+{
+  "version": 10,
+  "compilerVersion": "1.22.0+commit.47800da",
+  "contract": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__CheckDataSig",
+  "md5": "936576c4ed0fc75925939de3a46ef6a4",
+  "structs": [],
+  "library": [],
+  "alias": [],
+  "abi": [
+    {
+      "type": "function",
+      "name": "unlock",
+      "index": 0,
+      "params": [
+        {
+          "name": "sig",
+          "type": "Sig"
+        },
+        {
+          "name": "message",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "unlockWithPubKey",
+      "index": 1,
+      "params": [
+        {
+          "name": "sig",
+          "type": "Sig"
+        },
+        {
+          "name": "message",
+          "type": "bytes"
+        },
+        {
+          "name": "pubKey",
+          "type": "PubKey"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "unlockFixedMessage",
+      "index": 2,
+      "params": [
+        {
+          "name": "sig",
+          "type": "Sig"
+        }
+      ]
+    },
+    {
+      "type": "constructor",
+      "params": [
+        {
+          "name": "pubKey",
+          "type": "PubKey"
+        }
+      ]
+    }
+  ],
+  "stateProps": [],
+  "buildType": "release",
+  "file": "../checkDataSig.scrypt",
+  "hex": "<pubKey>78008763705279ba6b6d6d6c6778518763547954795479ba6b6d6d6c7767785287631448656c6c6f2c20636865636b44617461536967215379785379ba6b6d6d6c6700686868"
+}
