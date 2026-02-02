@@ -1,5 +1,11 @@
 # @opcat-labs/cli-opcat
 
+## 2.1.3
+
+### Patch Changes
+
+- @opcat-labs/scrypt-ts-transpiler-opcat@2.1.3
+
 ## 2.1.2
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @opcat-labs/examples
 
+## 2.1.3
+
+### Patch Changes
+
+- Updated dependencies
+  - @opcat-labs/scrypt-ts-opcat@2.1.3
+
 ## 2.1.2
 
 ### Patch Changes
