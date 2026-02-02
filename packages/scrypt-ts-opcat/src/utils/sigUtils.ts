@@ -71,7 +71,8 @@ export function signPreimage(preimage: SigHashPreimage | ByteString, sigHashType
  * the signature matches what checkSig expects.
  *
  * @param shPreimage - The SHPreimage struct to sign
- * @param sigHashType - The signature hash type (default: 0x01 for SIGHASH_ALL)
+ * @param sigHashType - The signature hash type (default: 0x01 for SIGHASH_ALL).
+ *                      Should match shPreimage.sigHashType for verification to succeed.
  * @returns A DER-encoded signature with sigHashType appended
  */
 export function signSHPreimage(shPreimage: SHPreimage, sigHashType: number = 0x01): Sig {

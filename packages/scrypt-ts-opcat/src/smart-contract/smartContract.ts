@@ -531,8 +531,17 @@ export class SmartContract<StateT extends OpcatState = undefined>
     } = this.inputContext;
 
     // Generate and store preimage signature BEFORE checkCtxImpl
-    // because checkCtxImpl calls checkSHPreimage which needs the signature
-    this._injectedPreimageSig = signSHPreimage(shPreimage, 0x01);
+    // because checkCtxImpl calls checkSHPreimage which needs the signature.
+    //
+    // The signature is stored WITH sighash flag appended because:
+    // - checkSig (OP_CHECKSIG) requires signature with sighash flag
+    // - checkDataSig (OP_CHECKSIGFROMSTACK) requires pure DER signature without sighash flag
+    //   (the sighash flag is stripped via slice in checkSHPreimageImpl and transpiled code)
+    //
+    // Extract the actual sighash type from shPreimage to support all sighash types
+    // (SIGHASH_ALL, SIGHASH_NONE, SIGHASH_SINGLE, with or without ANYONECANPAY)
+    const sigHashType = Number(shPreimage.sigHashType);
+    this._injectedPreimageSig = signSHPreimage(shPreimage, sigHashType);
 
     checkCtxImpl(
       this,
