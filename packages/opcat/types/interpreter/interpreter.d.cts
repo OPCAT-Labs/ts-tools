@@ -119,6 +119,13 @@ declare class Interpreter {
      */
     checkPubkeyEncoding(buf: Buffer): boolean;
     /**
+     * Checks if a signature encoding is valid for OP_CHECKSIGFROMSTACK.
+     * Unlike checkSignatureEncoding, this expects pure DER signatures without sighash type.
+     * @param {Buffer} buf - The signature buffer to validate
+     * @returns {boolean} True if valid, false otherwise (sets errstr on failure)
+     */
+    checkDataSigSignatureEncoding(buf: Buffer): boolean;
+    /**
      * Evaluates a script by executing each opcode step-by-step.
      * Performs size checks on the script and stacks before execution.
      *
@@ -169,6 +176,13 @@ declare class Interpreter {
 declare namespace Interpreter {
     function getTrue(): Buffer;
     function getFalse(): Buffer;
+    /**
+     * Validates pure DER signature encoding (without sighash type).
+     * Used for OP_CHECKSIGFROMSTACK which expects signatures without trailing sighash byte.
+     * @param {Buffer} buf - The buffer containing the signature to verify
+     * @returns {boolean} True if the signature is valid DER-encoded, false otherwise
+     */
+    function isDER(buf: Buffer): boolean;
     let MAX_SCRIPT_ELEMENT_SIZE: number;
     let MAXIMUM_ELEMENT_SIZE: number;
     let LOCKTIME_THRESHOLD: number;

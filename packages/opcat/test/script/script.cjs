@@ -895,6 +895,15 @@ describe('Script', function () {
         .should.equal('OP_4 OP_2 OP_1 OP_3');
     });
 
+    it('should recognize OP_CHECKSIGFROMSTACK and OP_CHECKSIGFROMSTACKVERIFY opcodes', function () {
+      // Test adding by opcode number
+      Script().add(186).toString().should.equal('OP_CHECKSIGFROMSTACK');
+      Script().add(187).toString().should.equal('OP_CHECKSIGFROMSTACKVERIFY');
+      // Test adding by opcode name
+      Script().add('OP_CHECKSIGFROMSTACK').toString().should.equal('OP_CHECKSIGFROMSTACK');
+      Script().add('OP_CHECKSIGFROMSTACKVERIFY').toString().should.equal('OP_CHECKSIGFROMSTACKVERIFY');
+    });
+
     it('should add these push data', function () {
       var buf = Buffer.alloc(1);
       buf.fill(0);

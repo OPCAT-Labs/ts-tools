@@ -25,4 +25,4 @@ export * from './contractHeader.js';
 
 export {MAX_OP_PUSH_DATA_SIZE} from './constants.js';
 
-export { signPreimage, signSHPreimage, verifyPreimageSig } from './sigUtils.js';
+export { signPreimage, signSHPreimage, signData, signDataForCheckDataSig, verifyPreimageSig } from './sigUtils.js';

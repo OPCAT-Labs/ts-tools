@@ -1,15 +1,25 @@
 import * as dotenv from 'dotenv';
-import { expect } from 'chai';
+import { expect, use } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
 import {
   PrivateKey,
   PubKey,
   Sig,
   toByteString,
   sha256,
+  ExtPsbt,
+  bvmVerify,
+  DefaultSigner,
+  ContextUtils,
+  signData,
+  signDataForCheckDataSig,
 } from '@opcat-labs/scrypt-ts-opcat';
 import { crypto } from '@opcat-labs/opcat';
+import { readArtifact } from '../utils/index.js';
+import { CheckDataSig } from '../contracts/checkDataSig.js';
 
 dotenv.config();
+use(chaiAsPromised);
 
 /**
  * Unit tests for checkDataSig functionality.
@@ -232,5 +242,262 @@ describe('Test checkDataSig Runtime', () => {
 
       expect(verified).to.equal(true, `Failed for sighash type: ${sighashType}`);
     }
+  });
+});
+
+/**
+ * End-to-end contract tests for CheckDataSig.
+ * These tests verify the full contract execution using ExtPsbt and bvmVerify.
+ */
+describe('Test CheckDataSig Contract', () => {
+  let testSigner: DefaultSigner;
+
+  before(() => {
+    testSigner = new DefaultSigner();
+    CheckDataSig.loadArtifact(readArtifact('checkDataSig.json'));
+  });
+
+  it('should unlock with valid data signature using unlock method', async () => {
+    // Use the hardcoded public key from ContextUtils
+    const pubKey = ContextUtils.pubKey;
+    const contract = new CheckDataSig(pubKey);
+
+    contract.bindToUtxo({
+      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+      outputIndex: 0,
+      satoshis: 10000,
+      data: '',
+    });
+
+    const address = await testSigner.getAddress();
+
+    // Create message and sign it with the hardcoded private key
+    const message = toByteString('Hello, World!', true);
+    const sig = signDataForCheckDataSig(message);
+
+    const psbt = new ExtPsbt()
+      .addContractInput(contract, (c) => {
+        c.unlock(sig, message);
+      })
+      .change(address, 1)
+      .seal()
+      .finalizeAllInputs();
+
+    expect(psbt.isFinalized).to.be.true;
+    expect(bvmVerify(psbt, 0)).to.eq(true);
+  });
+
+  it('should unlock with valid data signature using unlockWithPubKey method', async () => {
+    // Use a different pubKey in constructor, but pass the correct one in method
+    const pubKey = ContextUtils.pubKey;
+    const contract = new CheckDataSig(pubKey);
+
+    contract.bindToUtxo({
+      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+      outputIndex: 0,
+      satoshis: 10000,
+      data: '',
+    });
+
+    const address = await testSigner.getAddress();
+
+    // Create message and sign it
+    const message = toByteString('Test unlockWithPubKey', true);
+    const sig = signDataForCheckDataSig(message);
+
+    const psbt = new ExtPsbt()
+      .addContractInput(contract, (c) => {
+        c.unlockWithPubKey(sig, message, pubKey);
+      })
+      .change(address, 1)
+      .seal()
+      .finalizeAllInputs();
+
+    expect(psbt.isFinalized).to.be.true;
+    expect(bvmVerify(psbt, 0)).to.eq(true);
+  });
+
+  it('should unlock with valid signature for fixed message', async () => {
+    const pubKey = ContextUtils.pubKey;
+    const contract = new CheckDataSig(pubKey);
+
+    contract.bindToUtxo({
+      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+      outputIndex: 0,
+      satoshis: 10000,
+      data: '',
+    });
+
+    const address = await testSigner.getAddress();
+
+    // The fixed message is 'Hello, checkDataSig!' in hex: 48656c6c6f2c20636865636b4461746153696721
+    const fixedMessage = toByteString('48656c6c6f2c20636865636b4461746153696721');
+    const sig = signDataForCheckDataSig(fixedMessage);
+
+    const psbt = new ExtPsbt()
+      .addContractInput(contract, (c) => {
+        c.unlockFixedMessage(sig);
+      })
+      .change(address, 1)
+      .seal()
+      .finalizeAllInputs();
+
+    expect(psbt.isFinalized).to.be.true;
+    expect(bvmVerify(psbt, 0)).to.eq(true);
+  });
+
+  it('should fail with wrong signature', async () => {
+    const pubKey = ContextUtils.pubKey;
+    const contract = new CheckDataSig(pubKey);
+
+    contract.bindToUtxo({
+      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+      outputIndex: 0,
+      satoshis: 10000,
+      data: '',
+    });
+
+    const address = await testSigner.getAddress();
+
+    // Sign a different message than what we pass to unlock
+    const signedMessage = toByteString('Wrong message', true);
+    const providedMessage = toByteString('Correct message', true);
+    const sig = signDataForCheckDataSig(signedMessage);
+
+    const psbt = new ExtPsbt()
+      .addContractInput(contract, (c) => {
+        c.unlock(sig, providedMessage);
+      })
+      .change(address, 1)
+      .seal();
+
+    // Finalize should throw because the checkDataSig assertion fails
+    expect(() => psbt.finalizeAllInputs()).to.throw(/checkDataSig failed/);
+  });
+
+  it('should unlock with empty message', async () => {
+    const pubKey = ContextUtils.pubKey;
+    const contract = new CheckDataSig(pubKey);
+
+    contract.bindToUtxo({
+      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+      outputIndex: 0,
+      satoshis: 10000,
+      data: '',
+    });
+
+    const address = await testSigner.getAddress();
+
+    // Empty message
+    const message = toByteString('');
+    const sig = signDataForCheckDataSig(message);
+
+    const psbt = new ExtPsbt()
+      .addContractInput(contract, (c) => {
+        c.unlock(sig, message);
+      })
+      .change(address, 1)
+      .seal()
+      .finalizeAllInputs();
+
+    expect(psbt.isFinalized).to.be.true;
+    expect(bvmVerify(psbt, 0)).to.eq(true);
+  });
+
+  it('should unlock with binary data message', async () => {
+    const pubKey = ContextUtils.pubKey;
+    const contract = new CheckDataSig(pubKey);
+
+    contract.bindToUtxo({
+      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+      outputIndex: 0,
+      satoshis: 10000,
+      data: '',
+    });
+
+    const address = await testSigner.getAddress();
+
+    // Binary data message (raw hex)
+    const message = toByteString('deadbeef0102030405060708090a0b0c0d0e0f');
+    const sig = signDataForCheckDataSig(message);
+
+    const psbt = new ExtPsbt()
+      .addContractInput(contract, (c) => {
+        c.unlock(sig, message);
+      })
+      .change(address, 1)
+      .seal()
+      .finalizeAllInputs();
+
+    expect(psbt.isFinalized).to.be.true;
+    expect(bvmVerify(psbt, 0)).to.eq(true);
+  });
+
+  it('should unlock with signData using custom private key (Oracle scenario)', async () => {
+    // Simulate Oracle scenario: use a custom private key
+    const oraclePrivKey = PrivateKey.fromRandom();
+    const oraclePubKey = PubKey(oraclePrivKey.toPublicKey().toHex());
+
+    // Create contract with Oracle's public key
+    const contract = new CheckDataSig(oraclePubKey);
+
+    contract.bindToUtxo({
+      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+      outputIndex: 0,
+      satoshis: 10000,
+      data: '',
+    });
+
+    const address = await testSigner.getAddress();
+
+    // Oracle signs data with its private key
+    const priceData = toByteString('BTC/USD:50000', true);
+    const sig = signData(oraclePrivKey, priceData);
+
+    const psbt = new ExtPsbt()
+      .addContractInput(contract, (c) => {
+        c.unlock(sig, priceData);
+      })
+      .change(address, 1)
+      .seal()
+      .finalizeAllInputs();
+
+    expect(psbt.isFinalized).to.be.true;
+    expect(bvmVerify(psbt, 0)).to.eq(true);
+  });
+
+  it('should fail signData with wrong private key', async () => {
+    // Oracle's key pair
+    const oraclePrivKey = PrivateKey.fromRandom();
+    const oraclePubKey = PubKey(oraclePrivKey.toPublicKey().toHex());
+
+    // Attacker's key
+    const attackerPrivKey = PrivateKey.fromRandom();
+
+    // Create contract expecting Oracle's public key
+    const contract = new CheckDataSig(oraclePubKey);
+
+    contract.bindToUtxo({
+      txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+      outputIndex: 0,
+      satoshis: 10000,
+      data: '',
+    });
+
+    const address = await testSigner.getAddress();
+
+    // Attacker tries to sign with their own key
+    const priceData = toByteString('BTC/USD:50000', true);
+    const fakeSig = signData(attackerPrivKey, priceData);
+
+    const psbt = new ExtPsbt()
+      .addContractInput(contract, (c) => {
+        c.unlock(fakeSig, priceData);
+      })
+      .change(address, 1)
+      .seal();
+
+    // Should fail because signature doesn't match Oracle's public key
+    expect(() => psbt.finalizeAllInputs()).to.throw(/checkDataSig failed/);
   });
 });

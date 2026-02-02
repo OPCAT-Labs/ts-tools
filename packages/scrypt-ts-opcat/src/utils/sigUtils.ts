@@ -19,13 +19,17 @@ import { encodeSHPreimage } from './preimage.js';
 const { ECDSA, Signature } = crypto;
 
 /**
- * The hardcoded private key used for preimage signing.
- * This must match the private key in ContextUtils.
+ * The internal private key used for preimage signing, derived from ContextUtils.
+ * This ensures consistency between off-chain signing and on-chain verification.
  */
-const PRIVATE_KEY_HEX = '26f00fe2340a84335ebdf30f57e9bb58487117b29355718f5e46bf5168d7df97';
+function getInternalPrivateKey(): PrivateKey {
+  // Convert ContextUtils.privKey (bigint) to hex string, padding to 64 chars
+  const privKeyHex = (ContextUtils.privKey as bigint).toString(16).padStart(64, '0');
+  return PrivateKey.fromHex(privKeyHex, Networks.defaultNetwork);
+}
 
 /**
- * Signs a serialized preimage off-chain using the hardcoded private key.
+ * Signs a serialized preimage off-chain using the internal private key (from ContextUtils).
  *
  * This function generates a DER-encoded ECDSA signature that can be verified
  * on-chain using checkSig. The message is hashed with hash256 (double SHA256)
@@ -44,11 +48,10 @@ export function signPreimage(preimage: SigHashPreimage | ByteString, sigHashType
   // Reverse the hash to match checkSigImpl's verification format
   const hash = Buffer.from(hash256(preimage as ByteString), 'hex').reverse();
 
-  // Create private key from hex (using mainnet network)
-  const privateKey = PrivateKey.fromHex(PRIVATE_KEY_HEX, Networks.defaultNetwork);
+  // Get private key from ContextUtils
+  const privateKey = getInternalPrivateKey();
 
   // Sign the hash using ECDSA
-  // Note: ECDSA.sign expects the hash and private key
   const signature = ECDSA.sign(hash, privateKey, 'little');
 
   // Get DER encoded signature
@@ -88,16 +91,47 @@ export function signSHPreimage(shPreimage: SHPreimage, sigHashType: number = 0x0
  * that can be verified on-chain using checkDataSig. The message is hashed with
  * single SHA256 to match OP_CHECKSIGFROMSTACK behavior.
  *
+ * Note: This uses the hardcoded ContextUtils private key. For signing with
+ * a custom private key (e.g., Oracle scenarios), use signData() instead.
+ *
  * @param message - The message bytes to sign
  * @returns A pure DER-encoded signature (no sighash type appended)
  */
 export function signDataForCheckDataSig(message: ByteString): Sig {
+  // Get private key from ContextUtils
+  const privateKey = getInternalPrivateKey();
+  return signData(privateKey, message);
+}
+
+/**
+ * Signs arbitrary data with a custom private key for use with checkDataSig (OP_CHECKSIGFROMSTACK).
+ *
+ * This function generates a pure DER-encoded ECDSA signature (NO sighash type)
+ * that can be verified on-chain using checkDataSig. The message is hashed with
+ * single SHA256 to match OP_CHECKSIGFROMSTACK behavior.
+ *
+ * Use this method for Oracle scenarios where you need to sign data with a specific
+ * private key that the contract will verify against.
+ *
+ * @param privateKey - The private key to sign with
+ * @param message - The message bytes to sign
+ * @returns A pure DER-encoded signature (no sighash type appended)
+ *
+ * @example
+ * ```typescript
+ * // Oracle signs price data
+ * const oraclePrivKey = PrivateKey.fromWIF('...');
+ * const priceData = toByteString('BTC/USD:50000', true);
+ * const sig = signData(oraclePrivKey, priceData);
+ *
+ * // Contract verifies using checkDataSig
+ * // assert(this.checkDataSig(sig, priceData, oraclePubKey));
+ * ```
+ */
+export function signData(privateKey: PrivateKey, message: ByteString): Sig {
   // Compute single SHA256 of the message for checkDataSig compatibility
   // Reverse the hash for little-endian format (same as OP_CHECKSIGFROMSTACK)
   const hash = Buffer.from(sha256(message), 'hex').reverse();
-
-  // Create private key from hex (using mainnet network)
-  const privateKey = PrivateKey.fromHex(PRIVATE_KEY_HEX, Networks.defaultNetwork);
 
   // Sign the hash using ECDSA
   const signature = ECDSA.sign(hash, privateKey, 'little');
