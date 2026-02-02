@@ -12,7 +12,7 @@ import {
   DefaultSigner,
   ContextUtils,
   signData,
-  signDataForCheckDataSig,
+  signDataWithInternalKey,
 } from '@opcat-labs/scrypt-ts-opcat';
 import { crypto } from '@opcat-labs/opcat';
 import { readArtifact } from '../utils/index.js';
@@ -273,7 +273,7 @@ describe('Test CheckDataSig Contract', () => {
 
     // Create message and sign it with the hardcoded private key
     const message = toByteString('Hello, World!', true);
-    const sig = signDataForCheckDataSig(message);
+    const sig = signDataWithInternalKey(message);
 
     const psbt = new ExtPsbt()
       .addContractInput(contract, (c) => {
@@ -303,7 +303,7 @@ describe('Test CheckDataSig Contract', () => {
 
     // Create message and sign it
     const message = toByteString('Test unlockWithPubKey', true);
-    const sig = signDataForCheckDataSig(message);
+    const sig = signDataWithInternalKey(message);
 
     const psbt = new ExtPsbt()
       .addContractInput(contract, (c) => {
@@ -332,7 +332,7 @@ describe('Test CheckDataSig Contract', () => {
 
     // The fixed message is 'Hello, checkDataSig!' in hex: 48656c6c6f2c20636865636b4461746153696721
     const fixedMessage = toByteString('48656c6c6f2c20636865636b4461746153696721');
-    const sig = signDataForCheckDataSig(fixedMessage);
+    const sig = signDataWithInternalKey(fixedMessage);
 
     const psbt = new ExtPsbt()
       .addContractInput(contract, (c) => {
@@ -362,7 +362,7 @@ describe('Test CheckDataSig Contract', () => {
     // Sign a different message than what we pass to unlock
     const signedMessage = toByteString('Wrong message', true);
     const providedMessage = toByteString('Correct message', true);
-    const sig = signDataForCheckDataSig(signedMessage);
+    const sig = signDataWithInternalKey(signedMessage);
 
     const psbt = new ExtPsbt()
       .addContractInput(contract, (c) => {
@@ -390,7 +390,7 @@ describe('Test CheckDataSig Contract', () => {
 
     // Empty message
     const message = toByteString('');
-    const sig = signDataForCheckDataSig(message);
+    const sig = signDataWithInternalKey(message);
 
     const psbt = new ExtPsbt()
       .addContractInput(contract, (c) => {
@@ -419,7 +419,7 @@ describe('Test CheckDataSig Contract', () => {
 
     // Binary data message (raw hex)
     const message = toByteString('deadbeef0102030405060708090a0b0c0d0e0f');
-    const sig = signDataForCheckDataSig(message);
+    const sig = signDataWithInternalKey(message);
 
     const psbt = new ExtPsbt()
       .addContractInput(contract, (c) => {

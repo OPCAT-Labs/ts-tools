@@ -19,14 +19,13 @@ import { encodeSHPreimage } from './preimage.js';
 const { ECDSA, Signature } = crypto;
 
 /**
- * The internal private key used for preimage signing, derived from ContextUtils.
+ * The internal private key derived from ContextUtils.privKey.
  * This ensures consistency between off-chain signing and on-chain verification.
  */
-function getInternalPrivateKey(): PrivateKey {
-  // Convert ContextUtils.privKey (bigint) to hex string, padding to 64 chars
-  const privKeyHex = (ContextUtils.privKey as bigint).toString(16).padStart(64, '0');
-  return PrivateKey.fromHex(privKeyHex, Networks.defaultNetwork);
-}
+const INTERNAL_KEY = PrivateKey.fromHex(
+  (ContextUtils.privKey as bigint).toString(16).padStart(64, '0'),
+  Networks.defaultNetwork
+);
 
 /**
  * Signs a serialized preimage off-chain using the internal private key (from ContextUtils).
@@ -48,11 +47,8 @@ export function signPreimage(preimage: SigHashPreimage | ByteString, sigHashType
   // Reverse the hash to match checkSigImpl's verification format
   const hash = Buffer.from(hash256(preimage as ByteString), 'hex').reverse();
 
-  // Get private key from ContextUtils
-  const privateKey = getInternalPrivateKey();
-
-  // Sign the hash using ECDSA
-  const signature = ECDSA.sign(hash, privateKey, 'little');
+  // Sign the hash using ECDSA with internal key
+  const signature = ECDSA.sign(hash, INTERNAL_KEY, 'little');
 
   // Get DER encoded signature
   const derSig = signature.toDER();
@@ -85,22 +81,20 @@ export function signSHPreimage(shPreimage: SHPreimage, sigHashType: number = 0x0
 }
 
 /**
- * Signs arbitrary data off-chain for use with checkDataSig (OP_CHECKSIGFROMSTACK).
+ * Signs arbitrary data off-chain using the internal key (ContextUtils.privKey).
  *
  * This function generates a pure DER-encoded ECDSA signature (NO sighash type)
  * that can be verified on-chain using checkDataSig. The message is hashed with
  * single SHA256 to match OP_CHECKSIGFROMSTACK behavior.
  *
- * Note: This uses the hardcoded ContextUtils private key. For signing with
+ * Note: This uses the internal key from ContextUtils. For signing with
  * a custom private key (e.g., Oracle scenarios), use signData() instead.
  *
  * @param message - The message bytes to sign
  * @returns A pure DER-encoded signature (no sighash type appended)
  */
-export function signDataForCheckDataSig(message: ByteString): Sig {
-  // Get private key from ContextUtils
-  const privateKey = getInternalPrivateKey();
-  return signData(privateKey, message);
+export function signDataWithInternalKey(message: ByteString): Sig {
+  return signData(INTERNAL_KEY, message);
 }
 
 /**
@@ -154,7 +148,7 @@ export function signData(privateKey: PrivateKey, message: ByteString): Sig {
 export function signSHPreimageForCheckDataSig(shPreimage: SHPreimage): Sig {
   // Serialize the SHPreimage using encodeSHPreimage
   const preimage = encodeSHPreimage(shPreimage);
-  return signDataForCheckDataSig(preimage);
+  return signDataWithInternalKey(preimage);
 }
 
 /**
