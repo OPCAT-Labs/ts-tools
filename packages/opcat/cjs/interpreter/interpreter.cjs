@@ -8,6 +8,7 @@ var BN = require('../crypto/bn.cjs');
 var Hash = require('../crypto/hash.cjs');
 var Signature = require('../crypto/signature.cjs');
 var PublicKey = require('../publickey.cjs');
+var ECDSA = require('../crypto/ecdsa.cjs');
 var Stack = require('./stack.cjs');
 var Transaction = require('../transaction/index.cjs');
 
@@ -441,6 +442,118 @@ Interpreter.prototype.checkPubkeyEncoding = function (buf) {
     return false;
   }
   return true;
+};
+
+
+/**
+ * Validates pure DER signature encoding (without sighash type).
+ * Used for OP_CHECKSIGFROMSTACK which expects signatures without trailing sighash byte.
+ * @param {Buffer} buf - The buffer containing the signature to verify
+ * @returns {boolean} True if the signature is valid DER-encoded, false otherwise
+ * @static
+ */
+Interpreter.isDER = function (buf) {
+  if (buf.length < 8) {
+    // Non-canonical signature: too short (min DER sig is 8 bytes)
+    return false;
+  }
+  if (buf.length > 72) {
+    // Non-canonical signature: too long (max DER sig is 72 bytes without sighash)
+    return false;
+  }
+  if (buf[0] !== 0x30) {
+    // Non-canonical signature: wrong type
+    return false;
+  }
+  if (buf[1] !== buf.length - 2) {
+    // Non-canonical signature: wrong length marker (for pure DER, length = buf.length - 2)
+    return false;
+  }
+  var nLenR = buf[3];
+  if (5 + nLenR >= buf.length) {
+    // Non-canonical signature: S length misplaced
+    return false;
+  }
+  var nLenS = buf[5 + nLenR];
+  if (nLenR + nLenS + 6 !== buf.length) {
+    // Non-canonical signature: R+S length mismatch (for pure DER, total = R + S + 6)
+    return false;
+  }
+
+  var R = buf.slice(4);
+  if (buf[4 - 2] !== 0x02) {
+    // Non-canonical signature: R value type mismatch
+    return false;
+  }
+  if (nLenR === 0) {
+    // Non-canonical signature: R length is zero
+    return false;
+  }
+  if (R[0] & 0x80) {
+    // Non-canonical signature: R value negative
+    return false;
+  }
+  if (nLenR > 1 && R[0] === 0x00 && !(R[1] & 0x80)) {
+    // Non-canonical signature: R value excessively padded
+    return false;
+  }
+
+  var S = buf.slice(6 + nLenR);
+  if (buf[6 + nLenR - 2] !== 0x02) {
+    // Non-canonical signature: S value type mismatch
+    return false;
+  }
+  if (nLenS === 0) {
+    // Non-canonical signature: S length is zero
+    return false;
+  }
+  if (S[0] & 0x80) {
+    // Non-canonical signature: S value negative
+    return false;
+  }
+  if (nLenS > 1 && S[0] === 0x00 && !(S[1] & 0x80)) {
+    // Non-canonical signature: S value excessively padded
+    return false;
+  }
+  return true;
+};
+
+
+/**
+ * Checks if a signature encoding is valid for OP_CHECKSIGFROMSTACK.
+ * Unlike checkSignatureEncoding, this expects pure DER signatures without sighash type.
+ * @param {Buffer} buf - The signature buffer to validate
+ * @returns {boolean} True if valid, false otherwise (sets errstr on failure)
+ */
+Interpreter.prototype.checkDataSigSignatureEncoding = function (buf) {
+  var sig;
+
+  // Empty signature is allowed
+  if (buf.length === 0) {
+    return true;
+  }
+
+  // For OP_CHECKSIGFROMSTACK, use pure DER validation (no sighash type)
+  if (
+    (this.flags &
+      (Interpreter.SCRIPT_VERIFY_DERSIG |
+        Interpreter.SCRIPT_VERIFY_LOW_S |
+        Interpreter.SCRIPT_VERIFY_STRICTENC)) !==
+      0 &&
+    !Interpreter.isDER(buf)
+  ) {
+    this.errstr = 'SCRIPT_ERR_SIG_DER_INVALID_FORMAT';
+    return false;
+  } else if ((this.flags & Interpreter.SCRIPT_VERIFY_LOW_S) !== 0) {
+    sig = Signature.fromDER(buf);
+    if (!sig.hasLowS()) {
+      this.errstr = 'SCRIPT_ERR_SIG_DER_HIGH_S';
+      return false;
+    }
+  }
+  // Note: No STRICTENC hashtype check for OP_CHECKSIGFROMSTACK since it has no sighash type
+
+  return true
 };
 
 /**
@@ -1976,6 +2089,65 @@ Interpreter.prototype.step = function (scriptType) {
         if (!Interpreter._isMinimallyEncoded(buf2)) {
           this.errstr = 'SCRIPT_ERR_INVALID_NUMBER_RANGE';
           return false;
+        }
+        break;
+
+      case Opcode.OP_CHECKSIGFROMSTACK:
+      case Opcode.OP_CHECKSIGFROMSTACKVERIFY:
+        // Stack order (bottom to top): <sig> <msg> <pubKey>
+        // (sig msg pubkey -- bool) for OP_CHECKSIGFROMSTACK
+        // (sig msg pubkey -- ) for OP_CHECKSIGFROMSTACKVERIFY
+        // Note: Unlike OP_CHECKSIG, signatures are pure DER without sighash type
+        if (this.stack.length < 3) {
+          this.errstr = 'SCRIPT_ERR_INVALID_STACK_OPERATION';
+          return false;
+        }
+
+        bufPubkey = stacktop(-1);  // pubKey at top
+        var bufMsg = stacktop(-2); // msg in middle
+        bufSig = stacktop(-3);     // sig at bottom
+
+        // Use checkDataSigSignatureEncoding for pure DER validation (no sighash type)
+        if (!this.checkDataSigSignatureEncoding(bufSig) || !this.checkPubkeyEncoding(bufPubkey)) {
+          return false;
+        }
+
+        fSuccess = false;
+        try {
+          // Compute SHA256 of msg (single hash, not double)
+          // Reverse to little-endian format (same as checkSig) for signature verification
+          var hashbuf = Hash.sha256(bufMsg).reverse();
+
+          // Use fromDER for pure DER signatures (no sighash type)
+          sig = Signature.fromDER(bufSig);
+          pubkey = PublicKey.fromBuffer(bufPubkey, false);
+
+          // Verify signature using ECDSA with little endian
+          fSuccess = ECDSA.verify(hashbuf, sig, pubkey, 'little');
+        } catch (e) {
+          // invalid sig or pubkey
+          fSuccess = false;
+        }
+
+        if (!fSuccess && this.flags & Interpreter.SCRIPT_VERIFY_NULLFAIL && bufSig.length) {
+          this.errstr = 'SCRIPT_ERR_NULLFAIL';
+          return false;
+        }
+
+        // Pop all 3 elements
+        this.stack.pop();
+        this.stack.pop();
+        this.stack.pop();
+
+        if (opcodenum === Opcode.OP_CHECKSIGFROMSTACKVERIFY) {
+          if (!fSuccess) {
+            this.errstr = 'SCRIPT_ERR_CHECKSIGFROMSTACKVERIFY';
+            return false;
+          }
+          // VERIFY variant doesn't push anything on success
+        } else {
+          // Push result for OP_CHECKSIGFROMSTACK
+          this.stack.push(fSuccess ? Interpreter.getTrue() : Interpreter.getFalse());
         }
         break;
 

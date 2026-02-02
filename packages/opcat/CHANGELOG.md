@@ -1,5 +1,17 @@
 # @opcat-labs/opcat
 
+## 2.1.3
+
+### Patch Changes
+
+- refactor: reuse Interpreter methods for checkDataSig and add signData utility
+  - Refactor checkDataSig.ts to use Interpreter.checkDataSigSignatureEncoding() and checkPubkeyEncoding()
+  - Add signData(privateKey, message) utility for Oracle scenarios
+  - Add signDataWithInternalKey() using INTERNAL_KEY from ContextUtils
+  - Add end-to-end contract tests for CheckDataSig
+  - Add OP_CHECKSIGFROMSTACK and OP_CHECKSIGFROMSTACKVERIFY opcode tests
+  - Add TypeScript type declarations for checkDataSigSignatureEncoding and isDER
+
 ## 2.1.2
 
 ### Patch Changes

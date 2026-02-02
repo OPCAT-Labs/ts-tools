@@ -9,6 +9,7 @@ export const InjectedParam_ChangeInfo = '__scrypt_ts_changeInfo';
 export const InjectedParam_NextStateHashes = '__scrypt_ts_nextStateHashes';
 export const InjectedParam_CurState = '__scrypt_ts_curState';
 export const InjectedParam_PrevTxHashPreimage = '__scrypt_ts_prevTxHashPreimage';
+export const InjectedParam_PreimageSig = '__scrypt_ts_preimageSig';
 
 export const InjectedProp_SHPreimage = '__scrypt_ts_shPreimage';
 export const InjectedProp_ChangeInfo = '__scrypt_ts_changeInfo';
@@ -46,7 +47,17 @@ constructor(){
 }
 `;
 
-export const CALL_CHECK_SHPREIMAGE = `require(Tx.checkPreimageSigHashType(ContextUtils.serializeSHPreimage(${InjectedParam_SHPreimage}), SigHash.ALL))`;
+// Legacy: uses compiler built-in Tx.checkPreimageSigHashType
+export const CALL_CHECK_SHPREIMAGE_LEGACY = `require(Tx.checkPreimageSigHashType(ContextUtils.serializeSHPreimage(${InjectedParam_SHPreimage}), SigHash.ALL))`;
+
+// New: uses checkDataSig with off-chain signature generation
+// checkDataSig(sig, sha256(preimage), pubKey) internally computes sha256(sha256(preimage)) = hash256(preimage)
+// checkSig verifies signature against hash256(transaction_preimage)
+// Both use hash256, so the same signature works for both
+// Note: checkDataSig (OP_CHECKSIGFROMSTACK) requires pure DER signature without sighash type,
+// while checkSig (OP_CHECKSIG) requires signature with sighash type appended.
+// We use sig[0 : len(sig) - 1] to strip the sighash type byte for checkDataSig.
+export const CALL_CHECK_SHPREIMAGE = `require(checkDataSig(Sig(${InjectedParam_PreimageSig}[0 : len(${InjectedParam_PreimageSig}) - 1]), sha256(ContextUtils.serializeSHPreimage(${InjectedParam_SHPreimage})), ContextUtils.pubKey) && checkSig(${InjectedParam_PreimageSig}, ContextUtils.pubKey))`;
 
 export const CALL_BUILD_CHANGE_OUTPUT = {
   accessArgument: `(${InjectedParam_ChangeInfo}.satoshis > 0 ? TxUtils.buildOutput(${InjectedParam_ChangeInfo}.scriptHash, ${InjectedParam_ChangeInfo}.satoshis) : b'')`,

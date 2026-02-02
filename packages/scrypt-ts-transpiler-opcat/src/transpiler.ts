@@ -47,6 +47,7 @@ import {
   InjectedProp_Prevout,
   InjectedProp_PrevTxHashPreimage,
   InjectedParam_PrevTxHashPreimage,
+  InjectedParam_PreimageSig,
 } from './snippets';
 import { MethodDecoratorOptions } from '@opcat-labs/scrypt-ts-opcat';
 import { Relinker } from './relinker';
@@ -235,6 +236,7 @@ const SmartContractBuiltinMethods = [
   'timeLock',
   'checkSig',
   'checkMultiSig',
+  'checkDataSig',
   'checkPreimageAdvanced',
   'checkPreimageSigHashType',
   'checkPreimage',
@@ -1769,11 +1771,15 @@ export class Transpiler {
 
         if (shouldAutoAppendSighashPreimage.shouldAppendArguments) {
           this._accessBuiltinsSymbols.add('SHPreimage');
+          this._accessBuiltinsSymbols.add('Sig');
           if (paramLen > 0) {
             psSec.append(', ');
           }
           psSec.append(`SHPreimage ${InjectedParam_SHPreimage}`);
-          paramLen += 2;
+          paramLen += 1;
+          // Add preimage signature parameter for checkDataSig verification
+          psSec.append(`, Sig ${InjectedParam_PreimageSig}`);
+          paramLen += 1;
         }
 
         if (shouldAutoAppendChangeAmount.shouldAppendArguments) {
@@ -5037,6 +5043,9 @@ export class Transpiler {
       if (name === 'checkMultiSig') {
         return this.transformCallCheckMultiSig(node, toSection);
       }
+      if (name === 'checkDataSig') {
+        return this.transformCallCheckDataSig(node, toSection);
+      }
       if (name === 'checkPreimage' || name === 'checkPreimageSigHashType') {
         return this.transformCallCheckPreimage(node, toSection);
       }
@@ -5375,24 +5384,62 @@ export class Transpiler {
     return toSection.append(')', srcLoc);
   }
 
-  private transformCallCheckPreimage(
+  private transformCallCheckDataSig(
     node: ts.CallExpression,
     toSection: EmittedSection,
   ): EmittedSection {
     const srcLoc = this.getCoordinates(node.getStart());
     toSection.appendWith(this, (toSec) => {
       const _e: ts.PropertyAccessExpression = node.expression as ts.PropertyAccessExpression;
-      toSec.append('Tx.');
       return this.transformExpression(_e.name, toSec);
     });
     toSection.append('(', srcLoc);
 
-    node.arguments.forEach((arg, index) => {
+    // Take 3 arguments: sig, msg, pubkey
+    const args = node.arguments.slice(0, 3);
+    args.forEach((arg, index) => {
       toSection
         .appendWith(this, (toSec) => this.transformExpression(arg, toSec))
-        .append(index < node.arguments.length - 1 ? ', ' : '');
+        .append(index < args.length - 1 ? ', ' : '');
     });
     return toSection.append(')', srcLoc);
+  }
+
+  private transformCallCheckPreimage(
+    node: ts.CallExpression,
+    toSection: EmittedSection,
+  ): EmittedSection {
+    const srcLoc = this.getCoordinates(node.getStart());
+
+    // Get the method containing this node to determine if we should access 'this'
+    const methodNode = this.getMethodContainsTheNode(node);
+    const { shouldAccessThis } = this.shouldAutoAppendSighashPreimage(methodNode);
+    const prefix = shouldAccessThis ? 'this.' : '';
+
+    // Transform to: checkDataSig(Sig(preimageSig[0 : len(preimageSig) - 1]), sha256(ContextUtils.serializeSHPreimage(shPreimage)), ContextUtils.pubKey)
+    //            && checkSig(preimageSig, ContextUtils.pubKey)
+    // Using sha256(preimage) as the message for checkDataSig means:
+    // checkDataSig internally computes sha256(sha256(preimage)) = hash256(preimage)
+    // This matches checkSig which also uses hash256(preimage)
+    // Note: checkDataSig (OP_CHECKSIGFROMSTACK) requires pure DER signature without sighash type,
+    // while checkSig (OP_CHECKSIG) requires signature with sighash type appended.
+    // We use sig[0 : len(sig) - 1] to strip the sighash type byte for checkDataSig.
+    this._accessBuiltinsSymbols.add('ContextUtils');
+
+    toSection.append('(checkDataSig(Sig(', srcLoc);
+    toSection.append(`${prefix}${InjectedParam_PreimageSig}[0 : len(${prefix}${InjectedParam_PreimageSig}) - 1]), `);
+    toSection.append('sha256(ContextUtils.serializeSHPreimage(');
+    // Transform the shPreimage argument
+    if (node.arguments.length > 0) {
+      toSection.appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec));
+    }
+    toSection.append(')), ContextUtils.pubKey)');
+    toSection.append(' && ');
+    toSection.append('checkSig(');
+    toSection.append(`${prefix}${InjectedParam_PreimageSig}, `);
+    toSection.append('ContextUtils.pubKey))');
+
+    return toSection;
   }
 
   private transformCallBuildPublicKeyHashOutput(

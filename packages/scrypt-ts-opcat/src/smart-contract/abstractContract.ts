@@ -33,6 +33,23 @@ export abstract class AbstractContract {
   abstract checkSig(signature: Sig, publickey: PubKey, errorMsg?: string): boolean;
 
   /**
+   * Verifies an ECDSA signature against an explicit message and public key.
+   * Unlike checkSig which uses the transaction preimage as the implicit message,
+   * checkDataSig allows verifying signatures on arbitrary data.
+   *
+   * Uses OP_CHECKSIGFROMSTACK (0xba) under the hood.
+   * Stack order: <sig> <msg> <pubKey> (bottom to top)
+   *
+   * @param signature - The signature to verify (DER encoded with sighash type)
+   * @param message - The message that was signed (will be SHA256 hashed once)
+   * @param publickey - The public key to verify the signature against
+   * @returns true if the signature is valid, false otherwise
+   * @onchain
+   * @category Signature Verification
+   */
+  abstract checkDataSig(signature: Sig, message: ByteString, publickey: PubKey): boolean;
+
+  /**
    * Implements an absolute time-based lock on a transaction until a specified `locktime` has been reached.
    * The lock can be based on either block height or a UNIX timestamp.
    *

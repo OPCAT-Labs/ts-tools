@@ -1,8 +1,8 @@
 {
   "version": 10,
   "compilerVersion": "1.22.0+commit.47800da",
-  "contract": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__Demo",
-  "md5": "b2a83d8cef4f4824e4f564d3193e05c7",
+  "contract": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__HeritageDemo",
+  "md5": "975d7554aa6aed61f7baac36f2364c53",
   "structs": [],
   "library": [],
   "alias": [],
@@ -30,6 +30,17 @@
       ]
     },
     {
+      "type": "function",
+      "name": "unlock",
+      "index": 2,
+      "params": [
+        {
+          "name": "z",
+          "type": "int"
+        }
+      ]
+    },
+    {
       "type": "constructor",
       "params": [
         {
@@ -45,6 +56,6 @@
   ],
   "stateProps": [],
   "buildType": "release",
-  "file": "../demo.scrypt",
-  "hex": "<x><y>527900876353796f756e9377779c6b6d6d6c67527951876353796f75949c6b6d6d6c67006868"
+  "file": "../heritage.scrypt",
+  "hex": "000000<x><y>78557a75547a547a547a547a76547a7572537a51537a75777753790087635479706e9377779c6b6d6d6c77675379518763547970949c6b6d6d6c776753795287636f756e9377776e7c6e9377777755799c6b6d6d6c776700686868"
 }

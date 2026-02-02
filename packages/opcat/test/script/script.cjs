@@ -871,7 +871,8 @@ describe('Script', function () {
 
   describe('#add and #prepend', function () {
     it('should add these ops', function () {
-      Script().add(1).add(10).add(186).toString().should.equal('1 0x0a 0xba');
+      // 186 (0xba) is now OP_CHECKSIGFROMSTACK
+      Script().add(1).add(10).add(186).toString().should.equal('1 0x0a OP_CHECKSIGFROMSTACK');
       Script().add(Buffer.from('03e8', 'hex')).toString().should.equal('2 0x03e8');
       Script().add('OP_CHECKMULTISIG').toString().should.equal('OP_CHECKMULTISIG');
       Script().add('OP_1').add('OP_2').toString().should.equal('OP_1 OP_2');
@@ -892,6 +893,15 @@ describe('Script', function () {
         .prepend('OP_4')
         .toString()
         .should.equal('OP_4 OP_2 OP_1 OP_3');
+    });
+
+    it('should recognize OP_CHECKSIGFROMSTACK and OP_CHECKSIGFROMSTACKVERIFY opcodes', function () {
+      // Test adding by opcode number
+      Script().add(186).toString().should.equal('OP_CHECKSIGFROMSTACK');
+      Script().add(187).toString().should.equal('OP_CHECKSIGFROMSTACKVERIFY');
+      // Test adding by opcode name
+      Script().add('OP_CHECKSIGFROMSTACK').toString().should.equal('OP_CHECKSIGFROMSTACK');
+      Script().add('OP_CHECKSIGFROMSTACKVERIFY').toString().should.equal('OP_CHECKSIGFROMSTACKVERIFY');
     });
 
     it('should add these push data', function () {

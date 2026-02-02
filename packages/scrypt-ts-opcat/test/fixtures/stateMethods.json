@@ -1,11 +1,11 @@
 {
   "version": 10,
-  "compilerVersion": "1.21.0+commit.2ada378",
-  "contract": "counter_0_1_0__rs__StateMethods",
-  "md5": "7f3a15f8f49d8de1f6144458b5d49d18",
+  "compilerVersion": "1.22.0+commit.47800da",
+  "contract": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__StateMethods",
+  "md5": "25f1015ee98ac6af7d6a41658317aa67",
   "structs": [
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxOut",
+      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxOut",
       "params": [
         {
           "name": "scriptHash",
@@ -23,7 +23,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxIn",
+      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxIn",
       "params": [
         {
           "name": "prevTxHash",
@@ -45,47 +45,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxHashPreimage",
-      "params": [
-        {
-          "name": "version",
-          "type": "bytes"
-        },
-        {
-          "name": "inputList",
-          "type": "bytes"
-        },
-        {
-          "name": "outputList",
-          "type": "bytes"
-        },
-        {
-          "name": "nLockTime",
-          "type": "bytes"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
-      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__BacktraceInfo",
-      "params": [
-        {
-          "name": "prevTxInput",
-          "type": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxIn"
-        },
-        {
-          "name": "prevTxInputIndex",
-          "type": "int"
-        },
-        {
-          "name": "prevPrevTxPreimage",
-          "type": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxHashPreimage"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
-      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__SHPreimage",
+      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__SHPreimage",
       "params": [
         {
           "name": "nVersion",
@@ -147,7 +107,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__Outpoint",
+      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__Outpoint",
       "params": [
         {
           "name": "txHash",
@@ -159,30 +119,83 @@
         }
       ],
       "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxHashPreimage",
+      "params": [
+        {
+          "name": "version",
+          "type": "bytes"
+        },
+        {
+          "name": "inputList",
+          "type": "bytes"
+        },
+        {
+          "name": "outputList",
+          "type": "bytes"
+        },
+        {
+          "name": "nLockTime",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__BacktraceInfo",
+      "params": [
+        {
+          "name": "prevTxInput",
+          "type": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxIn"
+        },
+        {
+          "name": "prevTxInputIndex",
+          "type": "int"
+        },
+        {
+          "name": "prevPrevTxPreimage",
+          "type": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxHashPreimage"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__ReadVarintResult",
+      "params": [
+        {
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "name": "nextPos",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
     }
   ],
   "library": [
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__ContextUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__ContextUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__StdUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__StdUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
     }
   ],
   "alias": [],
-  "staticAbi": [],
   "abi": [
     {
       "type": "function",
@@ -203,11 +216,15 @@
         },
         {
           "name": "__scrypt_ts_shPreimage",
-          "type": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__SHPreimage"
+          "type": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__SHPreimage"
+        },
+        {
+          "name": "__scrypt_ts_preimageSig",
+          "type": "Sig"
         },
         {
           "name": "__scrypt_ts_changeInfo",
-          "type": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__TxOut"
+          "type": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxOut"
         }
       ]
     },
@@ -218,6 +235,6 @@
   ],
   "stateProps": [],
   "buildType": "release",
-  "file": "..\\stateMethods.scrypt",
-  "hex": "512097dfd76851bf465e8f715593b217714858bbe9570ff3bd5e33840a34e20ff0262102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec0382201008ce7480da41702918d1ec8e6849ba32b4d65b1e40dc669c31a1e6306b266c0114790114790114790114790114790114790114790114790114790114790114790114790114790114795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6c54797855795579210ac407f0e4bd44bfc207355a778b046225a7068fc59ee7eda43ad905aadbffc800206c266b30e6a1319c66dc401e5bd6b432ba49688eecd118297041da8074ce0810577956795679aa7676517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01007e817757795679567956795679537956795479577995939521414136d08c5ed2bf3ba048afe6dcaebafeffffffffffffffffffffffffffffff006e6e9776009f636e936776687777777b757c6e5296a0636e7c947b757c6853798277527982775379012080517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f517f7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e7c7e01205279947f77545379935279930130787e527e54797e58797e527e53797e52797e57797e6b6d6d6d6d6d6d6c765779ac6b6d6d6d6d6d6c7769011779011779011779527982777882777801209d7601209d537900a2695379588055797e53797e6b6d6d6c7776567900a063587957796e00a8527982777882777801209d7601209d537900a2695379588055797e53797e6b6d6d6d6c776700687e5c7978aa876b6d6d6d6d6d6d6d6d6d6d6d6d6d6c"
+  "file": "../stateMethods.scrypt",
+  "hex": "2102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec03825479557982778c7f75007f770113790113790113790113790113790113790113790113790113790113790113790113790113790113795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6ca85279ba63547978ac67006869011579011579011579527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c7776537900a063557954796e00a8527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6d6c776700687e5a7978aa876b6d6d6d6d6d6d6d6d6d6d6d6d6c"
 }
