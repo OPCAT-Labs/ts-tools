@@ -19,6 +19,9 @@ import {
 import { FixedArray } from '../../src/index.js';
 import { uint8ArrayToHex } from '../../src/utils/common.js';
 import { Backtrace } from '../../src/smart-contract/builtin-libs/backtrace.js';
+import { crypto, PrivateKey, Networks } from '@opcat-labs/opcat';
+import { encodeSHPreimage } from '../../src/utils/preimage.js';
+import { hash256 } from '../../src/smart-contract/fns/hashes.js';
 
 use(chaiAsPromised);
 dotenv.config();
@@ -275,6 +278,96 @@ describe('Test Genesis', () => {
         Backtrace.GENESIS_SCRIPT_HASH,
         `GENESIS_SCRIPT_HASH mismatch! Expected: ${actualScriptHash}, Got: ${Backtrace.GENESIS_SCRIPT_HASH}`
       );
+    });
+  });
+
+  describe('checkPreimage validation', () => {
+    // Test case 1: Invalid preimage (modified hashOutputs in unlocking script)
+    // First build the transaction correctly, then replace the hashOutputs in unlocking script
+    it('should fail when injected preimage has wrong hashOutputs', async () => {
+      const genesis = createGenesis(0);
+
+      // Build the transaction correctly first
+      const psbt = new ExtPsbt()
+        .addContractInput(genesis, genesisCheckDeploy())
+        .addOutput({
+          script: Buffer.from(getUniqueScript(0), 'hex'),
+          value: 1000n,
+          data: new Uint8Array(),
+        })
+        .seal()
+        .finalizeAllInputs();
+
+      // Get the correct hashOutputs from context
+      const inputCtx = (psbt as any)._ctxProvider.getInputCtx(0);
+      const correctHashOutputs = inputCtx.shPreimage.hashOutputs;
+
+      // Create a wrong hashOutputs
+      const wrongHashOutputs = sha256(toByteString('invalid_outputs', true));
+
+      // Get the finalized unlocking script from psbt.data.inputs
+      const finalScriptSig = psbt.data.inputs[0].finalScriptSig!;
+      const unlockingScriptHex = Buffer.from(finalScriptSig).toString('hex');
+
+      // Replace the correct hashOutputs with wrong one in unlocking script
+      const modifiedUnlockingScriptHex = unlockingScriptHex.replace(correctHashOutputs, wrongHashOutputs);
+
+      // Update the psbt's finalScriptSig directly
+      psbt.data.inputs[0].finalScriptSig = Buffer.from(modifiedUnlockingScriptHex, 'hex');
+
+      // Now verify with BVM - should fail because hashOutputs doesn't match
+      // Expected error: SCRIPT_ERR_NULLFAIL (signature verification failed)
+      const result = bvmVerify(psbt, 0);
+      expect(result).to.eq('SCRIPT_ERR_NULLFAIL');
+    });
+
+    // Test case 2: Invalid signature (using wrong private key)
+    // First build the transaction correctly, then replace the signature with wrong one
+    it('should fail when injected preimage signature is wrong', async () => {
+      const genesis = createGenesis(0);
+
+      // Build the transaction correctly first
+      const psbt = new ExtPsbt()
+        .addContractInput(genesis, genesisCheckDeploy())
+        .addOutput({
+          script: Buffer.from(getUniqueScript(0), 'hex'),
+          value: 1000n,
+          data: new Uint8Array(),
+        })
+        .seal()
+        .finalizeAllInputs();
+
+      // Get the correct signature from the contract (with sighash flag)
+      const correctSigWithFlag = (genesis as any)._injectedPreimageSig as string;
+      // The pure DER signature (without sighash flag) used in checkDataSig
+      const correctPureDerSig = correctSigWithFlag.slice(0, -2); // Remove last byte (sighash flag '01')
+
+      // Wrong private key (different from the hardcoded one in sigUtils.ts)
+      const WRONG_PRIVATE_KEY_HEX = '1111111111111111111111111111111111111111111111111111111111111111';
+
+      // Generate wrong signature using wrong private key
+      const inputCtx = (psbt as any)._ctxProvider.getInputCtx(0);
+      const preimage = encodeSHPreimage(inputCtx.shPreimage);
+      const hashBuf = Buffer.from(hash256(preimage), 'hex').reverse();
+      const wrongPrivateKey = PrivateKey.fromHex(WRONG_PRIVATE_KEY_HEX, Networks.defaultNetwork);
+      const wrongSignature = crypto.ECDSA.sign(hashBuf, wrongPrivateKey, 'little');
+      const wrongPureDerSig = wrongSignature.toDER().toString('hex'); // Pure DER without sighash flag
+
+      // Get the finalized unlocking script from psbt.data.inputs
+      const finalScriptSig = psbt.data.inputs[0].finalScriptSig!;
+      const unlockingScriptHex = Buffer.from(finalScriptSig).toString('hex');
+
+      // Replace the correct pure DER signature with wrong one in unlocking script
+      // Note: checkDataSig uses pure DER sig (without sighash flag)
+      const modifiedUnlockingScriptHex = unlockingScriptHex.replace(correctPureDerSig, wrongPureDerSig);
+
+      // Update the psbt's finalScriptSig directly
+      psbt.data.inputs[0].finalScriptSig = Buffer.from(modifiedUnlockingScriptHex, 'hex');
+
+      // Now verify with BVM - should fail because signature doesn't match ContextUtils.pubKey
+      // Expected error: SCRIPT_ERR_NULLFAIL (signature verification failed)
+      const result = bvmVerify(psbt, 0);
+      expect(result).to.eq('SCRIPT_ERR_NULLFAIL');
     });
   });
 });
