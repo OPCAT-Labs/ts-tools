@@ -1,7 +1,5 @@
 'use strict';
 
-var docsURL = 'https://docs.moneybutton.com/';
-
 module.exports = [
   {
     name: 'InvalidB58Char',
@@ -33,7 +31,7 @@ module.exports = [
       return (
         'Invalid Argument' +
         (arguments[0] ? ': ' + arguments[0] : '') +
-        (arguments[1] ? ' Documentation: ' + docsURL + arguments[1] : '')
+        (arguments[1] ? ' ' + arguments[1] : '')
       );
     },
   },

@@ -919,3 +919,34 @@ export class CAT721ClosedMinterPeripheral {
     return contract
   }
 }
+
+export class CAT20Peripheral {
+  isCAT20Supported(
+    cat20ScriptHexOrScriptHash: string,
+    minterScriptHash: string,
+    hasAdmin: boolean,
+    adminScriptHash: string
+  ) {
+    const cat20 = new CAT20(
+      minterScriptHash,
+      CAT20GuardPeripheral.getGuardVariantScriptHashes(),
+      hasAdmin,
+      adminScriptHash
+    )
+    const lockingScriptHex = cat20.lockingScript.toHex()
+    const lockingScriptHash = ContractPeripheral.scriptHash(lockingScriptHex)
+    return cat20ScriptHexOrScriptHash === lockingScriptHex || cat20ScriptHexOrScriptHash === lockingScriptHash
+  }
+}
+
+export class CAT721Peripheral {
+  isCAT721Supported(
+    cat721ScriptHexOrScriptHash: string,
+    minterScriptHash: string
+  ) {
+    const cat721 = new CAT721(minterScriptHash, CAT721GuardPeripheral.getGuardVariantScriptHashes())
+    const lockingScriptHex = cat721.lockingScript.toHex()
+    const lockingScriptHash = ContractPeripheral.scriptHash(lockingScriptHex)
+    return cat721ScriptHexOrScriptHash === lockingScriptHex || cat721ScriptHexOrScriptHash === lockingScriptHash
+  }
+}
