@@ -1,6 +1,6 @@
 {
   "name": "@opcat-labs/examples",
-  "version": "2.1.3",
+  "version": "3.0.0",
   "private": true,
   "type": "commonjs",
   "description": "A demo sCrypt smart contract.",
@@ -43,10 +43,10 @@
     ]
   },
   "dependencies": {
-    "@opcat-labs/scrypt-ts-opcat": "2.1.3"
+    "@opcat-labs/scrypt-ts-opcat": "3.0.0"
   },
   "devDependencies": {
-    "@opcat-labs/cli-opcat": "2.1.3",
+    "@opcat-labs/cli-opcat": "3.0.0",
     "cross-env": "^7.0.3",
     "dotenv": "^16.0.3",
     "rimraf": "^6.0.1",

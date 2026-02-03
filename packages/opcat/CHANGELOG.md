@@ -1,5 +1,38 @@
 # @opcat-labs/opcat
 
+## 3.0.0
+
+### Major Changes
+
+- feat!: refactor preimage structure and implement checkDataSig
+
+  ### Breaking Changes
+  - **SHPreimage type refactored**: All fields restructured from old Tap Sighash format to new SH format
+    - New fields: nVersion, hashPrevouts, spentScriptHash, spentDataHash, value, nSequence, hashSpentAmounts, hashSpentScriptHashes, hashSpentDataHashes, hashSequences, hashOutputs, inputIndex, nLockTime, sigHashType
+  - **preimage.ts API changes**:
+    - Removed: `splitSighashPreimage()`, `toSHPreimageObj()`, `shPreimageToSig()`, `shPreimageGetE()`
+    - Removed constants: `PREIMAGE_PREFIX`, `E_PREIMAGE_PREFIX`, `GX`
+    - Added: `decodeSHPreimage(preimage)` - decode binary preimage
+    - Added: `encodeSHPreimage(shPreimage)` - encode SHPreimage
+  - **checkSHPreimage verification flow changed**:
+    - Old approach: `ContextUtils.checkSHPreimage()` + `checkSig()`
+    - New approach: two-step verification - `checkDataSig()` + `checkSig()`
+    - Signature now injected via `_injectedPreimageSig`
+
+  ### New Features
+  - **checkDataSig method**: Support for OP_CHECKSIGFROMSTACK (0xba) and OP_CHECKSIGFROMSTACKVERIFY (0xbb)
+  - **New signing utility functions**:
+    - `signPreimage(preimage, sigHashType)`
+    - `signSHPreimage(shPreimage, sigHashType)`
+    - `signDataForCheckDataSig(message)`
+    - `signSHPreimageForCheckDataSig(shPreimage)`
+    - `signData(privateKey, message)` - for Oracle scenarios
+    - `signDataWithInternalKey()` - sign with internal key
+
+  ### Migration Guide
+
+  Code using preimage needs to be updated to adapt to the new structure and verification flow.
+
 ## 2.1.3
 
 ### Patch Changes
