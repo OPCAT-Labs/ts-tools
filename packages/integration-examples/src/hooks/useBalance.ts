@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWalletState } from '../core/state';
-import { MempoolProvider } from '@opcat-labs/scrypt-ts-opcat';
+import { OpenApiProvider } from '@opcat-labs/scrypt-ts-opcat';
 
 export function useSatsBalance() {
   const [walletState] = useWalletState();
@@ -20,7 +20,7 @@ export function useSatsBalance() {
       setError(null);
 
       try {
-        const provider = new MempoolProvider('opcat-testnet');
+        const provider = new OpenApiProvider('opcat-testnet');
         const utxos = await provider.getUtxos(walletState.address);
         const balanceSat = utxos.reduce((acc, utxo) => acc + utxo.satoshis, 0);
         setBalance(balanceSat / 100000000); // Convert satoshis to BTC

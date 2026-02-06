@@ -1,8 +1,8 @@
-import { bvmVerify, DefaultSigner, ExtPsbt, hexToUint8Array, MempoolProvider, PrivateKey, Script } from "@opcat-labs/scrypt-ts-opcat"
+import { bvmVerify, DefaultSigner, ExtPsbt, hexToUint8Array, OpenApiProvider, PrivateKey, Script } from "@opcat-labs/scrypt-ts-opcat"
 
 const privateKey = PrivateKey.fromWIF('cQfb2vnBvKryZjG7MuWwDoeMpvHBNAqaNyJH3cNxdHxnHWd6Kv7f')
 const signer = new DefaultSigner(privateKey)
-const provider = new MempoolProvider('opcat-testnet')   
+const provider = new OpenApiProvider('opcat-testnet')   
 
 
 async function testOpcode(

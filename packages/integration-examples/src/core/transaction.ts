@@ -1,7 +1,7 @@
 import type { AddressAmount } from '../hooks/useTransfer';
 import {
   ExtPsbt,
-  MempoolProvider,
+  OpenApiProvider,
   Script,
   toByteString,
   type Signer,
@@ -16,7 +16,7 @@ export async function transferSats(
   network: SupportedNetwork,
 ) {
   const decimals = 8;
-  const provider = new MempoolProvider(network);
+  const provider = new OpenApiProvider(network);
   const utxos = await provider.getUtxos(await signer.getAddress());
   // sort utxos by satoshis in descending order
   utxos.sort((a, b) => b.satoshis - a.satoshis);
@@ -76,7 +76,7 @@ export async function transferCat20(
 
   const res = await singleSend(
     signer,
-    new MempoolProvider(network),
+    new OpenApiProvider(network),
     token.token.minterScriptHash,
     cat20Utxos.utxos.map((utxo) => ({
       txId: utxo.txId,
@@ -90,7 +90,7 @@ export async function transferCat20(
       amount: BigInt(Math.round(recipient.amount * 10 ** token.token.decimals)),
     })),
     Script.fromAddress(senderAddress).toHex(),
-    await new MempoolProvider(network).getFeeRate(),
+    await new OpenApiProvider(network).getFeeRate(),
     token.token.hasAdmin,
     token.token.adminScriptHash,
   );

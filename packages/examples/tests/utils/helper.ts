@@ -1,6 +1,6 @@
 import {
     SupportedNetwork,
-    MempoolProvider,
+    OpenApiProvider,
     DummyProvider,
     DefaultSigner,
     fromSupportedNetwork,
@@ -26,7 +26,7 @@ export function getDefaultProvider(network?: SupportedNetwork) {
         return new DummyProvider(network)
     }
 
-    return new MempoolProvider(network)
+    return new OpenApiProvider(network)
 }
 
 

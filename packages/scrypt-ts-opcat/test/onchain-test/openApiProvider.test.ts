@@ -1,7 +1,7 @@
 import { use, expect } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import {
-  MempoolProvider,
+  OpenApiProvider,
   OpenApiProvider,
   UTXO,
 } from '@opcat-labs/scrypt-ts-opcat';
@@ -11,7 +11,7 @@ use(chaiAsPromised);
 
 describe('Test OpenApiProvider on testnet', () => {
   let openApiProvider: OpenApiProvider;
-  let mempoolProvider: MempoolProvider;
+  let mempoolProvider: OpenApiProvider;
   const network = 'opcat-testnet';
   const logger = createLogger('OpenApiProvider Test');
 
@@ -23,7 +23,7 @@ describe('Test OpenApiProvider on testnet', () => {
 
   before(async () => {
     openApiProvider = new OpenApiProvider(network);
-    mempoolProvider = new MempoolProvider(network);
+    mempoolProvider = new OpenApiProvider(network);
     logger.info('Providers initialized');
   });
 

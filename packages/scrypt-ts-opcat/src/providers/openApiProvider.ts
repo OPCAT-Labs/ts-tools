@@ -15,8 +15,28 @@ export class OpenApiProvider implements ChainProvider, UtxoProvider {
   private spentUTXOs = new Set<string>();
 
   private newUTXOs = new Map<string, UTXO>();
+  private apiBaseUrl: string;
 
-  constructor(public readonly network: SupportedNetwork) {}
+  constructor(
+    public readonly network: SupportedNetwork,
+    private readonly options?: {
+      apiBaseUrl: string;
+    }
+  ) {
+
+    let apiBaseUrl: string;
+    if (this.network === 'opcat-testnet') {
+      apiBaseUrl = 'https://testnet-openapi.opcatlabs.io';
+    } else if (this.network === 'opcat-mainnet') {
+      apiBaseUrl = 'https://openapi.opcatlabs.io';
+    } else {
+      throw new Error(`Unsupported network: ${this.network}`)
+    }
+    if (options?.apiBaseUrl) {
+      apiBaseUrl = options.apiBaseUrl
+    }
+    this.apiBaseUrl = apiBaseUrl
+  }
 
   async getNetwork(): Promise<SupportedNetwork> {
     return this.network;
@@ -25,7 +45,7 @@ export class OpenApiProvider implements ChainProvider, UtxoProvider {
   async getUtxos(address: string, _options?: UtxoQueryOptions): Promise<UTXO[]> {
     const script = uint8ArrayToHex(Script.fromAddress(address).toBuffer());
 
-    const url = `${this.getOpenApiHost()}/api/v1/address/${address}/utxos`;
+    const url = `${this.apiBaseUrl}/api/v1/address/${address}/utxos`;
     const requiredSat = _options?.unspentValue || 0; // 0 means fetch all utxos
     let totalUtxos: UTXO[] = [];
 
@@ -97,7 +117,7 @@ export class OpenApiProvider implements ChainProvider, UtxoProvider {
   }
 
   async getFeeRate(): Promise<number> {
-    const url = `${this.getOpenApiHost()}/api/v1/fee-estimates`;
+    const url = `${this.apiBaseUrl}/api/v1/fee-estimates`;
     return fetch(url, {})
       .then((res) => {
         const contentType = res.headers.get('content-type');
@@ -129,18 +149,8 @@ export class OpenApiProvider implements ChainProvider, UtxoProvider {
     return res.confirmations;
   }
 
-  private getOpenApiHost = () => {
-    if (this.network === 'opcat-testnet') {
-      return 'https://testnet-openapi.opcatlabs.io';
-    } else if (this.network === 'opcat-mainnet') {
-      return 'https://openapi.opcatlabs.io';
-    } else {
-      throw new Error(`Unsupported network: ${this.network}`);
-    }
-  };
-
   private async _broadcast(txHex: string): Promise<string | Error> {
-    const url = `${this.getOpenApiHost()}/api/v1/tx`;
+    const url = `${this.apiBaseUrl}/api/v1/tx`;
     return fetch(url, {
       method: 'POST',
       headers: {
@@ -176,7 +186,7 @@ export class OpenApiProvider implements ChainProvider, UtxoProvider {
   }
 
   private async _getTipHeight(): Promise<number> {
-    const tipHeightUrl = `${this.getOpenApiHost()}/api/v1/block/tip/height`;
+    const tipHeightUrl = `${this.apiBaseUrl}/api/v1/block/tip/height`;
     const result = await fetch(tipHeightUrl, {})
       .then((res) => {
         if (res.status !== 200) {
@@ -210,7 +220,7 @@ export class OpenApiProvider implements ChainProvider, UtxoProvider {
     | Error
   > {
     const tipHeight = await this._getTipHeight();
-    const url = `${this.getOpenApiHost()}/api/v1/tx/${txid}/status`;
+    const url = `${this.apiBaseUrl}/api/v1/tx/${txid}/status`;
     return fetch(url, {})
       .then(async (res) => {
         const contentType = res.headers.get('content-type');
@@ -273,7 +283,7 @@ export class OpenApiProvider implements ChainProvider, UtxoProvider {
   }
 
   private async _getRawTransaction(txid: string): Promise<string | Error> {
-    const url = `${this.getOpenApiHost()}/api/v1/tx/${txid}/raw`;
+    const url = `${this.apiBaseUrl}/api/v1/tx/${txid}/raw`;
     return fetch(url, {})
       .then((res) => {
         if (res.status !== 200) {
@@ -303,7 +313,7 @@ export class OpenApiProvider implements ChainProvider, UtxoProvider {
 
   async getMedianTime(): Promise<number> {
     // First get the tip block hash
-    const tipHashUrl = `${this.getOpenApiHost()}/api/v1/block/tip/hash`;
+    const tipHashUrl = `${this.apiBaseUrl}/api/v1/block/tip/hash`;
     const tipHashResult = await fetch(tipHashUrl, {})
       .then((res) => {
         if (res.status !== 200) {
@@ -331,7 +341,7 @@ export class OpenApiProvider implements ChainProvider, UtxoProvider {
     }
 
     // Then get the block data to extract mediantime
-    const blockUrl = `${this.getOpenApiHost()}/api/v1/block/${tipHash}`;
+    const blockUrl = `${this.apiBaseUrl}/api/v1/block/${tipHash}`;
     return fetch(blockUrl, {})
       .then((res) => {
         if (res.status !== 200) {
