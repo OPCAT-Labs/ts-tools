@@ -118,26 +118,30 @@ export class OpenApiProvider implements ChainProvider, UtxoProvider {
 
   async getFeeRate(): Promise<number> {
     const url = `${this.apiBaseUrl}/api/v1/fee-estimates`;
-    return fetch(url, {})
-      .then((res) => {
-        const contentType = res.headers.get('content-type');
-        if (contentType?.includes('json')) {
-          return res.json();
-        } else {
-          return res.text();
+    try {
+      const res = await fetch(url, {});
+      const contentType = res.headers.get('content-type');
+
+      let data;
+      if (contentType?.includes('json')) {
+        data = await res.json();
+      } else {
+        data = await res.text();
+      }
+
+      // OpenAPI returns {code, msg, data: {economyFee, ...}}
+      if (data.code === 0 && data.data) {
+        const feeRate = data.data.feerate;
+        if (typeof feeRate !== 'number' || feeRate <= 0) {
+          throw new Error('Invalid fee rate received from API');
         }
-      })
-      .then((data) => {
-        // OpenAPI returns {code, msg, data: {economyFee, ...}}
-        if (data.code === 0 && data.data) {
-          return data.data.economyFee || 1;
-        }
-        return 1;
-      })
-      .catch((e: Error) => {
-        console.error('getFeeRate error:', e);
-        return 1;
-      });
+        return feeRate;
+      }
+
+      throw new Error(data.msg || 'Failed to fetch fee rate');
+    } catch (e: any) {
+      throw new Error(`Failed to get fee rate: ${e.message}`);
+    }
   }
 
   async getConfirmations(txId: string): Promise<number> {
@@ -358,13 +362,13 @@ export class OpenApiProvider implements ChainProvider, UtxoProvider {
         // OpenAPI returns {code, msg, data: blockData}
         if (result.code === 0 && result.data) {
           const blockData = result.data;
-          // OpenAPI may return timestamp instead of mediantime
-          // Use mediantime if available, otherwise fall back to timestamp
-          const time = blockData.mediantime || blockData.timestamp;
-          if (typeof time !== 'number') {
-            throw new Error(`Invalid block data: neither mediantime nor timestamp found`);
+          // Only accept mediantime, not timestamp
+          // mediantime is the median of the last 11 block timestamps and is used for BIP113 timelocks
+          // Using timestamp instead would be incorrect for consensus-critical operations
+          if (typeof blockData.mediantime !== 'number') {
+            throw new Error(`Invalid block data: mediantime not found. API must provide mediantime for consensus-critical operations.`);
           }
-          return time;
+          return blockData.mediantime;
         }
         throw new Error('Invalid response format for block data');
       })
