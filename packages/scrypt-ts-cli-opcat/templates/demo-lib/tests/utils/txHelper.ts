@@ -1,7 +1,7 @@
 import {
     DefaultSigner,
     SupportedNetwork,
-    MempoolProvider,
+    OpenApiProvider,
     DummyProvider,
 } from '@opcat-labs/scrypt-ts-opcat'
 import { genPrivKey } from './privateKey'
@@ -31,5 +31,5 @@ export function getDefaultProvider() {
     if (process.env.DUMMY_PROVIDER) {
         return new DummyProvider(network)
     }
-    return new MempoolProvider(network)
+    return new OpenApiProvider(network)
 }

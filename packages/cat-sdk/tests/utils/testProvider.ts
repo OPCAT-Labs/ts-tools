@@ -1,4 +1,4 @@
-import { RPCProvider, DummyProvider, ChainProvider, UtxoProvider, SupportedNetwork, MempoolProvider } from '@opcat-labs/scrypt-ts-opcat'
+import { RPCProvider, DummyProvider, ChainProvider, UtxoProvider, SupportedNetwork, OpenApiProvider } from '@opcat-labs/scrypt-ts-opcat'
 import * as dotenv from 'dotenv'
 dotenv.config({
   path: '.env',
@@ -20,7 +20,7 @@ function createTestProvider(): ChainProvider & UtxoProvider {
     // return provider
     return new DummyProvider('opcat-testnet')
   }
-  const provider = new MempoolProvider(
+  const provider = new OpenApiProvider(
     'opcat-testnet'
   )
 

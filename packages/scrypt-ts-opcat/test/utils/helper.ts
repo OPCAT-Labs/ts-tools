@@ -1,6 +1,6 @@
 import {
     SupportedNetwork,
-    MempoolProvider,
+    OpenApiProvider,
     DummyProvider,
     DefaultSigner,
     fromSupportedNetwork,
@@ -26,7 +26,7 @@ export function getDefaultProvider(network?: SupportedNetwork) {
         return new DummyProvider(network)
     }
 
-    const provider = new MempoolProvider(network)
+    const provider = new OpenApiProvider(network)
     const originalGetUtxos = provider.getUtxos.bind(provider)
     provider.getUtxos = async (address: string) => {
         await sleep(2) // wait for 2 seconds, so that the utxos are ready
