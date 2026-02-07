@@ -1,5 +1,16 @@
 # @opcat-labs/scrypt-ts-opcat
 
+## 3.1.0
+
+### Minor Changes
+
+- remove MempoolProvider, add OpenApiProvider
+
+### Patch Changes
+
+- Updated dependencies
+  - @opcat-labs/opcat@3.1.0
+
 ## 3.0.0
 
 ### Major Changes

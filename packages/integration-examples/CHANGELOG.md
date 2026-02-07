@@ -1,5 +1,17 @@
 # @opcat-labs/integration-examples
 
+## 3.1.0
+
+### Minor Changes
+
+- remove MempoolProvider, add OpenApiProvider
+
+### Patch Changes
+
+- Updated dependencies
+  - @opcat-labs/cat-sdk@3.1.0
+  - @opcat-labs/scrypt-ts-opcat@3.1.0
+
 ## 3.0.0
 
 ### Major Changes
