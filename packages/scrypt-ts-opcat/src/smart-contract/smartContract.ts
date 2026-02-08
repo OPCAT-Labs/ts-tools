@@ -3,7 +3,7 @@ import { AbstractContract } from './abstractContract.js';
 import { Artifact } from './types/artifact.js';
 import { buildChangeOutputImpl } from './methods/buildOutput.js';
 import { checkCtxImpl } from './methods/checkCtx.js';
-import { checkSHPreimageImpl as checkSHPreimageImpl } from './methods/checkSHPreimage.js';
+import { checkSHPreimageImpl } from './methods/checkSHPreimage.js';
 import { checkMultiSigImpl, checkSigImpl } from './methods/checkSig.js';
 import { checkDataSigImpl } from './methods/checkDataSig.js';
 import { ByteString, PubKey, SHPreimage, Sig } from './types/index.js';
@@ -120,13 +120,6 @@ export class SmartContract<StateT extends OpcatState = undefined>
 
   // the header of the contract, prepended before contract lockingScript
   private contractHeader: ContractHeader
-
-  /**
-   * Injected preimage signature for checkPreimage verification.
-   * Set during _autoInject and used by checkSHPreimageImpl.
-   * @internal
-   */
-  _injectedPreimageSig?: Sig;
 
   /**
    * Locking script corresponding to the SmartContract
