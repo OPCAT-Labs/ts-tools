@@ -10,6 +10,12 @@ import { BacktraceInfo } from './types/structs.js';
  */
 export abstract class AbstractContract {
   /**
+   * Injected preimage signature for checkPreimage verification.
+   * Set during _autoInject and used by checkSHPreimageImpl.
+   * @internal
+   */
+  _injectedPreimageSig?: Sig;
+  /**
    * Using the [OP_PUSH_TX]{@link https://scryptplatform.medium.com/trustless-ordinal-sales-using-op-cat-enabled-covenants-on-bitcoin-0318052f02b2} technique, check if `shPreimage` is the preimage of the current transaction.
    * @onchain
    * @param shPreimage The format of the preimage

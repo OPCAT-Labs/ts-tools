@@ -1,7 +1,6 @@
 import { AbstractContract } from '../abstractContract.js';
 import { SHPreimage, Sig } from '../types/index.js';
 import { ContextUtils } from '../builtin-libs/contextUtils.js';
-import { SmartContract } from '../smartContract.js';
 import { sha256 } from '../fns/hashes.js';
 import { slice, len } from '../fns/byteString.js';
 import { encodeSHPreimage } from '../../utils/preimage.js';
@@ -24,9 +23,8 @@ import { encodeSHPreimage } from '../../utils/preimage.js';
  * @returns True if the signature is valid for this contract's public key
  */
 export function checkSHPreimageImpl(self: AbstractContract, shPreimage: SHPreimage): boolean {
-  // Get the injected signature from the SmartContract instance
-  const smartContract = self as SmartContract;
-  const sig: Sig | undefined = smartContract._injectedPreimageSig;
+  // Get the injected signature from the AbstractContract instance
+  const sig: Sig | undefined = self._injectedPreimageSig;
 
   if (!sig) {
     throw new Error(
