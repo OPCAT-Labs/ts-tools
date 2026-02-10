@@ -96,6 +96,7 @@ export async function contractSend(
     // Outputs: token outputs + satoshi change output
     const txOutputCount = receivers.length + 1
 
+    const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
     const { guard, guardState, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
       CAT20GuardPeripheral.createTransferGuard(
         inputTokenUtxos.map((utxo, index) => ({
@@ -107,7 +108,8 @@ export async function contractSend(
           outputIndex: index,
         })),
         txInputCount,
-        txOutputCount
+        txOutputCount,
+        guardOwnerAddr
       )
     const outputTokens: CAT20State[] = _outputTokens.filter(
       (v) => v != undefined

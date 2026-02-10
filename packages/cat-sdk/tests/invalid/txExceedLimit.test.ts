@@ -8,7 +8,7 @@ import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 
 import { ContractPeripheral } from '../../src/utils/contractPeripheral';
-import { applyFixedArray, getDummyUtxo } from '../../src/utils';
+import { applyFixedArray, getDummyUtxo, toTokenOwnerAddress } from '../../src/utils';
 import { Postage } from '../../src/typeConstants';
 import { testProvider } from "../utils/testProvider";
 import { isLocalTest } from "../utils";
@@ -105,11 +105,13 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         const txInputCount = cat20.utxos.length + 2;
         const txOutputCount = outputStates.length + 1;
 
+        const guardOwnerAddr = toTokenOwnerAddress(mainAddress)
         const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
             cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
             outputStates.map((state, index) => ({ address: state.ownerAddr, amount: state.amount, outputIndex: index })),
             txInputCount,
-            txOutputCount
+            txOutputCount,
+            guardOwnerAddr
         );
         guard.state = guardState;
         const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
@@ -220,11 +222,13 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         const txInputCount = cat20.utxos.length + 2;
         const txOutputCount = outputStates.length + 1;
 
+        const guardOwnerAddr = toTokenOwnerAddress(mainAddress)
         const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
             cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
             outputStates.map((state, index) => ({ address: state.ownerAddr, amount: state.amount, outputIndex: index })),
             txInputCount,
-            txOutputCount
+            txOutputCount,
+            guardOwnerAddr
         );
         guard.state = guardState;
         const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();

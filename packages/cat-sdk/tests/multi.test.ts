@@ -10,7 +10,7 @@ import {createCat20, TestCat20, TestCAT20Generator} from './utils/testCAT20Gener
 import { CAT20, CAT20GuardConstState, CAT20GuardStateLib, CAT20State, CAT20StateLib, CAT721, CAT721GuardConstState, CAT721GuardStateLib, CAT721StateLib, ConstantsLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, GUARD_TOKEN_TYPE_MAX } from '../src/contracts';
 import { CAT20GuardPeripheral, CAT721GuardPeripheral } from '../src/utils/contractPeripheral';
 import { ContractPeripheral } from '../src/utils/contractPeripheral';
-import { applyFixedArray, getDummyUtxo } from '../src/utils';
+import { applyFixedArray, getDummyUtxo, toTokenOwnerAddress } from '../src/utils';
 import { Postage } from '../src/typeConstants';
 import { createCat721, TestCAT721Generator } from './utils/testCAT721Generator';
 use(chaiAsPromised)
@@ -256,11 +256,13 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                 // Outputs: cat20 outputs + cat721 outputs (if any) + change
                 const txOutputCount = receivers.length + (hasCat721 ? this.cat721s.filter(({ isBurn }) => !isBurn).length : 0) + 1;
 
+                const guardOwnerAddr = toTokenOwnerAddress(mainAddress)
                 const { guard: cat20Guard, guardState: _cat20GuardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
                     this.cat20s.map((item, idx) => ({ token: item.cat20.utxo, inputIndex: idx })),
                     tempReceivers,
                     txInputCount,
-                    txOutputCount
+                    txOutputCount,
+                    guardOwnerAddr
                 );
 
                 // Now set the correct burn amounts by type
@@ -387,6 +389,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                 const txOutputCount = cat20OutputCount + cat721OutputCount + 1;
 
                 // For burn scenarios, we need to provide receivers for all inputs, then set burn masks
+                const cat721GuardOwnerAddr = toTokenOwnerAddress(mainAddress)
                 const { guard: cat721Guard, guardState: _cat721GuardState, txInputCountMax, txOutputCountMax } = CAT721GuardPeripheral.createTransferGuard(
                     this.cat721s.map((item, idx) => ({ nft: item.cat721.utxo, inputIndex: cat721InputStartIndex + idx })),
                     // Provide receivers for all inputs (including those to be burned)
@@ -394,7 +397,8 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                         CAT721.deserializeState(cat721.utxo.data).ownerAddr
                     ),
                     txInputCount,
-                    txOutputCount
+                    txOutputCount,
+                    cat721GuardOwnerAddr
                 );
 
                 // Now set burn masks for NFTs that should be burned

@@ -46,10 +46,11 @@ export class CAT721GuardStateLib extends StateLib<CAT721GuardConstState> {
         nftScriptHashes[3] = ConstantsLib.TOKEN_SCRIPT_HASH_PLACEHOLDER_FC
 
         
-        let nftScriptIndexesArray = fill(-1n, txInputCountMax)
+        const nftScriptIndexesArray = fill(-1n, txInputCountMax)
         const nftScriptIndexes = nftScriptIndexesArray.map(index => intToByteString(index, 1n)).join('')
 
         return {
+            deployerAddr: toByteString(''),
             nftScriptHashes: nftScriptHashes,
             nftBurnMasks: '00'.repeat(txInputCountMax),
             nftScriptIndexes,

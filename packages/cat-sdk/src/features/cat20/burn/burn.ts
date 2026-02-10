@@ -24,7 +24,7 @@ import {
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants.js'
 import { Postage, SHA256_EMPTY_STRING } from '../../../typeConstants.js'
-import { applyFixedArray, createFeatureWithDryRun, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils/index.js'
+import { applyFixedArray, createFeatureWithDryRun, filterFeeUtxos, normalizeUtxoScripts, toTokenOwnerAddress } from '../../../utils/index.js'
 import {
   CAT20GuardPeripheral,
   ContractPeripheral,
@@ -79,11 +79,13 @@ export const burnToken = createFeatureWithDryRun(async function(
   const inputTokenStates = inputTokenUtxos.map((utxo) =>
     CAT20.deserializeState(utxo.data)
   )
+  const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
   const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createBurnGuard(
     inputTokenUtxos.map((utxo, index) => ({
       token: utxo,
       inputIndex: index,
-    }))
+    })),
+    guardOwnerAddr
   )
   guardState.tokenBurnAmounts[0] = guardState.tokenAmounts[0]
   guard.state = guardState

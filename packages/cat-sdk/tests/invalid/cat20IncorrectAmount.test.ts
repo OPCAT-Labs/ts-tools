@@ -8,7 +8,7 @@ import { testSigner } from '../utils/testSigner';
 import {createCat20, TestCat20} from '../utils/testCAT20Generator';
 import { CAT20, CAT20State, CAT20StateLib, CAT20GuardStateLib } from '../../src/contracts';
 import { ContractPeripheral, CAT20GuardPeripheral } from '../../src/utils/contractPeripheral';
-import { applyFixedArray, getDummyUtxo } from '../../src/utils';
+import { applyFixedArray, getDummyUtxo, toTokenOwnerAddress } from '../../src/utils';
 import { Postage } from '../../src/typeConstants';
 use(chaiAsPromised)
 
@@ -92,15 +92,18 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
         const txOutputCount = receivers.length + 1;
 
         // Create guard with correct structure (use input amount for now to pass validation)
+        const guardOwnerAddr = toTokenOwnerAddress(mainAddress)
         const { guard, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
             cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
             receivers,
             txInputCount,
-            txOutputCount
+            txOutputCount,
+            guardOwnerAddr
         );
 
         // Now manually construct the guardState with incorrect amounts for testing
         const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax);
+        guardState.ownerAddr = guardOwnerAddr;
         guardState.tokenScriptHashes[0] = ContractPeripheral.scriptHash(cat20.utxos[0].script);
         guardState.tokenAmounts[0] = totalInputAmount;
         guardState.tokenBurnAmounts[0] = totalBurnAmount;

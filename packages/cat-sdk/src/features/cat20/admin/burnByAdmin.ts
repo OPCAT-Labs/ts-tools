@@ -157,12 +157,14 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
     }
   })
   const changeTokenOutputIndex = -1
+  const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
   const { guard, guardState, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
     CAT20GuardPeripheral.createBurnGuard(
       inputTokenUtxos.map((utxo, index) => ({
         token: utxo,
         inputIndex: index,
-      }))
+      })),
+      guardOwnerAddr
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined

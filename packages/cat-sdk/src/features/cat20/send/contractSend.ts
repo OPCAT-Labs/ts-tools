@@ -128,6 +128,7 @@ export const contractSend = createFeatureWithDryRun(async function(
 
   const txInputCount = inputTokenUtxos.length + 2; // tokens + guard + fee
   const txOutputCount = receivers.length + 1; // receivers + change
+  const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
   const { guard, guardState, outputTokens: _outputTokens } =
     CAT20GuardPeripheral.createTransferGuard(
       inputTokenUtxos.map((utxo, index) => ({
@@ -139,7 +140,8 @@ export const contractSend = createFeatureWithDryRun(async function(
         outputIndex: index,
       })),
       txInputCount,
-      txOutputCount
+      txOutputCount,
+      guardOwnerAddr
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined

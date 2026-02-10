@@ -15,6 +15,7 @@ export {
 } from './send/mergeSend.js'
 export { burnByAdmin } from './admin/burnByAdmin.js'
 export { transferOwnership } from './admin/transferOwnership.js'
+export { destroyCAT20Guard } from './guard/destroyGuard.js'
 
 // legacy exports
 /**

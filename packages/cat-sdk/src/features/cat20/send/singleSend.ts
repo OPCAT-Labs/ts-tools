@@ -21,7 +21,7 @@ import {
   TX_INPUT_COUNT_MAX,
   TX_OUTPUT_COUNT_MAX,
 } from '../../../contracts/constants.js'
-import { applyFixedArray, createFeatureWithDryRun, dryRunFeature, filterFeeUtxos, normalizeUtxoScripts } from '../../../utils/index.js'
+import { applyFixedArray, createFeatureWithDryRun, dryRunFeature, filterFeeUtxos, normalizeUtxoScripts, toTokenOwnerAddress } from '../../../utils/index.js'
 import {
   CAT20GuardPeripheral,
   ContractPeripheral,
@@ -84,6 +84,7 @@ export const singleSend = createFeatureWithDryRun(async function(
   const cat20Script = cat20.lockingScript.toHex()
   inputTokenUtxos = normalizeUtxoScripts(inputTokenUtxos, cat20Script)
 
+  const guardOwnerAddr = toTokenOwnerAddress(feeChangeAddress)
   const { guardPsbt, outputTokenStates, changeTokenOutputIndex, guard, txInputCountMax, txOutputCountMax } = await singleSendStep1(
     provider,
     feeUtxos,
@@ -91,7 +92,8 @@ export const singleSend = createFeatureWithDryRun(async function(
     receivers,
     feeChangeAddress,
     tokenChangeAddress,
-    feeRate
+    feeRate,
+    guardOwnerAddr
   );
   const signedGuardPsbt = ExtPsbt.fromHex(await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions()))
   guardPsbt.combine(signedGuardPsbt).finalizeAllInputs()
@@ -151,7 +153,8 @@ export async function singleSendStep1(
   }>,
   feeChangeAddress: ByteString,
   tokenChangeAddress: ByteString,
-  feeRate: number
+  feeRate: number,
+  guardOwnerAddr: ByteString,
 ) {
   if (inputTokenUtxos.length + 2 > TX_INPUT_COUNT_MAX) {
     throw new Error(
@@ -203,7 +206,8 @@ export async function singleSendStep1(
         outputIndex: index,
       })),
       txInputCount,
-      txOutputCount
+      txOutputCount,
+      guardOwnerAddr
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined

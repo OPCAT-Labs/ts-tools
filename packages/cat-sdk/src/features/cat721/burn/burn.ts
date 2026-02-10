@@ -3,7 +3,7 @@ import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../../contracts/cons
 import { CAT721 } from "../../../contracts/cat721/cat721.js";
 import { CAT721StateLib } from "../../../contracts/cat721/cat721StateLib.js";
 import { Postage } from "../../../typeConstants.js";
-import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts, createFeatureWithDryRun } from "../../../utils/index.js";
+import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts, createFeatureWithDryRun, toTokenOwnerAddress } from "../../../utils/index.js";
 import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral.js";
 
 /**
@@ -43,11 +43,13 @@ export const burnNft = createFeatureWithDryRun(async function(
     inputNftUtxos = normalizeUtxoScripts(inputNftUtxos, cat721Script)
 
     const inputNftStates = inputNftUtxos.map((utxo) => CAT721StateLib.deserializeState(utxo.data))
+    const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
     const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT721GuardPeripheral.createBurnGuard(
         inputNftUtxos.map((utxo, index) => ({
             nft: utxo,
             inputIndex: index,
-        }))
+        })),
+        guardOwnerAddr
     )
     guard.state = guardState
 

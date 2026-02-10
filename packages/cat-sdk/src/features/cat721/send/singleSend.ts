@@ -1,7 +1,7 @@
 import { ByteString, ChainProvider, ExtPsbt, fill, fromSupportedNetwork, getBackTraceInfo, PubKey, Script, toByteString, toHex, Transaction, UTXO, UtxoProvider, markSpent, Signer, sha256, addChangeUtxoToProvider } from "@opcat-labs/scrypt-ts-opcat";
 import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, CAT721, CAT721StateLib, CAT721State } from "../../../contracts/index.js";
 import { Postage } from "../../../typeConstants.js";
-import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts, createFeatureWithDryRun } from "../../../utils/index.js";
+import { applyFixedArray, filterFeeUtxos, normalizeUtxoScripts, createFeatureWithDryRun, toTokenOwnerAddress } from "../../../utils/index.js";
 import { CAT721GuardPeripheral, ContractPeripheral } from "../../../utils/contractPeripheral.js";
 
 
@@ -39,13 +39,15 @@ export const singleSendNft = createFeatureWithDryRun(async function(
     const cat721Script = cat721.lockingScript.toHex()
     inputNftUtxos = normalizeUtxoScripts(inputNftUtxos, cat721Script)
 
+    const guardOwnerAddr = toTokenOwnerAddress(feeChangeAddress)
     const { guardPsbt, outputNftStates, guard, txInputCountMax, txOutputCountMax } = await singleSendNftStep1(
         provider,
         feeUtxos,
         inputNftUtxos,
         nftReceivers,
         feeChangeAddress,
-        feeRate
+        feeRate,
+        guardOwnerAddr
     )
     const signedGuardPsbt = ExtPsbt.fromHex(await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions()))
     guardPsbt.combine(signedGuardPsbt).finalizeAllInputs()
@@ -98,6 +100,7 @@ export async function singleSendNftStep1(
     receivers: ByteString[],
     feeChangeAddress: ByteString,
     feeRate: number,
+    guardOwnerAddr: ByteString,
 ) {
     if (inputNftUtxos.length + 2 > TX_INPUT_COUNT_MAX) {
         throw new Error(
@@ -124,7 +127,8 @@ export async function singleSendNftStep1(
         })),
         receivers,
         txInputCount,
-        txOutputCount
+        txOutputCount,
+        guardOwnerAddr
     )
     const outputNfts: CAT721State[] = _outputNfts.filter((v) => v != undefined) as CAT721State[]
     guard.state = guardState
