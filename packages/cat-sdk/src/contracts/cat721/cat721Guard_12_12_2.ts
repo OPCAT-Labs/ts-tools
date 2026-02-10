@@ -8,8 +8,9 @@ import { ConstantsLib, NFT_GUARD_COLLECTION_TYPE_MAX_2, NFT_GUARD_COLLECTION_TYP
 import { CAT721GuardStateLib } from "./cat721GuardStateLib.js";
 import { CAT721StateLib } from "./cat721StateLib.js";
 import { CAT721GuardConstState, CAT721State } from "./types.js";
-import { ByteString, ContextUtils, FixedArray, SmartContract, StdUtils, TxUtils, assert, byteStringToInt, fill, hash160, intToByteString, len, method, slice, tags, toByteString } from "@opcat-labs/scrypt-ts-opcat";
+import { ByteString, ContextUtils, FixedArray, SmartContract, StdUtils, TxUtils, assert, byteStringToInt, fill, hash160, intToByteString, len, method, slice, tags, toByteString, Sig, PubKey } from "@opcat-labs/scrypt-ts-opcat";
 import { CatTags } from "../catTags.js";
+import { OwnerUtils } from "../utils/ownerUtils.js";
 /**
  * The CAT721 guard contract
  * @category Contract
@@ -167,5 +168,12 @@ export class CAT721Guard_12_12_2 extends SmartContract<CAT721GuardConstState> {
 
         // confine curTx outputs
         assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
+    }
+
+    @method()
+    public destroy(userSig: Sig, userPubKey: PubKey) {
+        OwnerUtils.checkUserOwner(userPubKey, this.state.ownerAddr)
+        assert(this.checkSig(userSig, userPubKey))
+        assert(this.checkOutputs(this.buildChangeOutput()), 'Outputs mismatch with the transaction context');
     }
 }

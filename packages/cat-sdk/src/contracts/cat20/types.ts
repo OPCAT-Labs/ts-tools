@@ -1,6 +1,5 @@
-import { ByteString, FixedArray, TxHashPreimage } from "@opcat-labs/scrypt-ts-opcat"
-import { StateHashes } from '../types.js'
-import { GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX } from "../constants.js";
+import { ByteString, FixedArray } from "@opcat-labs/scrypt-ts-opcat"
+import { GUARD_TOKEN_TYPE_MAX } from "../constants.js";
 import { StructObject } from "@opcat-labs/scrypt-ts-opcat";
 
 export type CAT20_AMOUNT = bigint
@@ -23,6 +22,9 @@ export type CAT20State = {
  * @onchain
  */
 export type CAT20GuardConstState = {
+  
+  // owner address
+  ownerAddr: ByteString
   // scripts of all the different types of tokens in curTx inputs
   // e.g.
   // ['token1Script', 'token2Script', 'fd', 'fc']
@@ -90,8 +92,7 @@ export interface CAT20Metadata {
  * @category CAT20
  * @category Metadata
  */
-export interface ClosedMinterCAT20Meta extends CAT20Metadata {
-}
+export type ClosedMinterCAT20Meta = CAT20Metadata
 
 /**
  * The CAT20 metadata for open minter

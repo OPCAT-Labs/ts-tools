@@ -19,6 +19,8 @@ export type CAT721State = {
  * @onchain
  */
 export type CAT721GuardConstState = {
+    // owner address
+    ownerAddr: ByteString
     nftScriptHashes: FixedArray<ByteString, typeof NFT_GUARD_COLLECTION_TYPE_MAX>;
     // for each input of curTx
     // if the input is an nft and it will be burned, then the value is true
