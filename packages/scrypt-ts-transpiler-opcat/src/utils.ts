@@ -252,8 +252,8 @@ export function toBuiltinsTypes(t: string): string | undefined {
       return ScryptType.SHA256;
     case 'SigHashType':
       return ScryptType.SIGHASHTYPE;
-    // case 'ChangeInfo':
-    //   return '__scrypt_ChangeInfo';
+    case 'ChangeInfo':
+      return 'ChangeInfo';
     // case 'InputStateProof':
     //   return '__scrypt_InputStateProof';
     // case 'StateUtils':

@@ -1,4 +1,4 @@
-import { ByteString, Int32, UInt32, UInt64 } from './primitives.js';
+import { ByteString, Int32, UInt32, UInt64, Ripemd160, Sha256 } from './primitives.js';
 
 /**
  * The structure used to refer to a particular transaction output
@@ -239,6 +239,26 @@ export type BacktraceInfo = {
    * the preimage of the previous previous transaction
    */
   prevPrevTxPreimage: TxHashPreimage;
+};
+
+/**
+ * A structure representing the change output information
+ * @category Types
+ * @onchain
+ */
+export type ChangeInfo = {
+  /**
+   * 20 bytes. The public key hash (hash160 of public key) for P2PKH output
+   */
+  pubkeyhash: Ripemd160;
+  /**
+   * 8 bytes. The satoshi amount for the change output
+   */
+  satoshis: UInt64;
+  /**
+   * 32 bytes. The SHA256 hash of the output data
+   */
+  dataHash: Sha256;
 };
 
 

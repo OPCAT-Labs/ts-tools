@@ -60,8 +60,8 @@ export const CALL_CHECK_SHPREIMAGE_LEGACY = `require(Tx.checkPreimageSigHashType
 export const CALL_CHECK_SHPREIMAGE = `require(checkDataSig(Sig(${InjectedParam_PreimageSig}[0 : len(${InjectedParam_PreimageSig}) - 1]), sha256(ContextUtils.serializeSHPreimage(${InjectedParam_SHPreimage})), ContextUtils.pubKey) && checkSig(${InjectedParam_PreimageSig}, ContextUtils.pubKey))`;
 
 export const CALL_BUILD_CHANGE_OUTPUT = {
-  accessArgument: `(${InjectedParam_ChangeInfo}.satoshis > 0 ? TxUtils.buildOutput(${InjectedParam_ChangeInfo}.scriptHash, ${InjectedParam_ChangeInfo}.satoshis) : b'')`,
-  accessThis: `(this.${InjectedProp_ChangeInfo}.satoshis > 0 ? TxUtils.buildOutput(this.${InjectedProp_ChangeInfo}.scriptHash, this.${InjectedProp_ChangeInfo}.satoshis) : b'')`,
+  accessArgument: `(${InjectedParam_ChangeInfo}.satoshis > 0 ? TxUtils.buildDataOutput(sha256(TxUtils.buildP2PKHScript(${InjectedParam_ChangeInfo}.pubkeyhash)), ${InjectedParam_ChangeInfo}.satoshis, ${InjectedParam_ChangeInfo}.dataHash) : b'')`,
+  accessThis: `(this.${InjectedProp_ChangeInfo}.satoshis > 0 ? TxUtils.buildDataOutput(sha256(TxUtils.buildP2PKHScript(this.${InjectedProp_ChangeInfo}.pubkeyhash)), this.${InjectedProp_ChangeInfo}.satoshis, this.${InjectedProp_ChangeInfo}.dataHash) : b'')`,
 };
 
 export const ACCESS_INPUT_COUNT = {

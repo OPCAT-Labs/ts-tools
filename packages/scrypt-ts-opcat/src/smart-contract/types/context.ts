@@ -6,9 +6,9 @@ import {
   SpentAmounts,
   Prevouts,
   Outpoint,
-  TxOut,
   SpentDataHashes,
   SpentScriptHashes,
+  ChangeInfo,
 } from './structs.js';
 
 /**
@@ -124,7 +124,7 @@ export interface Contextual {
   /**
    * Get the change output information.
    */
-  getChangeInfo(): TxOut;
+  getChangeInfo(): ChangeInfo;
 
   /**
    * Whether the PSBT starts finalizing.

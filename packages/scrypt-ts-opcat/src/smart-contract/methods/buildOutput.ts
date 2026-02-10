@@ -11,7 +11,7 @@ import { sha256 } from '../fns/hashes.js';
 /**
  * @ignore
  * Builds a change output for a PSBT (Partially Signed Bitcoin Transaction).
- * 
+ *
  * @param psbt - The contextual PSBT containing change information.
  * @returns The serialized change output as a ByteString. Returns empty ByteString if no change script exists.
  */
@@ -20,8 +20,9 @@ export function buildChangeOutputImpl(psbt: Contextual): ByteString {
   if (changeInfo.satoshis === 0n) {
     return toByteString('');
   }
-
-  return TxUtils.buildOutput(changeInfo.scriptHash, changeInfo.satoshis);
+  // Build P2PKH script from pubkeyhash, then hash to get scriptHash
+  const p2pkhScript = TxUtils.buildP2PKHScript(changeInfo.pubkeyhash);
+  return TxUtils.buildDataOutput(sha256(p2pkhScript), changeInfo.satoshis, changeInfo.dataHash);
 }
 
 

@@ -29,7 +29,8 @@ export {
   type TxHashPreimage,
   type BacktraceInfo,
   type SpentScriptHashes,
-  type SpentDataHashes
+  type SpentDataHashes,
+  type ChangeInfo
 } from './structs.js';
 
 export { OpCode } from './opCode.js';

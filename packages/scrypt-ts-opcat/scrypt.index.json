@@ -58,6 +58,10 @@
       "path": "smart-contract/types/structs.scrypt.tpl"
     },
     {
+      "symbol": "ChangeInfo",
+      "path": "smart-contract/types/structs.scrypt.tpl"
+    },
+    {
       "symbol": "ContextUtils",
       "path": "smart-contract/builtin-libs/contextUtils.scrypt.tpl"
     },
