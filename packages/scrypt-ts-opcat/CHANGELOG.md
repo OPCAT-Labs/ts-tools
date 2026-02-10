@@ -1,5 +1,11 @@
 # @opcat-labs/scrypt-ts-opcat
 
+## 3.2.0
+
+### Patch Changes
+
+- @opcat-labs/opcat@3.2.0
+
 ## 3.1.0
 
 ### Minor Changes

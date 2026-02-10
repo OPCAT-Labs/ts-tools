@@ -1,5 +1,13 @@
 # @opcat-labs/cat-tracker
 
+## 3.2.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @opcat-labs/cat-sdk@3.2.0
+  - @opcat-labs/opcat@3.2.0
+
 ## 3.1.0
 
 ### Minor Changes

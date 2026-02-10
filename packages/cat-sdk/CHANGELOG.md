@@ -1,5 +1,25 @@
 # @opcat-labs/cat-sdk
 
+## 3.2.0
+
+### Minor Changes
+
+- ### Features
+  - Add `ownerAddr` field to CAT20/CAT721 Guard contracts state
+  - Add `destroy` method to Guard contracts allowing owner to destroy Guard UTXO
+  - Auto-set Guard `ownerAddr` from signer address in transfer/burn features
+
+  ### Tests
+  - Add comprehensive test cases for Guard destroy method (`guardDestroy.test.ts`)
+  - Cover all Guard variants (6_6_2, 6_6_4, 12_12_2, 12_12_4)
+  - Test success and failure scenarios (wrong pubkey, non-owner)
+  - Test multiple Guards destroy in single transaction
+
+### Patch Changes
+
+- @opcat-labs/scrypt-ts-opcat@3.2.0
+- @opcat-labs/opcat@3.2.0
+
 ## 3.1.0
 
 ### Minor Changes
