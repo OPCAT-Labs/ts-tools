@@ -229,8 +229,9 @@ export class CAT20Guard_12_12_2 extends SmartContract<CAT20GuardConstState> {
     }
 
     /**
-     * Destroys this Guard UTXO and returns the satoshis to the deployer.
-     * Only the original deployer (whose address matches deployerAddr) can call this method.
+     * Destroys this Guard UTXO, allowing the deployer to reclaim the satoshis.
+     * Only the original deployer (whose address matches deployerAddr) can authorize this method.
+     * The satoshis are sent to the change output address specified in the transaction.
      * @param userSig - Signature from the deployer
      * @param userPubKey - Public key of the deployer
      */
