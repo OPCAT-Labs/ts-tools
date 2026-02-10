@@ -1,5 +1,5 @@
 import { ByteString, ChainProvider, ExtPsbt, fill, getBackTraceInfo, markSpent, PubKey, sha256, Sig, Signer, toByteString, toHex, Transaction, UTXO, UtxoProvider } from "@opcat-labs/scrypt-ts-opcat";
-import { applyFixedArray, filterFeeUtxos } from "../../../../src/utils";
+import { applyFixedArray, filterFeeUtxos, toTokenOwnerAddress } from "../../../../src/utils";
 import { CAT721, CAT721State, CAT721StateLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../../../src/contracts";
 import { CAT721GuardPeripheral, ContractPeripheral } from "../../../../src/utils/contractPeripheral";
 import { Postage } from "../../../../src/typeConstants";
@@ -34,6 +34,7 @@ export async function contractSendNft(
     // Outputs: nft outputs + satoshi change output
     const txOutputCount = nftReceivers.length + 1
 
+    const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
     const { guard, guardState, outputNfts: _outputNfts, txInputCountMax, txOutputCountMax } = CAT721GuardPeripheral.createTransferGuard(
         inputNftUtxos.map((utxo, index) => ({
             nft: utxo,
@@ -41,7 +42,8 @@ export async function contractSendNft(
         })),
         nftReceivers,
         txInputCount,
-        txOutputCount
+        txOutputCount,
+        guardOwnerAddr
     )
     guard.state = guardState
     const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes()

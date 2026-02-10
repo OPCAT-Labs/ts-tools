@@ -117,11 +117,13 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
         const txOutputCount = outputStates.length + 1;
 
         const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
+        const guardOwnerAddr = toTokenOwnerAddress(mainAddress)
         const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
             utxoList.map((utxo, index) => ({ token: utxo.utxo, inputIndex: index })),
             outputStates.map((state, index) => ({ address: state.ownerAddr, amount: state.amount, outputIndex: index })),
             txInputCount,
-            txOutputCount
+            txOutputCount,
+            guardOwnerAddr
         )
         guard.state = guardState
         {
@@ -231,11 +233,13 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
         const txOutputCount = outputStates.length + 1;
 
         const guardScriptHashes721 = CAT721GuardPeripheral.getGuardVariantScriptHashes()
+        const cat721GuardOwnerAddr = toTokenOwnerAddress(mainAddress)
         const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT721GuardPeripheral.createTransferGuard(
             utxoList.map((utxo, index) => ({ nft: utxo.utxo, inputIndex: index })),
             outputStates.map(state => state.ownerAddr),
             txInputCount,
-            txOutputCount
+            txOutputCount,
+            cat721GuardOwnerAddr
         );
         guard.state = guardState
         {
