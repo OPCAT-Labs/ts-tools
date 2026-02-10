@@ -59,7 +59,7 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
     const tokenScriptIndexes = tokenScriptIndexesArray.map(index => intToByteString(index, 1n)).join('')
 
     return {
-      ownerAddr: toByteString(''),
+      deployerAddr: toByteString(''),
       tokenScriptHashes: tokenScriptHashes,
       tokenAmounts: fill(0n, GUARD_TOKEN_TYPE_MAX),
       tokenBurnAmounts: fill(0n, GUARD_TOKEN_TYPE_MAX),

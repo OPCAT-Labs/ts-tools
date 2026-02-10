@@ -50,7 +50,7 @@ export class CAT721GuardStateLib extends StateLib<CAT721GuardConstState> {
         const nftScriptIndexes = nftScriptIndexesArray.map(index => intToByteString(index, 1n)).join('')
 
         return {
-            ownerAddr: toByteString(''),
+            deployerAddr: toByteString(''),
             nftScriptHashes: nftScriptHashes,
             nftBurnMasks: '00'.repeat(txInputCountMax),
             nftScriptIndexes,

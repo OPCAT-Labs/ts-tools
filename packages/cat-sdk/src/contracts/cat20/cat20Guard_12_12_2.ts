@@ -228,9 +228,15 @@ export class CAT20Guard_12_12_2 extends SmartContract<CAT20GuardConstState> {
         assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
     }
 
+    /**
+     * Destroys this Guard UTXO and returns the satoshis to the deployer.
+     * Only the original deployer (whose address matches deployerAddr) can call this method.
+     * @param userSig - Signature from the deployer
+     * @param userPubKey - Public key of the deployer
+     */
     @method()
     public destroy(userSig: Sig, userPubKey: PubKey) {
-        OwnerUtils.checkUserOwner(userPubKey, this.state.ownerAddr)
+        OwnerUtils.checkUserOwner(userPubKey, this.state.deployerAddr)
         assert(this.checkSig(userSig, userPubKey))
         assert(this.checkOutputs(this.buildChangeOutput()), 'Outputs mismatch with the transaction context');
     }

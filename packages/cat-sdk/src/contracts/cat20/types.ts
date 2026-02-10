@@ -22,9 +22,12 @@ export type CAT20State = {
  * @onchain
  */
 export type CAT20GuardConstState = {
-  
-  // owner address
-  ownerAddr: ByteString
+  /**
+   * The address of the deployer who created this Guard UTXO.
+   * Used to authorize the `destroy` method, allowing only the deployer to reclaim the Guard's satoshis.
+   * Format: P2PKH locking script (76a914 + hash160(pubKey) + 88ac)
+   */
+  deployerAddr: ByteString
   // scripts of all the different types of tokens in curTx inputs
   // e.g.
   // ['token1Script', 'token2Script', 'fd', 'fc']

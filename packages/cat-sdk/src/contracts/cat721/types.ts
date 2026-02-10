@@ -19,8 +19,12 @@ export type CAT721State = {
  * @onchain
  */
 export type CAT721GuardConstState = {
-    // owner address
-    ownerAddr: ByteString
+    /**
+     * The address of the deployer who created this Guard UTXO.
+     * Used to authorize the `destroy` method, allowing only the deployer to reclaim the Guard's satoshis.
+     * Format: P2PKH locking script (76a914 + hash160(pubKey) + 88ac)
+     */
+    deployerAddr: ByteString
     nftScriptHashes: FixedArray<ByteString, typeof NFT_GUARD_COLLECTION_TYPE_MAX>;
     // for each input of curTx
     // if the input is an nft and it will be burned, then the value is true

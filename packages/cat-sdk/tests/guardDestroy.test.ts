@@ -9,7 +9,6 @@ import { loadAllArtifacts as loadAllArtifacts721 } from './features/cat721/utils
 import {
     ByteString,
     ExtPsbt,
-    PubKey,
     DefaultSigner,
     bvmVerify,
 } from '@opcat-labs/scrypt-ts-opcat';
@@ -32,33 +31,40 @@ import {
 } from '../src/contracts';
 import { getDummyUtxo, toTokenOwnerAddress } from '../src/utils';
 import { PrivateKey } from '@opcat-labs/opcat';
+import { destroyCAT20Guard } from '../src/features/cat20';
+import { destroyCAT721Guard } from '../src/features/cat721';
 
 use(chaiAsPromised);
 
-type GuardClass = typeof CAT20Guard_6_6_2 | typeof CAT20Guard_6_6_4 | typeof CAT20Guard_12_12_2 | typeof CAT20Guard_12_12_4 | typeof CAT721Guard_6_6_2 | typeof CAT721Guard_6_6_4 | typeof CAT721Guard_12_12_2 | typeof CAT721Guard_12_12_4;
-type GuardInstance = CAT20GuardVariant | CAT721GuardVariant;
+type CAT20GuardClass = typeof CAT20Guard_6_6_2 | typeof CAT20Guard_6_6_4 | typeof CAT20Guard_12_12_2 | typeof CAT20Guard_12_12_4;
+type CAT721GuardClass = typeof CAT721Guard_6_6_2 | typeof CAT721Guard_6_6_4 | typeof CAT721Guard_12_12_2 | typeof CAT721Guard_12_12_4;
 
-interface GuardTestConfig {
+interface CAT20GuardTestConfig {
     name: string;
-    GuardClass: GuardClass;
+    GuardClass: CAT20GuardClass;
     txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12;
-    isNft: boolean;
+}
+
+interface CAT721GuardTestConfig {
+    name: string;
+    GuardClass: CAT721GuardClass;
+    txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12;
 }
 
 // CAT20 Guard variants
-const CAT20_GUARDS: GuardTestConfig[] = [
-    { name: 'CAT20Guard_6_6_2', GuardClass: CAT20Guard_6_6_2, txInputCountMax: TX_INPUT_COUNT_MAX_6, isNft: false },
-    { name: 'CAT20Guard_6_6_4', GuardClass: CAT20Guard_6_6_4, txInputCountMax: TX_INPUT_COUNT_MAX_6, isNft: false },
-    { name: 'CAT20Guard_12_12_2', GuardClass: CAT20Guard_12_12_2, txInputCountMax: TX_INPUT_COUNT_MAX_12, isNft: false },
-    { name: 'CAT20Guard_12_12_4', GuardClass: CAT20Guard_12_12_4, txInputCountMax: TX_INPUT_COUNT_MAX_12, isNft: false },
+const CAT20_GUARDS: CAT20GuardTestConfig[] = [
+    { name: 'CAT20Guard_6_6_2', GuardClass: CAT20Guard_6_6_2, txInputCountMax: TX_INPUT_COUNT_MAX_6 },
+    { name: 'CAT20Guard_6_6_4', GuardClass: CAT20Guard_6_6_4, txInputCountMax: TX_INPUT_COUNT_MAX_6 },
+    { name: 'CAT20Guard_12_12_2', GuardClass: CAT20Guard_12_12_2, txInputCountMax: TX_INPUT_COUNT_MAX_12 },
+    { name: 'CAT20Guard_12_12_4', GuardClass: CAT20Guard_12_12_4, txInputCountMax: TX_INPUT_COUNT_MAX_12 },
 ];
 
 // CAT721 Guard variants
-const CAT721_GUARDS: GuardTestConfig[] = [
-    { name: 'CAT721Guard_6_6_2', GuardClass: CAT721Guard_6_6_2, txInputCountMax: TX_INPUT_COUNT_MAX_6, isNft: true },
-    { name: 'CAT721Guard_6_6_4', GuardClass: CAT721Guard_6_6_4, txInputCountMax: TX_INPUT_COUNT_MAX_6, isNft: true },
-    { name: 'CAT721Guard_12_12_2', GuardClass: CAT721Guard_12_12_2, txInputCountMax: TX_INPUT_COUNT_MAX_12, isNft: true },
-    { name: 'CAT721Guard_12_12_4', GuardClass: CAT721Guard_12_12_4, txInputCountMax: TX_INPUT_COUNT_MAX_12, isNft: true },
+const CAT721_GUARDS: CAT721GuardTestConfig[] = [
+    { name: 'CAT721Guard_6_6_2', GuardClass: CAT721Guard_6_6_2, txInputCountMax: TX_INPUT_COUNT_MAX_6 },
+    { name: 'CAT721Guard_6_6_4', GuardClass: CAT721Guard_6_6_4, txInputCountMax: TX_INPUT_COUNT_MAX_6 },
+    { name: 'CAT721Guard_12_12_2', GuardClass: CAT721Guard_12_12_2, txInputCountMax: TX_INPUT_COUNT_MAX_12 },
+    { name: 'CAT721Guard_12_12_4', GuardClass: CAT721Guard_12_12_4, txInputCountMax: TX_INPUT_COUNT_MAX_12 },
 ];
 
 /**
@@ -66,44 +72,33 @@ const CAT721_GUARDS: GuardTestConfig[] = [
  */
 isLocalTest(testProvider) && describe('Test Guard destroy method', () => {
     let mainAddress: string;
-    let mainPubKey: PubKey;
-    let mainOwnerAddr: ByteString;
+    let mainDeployerAddr: ByteString;
 
     // Wrong signer for failure tests
-    let wrongPubKey: PubKey;
-    let wrongOwnerAddr: ByteString;
+    let wrongSigner: DefaultSigner;
+    let wrongDeployerAddr: ByteString;
 
     before(async () => {
         loadAllArtifacts20();
         loadAllArtifacts721();
         mainAddress = await testSigner.getAddress();
-        mainPubKey = PubKey(await testSigner.getPublicKey());
-        mainOwnerAddr = toTokenOwnerAddress(mainAddress);
+        mainDeployerAddr = toTokenOwnerAddress(mainAddress);
 
         // Create a different signer for failure tests
         const wrongPrivateKey = PrivateKey.fromRandom('testnet');
-        const wrongSigner = new DefaultSigner(wrongPrivateKey);
+        wrongSigner = new DefaultSigner(wrongPrivateKey);
         const wrongAddress = await wrongSigner.getAddress();
-        wrongPubKey = PubKey(await wrongSigner.getPublicKey());
-        wrongOwnerAddr = toTokenOwnerAddress(wrongAddress);
+        wrongDeployerAddr = toTokenOwnerAddress(wrongAddress);
     });
 
     /**
-     * Helper function to create a Guard contract bound to a UTXO with ownerAddr
+     * Helper function to create a CAT20 Guard contract bound to a UTXO with deployerAddr
      */
-    async function createGuardWithUtxo(config: GuardTestConfig, ownerAddr: ByteString): Promise<GuardInstance> {
+    async function createCAT20GuardWithUtxo(config: CAT20GuardTestConfig, deployerAddr: ByteString): Promise<CAT20GuardVariant> {
         const guard = new config.GuardClass();
-
-        // Create appropriate guard state based on type
-        if (config.isNft) {
-            const guardState = CAT721GuardStateLib.createEmptyState(config.txInputCountMax);
-            guardState.ownerAddr = ownerAddr;
-            (guard as CAT721GuardVariant).state = guardState;
-        } else {
-            const guardState = CAT20GuardStateLib.createEmptyState(config.txInputCountMax);
-            guardState.ownerAddr = ownerAddr;
-            (guard as CAT20GuardVariant).state = guardState;
-        }
+        const guardState = CAT20GuardStateLib.createEmptyState(config.txInputCountMax);
+        guardState.deployerAddr = deployerAddr;
+        guard.state = guardState;
 
         // Create a PSBT to deploy the guard contract
         const guardSatoshis = 1e8;
@@ -123,62 +118,29 @@ isLocalTest(testProvider) && describe('Test Guard destroy method', () => {
     }
 
     /**
-     * Helper function to destroy a single Guard
+     * Helper function to create a CAT721 Guard contract bound to a UTXO with deployerAddr
      */
-    async function destroySingleGuard(
-        guard: GuardInstance,
-        signer: DefaultSigner,
-        pubKey: PubKey
-    ): Promise<ExtPsbt> {
-        const address = await signer.getAddress();
-        const feeRate = await testProvider.getFeeRate();
+    async function createCAT721GuardWithUtxo(config: CAT721GuardTestConfig, deployerAddr: ByteString): Promise<CAT721GuardVariant> {
+        const guard = new config.GuardClass();
+        const guardState = CAT721GuardStateLib.createEmptyState(config.txInputCountMax);
+        guardState.deployerAddr = deployerAddr;
+        guard.state = guardState;
 
-        const psbt = new ExtPsbt({ network: await testProvider.getNetwork(), maximumFeeRate: 1e8 })
+        // Create a PSBT to deploy the guard contract
+        const guardSatoshis = 1e8;
+        const deployPsbt = new ExtPsbt({ network: await testProvider.getNetwork(), maximumFeeRate: 1e8 })
             .spendUTXO(getDummyUtxo(mainAddress))
-            .addContractInput(guard, (contract, tx) => {
-                (contract as CAT20GuardVariant | CAT721GuardVariant).destroy(
-                    tx.getSig(1, { address }),
-                    pubKey
-                );
-            })
-            .change(address, feeRate)
+            .addContractOutput(guard, guardSatoshis)
             .seal();
 
-        const signedPsbtHex = await signer.signPsbt(psbt.toHex(), psbt.psbtOptions());
-        psbt.combine(ExtPsbt.fromHex(signedPsbtHex)).finalizeAllInputs();
+        const signedPsbtHex = await testSigner.signPsbt(deployPsbt.toHex(), deployPsbt.psbtOptions());
+        deployPsbt.combine(ExtPsbt.fromHex(signedPsbtHex)).finalizeAllInputs();
 
-        return psbt;
-    }
+        // Get the UTXO from the deployment transaction and rebind
+        const guardUtxo = deployPsbt.getUtxo(0);
+        guard.bindToUtxo(guardUtxo);
 
-    /**
-     * Helper function to destroy multiple Guards in a single transaction
-     */
-    async function destroyMultipleGuards(
-        guards: GuardInstance[],
-        signer: DefaultSigner,
-        pubKey: PubKey
-    ): Promise<ExtPsbt> {
-        const address = await signer.getAddress();
-        const feeRate = await testProvider.getFeeRate();
-
-        const psbt = new ExtPsbt({ network: await testProvider.getNetwork(), maximumFeeRate: 1e8 });
-        psbt.spendUTXO(getDummyUtxo(mainAddress));
-
-        guards.forEach((guard, index) => {
-            psbt.addContractInput(guard, (contract, tx) => {
-                (contract as CAT20GuardVariant | CAT721GuardVariant).destroy(
-                    tx.getSig(index + 1, { address }),
-                    pubKey
-                );
-            });
-        });
-
-        psbt.change(address, feeRate).seal();
-
-        const signedPsbtHex = await signer.signPsbt(psbt.toHex(), psbt.psbtOptions());
-        psbt.combine(ExtPsbt.fromHex(signedPsbtHex)).finalizeAllInputs();
-
-        return psbt;
+        return guard;
     }
 
     /**
@@ -195,20 +157,27 @@ isLocalTest(testProvider) && describe('Test Guard destroy method', () => {
         CAT20_GUARDS.forEach((config) => {
             describe(config.name, () => {
                 it('should successfully destroy guard with correct owner signature', async () => {
-                    const guard = await createGuardWithUtxo(config, mainOwnerAddr);
-                    const destroyPsbt = await destroySingleGuard(guard, testSigner, mainPubKey);
+                    const guard = await createCAT20GuardWithUtxo(config, mainDeployerAddr);
+                    const feeRate = await testProvider.getFeeRate();
+
+                    const { destroyPsbt } = await destroyCAT20Guard.dryRun(
+                        testSigner,
+                        testProvider,
+                        [guard],
+                        feeRate
+                    );
+
                     expect(destroyPsbt.isFinalized).to.be.true;
                     verifyTx(destroyPsbt);
                 });
 
-                it('should fail to destroy guard with wrong public key', async () => {
-                    const guard = await createGuardWithUtxo(config, mainOwnerAddr);
-                    await expect(destroySingleGuard(guard, testSigner, wrongPubKey)).to.be.rejected;
-                });
-
                 it('should fail to destroy guard with non-owner signer', async () => {
-                    const guard = await createGuardWithUtxo(config, wrongOwnerAddr);
-                    await expect(destroySingleGuard(guard, testSigner, mainPubKey)).to.be.rejected;
+                    const guard = await createCAT20GuardWithUtxo(config, wrongDeployerAddr);
+                    const feeRate = await testProvider.getFeeRate();
+
+                    await expect(
+                        destroyCAT20Guard.dryRun(testSigner, testProvider, [guard], feeRate)
+                    ).to.be.rejected;
                 });
             });
         });
@@ -218,20 +187,27 @@ isLocalTest(testProvider) && describe('Test Guard destroy method', () => {
         CAT721_GUARDS.forEach((config) => {
             describe(config.name, () => {
                 it('should successfully destroy guard with correct owner signature', async () => {
-                    const guard = await createGuardWithUtxo(config, mainOwnerAddr);
-                    const destroyPsbt = await destroySingleGuard(guard, testSigner, mainPubKey);
+                    const guard = await createCAT721GuardWithUtxo(config, mainDeployerAddr);
+                    const feeRate = await testProvider.getFeeRate();
+
+                    const { destroyPsbt } = await destroyCAT721Guard.dryRun(
+                        testSigner,
+                        testProvider,
+                        [guard],
+                        feeRate
+                    );
+
                     expect(destroyPsbt.isFinalized).to.be.true;
                     verifyTx(destroyPsbt);
                 });
 
-                it('should fail to destroy guard with wrong public key', async () => {
-                    const guard = await createGuardWithUtxo(config, mainOwnerAddr);
-                    await expect(destroySingleGuard(guard, testSigner, wrongPubKey)).to.be.rejected;
-                });
-
                 it('should fail to destroy guard with non-owner signer', async () => {
-                    const guard = await createGuardWithUtxo(config, wrongOwnerAddr);
-                    await expect(destroySingleGuard(guard, testSigner, mainPubKey)).to.be.rejected;
+                    const guard = await createCAT721GuardWithUtxo(config, wrongDeployerAddr);
+                    const feeRate = await testProvider.getFeeRate();
+
+                    await expect(
+                        destroyCAT721Guard.dryRun(testSigner, testProvider, [guard], feeRate)
+                    ).to.be.rejected;
                 });
             });
         });
@@ -239,40 +215,64 @@ isLocalTest(testProvider) && describe('Test Guard destroy method', () => {
 
     describe('Multiple Guards destroy tests', () => {
         it('should destroy multiple CAT20 Guards in a single transaction', async () => {
-            const guard1 = await createGuardWithUtxo(CAT20_GUARDS[0], mainOwnerAddr);
-            const guard2 = await createGuardWithUtxo(CAT20_GUARDS[1], mainOwnerAddr);
+            const guard1 = await createCAT20GuardWithUtxo(CAT20_GUARDS[0], mainDeployerAddr);
+            const guard2 = await createCAT20GuardWithUtxo(CAT20_GUARDS[1], mainDeployerAddr);
+            const feeRate = await testProvider.getFeeRate();
 
-            const destroyPsbt = await destroyMultipleGuards([guard1, guard2], testSigner, mainPubKey);
+            const { destroyPsbt } = await destroyCAT20Guard.dryRun(
+                testSigner,
+                testProvider,
+                [guard1, guard2],
+                feeRate
+            );
 
             expect(destroyPsbt.isFinalized).to.be.true;
             verifyTx(destroyPsbt);
         });
 
         it('should destroy multiple CAT721 Guards in a single transaction', async () => {
-            const guard1 = await createGuardWithUtxo(CAT721_GUARDS[0], mainOwnerAddr);
-            const guard2 = await createGuardWithUtxo(CAT721_GUARDS[1], mainOwnerAddr);
+            const guard1 = await createCAT721GuardWithUtxo(CAT721_GUARDS[0], mainDeployerAddr);
+            const guard2 = await createCAT721GuardWithUtxo(CAT721_GUARDS[1], mainDeployerAddr);
+            const feeRate = await testProvider.getFeeRate();
 
-            const destroyPsbt = await destroyMultipleGuards([guard1, guard2], testSigner, mainPubKey);
-
-            expect(destroyPsbt.isFinalized).to.be.true;
-            verifyTx(destroyPsbt);
-        });
-
-        it('should destroy mixed CAT20 and CAT721 Guards in a single transaction', async () => {
-            const cat20Guard = await createGuardWithUtxo(CAT20_GUARDS[0], mainOwnerAddr);
-            const cat721Guard = await createGuardWithUtxo(CAT721_GUARDS[0], mainOwnerAddr);
-
-            const destroyPsbt = await destroyMultipleGuards([cat20Guard, cat721Guard], testSigner, mainPubKey);
+            const { destroyPsbt } = await destroyCAT721Guard.dryRun(
+                testSigner,
+                testProvider,
+                [guard1, guard2],
+                feeRate
+            );
 
             expect(destroyPsbt.isFinalized).to.be.true;
             verifyTx(destroyPsbt);
         });
 
-        it('should destroy multiple 12_12 Guards in a single transaction', async () => {
-            const guard1 = await createGuardWithUtxo(CAT20_GUARDS[2], mainOwnerAddr);  // CAT20Guard_12_12_2
-            const guard2 = await createGuardWithUtxo(CAT721_GUARDS[2], mainOwnerAddr); // CAT721Guard_12_12_2
+        it('should destroy multiple 12_12 CAT20 Guards in a single transaction', async () => {
+            const guard1 = await createCAT20GuardWithUtxo(CAT20_GUARDS[2], mainDeployerAddr);  // CAT20Guard_12_12_2
+            const guard2 = await createCAT20GuardWithUtxo(CAT20_GUARDS[3], mainDeployerAddr);  // CAT20Guard_12_12_4
+            const feeRate = await testProvider.getFeeRate();
 
-            const destroyPsbt = await destroyMultipleGuards([guard1, guard2], testSigner, mainPubKey);
+            const { destroyPsbt } = await destroyCAT20Guard.dryRun(
+                testSigner,
+                testProvider,
+                [guard1, guard2],
+                feeRate
+            );
+
+            expect(destroyPsbt.isFinalized).to.be.true;
+            verifyTx(destroyPsbt);
+        });
+
+        it('should destroy multiple 12_12 CAT721 Guards in a single transaction', async () => {
+            const guard1 = await createCAT721GuardWithUtxo(CAT721_GUARDS[2], mainDeployerAddr);  // CAT721Guard_12_12_2
+            const guard2 = await createCAT721GuardWithUtxo(CAT721_GUARDS[3], mainDeployerAddr);  // CAT721Guard_12_12_4
+            const feeRate = await testProvider.getFeeRate();
+
+            const { destroyPsbt } = await destroyCAT721Guard.dryRun(
+                testSigner,
+                testProvider,
+                [guard1, guard2],
+                feeRate
+            );
 
             expect(destroyPsbt.isFinalized).to.be.true;
             verifyTx(destroyPsbt);

@@ -316,7 +316,7 @@ export class CAT20GuardPeripheral {
     }[],
     txInputCount: number,
     txOutputCount: number,
-    ownerAddr: ByteString,
+    deployerAddr: ByteString,
   ): {
     guard: CAT20GuardVariant
     guardState: CAT20GuardConstState
@@ -360,7 +360,7 @@ export class CAT20GuardPeripheral {
 
     // Create guard state based on the selected guard size
     const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax)
-    guardState.ownerAddr = ownerAddr
+    guardState.deployerAddr = deployerAddr
 
     // Process token inputs to get token amounts and script hash mapping
     const { tokenAmounts, tokenScriptHashes, tokenScriptIndexes, guardTokenTypes } = this.processTokenInputs(
@@ -411,7 +411,7 @@ export class CAT20GuardPeripheral {
       token: UTXO
       inputIndex: number
     }[],
-    ownerAddr: ByteString,
+    deployerAddr: ByteString,
   ): {
     guard: CAT20GuardVariant
     guardState: CAT20GuardConstState
@@ -439,7 +439,7 @@ export class CAT20GuardPeripheral {
 
     // Create guard state based on the selected guard size
     const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax)
-    guardState.ownerAddr = ownerAddr
+    guardState.deployerAddr = deployerAddr
 
     // Process token inputs to get token amounts and script hash mapping
     const { tokenAmounts, tokenScriptHashes, tokenScriptIndexes } = this.processTokenInputs(
@@ -686,7 +686,7 @@ export class CAT721GuardPeripheral {
     receivers: ByteString[],
     txInputCount: number,
     txOutputCount: number,
-    ownerAddr: ByteString,
+    deployerAddr: ByteString,
   ): {
     guard: CAT721GuardVariant
     guardState: CAT721GuardConstState,
@@ -718,7 +718,7 @@ export class CAT721GuardPeripheral {
 
     // Create guard state to get the initial nftScriptIndexes
     const guardState = CAT721GuardStateLib.createEmptyState(txInputCountMax)
-    guardState.ownerAddr = ownerAddr
+    guardState.deployerAddr = deployerAddr
 
     // Process NFT inputs to get script hash mapping
     const { nftScriptHashes, nftScriptIndexes, guardCollectionTypes } = this.processNftInputs(
@@ -759,7 +759,7 @@ export class CAT721GuardPeripheral {
       nft: UTXO,
       inputIndex: number
     }[],
-    ownerAddr: ByteString,
+    deployerAddr: ByteString,
   ): {
     guard: CAT721GuardVariant
     guardState: CAT721GuardConstState,
@@ -786,7 +786,7 @@ export class CAT721GuardPeripheral {
 
     // Create guard state to get the initial nftScriptIndexes
     const guardState = CAT721GuardStateLib.createEmptyState(txInputCountMax)
-    guardState.ownerAddr = ownerAddr
+    guardState.deployerAddr = deployerAddr
 
     // Process NFT inputs to get script hash mapping
     const { nftScriptHashes, nftScriptIndexes, guardCollectionTypes } = this.processNftInputs(
