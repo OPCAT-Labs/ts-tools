@@ -239,6 +239,24 @@
         }
       ],
       "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__ChangeInfo",
+      "params": [
+        {
+          "name": "pubkeyhash",
+          "type": "Ripemd160"
+        },
+        {
+          "name": "satoshis",
+          "type": "int"
+        },
+        {
+          "name": "dataHash",
+          "type": "Sha256"
+        }
+      ],
+      "genericTypes": []
     }
   ],
   "library": [
@@ -327,7 +345,7 @@
         },
         {
           "name": "__scrypt_ts_changeInfo",
-          "type": "TxOut"
+          "type": "_opcat_labs_scrypt_ts_opcat_1_0_0__rs__ChangeInfo"
         },
         {
           "name": "__scrypt_ts_prevout",
