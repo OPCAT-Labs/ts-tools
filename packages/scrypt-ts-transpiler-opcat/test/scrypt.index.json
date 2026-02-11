@@ -631,10 +631,6 @@
    "path": "contracts/utils.scrypt.tpl"
   },
   {
-   "symbol": "ChangeInfo",
-   "path": "contracts/utils.scrypt.tpl"
-  },
-  {
    "symbol": "VerifyContext",
    "path": "contracts/verifyContext.scrypt.tpl",
    "md5": "d9c92345cffa0bf2102bf25d26f6a370"

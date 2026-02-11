@@ -13,7 +13,6 @@ import {
   TxIn,
   Addr,
   UInt64,
-  ChangeInfo,
 } from '../types/index.js';
 import { StdUtils } from './stdUtils.js';
 
@@ -67,18 +66,6 @@ export class TxUtils extends SmartContractLib {
   static buildChangeOutput(change: TxOut): ByteString {
     return change.satoshis > 0n
       ? TxUtils.buildDataOutput(change.scriptHash, change.satoshis, change.dataHash)
-      : toByteString('');
-  }
-
-  /**
-   * Build serialized change output from ChangeInfo
-   * @param change change output info containing pubkeyhash, satoshis and dataHash
-   * @returns serialized change output in format ByteString
-   */
-  @method()
-  static buildChangeOutputFromInfo(change: ChangeInfo): ByteString {
-    return change.satoshis > 0n
-      ? TxUtils.buildDataOutput(sha256(TxUtils.buildP2PKHScript(change.pubkeyhash)), change.satoshis, change.dataHash)
       : toByteString('');
   }
 
