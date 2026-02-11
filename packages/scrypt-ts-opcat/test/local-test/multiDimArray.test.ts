@@ -28,11 +28,12 @@ describe('Test MultiDimArray', () => {
 
   });
 
-  it('should serialize and deserialize state correctly', () => { 
+  it('should serialize and deserialize state correctly', () => {
     const multiDimArray = new MultiDimArray();
     multiDimArray.state = { board: [[1n, 2n, 3n], [4n, 5n, 6n], [7n, 8n, 9n]] };
-    const serializedState = serializeState(artifact, 'multidimarray_0_1_0__rs__MultiDimArrayState', multiDimArray.state);
-    const deserializedState= deserializeState<MultiDimArrayState>(artifact, 'multidimarray_0_1_0__rs__MultiDimArrayState', serializedState);
+    const stateTypeName = '_opcat_labs_scrypt_ts_opcat_3_2_0__rs__MultiDimArrayState';
+    const serializedState = serializeState(artifact, stateTypeName, multiDimArray.state);
+    const deserializedState= deserializeState<MultiDimArrayState>(artifact, stateTypeName, serializedState);
     expect(deepEqualArrays(deserializedState.board, multiDimArray.state.board)).to.be.true;
   });
 

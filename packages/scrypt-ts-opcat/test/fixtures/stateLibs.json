@@ -1,11 +1,11 @@
 {
   "version": 10,
   "compilerVersion": "1.22.0+commit.47800da",
-  "contract": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__DelegateeStateLib",
+  "contract": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__DelegateeStateLib",
   "md5": "d41d8cd98f00b204e9800998ecf8427e",
   "structs": [
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__DelegatorState",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__DelegatorState",
       "params": [
         {
           "name": "delegated",
@@ -15,7 +15,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__DelegateeState",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__DelegateeState",
       "params": [
         {
           "name": "total",
@@ -27,18 +27,18 @@
   ],
   "library": [
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__DelegatorStateLib",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__DelegatorStateLib",
       "params": [],
       "properties": [],
       "genericTypes": [],
-      "stateType": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__DelegatorState"
+      "stateType": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__DelegatorState"
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__DelegateeStateLib",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__DelegateeStateLib",
       "params": [],
       "properties": [],
       "genericTypes": [],
-      "stateType": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__DelegateeState"
+      "stateType": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__DelegateeState"
     }
   ],
   "alias": [],
@@ -49,7 +49,7 @@
     }
   ],
   "stateProps": [],
-  "stateType": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__DelegateeState",
+  "stateType": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__DelegateeState",
   "buildType": "release",
   "file": "../stateLibs.scrypt",
   "hex": ""
