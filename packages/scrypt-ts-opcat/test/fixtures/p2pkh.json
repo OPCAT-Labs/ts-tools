@@ -1,10 +1,218 @@
 {
   "version": 10,
   "compilerVersion": "1.22.0+commit.47800da",
-  "contract": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__P2PKH",
+  "contract": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__P2PKH",
   "md5": "c5af93cb4966b9a0201c93e84ac386be",
-  "structs": [],
-  "library": [],
+  "structs": [
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxOut",
+      "params": [
+        {
+          "name": "scriptHash",
+          "type": "bytes"
+        },
+        {
+          "name": "dataHash",
+          "type": "bytes"
+        },
+        {
+          "name": "satoshis",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxIn",
+      "params": [
+        {
+          "name": "prevTxHash",
+          "type": "bytes"
+        },
+        {
+          "name": "prevOutputIndex",
+          "type": "int"
+        },
+        {
+          "name": "sequence",
+          "type": "int"
+        },
+        {
+          "name": "scriptHash",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxHashPreimage",
+      "params": [
+        {
+          "name": "version",
+          "type": "bytes"
+        },
+        {
+          "name": "inputList",
+          "type": "bytes"
+        },
+        {
+          "name": "outputList",
+          "type": "bytes"
+        },
+        {
+          "name": "nLockTime",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__BacktraceInfo",
+      "params": [
+        {
+          "name": "prevTxInput",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxIn"
+        },
+        {
+          "name": "prevTxInputIndex",
+          "type": "int"
+        },
+        {
+          "name": "prevPrevTxPreimage",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxHashPreimage"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__SHPreimage",
+      "params": [
+        {
+          "name": "nVersion",
+          "type": "bytes"
+        },
+        {
+          "name": "hashPrevouts",
+          "type": "bytes"
+        },
+        {
+          "name": "spentScriptHash",
+          "type": "bytes"
+        },
+        {
+          "name": "spentDataHash",
+          "type": "bytes"
+        },
+        {
+          "name": "value",
+          "type": "int"
+        },
+        {
+          "name": "nSequence",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentAmounts",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentScriptHashes",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentDataHashes",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSequences",
+          "type": "bytes"
+        },
+        {
+          "name": "hashOutputs",
+          "type": "bytes"
+        },
+        {
+          "name": "inputIndex",
+          "type": "int"
+        },
+        {
+          "name": "nLockTime",
+          "type": "int"
+        },
+        {
+          "name": "sigHashType",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__Outpoint",
+      "params": [
+        {
+          "name": "txHash",
+          "type": "bytes"
+        },
+        {
+          "name": "outputIndex",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__ChangeInfo",
+      "params": [
+        {
+          "name": "pubkeyhash",
+          "type": "Ripemd160"
+        },
+        {
+          "name": "satoshis",
+          "type": "int"
+        },
+        {
+          "name": "dataHash",
+          "type": "Sha256"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__ReadVarintResult",
+      "params": [
+        {
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "name": "nextPos",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    }
+  ],
+  "library": [
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__ContextUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__StdUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    }
+  ],
   "alias": [],
   "abi": [
     {

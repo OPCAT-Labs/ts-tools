@@ -995,7 +995,7 @@ export class Transpiler {
       section.append(`\nSHPreimage ${InjectedProp_SHPreimage};`);
     }
     if (this.shouldInjectChangeProp()) {
-      section.append(`\nTxOut ${InjectedProp_ChangeInfo};`);
+      section.append(`\nChangeInfo ${InjectedProp_ChangeInfo};`);
     }
     if (this.shouldInjectPrevoutsProp()) {
       section.append(`\nbytes ${InjectedProp_PrevoutsCtx};`);
@@ -1783,11 +1783,11 @@ export class Transpiler {
         }
 
         if (shouldAutoAppendChangeAmount.shouldAppendArguments) {
-          this._accessBuiltinsSymbols.add('TxOut');
+          this._accessBuiltinsSymbols.add('ChangeInfo');
           if (paramLen > 0) {
             psSec.append(', ');
           }
-          psSec.append(`TxOut ${InjectedParam_ChangeInfo}`);
+          psSec.append(`ChangeInfo ${InjectedParam_ChangeInfo}`);
           paramLen += 2;
         }
         if (shouldAutoAppendStateArgs.shouldAppendArguments) {

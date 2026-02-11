@@ -1,7 +1,7 @@
 
 // import { PsbtInput, Psbt as PsbtBase, OpcatUtxo } from '@opcat-labs/bip174';
 import { PsbtInput, Psbt as PsbtBase } from 'bip174';
-import { ByteString, Sig, SigHashType, TxOut } from '../smart-contract/types/index.js';
+import { ByteString, Sig, SigHashType, ChangeInfo, Ripemd160 } from '../smart-contract/types/index.js';
 import {
   InputIndex, OutputIndex, SupportedNetwork,
   ExtUtxo,
@@ -600,24 +600,34 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   /**
    * Gets the change output information from the PSBT transaction.
-   * @returns {TxOut} An object containing the script hash, satoshis value, and data hash of the change output.
-   * If no change output exists, returns an empty TxOut with default values (empty script/data hash and 0 satoshis).
+   * @returns {ChangeInfo} An object containing the pubkeyhash, satoshis value, and data hash of the change output.
+   * If no change output exists, returns an empty ChangeInfo with default values (zero pubkeyhash/data hash and 0 satoshis).
    * @throws {Error} If the change output index is set but the output is not found at that index.
+   * @throws {Error} If the change output script is not a valid P2PKH script.
    */
-  getChangeInfo(): TxOut {
+  getChangeInfo(): ChangeInfo {
     if (this._changeOutputIndex !== null) {
       const changeOutput = this.txOutputs[this._changeOutputIndex];
       if (!changeOutput) {
         throw new Error(`Change output is not found at index ${this._changeOutputIndex}`);
       }
+      // Extract pubkeyhash from P2PKH script (skip 76a914 prefix, take 20 bytes)
+      // P2PKH script format: 76a914 + pubkeyhash(20 bytes) + 88ac
+      const scriptHex = tools.toHex(changeOutput.script);
+      // Validate P2PKH script format: must be exactly 25 bytes (50 hex chars)
+      // and have correct prefix (76a914) and suffix (88ac)
+      if (scriptHex.length !== 50 || !scriptHex.startsWith('76a914') || !scriptHex.endsWith('88ac')) {
+        throw new Error(`Change output script is not a valid P2PKH script: ${scriptHex}`);
+      }
+      const pubkeyhash = scriptHex.slice(6, 46); // 76a914 = 6 chars, 20 bytes = 40 chars
       return {
-        scriptHash: sha256(tools.toHex(changeOutput.script)),
+        pubkeyhash: Ripemd160(pubkeyhash),
         satoshis: changeOutput.value,
         dataHash: sha256(tools.toHex(changeOutput.data)),
       };
     } else {
       return {
-        scriptHash: sha256(toByteString('')),
+        pubkeyhash: Ripemd160(toByteString('').padEnd(40, '0')), // 20 bytes of zeros
         satoshis: 0n,
         dataHash: sha256(toByteString('')),
       };

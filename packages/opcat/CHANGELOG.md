@@ -1,5 +1,11 @@
 # @opcat-labs/opcat
 
+## 3.3.0
+
+### Minor Changes
+
+- feat: add ChangeInfo type with pubkeyhash for change output verification
+
 ## 3.2.0
 
 ## 3.1.0

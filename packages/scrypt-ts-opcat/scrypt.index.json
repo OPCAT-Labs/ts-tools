@@ -84,6 +84,10 @@
     {
       "symbol": "__scrypt_ASM",
       "path": "asm.scrypt.tpl"
+    },
+    {
+      "symbol": "ChangeInfo",
+      "path": "smart-contract/types/structs.scrypt.tpl"
     }
   ]
 }
