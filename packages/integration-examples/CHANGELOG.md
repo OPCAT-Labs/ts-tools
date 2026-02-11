@@ -1,5 +1,17 @@
 # @opcat-labs/integration-examples
 
+## 3.3.0
+
+### Minor Changes
+
+- feat: add ChangeInfo type with pubkeyhash for change output verification
+
+### Patch Changes
+
+- Updated dependencies
+  - @opcat-labs/cat-sdk@3.3.0
+  - @opcat-labs/scrypt-ts-opcat@3.3.0
+
 ## 3.2.0
 
 ### Patch Changes
