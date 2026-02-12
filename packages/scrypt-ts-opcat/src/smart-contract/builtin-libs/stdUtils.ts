@@ -189,7 +189,7 @@ export class StdUtils extends SmartContractLib {
 
     if (header == toByteString('fd')) {
       l = StdUtils.fromLEUnsigned(slice(buf, pos + 1n, pos + 3n));
-      ret = slice(buf, 3n, 3n + l);
+      ret = slice(buf, pos + 3n, pos + 3n + l);
       nextPos = pos + 3n + l;
     }
     else if (header == toByteString('fe')) {
