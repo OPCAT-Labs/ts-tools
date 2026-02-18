@@ -117,6 +117,7 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
     }
 
     // next token output
+    CAT20StateLib.checkState(tokenMint)
     const tokenStateHash = sha256(CAT20StateLib.serializeState(tokenMint))
     const tokenOutput = TxUtils.buildDataOutput(
       this.state.tokenScriptHash,
