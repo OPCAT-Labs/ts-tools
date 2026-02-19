@@ -138,7 +138,7 @@ function isp2pkh(scriptHex: ByteString): boolean {
 export function filterFeeUtxos(utxos: UTXO[]): UTXO[] {
   return utxos
     .sort((a, b) => b.satoshis - a.satoshis)
-    .filter((utxo) => utxo.satoshis >= 10000)
+    .filter((utxo) => utxo.satoshis >= 1)
 }
 
 export const emptyString = toByteString('')
