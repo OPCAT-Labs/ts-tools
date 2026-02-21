@@ -1,5 +1,11 @@
 # @opcat-labs/opcat
 
+## 3.4.0
+
+### Minor Changes
+
+- check cat20state in openminter, fix filter utxos
+
 ## 3.3.0
 
 ### Minor Changes

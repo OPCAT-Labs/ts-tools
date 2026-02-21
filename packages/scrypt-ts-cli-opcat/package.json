@@ -1,6 +1,6 @@
 {
   "name": "@opcat-labs/cli-opcat",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "description": "CLI tool for creating and managing sCrypt projects.",
   "type": "commonjs",
   "author": "OP_CAT Labs",
@@ -28,7 +28,7 @@
     "@nestjs/common": "^10.0.0",
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
-    "@opcat-labs/scrypt-ts-transpiler-opcat": "3.3.0",
+    "@opcat-labs/scrypt-ts-transpiler-opcat": "3.4.0",
     "chalk": "4",
     "envinfo": "^7.14.0",
     "glob": "^11.0.0",
