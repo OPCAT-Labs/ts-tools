@@ -13,14 +13,15 @@ import {
   Sha256,
   toByteString,
   slice,
-  SpentDataHashes
+  SpentDataHashes,
+  len
 } from '@opcat-labs/scrypt-ts-opcat'
 import { OwnerUtils } from '../utils/ownerUtils.js'
 import { CAT20State, CAT20GuardConstState } from './types.js'
 import {
   CAT20ContractUnlockArgs,
 } from '../types.js'
-import { GUARD_VARIANTS_COUNT } from '../constants.js'
+import { GUARD_VARIANTS_COUNT, SHA256_HASH_LEN } from '../constants.js'
 import { CAT20GuardStateLib } from './cat20GuardStateLib.js'
 import { CatTags } from '../catTags.js'
 
@@ -55,6 +56,18 @@ export class CAT20 extends SmartContract<CAT20State> {
     this.guardVariantScriptHashes = guardVariantScriptHashes
     this.hasAdmin = hasAdmin
     this.adminScriptHash = adminScriptHash
+    // C.1 Fix: Ensure admin script hash is valid when hasAdmin is true
+    if (hasAdmin) {
+      assert(
+        len(adminScriptHash) == SHA256_HASH_LEN,
+        'admin script hash must be 32 bytes when hasAdmin is true'
+      )
+    } else {
+      assert(
+        adminScriptHash == toByteString(''),
+        'admin script hash must be empty when hasAdmin is false'
+      )
+    }
   }
 
   @method()
@@ -84,8 +97,13 @@ export class CAT20 extends SmartContract<CAT20State> {
     )
 
     let spentScriptHash = toByteString('')
-    //
-    if (unlockArgs.spendScriptInputIndex >= 0n) {
+    // For contract (spendType=1) or admin (spendType=2) spend,
+    // spendScriptInputIndex must be >= 0 to prevent empty script hash bypass
+    if (unlockArgs.spendType == 1n || unlockArgs.spendType == 2n) {
+      assert(
+        unlockArgs.spendScriptInputIndex >= 0n,
+        'spendScriptInputIndex must be >= 0 for contract or admin spend'
+      )
       // Check upper bound to prevent out-of-bounds access
       assert(
         unlockArgs.spendScriptInputIndex < this.ctx.inputCount,
@@ -96,7 +114,6 @@ export class CAT20 extends SmartContract<CAT20State> {
         unlockArgs.spendScriptInputIndex
       )
     }
-
     if (unlockArgs.spendType == 0n) {
       // user spend
       // unlock token owned by user key
