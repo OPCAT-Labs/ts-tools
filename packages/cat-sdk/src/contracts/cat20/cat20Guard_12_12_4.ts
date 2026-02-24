@@ -160,11 +160,12 @@ export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
         for (let i = 0; i < TX_OUTPUT_COUNT_MAX_12; i++) {
             if (i < outputCount) {
                 const ownerAddrOrScriptHash = ownerAddrOrScriptHashes[i]
-                assert(len(ownerAddrOrScriptHash) > 0n, 'owner addr or script hash is invalid, should not be empty')
                 const tokenScriptHashIndex = tokenScriptHashIndexes[i]
                 assert(tokenScriptHashIndex < inputTokenTypes, 'token script hash index is invalid')
                 if (tokenScriptHashIndex != -1n) {
                     // this is a token output
+                    // C.4 Fix: Validate owner address encoding
+                    OwnerUtils.checkOwnerAddr(ownerAddrOrScriptHash)
                     const tokenAmount = outputTokens[i]
                     assert(tokenAmount > 0n, 'token amount is invalid')
                     sumOutputTokens[Number(tokenScriptHashIndex)] = SafeMath.add(

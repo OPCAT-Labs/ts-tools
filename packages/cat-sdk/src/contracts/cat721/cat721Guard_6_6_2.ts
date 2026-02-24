@@ -116,11 +116,12 @@ export class CAT721Guard_6_6_2 extends SmartContract<CAT721GuardConstState> {
         for (let i = 0n; i < TX_OUTPUT_COUNT_MAX_6; i++) {
             if (i < outputCount) {
                 const ownerAddrOrScriptHash = ownerAddrOrScriptHashes[Number(i)];
-                assert(len(ownerAddrOrScriptHash) > 0n, 'owner addr or script hash is invalid, should not be empty');
                 const nftScriptIndex = nftScriptHashIndexes[Number(i)];
                 assert(nftScriptIndex < inputNftTypes, 'nft script index is invalid');
                 if (nftScriptIndex != -1n) {
                     // this is an nft output
+                    // C.4 Fix: Validate owner address encoding
+                    OwnerUtils.checkOwnerAddr(ownerAddrOrScriptHash)
                     const nftScriptHash = this.state.nftScriptHashes[Number(nftScriptIndex)];
                     const localId = outputLocalIds[Number(outputNftCount)];
                     assert(localId >= 0n, 'local id is invalid');

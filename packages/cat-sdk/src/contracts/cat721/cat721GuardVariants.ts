@@ -21,21 +21,21 @@ import {
 export class CAT721GuardVariants extends SmartContractLib {
   @prop()
   static readonly CANONICAL_GUARD_6_6_2: Sha256 = Sha256(
-    toByteString('14567fff9504934b9760c000f7930e9933db525db8d2d85adbb4cac6c5219ace')
+    toByteString('8b78a1be575918ea329996ea1665c46dd7f3a5cef4ab14f52365f45f37308111')
   )
 
   @prop()
   static readonly CANONICAL_GUARD_6_6_4: Sha256 = Sha256(
-    toByteString('4d37188e8e1eff06a6f09033532c2c138274c959646b1a64eb05980fd237ab6d')
+    toByteString('da51f37324d5b48d927042592ac652723691b850afaed3b66977af9c239ffc3a')
   )
 
   @prop()
   static readonly CANONICAL_GUARD_12_12_2: Sha256 = Sha256(
-    toByteString('3c831a222ccf349763dbfcdc501a117eb95f2b0ee9d36a66970653d9c797e7c2')
+    toByteString('e6e7bbb52d5c787af64b22db0c087e00478f9fe0e50a36c2e36fc47d04aed2b4')
   )
 
   @prop()
   static readonly CANONICAL_GUARD_12_12_4: Sha256 = Sha256(
-    toByteString('a3b5feaa63cf0349d9d14c4ad6e9d8b9ebf7cd6e46760b69b219d7653d32d8e7')
+    toByteString('f7406a459b5d4ee9baec42a975700715a30fffe277627b4c3687422ca81344ef')
   )
 }
