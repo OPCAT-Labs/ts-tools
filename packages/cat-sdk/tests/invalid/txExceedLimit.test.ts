@@ -24,7 +24,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         mainPubKey = PubKey(await testSigner.getPublicKey());
     });
 
-    it('should succeed inputCount exceed limit, but token inputs not exceed limit', async () => {
+    it('should fail when inputCount exceeds variant maximum (F11 fix)', async () => {
         const cat20 = await createCat20([1000n], mainAddress, 'test');
         const callback = (psbt: ExtPsbt) => {
             const inputsToAdd = TX_INPUT_COUNT_MAX + 1 - psbt.txInputs.length;
@@ -32,7 +32,9 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
                 psbt.spendUTXO(getDummyUtxo(mainAddress));
             }
         }
-        await testCase(cat20, callback);
+        return expect(testCase(cat20, callback)).to.eventually.be.rejectedWith(
+            'input count exceeds variant maximum',
+        );
     });
 
     it('should fail inputCount exceed limit, but and inputs exceed limit', async () => {
@@ -61,7 +63,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         );
     });
 
-    it('should succeed when inputCount equals limit', async () => {
+    it('should fail when inputCount equals variant maximum plus one (F11 fix)', async () => {
         const cat20 = await createCat20([1000n], mainAddress, 'test');
         const callback = (psbt: ExtPsbt) => {
             const inputsToAdd = TX_INPUT_COUNT_MAX - psbt.txInputs.length;
@@ -70,7 +72,9 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
             }
         }
 
-        await testCase(cat20, callback);
+        return expect(testCase(cat20, callback)).to.eventually.be.rejectedWith(
+            'input count exceeds variant maximum',
+        );
     });
 
     it('should succeed when outputCount equals limit', async () => {
