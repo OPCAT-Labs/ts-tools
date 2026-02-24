@@ -96,8 +96,7 @@ export async function contractSend(
     // Outputs: token outputs + satoshi change output
     const txOutputCount = receivers.length + 1
 
-    const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
-    const { guard, guardState, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
+    const { guard, guardState, tokenAmounts, tokenBurnAmounts, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
       CAT20GuardPeripheral.createTransferGuard(
         inputTokenUtxos.map((utxo, index) => ({
           token: utxo,
@@ -108,8 +107,7 @@ export async function contractSend(
           outputIndex: index,
         })),
         txInputCount,
-        txOutputCount,
-        guardOwnerAddr
+        txOutputCount
       )
     const outputTokens: CAT20State[] = _outputTokens.filter(
       (v) => v != undefined
@@ -225,6 +223,8 @@ export async function contractSend(
           tx.txOutputs.map((output) => sha256(toHex(output.data)))
         )
         contract.unlock(
+          tokenAmounts as any,
+          tokenBurnAmounts as any,
           nextStateHashes as any,
           ownerAddrOrScript as any,
           outputTokenAmts as any,

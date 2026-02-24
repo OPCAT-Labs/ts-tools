@@ -18,8 +18,6 @@ import {
     tags,
     byteStringToInt,
     slice,
-    Sig,
-    PubKey
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
     TX_INPUT_COUNT_MAX_12,
@@ -46,6 +44,12 @@ import { OwnerUtils } from '../utils/ownerUtils.js'
 export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
     @method()
     public unlock(
+        // total number of tokens for each type of token in curTx inputs
+        // e.g. [100, 200, 0, 0] means there are a total of 100 token1 and 200 token2 in curTx inputs
+        tokenAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>,
+        // total number of tokens to be burned for each type of token in curTx
+        // e.g. [0, 50, 0, 0] means 50 token2 will be burned in curTx
+        tokenBurnAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>,
         nextStateHashes: FixedArray<ByteString, typeof TX_OUTPUT_COUNT_MAX_12>,
         // for each curTx output except the state hash root output,
         // if it is a token output, the value is token owner address of this output,
@@ -89,12 +93,14 @@ export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
                 ConstantsLib.TOKEN_SCRIPT_HASH_PLACEHOLDER_FC,
             ]
         for (let i = 0; i < GUARD_TOKEN_TYPE_MAX; i++) {
+            assert(tokenAmounts[Number(i)] >= 0n, 'tokenAmounts[i] must be great or equal than 0');
+            assert(tokenBurnAmounts[Number(i)] >= 0n, 'tokenBurnAmounts[i] must be great or equal than 0');
             if (i >= GUARD_TOKEN_TYPE_MAX_4) {
                 assert(this.state.tokenScriptHashes[Number(i)] == tokenScriptPlaceholders[Number(i)], 'token script index is invalid, should be placeholder');
-                assert(this.state.tokenAmounts[Number(i)] == 0n, 'token amount is invalid, should be 0');
-                assert(this.state.tokenBurnAmounts[Number(i)] == 0n, 'token burn amount is invalid, should be 0');
+                assert(tokenAmounts[Number(i)] == 0n, 'token amount is invalid, should be 0');
+                assert(tokenBurnAmounts[Number(i)] == 0n, 'token burn amount is invalid, should be 0');
             }
-            
+
         }
         for (let i = 0; i < GUARD_TOKEN_TYPE_MAX_4; i++) {
             if (this.state.tokenScriptHashes[i] != tokenScriptPlaceholders[i]) {
@@ -208,10 +214,10 @@ export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
 
         // check token amount consistency of inputs and outputs
         for (let i = 0; i < GUARD_TOKEN_TYPE_MAX_4; i++) {
-            assert(sumInputTokens[i] == this.state.tokenAmounts[i], 'sum input tokens is invalid, should be equal to token amount')
+            assert(sumInputTokens[i] == tokenAmounts[i], 'sum input tokens is invalid, should be equal to token amount')
             assert(
                 sumInputTokens[i] ==
-                SafeMath.add(sumOutputTokens[i], this.state.tokenBurnAmounts[i]),
+                SafeMath.add(sumOutputTokens[i], tokenBurnAmounts[i]),
                 'sum input tokens is invalid, should be equal to sum output tokens plus sum burn tokens'
             );
             if (i < Number(inputTokenTypes)) {
@@ -220,26 +226,12 @@ export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
                 assert(sumInputTokens[i] == 0n, 'sum input tokens is invalid, should be 0')
                 assert(sumOutputTokens[i] == 0n, 'sum output tokens is invalid, should be 0')
                 // no need to check below two lines here, but we keep them here for better readability
-                assert(this.state.tokenAmounts[i] == 0n, 'token amount is invalid, should be 0')
-                assert(this.state.tokenBurnAmounts[i] == 0n, 'token burn amount is invalid, should be 0')
+                assert(tokenAmounts[i] == 0n, 'token amount is invalid, should be 0')
+                assert(tokenBurnAmounts[i] == 0n, 'token burn amount is invalid, should be 0')
             }
         }
 
         // confine curTx outputs
         assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
-    }
-
-    /**
-     * Destroys this Guard UTXO, allowing the deployer to reclaim the satoshis.
-     * Only the original deployer (whose address matches deployerAddr) can authorize this method.
-     * The satoshis are sent to the change output address specified in the transaction.
-     * @param userSig - Signature from the deployer
-     * @param userPubKey - Public key of the deployer
-     */
-    @method()
-    public destroy(userSig: Sig, userPubKey: PubKey) {
-        OwnerUtils.checkUserOwner(userPubKey, this.state.deployerAddr)
-        assert(this.checkSig(userSig, userPubKey))
-        assert(this.checkOutputs(this.buildChangeOutput()), 'Outputs mismatch with the transaction context');
     }
 }

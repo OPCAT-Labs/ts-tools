@@ -106,12 +106,11 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         const txOutputCount = outputStates.length + 1;
 
         const guardOwnerAddr = toTokenOwnerAddress(mainAddress)
-        const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
+        const { guard, guardState, tokenAmounts, tokenBurnAmounts, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
             cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
             outputStates.map((state, index) => ({ address: state.ownerAddr, amount: state.amount, outputIndex: index })),
             txInputCount,
-            txOutputCount,
-            guardOwnerAddr
+            txOutputCount
         );
         guard.state = guardState;
 
@@ -184,6 +183,8 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
               curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
             )
             contract.unlock(
+                tokenAmounts,
+                tokenBurnAmounts,
                 nextStateHashes,
                 ownerAddrOrScripts,
                 outputTokens,
@@ -222,12 +223,11 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         const txOutputCount = outputStates.length + 1;
 
         const guardOwnerAddr = toTokenOwnerAddress(mainAddress)
-        const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
+        const { guard, guardState, tokenAmounts, tokenBurnAmounts, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
             cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
             outputStates.map((state, index) => ({ address: state.ownerAddr, amount: state.amount, outputIndex: index })),
             txInputCount,
-            txOutputCount,
-            guardOwnerAddr
+            txOutputCount
         );
         guard.state = guardState;
 
@@ -300,6 +300,8 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
               curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
             )
             contract.unlock(
+                tokenAmounts,
+                tokenBurnAmounts,
                 nextStateHashes,
                 ownerAddrOrScripts,
                 outputTokens,

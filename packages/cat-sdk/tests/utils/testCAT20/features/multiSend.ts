@@ -1,5 +1,5 @@
-import { ByteString, ChainProvider, ExtPsbt, Signer, UTXO, UtxoProvider, assert, fill, intToByteString, sha256, toByteString, slice, PubKey, getBackTraceInfo, toHex, markSpent, fromSupportedNetwork } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT20GuardStateLib, CAT20StateLib, CAT20, GUARD_TOKEN_TYPE_MAX, CAT20GuardConstState, CAT20State, SPEND_TYPE_USER_SPEND } from "../../../../src/contracts";
+import { ByteString, ChainProvider, ExtPsbt, Signer, UTXO, UtxoProvider, assert, fill, intToByteString, sha256, toByteString, slice, PubKey, getBackTraceInfo, toHex, markSpent, fromSupportedNetwork, FixedArray } from "@opcat-labs/scrypt-ts-opcat";
+import { CAT20GuardStateLib, CAT20StateLib, CAT20, GUARD_TOKEN_TYPE_MAX, CAT20GuardConstState, CAT20State, SPEND_TYPE_USER_SPEND, CAT20_AMOUNT } from "../../../../src/contracts";
 import { CAT20GuardPeripheral, ContractPeripheral } from "../../../../src/utils/contractPeripheral";
 import { Postage } from "../../../../src/typeConstants";
 import { applyFixedArray, filterFeeUtxos } from "../../../../src/utils";
@@ -132,7 +132,7 @@ export async function multiSendTokens(
     assert(outputCount <= maxOutputCount, `outputCount (${outputCount}) exceeds maxOutputCount (${maxOutputCount})`);
 
     // 3. build guard state
-    const guardState = createMultiSendGuardState(
+    const { guardState, tokenAmounts, tokenBurnAmounts } = createMultiSendGuardState(
         [type1TokenUtxos, type2TokenUtxos, type3TokenUtxos, type4TokenUtxos],
         [type1TokenReceivers, type2TokenReceivers, type3TokenReceivers, type4TokenReceivers],
         actualTokenTypeCount,
@@ -341,6 +341,8 @@ export async function multiSendTokens(
         );
 
         contract.unlock(
+            tokenAmounts as any,
+            tokenBurnAmounts as any,
             nextStateHashes as any,
             ownerAddrOrScriptHashes as any,
             outputTokenAmts as any,
@@ -392,14 +394,18 @@ export async function multiSendTokens(
  * @param tokenTypeReceivers Array of receivers for each token type [type1, type2, type3, type4]
  * @param actualTokenTypeCount Actual number of token types being used in this transaction
  * @param maxInputCount Maximum number of inputs (6 or 12)
- * @returns CAT20GuardConstState
+ * @returns Object containing guardState, tokenAmounts, and tokenBurnAmounts
  */
 function createMultiSendGuardState(
     tokenTypeUtxos: UTXO[][],
     tokenTypeReceivers: CAT20Reciever[][],
     actualTokenTypeCount: number,
     maxInputCount: 6 | 12
-): CAT20GuardConstState {
+): {
+    guardState: CAT20GuardConstState;
+    tokenAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>;
+    tokenBurnAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>;
+} {
     // Create empty guard state
     const guardState = CAT20GuardStateLib.createEmptyState(maxInputCount);
 
@@ -414,6 +420,10 @@ function createMultiSendGuardState(
             actualTokenTypeIndices.push(typeIndex);
         }
     }
+
+    // Prepare tokenAmounts and tokenBurnAmounts as separate arrays
+    const tokenAmounts = fill(0n, GUARD_TOKEN_TYPE_MAX);
+    const tokenBurnAmounts = fill(0n, GUARD_TOKEN_TYPE_MAX);
 
     // Process input tokens by type
     for (const typeIndex of actualTokenTypeIndices) {
@@ -433,7 +443,7 @@ function createMultiSendGuardState(
             totalInputAmount += state.amount;
         }
         tokenInputAmounts.set(typeIndex, totalInputAmount);
-        guardState.tokenAmounts[typeIndex] = totalInputAmount;
+        tokenAmounts[typeIndex] = totalInputAmount;
     }
 
     // Calculate output amounts by type
@@ -452,7 +462,7 @@ function createMultiSendGuardState(
         const outputAmount = tokenOutputAmounts.get(typeIndex) || 0n;
         const burnAmount = inputAmount - outputAmount;
         assert(burnAmount >= 0n, `Burn amount for type ${typeIndex} is negative: ${burnAmount}`);
-        guardState.tokenBurnAmounts[typeIndex] = burnAmount;
+        tokenBurnAmounts[typeIndex] = burnAmount;
     }
 
     // Build tokenScriptIndexes - mark each input's token type
@@ -469,5 +479,5 @@ function createMultiSendGuardState(
     }
     guardState.tokenScriptIndexes = tokenScriptIndexes;
 
-    return guardState;
+    return { guardState, tokenAmounts, tokenBurnAmounts };
 }

@@ -77,15 +77,12 @@ export const burnToken = createFeatureWithDryRun(async function(
   const inputTokenStates = inputTokenUtxos.map((utxo) =>
     CAT20.deserializeState(utxo.data)
   )
-  const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
-  const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createBurnGuard(
+  const { guard, guardState, tokenAmounts, tokenBurnAmounts, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createBurnGuard(
     inputTokenUtxos.map((utxo, index) => ({
       token: utxo,
       inputIndex: index,
-    })),
-    guardOwnerAddr
+    }))
   )
-  guardState.tokenBurnAmounts[0] = guardState.tokenAmounts[0]
   guard.state = guardState
 
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
@@ -180,6 +177,8 @@ export const burnToken = createFeatureWithDryRun(async function(
         tx.txOutputs.map((output) => sha256(toHex(output.data)))
       )
       contract.unlock(
+        tokenAmounts as any,
+        tokenBurnAmounts as any,
         nextStateHashes as any,
         ownerAddrOrScript as any,
         outputTokenAmts as any,

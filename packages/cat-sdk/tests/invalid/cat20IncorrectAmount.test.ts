@@ -6,7 +6,7 @@ import { loadAllArtifacts } from '../features/cat20/utils';
 import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, uint8ArrayToHex, slice, intToByteString } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from '../utils/testSigner';
 import {createCat20, TestCat20} from '../utils/testCAT20Generator';
-import { CAT20, CAT20State, CAT20StateLib, CAT20GuardStateLib } from '../../src/contracts';
+import { CAT20, CAT20State, CAT20StateLib, CAT20GuardStateLib, GUARD_TOKEN_TYPE_MAX } from '../../src/contracts';
 import { ContractPeripheral, CAT20GuardPeripheral } from '../../src/utils/contractPeripheral';
 import { applyFixedArray, getDummyUtxo, toTokenOwnerAddress } from '../../src/utils';
 import { Postage } from '../../src/typeConstants';
@@ -97,16 +97,18 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
             cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
             receivers,
             txInputCount,
-            txOutputCount,
-            guardOwnerAddr
+            txOutputCount
         );
 
         // Now manually construct the guardState with incorrect amounts for testing
         const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax);
-        guardState.ownerAddr = guardOwnerAddr;
         guardState.tokenScriptHashes[0] = ContractPeripheral.scriptHash(cat20.utxos[0].script);
-        guardState.tokenAmounts[0] = totalInputAmount;
-        guardState.tokenBurnAmounts[0] = totalBurnAmount;
+
+        const tokenAmounts = fill(0n, GUARD_TOKEN_TYPE_MAX);
+        tokenAmounts[0] = totalInputAmount;
+
+        const tokenBurnAmounts = fill(0n, GUARD_TOKEN_TYPE_MAX);
+        tokenBurnAmounts[0] = totalBurnAmount;
 
         // Build tokenScriptIndexes
         let tokenScriptIndexes = guardState.tokenScriptIndexes;
@@ -186,6 +188,8 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
               curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
             )
             contract.unlock(
+                tokenAmounts,
+                tokenBurnAmounts,
                 nextStateHashes,
                 ownerAddrOrScripts,
                 outputTokens,

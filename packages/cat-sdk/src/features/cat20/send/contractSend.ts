@@ -126,8 +126,7 @@ export const contractSend = createFeatureWithDryRun(async function(
 
   const txInputCount = inputTokenUtxos.length + 2; // tokens + guard + fee
   const txOutputCount = receivers.length + 1; // receivers + change
-  const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
-  const { guard, guardState, outputTokens: _outputTokens } =
+  const { guard, guardState, tokenAmounts, tokenBurnAmounts, outputTokens: _outputTokens } =
     CAT20GuardPeripheral.createTransferGuard(
       inputTokenUtxos.map((utxo, index) => ({
         token: utxo,
@@ -138,8 +137,7 @@ export const contractSend = createFeatureWithDryRun(async function(
         outputIndex: index,
       })),
       txInputCount,
-      txOutputCount,
-      guardOwnerAddr
+      txOutputCount
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined
@@ -259,6 +257,8 @@ export const contractSend = createFeatureWithDryRun(async function(
       tx.txOutputs.map((output) => sha256(toHex(output.data)))
     )
     contract.unlock(
+      tokenAmounts as any,
+      tokenBurnAmounts as any,
       nextStateHashes as any,
       ownerAddrOrScript as any,
       outputTokenAmts as any,

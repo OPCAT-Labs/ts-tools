@@ -82,16 +82,14 @@ export const singleSend = createFeatureWithDryRun(async function(
   const cat20Script = cat20.lockingScript.toHex()
   inputTokenUtxos = normalizeUtxoScripts(inputTokenUtxos, cat20Script)
 
-  const guardOwnerAddr = toTokenOwnerAddress(feeChangeAddress)
-  const { guardPsbt, outputTokenStates, changeTokenOutputIndex, guard, txInputCountMax, txOutputCountMax } = await singleSendStep1(
+  const { guardPsbt, outputTokenStates, changeTokenOutputIndex, guard, guardState, tokenAmounts, tokenBurnAmounts, txInputCountMax, txOutputCountMax } = await singleSendStep1(
     provider,
     feeUtxos,
     inputTokenUtxos,
     receivers,
     feeChangeAddress,
     tokenChangeAddress,
-    feeRate,
-    guardOwnerAddr
+    feeRate
   );
   const signedGuardPsbt = ExtPsbt.fromHex(await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions()))
   guardPsbt.combine(signedGuardPsbt).finalizeAllInputs()
@@ -101,6 +99,8 @@ export const singleSend = createFeatureWithDryRun(async function(
     hasAdmin,
     adminScriptHash,
     guard,
+    tokenAmounts,
+    tokenBurnAmounts,
     guardPsbt,
     inputTokenUtxos,
     outputTokenStates,
@@ -151,8 +151,7 @@ export async function singleSendStep1(
   }>,
   feeChangeAddress: ByteString,
   tokenChangeAddress: ByteString,
-  feeRate: number,
-  guardOwnerAddr: ByteString,
+  feeRate: number
 ) {
   if (inputTokenUtxos.length + 2 > TX_INPUT_COUNT_MAX) {
     throw new Error(
@@ -193,7 +192,7 @@ export async function singleSendStep1(
   // Outputs: token outputs + satoshi change output
   const txOutputCount = receivers.length + 1
 
-  const { guard, guardState, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
+  const { guard, guardState, tokenAmounts, tokenBurnAmounts, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
     CAT20GuardPeripheral.createTransferGuard(
       inputTokenUtxos.map((utxo, index) => ({
         token: utxo,
@@ -204,8 +203,7 @@ export async function singleSendStep1(
         outputIndex: index,
       })),
       txInputCount,
-      txOutputCount,
-      guardOwnerAddr
+      txOutputCount
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined
@@ -217,7 +215,7 @@ export async function singleSendStep1(
     .change(feeChangeAddress, feeRate)
     .seal()
 
-  return { guard, guardPsbt, outputTokenStates: outputTokens, changeTokenOutputIndex, txInputCountMax, txOutputCountMax }
+  return { guard, guardState, tokenAmounts, tokenBurnAmounts, guardPsbt, outputTokenStates: outputTokens, changeTokenOutputIndex, txInputCountMax, txOutputCountMax }
 }
 
 /**
@@ -243,6 +241,8 @@ export async function singleSendStep2(
   hasAdmin: boolean,
   adminScriptHash: ByteString,
   guard: any,
+  tokenAmounts: any,
+  tokenBurnAmounts: any,
   finalizedGuardPsbt: ExtPsbt,
   inputTokenUtxos: UTXO[],
   outputTokenStates: CAT20State[],
@@ -363,6 +363,8 @@ export async function singleSendStep2(
     )
 
     contract.unlock(
+      tokenAmounts as any,
+      tokenBurnAmounts as any,
       nextStateHashes as any,
       ownerAddrOrScriptHashes as any,
       outputTokenAmts as any,

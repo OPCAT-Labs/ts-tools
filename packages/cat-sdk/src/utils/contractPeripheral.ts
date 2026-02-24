@@ -39,7 +39,7 @@ import {
   NFT_GUARD_COLLECTION_TYPE_MAX
 } from '../contracts/constants.js'
 // import { Provider, UTXO } from '../lib/provider.js'
-import { emptyOutputByteStrings, outpoint2ByteString } from './index.js'
+import { emptyOutputByteStrings, emptyTokenAmounts, outpoint2ByteString } from './index.js'
 // import { ExtTransaction } from '../lib/extTransaction.js'
 import { CAT20StateLib } from '../contracts/cat20/cat20StateLib.js'
 import { CAT20GuardStateLib } from '../contracts/cat20/cat20GuardStateLib.js'
@@ -193,7 +193,7 @@ export class CAT20GuardPeripheral {
    * @returns txInputCountMax - Maximum input count for the selected guard
    * @returns txOutputCountMax - Maximum output count for the selected guard
    */
-  private static selectCAT20Guard(
+  static selectCAT20Guard(
     txInputCount: number,
     txOutputCount: number,
     guardTokenTypes: number
@@ -313,10 +313,11 @@ export class CAT20GuardPeripheral {
     }[],
     txInputCount: number,
     txOutputCount: number,
-    deployerAddr: ByteString,
   ): {
     guard: CAT20GuardVariant
     guardState: CAT20GuardConstState
+    tokenAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>
+    tokenBurnAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>
     outputTokens: FixedArray<CAT20State | undefined, typeof TX_OUTPUT_COUNT_MAX>
     txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
     txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
@@ -357,10 +358,9 @@ export class CAT20GuardPeripheral {
 
     // Create guard state based on the selected guard size
     const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax)
-    guardState.deployerAddr = deployerAddr
 
     // Process token inputs to get token amounts and script hash mapping
-    const { tokenAmounts, tokenScriptHashes, tokenScriptIndexes, guardTokenTypes } = this.processTokenInputs(
+    const { tokenAmounts: tokenAmountsMap, tokenScriptHashes, tokenScriptIndexes, guardTokenTypes } = this.processTokenInputs(
       tokenInputs,
       guardState.tokenScriptIndexes
     )
@@ -369,10 +369,14 @@ export class CAT20GuardPeripheral {
     tokenScriptHashes.forEach((scriptHash, index) => {
       guardState.tokenScriptHashes[index] = scriptHash
     })
-    tokenAmounts.forEach((amount, index) => {
-      guardState.tokenAmounts[index] = amount
-    })
     guardState.tokenScriptIndexes = tokenScriptIndexes
+
+    // Prepare tokenAmounts and tokenBurnAmounts as parameters
+    const tokenAmounts = emptyTokenAmounts()
+    const tokenBurnAmounts = emptyTokenAmounts()
+    tokenAmountsMap.forEach((amount, index) => {
+      tokenAmounts[index] = amount
+    })
 
     // Auto-detect guardTokenTypes and select final guard
     const { guard, txInputCountMax: finalTxInputCountMax, txOutputCountMax } = this.selectCAT20Guard(
@@ -397,6 +401,8 @@ export class CAT20GuardPeripheral {
     return {
       guard,
       guardState,
+      tokenAmounts,
+      tokenBurnAmounts,
       outputTokens,
       txInputCountMax: finalTxInputCountMax,
       txOutputCountMax,
@@ -408,10 +414,11 @@ export class CAT20GuardPeripheral {
       token: UTXO
       inputIndex: number
     }[],
-    deployerAddr: ByteString,
   ): {
     guard: CAT20GuardVariant
     guardState: CAT20GuardConstState
+    tokenAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>
+    tokenBurnAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>
     outputTokens: FixedArray<CAT20State | undefined, typeof TX_OUTPUT_COUNT_MAX>
     txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12
     txOutputCountMax: typeof TX_OUTPUT_COUNT_MAX_6 | typeof TX_OUTPUT_COUNT_MAX_12
@@ -436,10 +443,9 @@ export class CAT20GuardPeripheral {
 
     // Create guard state based on the selected guard size
     const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax)
-    guardState.deployerAddr = deployerAddr
 
     // Process token inputs to get token amounts and script hash mapping
-    const { tokenAmounts, tokenScriptHashes, tokenScriptIndexes } = this.processTokenInputs(
+    const { tokenAmounts: tokenAmountsMap, tokenScriptHashes, tokenScriptIndexes } = this.processTokenInputs(
       tokenInputs,
       guardState.tokenScriptIndexes
     )
@@ -448,10 +454,16 @@ export class CAT20GuardPeripheral {
     tokenScriptHashes.forEach((scriptHash, index) => {
       guardState.tokenScriptHashes[index] = scriptHash
     })
-    tokenAmounts.forEach((amount, index) => {
-      guardState.tokenAmounts[index] = amount
-    })
     guardState.tokenScriptIndexes = tokenScriptIndexes
+
+    // Prepare tokenAmounts and tokenBurnAmounts as parameters
+    // For burn transactions, all token amounts are burned
+    const tokenAmounts = emptyTokenAmounts()
+    const tokenBurnAmounts = emptyTokenAmounts()
+    tokenAmountsMap.forEach((amount, index) => {
+      tokenAmounts[index] = amount
+      tokenBurnAmounts[index] = amount  // All tokens are burned
+    })
 
     // Auto-detect guardTokenTypes and select final guard
     const guardTokenTypes = tokenScriptHashes.size
@@ -470,6 +482,8 @@ export class CAT20GuardPeripheral {
     return {
       guard,
       guardState,
+      tokenAmounts,
+      tokenBurnAmounts,
       outputTokens,
       txInputCountMax: finalTxInputCountMax,
       txOutputCountMax,

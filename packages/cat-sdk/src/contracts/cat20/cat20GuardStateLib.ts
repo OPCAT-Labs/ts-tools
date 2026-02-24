@@ -17,9 +17,6 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
     for (let i = 0; i < GUARD_TOKEN_TYPE_MAX; i++) {
       const scriptLen = len(_state.tokenScriptHashes[i])
       assert(scriptLen == SHA256_HASH_LEN)
-
-      assert(_state.tokenAmounts[i] >= 0)
-      assert(_state.tokenBurnAmounts[i] >= 0)
     }
 
     assert(len(_state.tokenScriptIndexes) == BigInt(txInputCountMax))
@@ -59,10 +56,7 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
     const tokenScriptIndexes = tokenScriptIndexesArray.map(index => intToByteString(index, 1n)).join('')
 
     return {
-      deployerAddr: toByteString(''),
       tokenScriptHashes: tokenScriptHashes,
-      tokenAmounts: fill(0n, GUARD_TOKEN_TYPE_MAX),
-      tokenBurnAmounts: fill(0n, GUARD_TOKEN_TYPE_MAX),
       tokenScriptIndexes,
     }
   }

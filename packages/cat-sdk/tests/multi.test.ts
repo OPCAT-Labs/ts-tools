@@ -188,6 +188,8 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
 
             let cat20GuardState: any;
             let cat721GuardState: any;
+            let cat20TokenAmounts: any;
+            let cat20TokenBurnAmounts: any;
 
             let inputIndex = 0;
             let cat20GuardInputIndex = -1;
@@ -256,21 +258,22 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                 const txOutputCount = receivers.length + (hasCat721 ? this.cat721s.filter(({ isBurn }) => !isBurn).length : 0) + 1;
 
                 const guardOwnerAddr = toTokenOwnerAddress(mainAddress)
-                const { guard: cat20Guard, guardState: _cat20GuardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
+                const { guard: cat20Guard, guardState: _cat20GuardState, tokenAmounts: _tokenAmounts, tokenBurnAmounts: _tokenBurnAmounts, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
                     this.cat20s.map((item, idx) => ({ token: item.cat20.utxo, inputIndex: idx })),
                     tempReceivers,
                     txInputCount,
-                    txOutputCount,
-                    guardOwnerAddr
+                    txOutputCount
                 );
 
                 // Now set the correct burn amounts by type
+                cat20TokenAmounts = _tokenAmounts;
+                cat20TokenBurnAmounts = _tokenBurnAmounts;
                 if (hasBurn) {
                     const burnAmounts = fill(0n, GUARD_TOKEN_TYPE_MAX);
                     cat20BurnAmountsByType.forEach((amount, index) => {
                         burnAmounts[index] = amount;
                     });
-                    _cat20GuardState.tokenBurnAmounts = burnAmounts;
+                    cat20TokenBurnAmounts = burnAmounts;
                 }
 
                 cat20GuardState = _cat20GuardState;
@@ -360,6 +363,8 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                         curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
                     )
                     contract.unlock(
+                        cat20TokenAmounts,
+                        cat20TokenBurnAmounts,
                         nextStateHashes,
                         ownerAddrOrScripts,
                         outputTokens,

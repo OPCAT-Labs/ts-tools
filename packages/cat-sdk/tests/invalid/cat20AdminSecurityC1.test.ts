@@ -13,10 +13,8 @@ import {
   fill,
   toHex,
   uint8ArrayToHex,
-  slice,
-  intToByteString,
 } from '@opcat-labs/scrypt-ts-opcat';
-import { CAT20, CAT20State, CAT20StateLib, CAT20GuardStateLib } from '../../src/contracts';
+import { CAT20, CAT20State, CAT20StateLib, CAT20GuardStateLib, GUARD_TOKEN_TYPE_MAX } from '../../src/contracts';
 import { CAT20GuardPeripheral, ContractPeripheral } from '../../src/utils/contractPeripheral';
 import { createCat20 } from '../utils/testCAT20Generator';
 import { testSigner } from '../utils/testSigner';
@@ -262,31 +260,15 @@ async function attemptTransferWithInvalidIndex(
   const txInputCount = cat20.utxos.length + 2;
   const txOutputCount = 2;
 
-  const { guard, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
+  const { tokenAmounts, tokenBurnAmounts, guard, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
     cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
     receivers,
     txInputCount,
-    txOutputCount,
-    guardOwnerAddr
+    txOutputCount
   );
 
-  // Manually construct guardState to ensure proper initialization
-  const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax);
-  guardState.deployerAddr = guardOwnerAddr;
-  guardState.tokenScriptHashes[0] = ContractPeripheral.scriptHash(cat20.utxos[0].script);
-  guardState.tokenAmounts[0] = totalAmount;
-  guardState.tokenBurnAmounts[0] = 0n;
-
-  // Build tokenScriptIndexes
-  let tokenScriptIndexes = guardState.tokenScriptIndexes;
-  for (let index = 0; index < cat20.utxos.length; index++) {
-    const before = slice(tokenScriptIndexes, 0n, BigInt(index));
-    const after = slice(tokenScriptIndexes, BigInt(index + 1));
-    tokenScriptIndexes = before + intToByteString(0n, 1n) + after;
-  }
-  guardState.tokenScriptIndexes = tokenScriptIndexes;
-
-  guard.state = guardState;
+  // Get guardState from guard
+  const guardState = guard.state;
 
   // Deploy guard
   {
@@ -361,6 +343,8 @@ async function attemptTransferWithInvalidIndex(
     );
 
     contract.unlock(
+      tokenAmounts,
+      tokenBurnAmounts,
       nextStateHashes,
       ownerAddrOrScripts,
       outputTokens,
