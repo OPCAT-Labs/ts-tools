@@ -39,6 +39,9 @@ export class CAT20ClosedMinter extends SmartContract<CAT20ClosedMinterState> {
     backtraceInfo: BacktraceInfo
   ) {
 
+    // C.7 Fix: Ensure token output has non-zero satoshis
+    assert(tokenSatoshis > 0n, 'tokenSatoshis must be greater than 0')
+
     // back to genesis
     const minterScript = this.ctx.spentScriptHash;
     this.backtraceToOutpoint(

@@ -99,6 +99,9 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
     // backtrace
     backtraceInfo: BacktraceInfo,
   ) {
+    // C.7 Fix: Ensure token output has non-zero satoshis
+    assert(tokenSatoshis > 0n, 'tokenSatoshis must be greater than 0')
+
     // back to genesis
     this.backtraceToOutpoint(backtraceInfo, this.genesisOutpoint)
 
@@ -108,6 +111,8 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
     for (let i = 0; i < MAX_NEXT_MINTERS; i++) {
       const remainingCount = nextRemainingCounts[i]
       if (remainingCount > 0n) {
+        // C.7 Fix: Ensure minter output has non-zero satoshis
+        assert(minterSatoshis > 0n, 'minterSatoshis must be greater than 0 when creating minter output')
         sumNextRemainingCount += remainingCount
         minterOutputs += TxUtils.buildDataOutput(
           this.ctx.spentScriptHash,
