@@ -208,7 +208,6 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
             let cat721TxOutputCountMax = 0;
 
             if (hasCat20) {
-                const cat20GuardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
                 // Build script hash to index mapping
                 const cat20ScriptHashToIndex = new Map<string, number>();
@@ -279,7 +278,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                 cat20TxOutputCountMax = txOutputCountMax;
 
                 this.cat20s.forEach(({ cat20, sendAmount, burnAmount }, index) => {
-                    const contract = new CAT20(cat20.generater.minterScriptHash, cat20GuardScriptHashes, cat20.generater.deployInfo.hasAdmin, cat20.generater.deployInfo.adminScriptHash).bindToUtxo(cat20.utxo);
+                    const contract = new CAT20(cat20.generater.minterScriptHash, cat20.generater.deployInfo.hasAdmin, cat20.generater.deployInfo.adminScriptHash).bindToUtxo(cat20.utxo);
                     psbt.addContractInput(contract, (contract, curPsbt) => {
                         const localInputIndex = cat20InputStartIndex + index
                         contract.unlock(
@@ -302,7 +301,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                     // cat20ScriptInputIndexes.push(BigInt(index));
                     if (sendAmount > 0n) {
                         // transfer to main address
-                        const cat20Contract = new CAT20(cat20.generater.minterScriptHash, cat20GuardScriptHashes, cat20.generater.deployInfo.hasAdmin, cat20.generater.deployInfo.adminScriptHash).bindToUtxo(cat20.utxo);
+                        const cat20Contract = new CAT20(cat20.generater.minterScriptHash, cat20.generater.deployInfo.hasAdmin, cat20.generater.deployInfo.adminScriptHash).bindToUtxo(cat20.utxo);
                         cat20Contract.state = {
                             ownerAddr: CAT20.deserializeState(cat20.utxo.data).ownerAddr,
                             amount: sendAmount,
@@ -374,7 +373,6 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
             if (hasCat721) {
                 cat721InputStartIndex = inputIndex;
                 cat721OutputStartIndex = outputIndex;
-                const cat721GuardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes();
 
                 // Calculate number of unique collection types
                 const uniqueCollectionScripts = new Set(this.cat721s.map(({ cat721 }) => ContractPeripheral.scriptHash(cat721.utxo.script)));
@@ -420,7 +418,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                 this.cat721s.forEach(({ cat721, isBurn }, index) => {
                     inputIndex++;
 
-                    const cat721Contract = new CAT721(cat721.generater.minterScriptHash, cat721GuardScriptHashes).bindToUtxo(cat721.utxo);
+                    const cat721Contract = new CAT721(cat721.generater.minterScriptHash).bindToUtxo(cat721.utxo);
                     psbt.addContractInput(cat721Contract, (contract, curPsbt) => {
                         const localInputIndex = cat721InputStartIndex + index
                         contract.unlock(
@@ -440,7 +438,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                     });
                     if (!isBurn) {
                         // transfer to main address
-                        const cat721Contract = new CAT721(cat721.generater.minterScriptHash, cat721GuardScriptHashes).bindToUtxo(cat721.utxo);
+                        const cat721Contract = new CAT721(cat721.generater.minterScriptHash).bindToUtxo(cat721.utxo);
                         cat721Contract.state = {
                             ownerAddr: CAT721.deserializeState(cat721.utxo.data).ownerAddr,
                             localId: CAT721.deserializeState(cat721.utxo.data).localId,

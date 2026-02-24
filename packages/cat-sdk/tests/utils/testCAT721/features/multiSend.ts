@@ -152,7 +152,6 @@ export async function multiSendNfts(
     }
 
     const network = await provider.getNetwork();
-    const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes();
 
     // 4. build guard psbt
     const guardPsbt = new ExtPsbt({ network })
@@ -210,8 +209,7 @@ export async function multiSendNfts(
 
         for (let i = 0; i < utxos.length; i++) {
             const contract = new CAT721(
-                info.minterScriptHash,
-                guardScriptHashes
+                info.minterScriptHash
             ).bindToUtxo({
                 ...utxos[i],
                 txHashPreimage: toHex(
@@ -277,8 +275,7 @@ export async function multiSendNfts(
 
         for (let i = 0; i < receivers.length; i++) {
             const nft = new CAT721(
-                info.minterScriptHash,
-                guardScriptHashes
+                info.minterScriptHash
             );
             nft.state = outputNftStates[receiverIndex];
             sendPsbt.addContractOutput(nft, Postage.NFT_POSTAGE);

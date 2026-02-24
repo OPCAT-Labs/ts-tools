@@ -136,10 +136,8 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
     throw new Error('Insufficient satoshis input amount')
   }
 
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
   const cat20 = new CAT20(
     minterScriptHash,
-    guardScriptHashes,
     hasAdmin,
     adminScriptHash
   )
@@ -189,7 +187,6 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
     new CAT20(
       minterScriptHash,
-      guardScriptHashes,
       true,
       adminScriptHash
     ).bindToUtxo(utxo)

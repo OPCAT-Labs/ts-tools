@@ -74,10 +74,8 @@ export const singleSend = createFeatureWithDryRun(async function(
   const feeChangeAddress = await signer.getAddress()
   let feeUtxos = await provider.getUtxos(feeChangeAddress)
 
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
   const cat20 = new CAT20(
     minterScriptHash,
-    guardScriptHashes,
     hasAdmin,
     adminScriptHash
   )
@@ -261,7 +259,6 @@ export async function singleSendStep2(
   const guardUtxo = guardPsbt.getUtxo(0)
   const feeUtxo = guardPsbt.getChangeUTXO()!
 
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
     inputTokenUtxos,
@@ -272,7 +269,6 @@ export async function singleSendStep2(
   const inputTokens: CAT20[] = inputTokenUtxos.map((_token, index) =>
     new CAT20(
       minterScriptHash,
-      guardScriptHashes,
       hasAdmin,
       adminScriptHash
     ).bindToUtxo({
@@ -321,7 +317,6 @@ export async function singleSendStep2(
   for (const outputToken of outputTokenStates) {
     const cat20 = new CAT20(
       minterScriptHash,
-      guardScriptHashes,
       hasAdmin,
       adminScriptHash
     )

@@ -81,10 +81,8 @@ export const deployClosedMinterToken = createFeatureWithDryRun(async function(
   const admin = new CAT20Admin(outpoint2ByteString(tokenId))
   const minterScriptHash = ContractPeripheral.scriptHash(closeMinter)
   const adminScriptHash = metadata.hasAdmin ? ContractPeripheral.scriptHash(admin) : NULL_ADMIN_SCRIPT_HASH;
-  const guardVariantScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
   const cat20 = new CAT20(
     minterScriptHash,
-    guardVariantScriptHashes,
     metadata.hasAdmin,
     adminScriptHash
   )

@@ -131,9 +131,8 @@ export async function contractSend(
   
     const guardUtxo = guardPsbt.getUtxo(0)
     const feeUtxo = guardPsbt.getChangeUTXO()!
-    const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
     const inputTokens: CAT20[] = inputTokenUtxos.map(
-      (utxo) => new CAT20(minterScriptHash, guardScriptHashes, hasAdmin, adminScriptHash).bindToUtxo(utxo)
+      (utxo) => new CAT20(minterScriptHash, hasAdmin, adminScriptHash).bindToUtxo(utxo)
     )
   
     /// we use the fee input as contract input;
@@ -180,7 +179,7 @@ export async function contractSend(
   
     // add token outputs
     for (const outputToken of outputTokens) {
-      const outputCat20 = new CAT20(minterScriptHash, guardScriptHashes, hasAdmin, adminScriptHash)
+      const outputCat20 = new CAT20(minterScriptHash, hasAdmin, adminScriptHash)
       outputCat20.state = outputToken
       sendPsbt.addContractOutput(
         outputCat20,

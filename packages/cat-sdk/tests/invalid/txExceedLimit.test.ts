@@ -114,7 +114,6 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
             guardOwnerAddr
         );
         guard.state = guardState;
-        const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
         {
             const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8}).spendUTXO(getDummyUtxo(mainAddress)).addContractOutput(guard, 1e8);
@@ -125,7 +124,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         const guardInputIndex = cat20.utxos.length;
         const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8});
         cat20.utxos.forEach((utxo, inputIndex) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
             psbt.addContractInput(cat20Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
@@ -196,7 +195,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         });
 
         outputStates.forEach((state) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash)
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash)
             cat20Contract.state = state;
             psbt.addContractOutput(
                 cat20Contract,
@@ -231,7 +230,6 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
             guardOwnerAddr
         );
         guard.state = guardState;
-        const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
         {
             const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8}).spendUTXO(getDummyUtxo(mainAddress)).addContractOutput(guard, 1e8);
@@ -242,7 +240,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         const guardInputIndex = cat20.utxos.length;
         const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8});
         cat20.utxos.forEach((utxo, inputIndex) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
             psbt.addContractInput(cat20Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
@@ -313,7 +311,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         });
 
         outputStates.forEach((state) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash)
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash)
             cat20Contract.state = state;
             psbt.addContractOutput(
                 cat20Contract,

@@ -87,10 +87,8 @@ export const contractSend = createFeatureWithDryRun(async function(
     throw new Error('Insufficient satoshis input amount')
   }
 
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
   const cat20 = new CAT20(
     minterScriptHash,
-    guardScriptHashes,
     hasAdmin,
     adminScriptHash
   );
@@ -166,7 +164,6 @@ export const contractSend = createFeatureWithDryRun(async function(
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
     new CAT20(
       minterScriptHash,
-      guardScriptHashes,
       hasAdmin,
       adminScriptHash
     ).bindToUtxo(utxo)
@@ -217,7 +214,6 @@ export const contractSend = createFeatureWithDryRun(async function(
   for (const outputToken of outputTokens) {
     const outputCat20 = new CAT20(
       minterScriptHash,
-      guardScriptHashes,
       hasAdmin,
       adminScriptHash
     )

@@ -46,9 +46,8 @@ export async function contractSendNft(
         guardOwnerAddr
     )
     guard.state = guardState
-    const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes()
     const inputNfts: CAT721[] = inputNftUtxos.map(
-        (utxo, index) => new CAT721(minterScriptHash, guardScriptHashes).bindToUtxo({
+        (utxo, index) => new CAT721(minterScriptHash).bindToUtxo({
             ...utxo,
             txHashPreimage: toHex(new Transaction(backtraces[index].prevTxHex).toTxHashPreimage()),
         })
@@ -89,7 +88,7 @@ export async function contractSendNft(
     }
     // add nft outputs
     for (const outputNft of outputNfts) {
-        const nft = new CAT721(minterScriptHash, guardScriptHashes)
+        const nft = new CAT721(minterScriptHash)
         nft.state = outputNft!
         sendPsbt.addContractOutput(nft, Postage.NFT_POSTAGE)
     }

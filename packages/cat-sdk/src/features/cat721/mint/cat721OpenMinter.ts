@@ -88,7 +88,7 @@ export const mintOpenMinterNft = createFeatureWithDryRun(async function(
         nextLocalId: openMinter.state.nextLocalId + 1n,
         merkleRoot: nextMerkleRoot,
     })
-    const cat721 = new CAT721(ContractPeripheral.scriptHash(openMinter), CAT721GuardPeripheral.getGuardVariantScriptHashes())
+    const cat721 = new CAT721(ContractPeripheral.scriptHash(openMinter))
     cat721.state = nftState
 
     const backtraceInfo = getBackTraceInfo(

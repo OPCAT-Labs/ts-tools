@@ -37,8 +37,7 @@ export const burnNft = createFeatureWithDryRun(async function(
         throw new Error('Insufficient satoshis input amount')
     }
 
-    const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes()
-    const cat721 = new CAT721(minterScriptHash, guardScriptHashes)
+    const cat721 = new CAT721(minterScriptHash)
     const cat721Script = cat721.lockingScript.toHex()
     inputNftUtxos = normalizeUtxoScripts(inputNftUtxos, cat721Script)
 
@@ -72,7 +71,7 @@ export const burnNft = createFeatureWithDryRun(async function(
         provider,
     )
     const inputNfts: CAT721[] = inputNftUtxos.map(
-        (utxo, index) => new CAT721(minterScriptHash, guardScriptHashes).bindToUtxo({
+        (utxo, index) => new CAT721(minterScriptHash).bindToUtxo({
             ...utxo,
             txHashPreimage: toHex(
                 new Transaction(backtraces[index].prevTxHex).toTxHashPreimage()

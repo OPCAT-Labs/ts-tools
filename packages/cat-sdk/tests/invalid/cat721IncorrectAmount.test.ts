@@ -118,7 +118,6 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
         guardState.nftBurnMasks = nftBurnMasks;
 
         guard.state = guardState;
-        const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes();
         {
             const psbt = new ExtPsbt({
                 network: await testProvider.getNetwork(),
@@ -141,7 +140,7 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
         });
 
         cat721.utxos.forEach((utxo, inputIndex) => {
-            const cat721Contract = new CAT721(cat721.generator.minterScriptHash, cat721.generator.guardScriptHashes).bindToUtxo(utxo);
+            const cat721Contract = new CAT721(cat721.generator.minterScriptHash).bindToUtxo(utxo);
             psbt.addContractInput(cat721Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
@@ -210,7 +209,7 @@ isLocalTest(testProvider) && describe('Test cat721 incorrect amount/localId', as
             );
         });
         outputStates.forEach((state) => {
-            const cat721Contract = new CAT721(cat721.generator.minterScriptHash, cat721.generator.guardScriptHashes)
+            const cat721Contract = new CAT721(cat721.generator.minterScriptHash)
             cat721Contract.state = state;
             psbt.addContractOutput(cat721Contract, Postage.NFT_POSTAGE);
         });

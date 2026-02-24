@@ -111,7 +111,6 @@ export const deployOpenMinterToken = createFeatureWithDryRun(async function(
 
   const cat20 = new CAT20(
     minterScriptHash,
-    CAT20GuardPeripheral.getGuardVariantScriptHashes(),
     false,
     adminScriptHash
   )

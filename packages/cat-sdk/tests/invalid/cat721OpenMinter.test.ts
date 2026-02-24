@@ -421,7 +421,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721OpenMinter', 
 
         const cat721OpenMinter = new CAT721OpenMinter(genesisOutpoint, max, premine, toTokenOwnerAddress(mainAddress));
         const minterScriptHash = ContractPeripheral.scriptHash(cat721OpenMinter);
-        const cat721 = new CAT721(minterScriptHash, CAT721GuardPeripheral.getGuardVariantScriptHashes());
+        const cat721 = new CAT721(minterScriptHash);
         const nftScriptHash = ContractPeripheral.scriptHash(cat721);
         const merkleTree = new CAT721OpenMinterMerkleTreeData(generateCollectionLeaf(nextLocalId, max), HEIGHT);
         const minterState: CAT721OpenMinterState = {
@@ -492,7 +492,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721OpenMinter', 
         }
 
         const nextMinter = minter.next(nextMinterState);
-        const cat721 = new CAT721(ContractPeripheral.scriptHash(nextMinter), CAT721GuardPeripheral.getGuardVariantScriptHashes());
+        const cat721 = new CAT721(ContractPeripheral.scriptHash(nextMinter));
         cat721.state = {
             localId: mintLocalId,
             ownerAddr: toTokenOwnerAddress(mainAddress),

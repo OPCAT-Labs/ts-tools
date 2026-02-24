@@ -47,13 +47,11 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
     it('should reject CAT20 deployment with hasAdmin=true but empty adminScriptHash', () => {
       // Use valid hex string for minterScriptHash
       const minterScriptHash = toByteString('0000000000000000000000000000000000000000000000000000000000000001', true);
-      const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
       // Attempt to create CAT20 with hasAdmin=true but adminScriptHash='' (empty)
       expect(() => {
         new CAT20(
           minterScriptHash,
-          guardScriptHashes,
           true,  // hasAdmin = true
           toByteString('')  // adminScriptHash = '' (empty, length 0)
         );
@@ -62,13 +60,11 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
 
     it('should reject CAT20 deployment with hasAdmin=true but adminScriptHash with 1 byte', () => {
       const minterScriptHash = toByteString('0000000000000000000000000000000000000000000000000000000000000001', true);
-      const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
       // Attempt to create CAT20 with hasAdmin=true but adminScriptHash with only 1 byte
       expect(() => {
         new CAT20(
           minterScriptHash,
-          guardScriptHashes,
           true,  // hasAdmin = true
           toByteString('00')  // adminScriptHash = 1 byte
         );
@@ -77,7 +73,6 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
 
     it('should reject CAT20 deployment with hasAdmin=true but adminScriptHash with 31 bytes', () => {
       const minterScriptHash = toByteString('0000000000000000000000000000000000000000000000000000000000000001', true);
-      const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
       // Create a 31-byte string (62 hex characters)
       const invalidAdminHash = toByteString('00'.repeat(31), true);
@@ -85,7 +80,6 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
       expect(() => {
         new CAT20(
           minterScriptHash,
-          guardScriptHashes,
           true,  // hasAdmin = true
           invalidAdminHash  // adminScriptHash = 31 bytes (not 32)
         );
@@ -94,7 +88,6 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
 
     it('should reject CAT20 deployment with hasAdmin=true but adminScriptHash with 33 bytes', () => {
       const minterScriptHash = toByteString('0000000000000000000000000000000000000000000000000000000000000001', true);
-      const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
       // Create a 33-byte string (66 hex characters)
       const invalidAdminHash = toByteString('00'.repeat(33), true);
@@ -102,7 +95,6 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
       expect(() => {
         new CAT20(
           minterScriptHash,
-          guardScriptHashes,
           true,  // hasAdmin = true
           invalidAdminHash  // adminScriptHash = 33 bytes (not 32)
         );
@@ -111,12 +103,10 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
 
     it('should accept CAT20 deployment with hasAdmin=false and empty adminScriptHash', () => {
       const minterScriptHash = toByteString('0000000000000000000000000000000000000000000000000000000000000001', true);
-      const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
       // This should succeed: hasAdmin=false allows empty adminScriptHash
       const cat20 = new CAT20(
         minterScriptHash,
-        guardScriptHashes,
         false,  // hasAdmin = false
         toByteString('')  // adminScriptHash = '' (allowed when hasAdmin=false)
       );
@@ -127,13 +117,11 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
 
     it('should reject CAT20 deployment with hasAdmin=false but non-empty adminScriptHash', () => {
       const minterScriptHash = toByteString('0000000000000000000000000000000000000000000000000000000000000001', true);
-      const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
       // When hasAdmin=false, adminScriptHash must be empty
       expect(() => {
         new CAT20(
           minterScriptHash,
-          guardScriptHashes,
           false,  // hasAdmin = false
           toByteString('1234')  // adminScriptHash = 2 bytes (NOT allowed when hasAdmin=false)
         );
@@ -142,13 +130,11 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
 
     it('should accept CAT20 deployment with hasAdmin=true and valid 32-byte adminScriptHash (sha256)', () => {
       const minterScriptHash = toByteString('0000000000000000000000000000000000000000000000000000000000000001', true);
-      const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
       // Create a valid 32-byte hash using sha256
       const validAdminHash = sha256(toByteString('01', true));
 
       const cat20 = new CAT20(
         minterScriptHash,
-        guardScriptHashes,
         true,  // hasAdmin = true
         validAdminHash  // Valid 32-byte hash
       );
@@ -159,13 +145,11 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
 
     it('should accept CAT20 deployment with hasAdmin=true and another valid 32-byte adminScriptHash', () => {
       const minterScriptHash = toByteString('0000000000000000000000000000000000000000000000000000000000000001', true);
-      const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
       // Create another valid 32-byte hash using sha256
       const validAdminHash = sha256(toByteString('abcd1234', true));
 
       const cat20 = new CAT20(
         minterScriptHash,
-        guardScriptHashes,
         true,  // hasAdmin = true
         validAdminHash  // Valid 32-byte hash
       );
@@ -320,7 +304,6 @@ async function attemptTransferWithInvalidIndex(
   cat20.utxos.forEach((utxo, inputIndex) => {
     const cat20Contract = new CAT20(
       cat20.generator.minterScriptHash,
-      cat20.generator.guardScriptHashes,
       cat20.generator.deployInfo.hasAdmin,
       cat20.generator.deployInfo.adminScriptHash
     ).bindToUtxo(utxo);
@@ -396,7 +379,6 @@ async function attemptTransferWithInvalidIndex(
 
   const cat20OutputContract = new CAT20(
     cat20.generator.minterScriptHash,
-    cat20.generator.guardScriptHashes,
     cat20.generator.deployInfo.hasAdmin,
     cat20.generator.deployInfo.adminScriptHash
   );

@@ -24,6 +24,7 @@ import {
 import { GUARD_VARIANTS_COUNT, SHA256_HASH_LEN } from '../constants.js'
 import { CAT20GuardStateLib } from './cat20GuardStateLib.js'
 import { CatTags } from '../catTags.js'
+import { CAT20GuardVariants } from './cat20GuardVariants.js'
 
 /**
  * The CAT20 contract
@@ -34,10 +35,15 @@ import { CatTags } from '../catTags.js'
 @tags([CatTags.CAT20_TAG])
 export class CAT20 extends SmartContract<CAT20State> {
   @prop()
-  minterScriptHash: ByteString
+  static readonly guardVariantScriptHashes: FixedArray<Sha256, typeof GUARD_VARIANTS_COUNT> = [
+    CAT20GuardVariants.CANONICAL_GUARD_6_6_2,
+    CAT20GuardVariants.CANONICAL_GUARD_6_6_4,
+    CAT20GuardVariants.CANONICAL_GUARD_12_12_2,
+    CAT20GuardVariants.CANONICAL_GUARD_12_12_4,
+  ]
 
   @prop()
-  guardVariantScriptHashes: FixedArray<Sha256, typeof GUARD_VARIANTS_COUNT>;
+  minterScriptHash: ByteString
 
   @prop()
   hasAdmin: boolean
@@ -47,13 +53,11 @@ export class CAT20 extends SmartContract<CAT20State> {
 
   constructor(
     minterScriptHash: ByteString,
-    guardVariantScriptHashes: FixedArray<Sha256, typeof GUARD_VARIANTS_COUNT>,
     hasAdmin: boolean,
     adminScriptHash: ByteString
   ) {
     super(...arguments)
     this.minterScriptHash = minterScriptHash
-    this.guardVariantScriptHashes = guardVariantScriptHashes
     this.hasAdmin = hasAdmin
     this.adminScriptHash = adminScriptHash
     // C.1 Fix: Ensure admin script hash is valid when hasAdmin is true
@@ -142,8 +146,8 @@ export class CAT20 extends SmartContract<CAT20State> {
     // 1. check there is a guard input by shPreimage.hashSpentScriptHashes
     const guardScriptHash = ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndexVal);
     assert(
-      guardScriptHash == this.guardVariantScriptHashes[0] || guardScriptHash == this.guardVariantScriptHashes[1] ||
-      guardScriptHash == this.guardVariantScriptHashes[2] || guardScriptHash == this.guardVariantScriptHashes[3],
+      guardScriptHash == CAT20.guardVariantScriptHashes[0] || guardScriptHash == CAT20.guardVariantScriptHashes[1] ||
+      guardScriptHash == CAT20.guardVariantScriptHashes[2] || guardScriptHash == CAT20.guardVariantScriptHashes[3],
       'guard script hash is invalid'
     );
     assert(ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndexVal) == CAT20GuardStateLib.stateHash(guardState), 'guard state hash is invalid');

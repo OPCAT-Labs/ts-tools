@@ -161,7 +161,6 @@ export class CAT20OpenMinterPeripheral {
     }
     const cat20 = new CAT20(
       ContractPeripheral.scriptHash(minter),
-      CAT20GuardPeripheral.getGuardVariantScriptHashes(),
       hasAdmin,
       adminScriptHash
     )
@@ -504,7 +503,6 @@ export class CAT20GuardPeripheral {
     const expectTokenScriptHash = ContractPeripheral.scriptHash(
       new CAT20(
         minterScrtptHash,
-        CAT20GuardPeripheral.getGuardVariantScriptHashes(),
         hasAdmin,
         adminScriptHash
       )
@@ -845,8 +843,7 @@ export class CAT721GuardPeripheral {
     }
     const expectNftScriptHash = ContractPeripheral.scriptHash(
       new CAT721(
-        minterScrtptHash,
-        CAT721GuardPeripheral.getGuardVariantScriptHashes()
+        minterScrtptHash
       )
     )
 
@@ -937,7 +934,6 @@ export class CAT20Peripheral {
   ) {
     const cat20 = new CAT20(
       minterScriptHash,
-      CAT20GuardPeripheral.getGuardVariantScriptHashes(),
       hasAdmin,
       adminScriptHash
     )
@@ -952,7 +948,7 @@ export class CAT721Peripheral {
     cat721ScriptHexOrScriptHash: string,
     minterScriptHash: string
   ) {
-    const cat721 = new CAT721(minterScriptHash, CAT721GuardPeripheral.getGuardVariantScriptHashes())
+    const cat721 = new CAT721(minterScriptHash)
     const lockingScriptHex = cat721.lockingScript.toHex()
     const lockingScriptHash = ContractPeripheral.scriptHash(lockingScriptHex)
     return cat721ScriptHexOrScriptHash === lockingScriptHex || cat721ScriptHexOrScriptHash === lockingScriptHash

@@ -158,7 +158,6 @@ export async function multiSendTokens(
     }
 
     const network = await provider.getNetwork();
-    const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
     // 4. build guard psbt
     const guardPsbt = new ExtPsbt({ network })
@@ -219,7 +218,6 @@ export async function multiSendTokens(
         for (let i = 0; i < utxos.length; i++) {
             const contract = new CAT20(
                 info.minterScriptHash,
-                guardScriptHashes,
                 info.hasAdmin ?? false,
                 info.adminScriptHash ?? toByteString('')
             ).bindToUtxo({
@@ -289,7 +287,6 @@ export async function multiSendTokens(
         for (let i = 0; i < receivers.length; i++) {
             const cat20 = new CAT20(
                 info.minterScriptHash,
-                guardScriptHashes,
                 info.hasAdmin ?? false,
                 info.adminScriptHash ?? toByteString('')
             );

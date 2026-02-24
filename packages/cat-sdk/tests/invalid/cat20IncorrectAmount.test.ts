@@ -118,7 +118,6 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
         guardState.tokenScriptIndexes = tokenScriptIndexes;
 
         guard.state = guardState;
-        const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
         {
             const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8}).spendUTXO(getDummyUtxo(mainAddress)).addContractOutput(guard, 1e8);
             const signedPsbtHex = await testSigner.signPsbt(psbt.seal().toHex(), psbt.psbtOptions());
@@ -128,7 +127,7 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
         const guardInputIndex = cat20.utxos.length;
         const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8});
         cat20.utxos.forEach((utxo, inputIndex) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
             psbt.addContractInput(cat20Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
@@ -197,7 +196,7 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
             );
         });
         outputStates.forEach((state) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash)
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash)
             cat20Contract.state = state;
             psbt.addContractOutput(
                 cat20Contract,
