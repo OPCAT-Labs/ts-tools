@@ -82,6 +82,8 @@ export class CAT721Guard_12_12_2 extends SmartContract<CAT721GuardConstState> {
         const nextNfts: FixedArray<ByteString, typeof TX_OUTPUT_COUNT_MAX_12> = fill(toByteString(''), TX_OUTPUT_COUNT_MAX_12);
         let nextNftCount = 0n;
         const inputCount = this.ctx.inputCount;
+        // F11 Fix: Ensure input count doesn't exceed variant's maximum
+        assert(inputCount <= TX_INPUT_COUNT_MAX_12, 'input count exceeds variant maximum')
         for (let i = 0n; i < TX_INPUT_COUNT_MAX_12; i++) {
             const nftScriptIndex = byteStringToInt(slice(this.state.nftScriptIndexes, i, i + 1n));
             const burnMask = slice(this.state.nftBurnMasks, i, i + 1n) == toByteString('01') ? true : false;

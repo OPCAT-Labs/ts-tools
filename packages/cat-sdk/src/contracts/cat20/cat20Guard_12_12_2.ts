@@ -127,6 +127,8 @@ export class CAT20Guard_12_12_2 extends SmartContract<CAT20GuardConstState> {
         const sumInputTokens = fill(0n, GUARD_TOKEN_TYPE_MAX_2)
         let tokenScriptIndexMax = -1n
         const inputCount = this.ctx.inputCount;
+        // F11 Fix: Ensure input count doesn't exceed variant's maximum
+        assert(inputCount <= TX_INPUT_COUNT_MAX_12, 'input count exceeds variant maximum')
         for (let i = 0; i < TX_INPUT_COUNT_MAX_12; i++) {
             const tokenScriptIndex = byteStringToInt(slice(this.state.tokenScriptIndexes, BigInt(i), BigInt(i + 1)));
             if (i < inputCount) {
