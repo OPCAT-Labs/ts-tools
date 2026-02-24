@@ -33,17 +33,17 @@ export type CAT721GuardConstState = {
     /**
      * Maps each transaction input to its NFT collection type index in nftScriptHashes array
      * - For NFT inputs: contains the index (0-3) of the collection type in nftScriptHashes
-     * - For non-NFT inputs: contains -1 (0xFF in ByteString)
+     * - For non-NFT inputs: contains -1 (0x81 in ByteString)
      * - Each index occupies 1 byte
      *
      * @example
-     * Given nftScriptIndexes = "ff00010100ff" (hex representation of [-1, 0, 1, 1, 0, -1]):
-     * - Input #0: non-NFT (0xFF = -1)
+     * Given nftScriptIndexes = "810001010081" (hex representation of [-1, 0, 1, 1, 0, -1]):
+     * - Input #0: non-NFT (0x81 = -1)
      * - Input #1: NFT collection 0 (nftScriptHashes[0])
      * - Input #2: NFT collection 1 (nftScriptHashes[1])
      * - Input #3: NFT collection 1 (nftScriptHashes[1])
      * - Input #4: NFT collection 0 (nftScriptHashes[0])
-     * - Input #5: non-NFT (0xFF = -1)
+     * - Input #5: non-NFT (0x81 = -1)
      */
     nftScriptIndexes: ByteString;
 }

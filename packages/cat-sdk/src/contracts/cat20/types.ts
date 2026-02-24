@@ -37,13 +37,13 @@ export type CAT20GuardConstState = {
    * - Each index occupies 1 byte
    *
    * @example
-   * Given tokenScriptIndexes = "ff00010100ff" (hex representation of [-1, 0, 1, 1, 0, -1]):
-   * - Input #0: non-token (0xFF = -1)
+   * Given tokenScriptIndexes = "810001010081" (hex representation of [-1, 0, 1, 1, 0, -1]):
+   * - Input #0: non-token (0x81 = -1)
    * - Input #1: token type 0 (tokenScriptHashes[0])
    * - Input #2: token type 1 (tokenScriptHashes[1])
    * - Input #3: token type 1 (tokenScriptHashes[1])
    * - Input #4: token type 0 (tokenScriptHashes[0])
-   * - Input #5: non-token (0xFF = -1)
+   * - Input #5: non-token (0x81 = -1)
    */
   tokenScriptIndexes: ByteString
 }
