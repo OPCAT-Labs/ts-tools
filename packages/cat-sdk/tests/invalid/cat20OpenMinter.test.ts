@@ -368,11 +368,9 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat20OpenMinter', (
         const tokenId = `${genesisUtxo.txId}_${genesisUtxo.outputIndex}`
         const genesisOutpoint = outpoint2ByteString(tokenId)
 
-        const premineAmount = premineCount * amountPerMint;
         const cat20OpenMinter = new CAT20OpenMinter(
             genesisOutpoint,
             totalMintCount,
-            premineAmount,
             premineCount,
             amountPerMint,
             toTokenOwnerAddress(mainAddress)
@@ -422,7 +420,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat20OpenMinter', (
         const nextMinterState = {
             ...minter.state,
         }
-        const isPremine = minter.premine > 0n && !minter.state.hasMintedBefore;
+        const isPremine = minter.premineCount > 0n && !minter.state.hasMintedBefore;
         if (!isPremine) {
             nextMinterState.remainingCount = minter.state.remainingCount - 1n;
         }

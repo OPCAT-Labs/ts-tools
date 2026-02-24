@@ -103,7 +103,6 @@ export const deployOpenMinterToken = createFeatureWithDryRun(async function(
   const tokenId = `${genesisUtxo.txId}_${genesisUtxo.outputIndex}`
 
   const openMinter = CAT20OpenMinterPeripheral.createMinter(tokenId, metadata)
-  openMinter.checkProps()
 
   const minterScriptHash = ContractPeripheral.scriptHash(openMinter)
 
@@ -228,7 +227,7 @@ export function buildMintPsbt(
   }
 
   const isPremining =
-    !spentMinterState.hasMintedBefore && spentMinter.premine > 0
+    !spentMinterState.hasMintedBefore && spentMinter.premineCount > 0
 
   if (isPremining && !preminerPubKey) {
     throw new Error('Preminer info is required for premining')

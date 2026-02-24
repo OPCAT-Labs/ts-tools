@@ -104,7 +104,7 @@ export class CAT20OpenMinterPeripheral {
     const splitAmountList = CAT20OpenMinterPeripheral.getSplitAmountList(
       state.remainingCount,
       state.hasMintedBefore,
-      contract.premine
+      contract.premineCount * contract.limit
     )
 
     const nextMinterStates = splitAmountList
@@ -137,12 +137,10 @@ export class CAT20OpenMinterPeripheral {
     const contract = new CAT20OpenMinter(
       outpoint2ByteString(tokenId),
       maxCount,
-      metadata.premine,
       premineCount,
       metadata.limit,
       metadata.preminerAddr || ''
     )
-    contract.checkProps()
     return contract
   }
 
@@ -155,8 +153,8 @@ export class CAT20OpenMinterPeripheral {
   ) {
     let amount = minter.limit
     let receiverAddr = toAddr
-    if (!state.hasMintedBefore && minter.premine > 0n) {
-      amount = minter.premine
+    if (!state.hasMintedBefore && minter.premineCount > 0n) {
+      amount = minter.premineCount * minter.limit
       receiverAddr = minter.preminerAddr
     }
     const cat20 = new CAT20(
