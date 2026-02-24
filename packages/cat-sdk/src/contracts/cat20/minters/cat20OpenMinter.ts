@@ -99,6 +99,9 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
     // backtrace
     backtraceInfo: BacktraceInfo,
   ) {
+    // F10 Fix: Enforce minter must be at input index 0
+    assert(this.ctx.inputIndex == 0n, 'minter must be at input index 0')
+
     // C.7 Fix: Ensure token output has non-zero satoshis
     assert(tokenSatoshis > 0n, 'tokenSatoshis must be greater than 0')
 
