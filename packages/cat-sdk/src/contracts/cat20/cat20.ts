@@ -113,6 +113,16 @@ export class CAT20 extends SmartContract<CAT20State> {
         unlockArgs.spendScriptInputIndex < this.ctx.inputCount,
         'script index out of bounds'
       )
+      // F2 Fix: Prevent self-reference - spendScriptInputIndex cannot point to current token input
+      assert(
+        unlockArgs.spendScriptInputIndex != this.ctx.inputIndex,
+        'spendScriptInputIndex cannot reference self'
+      )
+      // F2 Fix: Prevent pointing to guard input
+      assert(
+        unlockArgs.spendScriptInputIndex != guardInputIndex,
+        'spendScriptInputIndex cannot reference guard'
+      )
       spentScriptHash = ContextUtils.getSpentScriptHash(
         this.ctx.spentScriptHashes,
         unlockArgs.spendScriptInputIndex
