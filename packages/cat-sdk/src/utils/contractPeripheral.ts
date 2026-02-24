@@ -384,6 +384,7 @@ export class CAT20GuardPeripheral {
       txOutputCount,
       guardTokenTypes
     )
+    guard.state = guardState;
     const outputTokens = emptyOutputByteStrings().map((_, index) => {
       const receiver = receivers.find((r) => r.outputIndex === index)
       if (receiver) {
