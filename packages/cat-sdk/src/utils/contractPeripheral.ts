@@ -421,6 +421,7 @@ export class CAT20GuardPeripheral {
     }[],
     deployerAddr: ByteString,
     txInputCount: number,
+    txOutputCount: number,
   ): {
     guard: CAT20GuardVariant
     guardState: CAT20GuardConstState
@@ -470,11 +471,9 @@ export class CAT20GuardPeripheral {
 
     // Select guard variant using the same txInputCount
     const guardTokenTypes = tokenScriptHashes.size
-    // Burn txs have very few outputs (change, or admin output + change)
-    const totalTxOutputCount = 2
     const { guard, txInputCountMax: finalTxInputCountMax, txOutputCountMax } = this.selectCAT20Guard(
       txInputCount,
-      totalTxOutputCount,
+      txOutputCount,
       guardTokenTypes
     )
     guard.state = guardState
@@ -744,6 +743,7 @@ export class CAT721GuardPeripheral {
       txOutputCount,
       guardCollectionTypes
     )
+    guard.state = guardState
 
     // Set the processed data to guardState
     nftScriptHashes.forEach((scriptHash, index) => {
@@ -772,6 +772,8 @@ export class CAT721GuardPeripheral {
       inputIndex: number
     }[],
     deployerAddr: ByteString,
+    txInputCount: number,
+    txOutputCount: number,
   ): {
     guard: CAT721GuardVariant
     guardState: CAT721GuardConstState,
@@ -782,19 +784,12 @@ export class CAT721GuardPeripheral {
       throw new Error('No spent nfts')
     }
 
-    // Validate counts first
-    const inputNftCount = nftInputs.length
-    const outputNftCount = 0 // No NFT outputs for burn
-
-    // Validate input NFT count
-    if (inputNftCount > TX_INPUT_COUNT_MAX - 1) {
-      throw new Error(
-        `Too many nft inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX - 1}`
-      )
+    if (txInputCount > TX_INPUT_COUNT_MAX) {
+      throw new Error(`Too many transaction inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
     }
 
-    // Determine which size guard to use based on input count
-    const txInputCountMax = (inputNftCount + 1) <= TX_INPUT_COUNT_MAX_6 ? TX_INPUT_COUNT_MAX_6 : TX_INPUT_COUNT_MAX_12
+    // Use txInputCount consistently for both state size and guard variant selection
+    const txInputCountMax = txInputCount <= TX_INPUT_COUNT_MAX_6 ? TX_INPUT_COUNT_MAX_6 : TX_INPUT_COUNT_MAX_12
 
     // Create guard state to get the initial nftScriptIndexes
     const guardState = CAT721GuardStateLib.createEmptyState(txInputCountMax)
@@ -808,10 +803,11 @@ export class CAT721GuardPeripheral {
 
     // Select guard based on counts and collection types
     const { guard, txInputCountMax: finalTxInputCountMax, txOutputCountMax } = this.selectCAT721Guard(
-      inputNftCount + 1,
-      outputNftCount,
+      txInputCount,
+      txOutputCount,
       guardCollectionTypes
     )
+    guard.state = guardState
 
     // Set the processed data to guardState
     nftScriptHashes.forEach((scriptHash, index) => {

@@ -45,13 +45,13 @@ describe('Test the feature `burnByAdmin` for `Cat20`', () => {
 
   const getTokenUtxos = async function (
     generator: TestCAT20Generator,
-    contractHash: string,
+    ownerAddr: ByteString,
     n: number
   ) {
     const r: UTXO[] = []
     for (let index = 0; index < n; index++) {
       const utxo = await generator.mintTokenToHash160(
-        contractHash,
+        ownerAddr,
         BigInt(Math.floor(Math.random() * 1000000))
       )
       r.push(utxo)

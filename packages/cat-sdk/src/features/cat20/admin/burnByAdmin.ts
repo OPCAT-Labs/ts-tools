@@ -79,7 +79,6 @@ import { SPEND_TYPE_ADMIN_SPEND } from '../../../contracts/index.js'
  *
  * @throws {Error} If input count exceeds maximum transaction input limit
  * @throws {Error} If insufficient satoshis for transaction fees
- * @throws {Error} If token ownership validation fails (internal check)
  *
  * @example
  * ```typescript
@@ -119,6 +118,7 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
   newCAT20Utxos: UTXO[]
   changeTokenOutputIndex: number
 }> {
+  // tokens + guard input + admin input + fee input = length + 3
   if (inputTokenUtxos.length + 3 > TX_INPUT_COUNT_MAX) {
     throw new Error(
       `Too many inputs that exceed the maximum input limit of ${TX_INPUT_COUNT_MAX}`
@@ -148,8 +148,10 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
     CAT20.deserializeState(utxo.data)
   )
   const changeTokenOutputIndex = -1
-  // tokens + guard + admin + fee
+  // tokens + guard input + admin input + fee input = length + 3
   const burnTxInputCount = inputTokenUtxos.length + 3
+  // admin contract output + change output
+  const burnTxOutputCount = 2
   const { guard, guardState, tokenAmounts, tokenBurnAmounts, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
     CAT20GuardPeripheral.createBurnGuard(
       inputTokenUtxos.map((utxo, index) => ({
@@ -158,6 +160,7 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
       })),
       deployerAddr, // F14 Fix: use user's owner address as deployerAddr
       burnTxInputCount,
+      burnTxOutputCount,
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined
