@@ -1,4 +1,4 @@
-import { method } from "../decorators.js";
+import { method, prop } from "../decorators.js";
 import { assert } from "../fns/assert.js";
 import { byteStringToInt, intToByteString, len, slice, toByteString } from "../fns/byteString.js";
 import { SmartContractLib } from "../smartContractLib.js";
@@ -26,6 +26,22 @@ type ReadVarintResult = {
  * All methods are static and annotated with @method() decorator.
  */
 export class StdUtils extends SmartContractLib {
+  // VarInt prefix markers
+  @prop()
+  static readonly VARINT_2BYTE: ByteString = toByteString('fd');
+  @prop()
+  static readonly VARINT_4BYTE: ByteString = toByteString('fe');
+  @prop()
+  static readonly VARINT_8BYTE: ByteString = toByteString('ff');
+
+  // OP_PUSHDATA opcode values (as bigint for numeric comparisons)
+  @prop()
+  static readonly OP_PUSHDATA1_VAL: bigint = 0x4cn;
+  @prop()
+  static readonly OP_PUSHDATA2_VAL: bigint = 0x4dn;
+  @prop()
+  static readonly OP_PUSHDATA4_VAL: bigint = 0x4en;
+
   /**
    * Checks if the length of a ByteString is divisible by a given number and returns the quotient.
    * @param b The ByteString to check
@@ -118,15 +134,15 @@ export class StdUtils extends SmartContractLib {
       size = 1n;
     }
     else if (n < 0x10000n) {
-      b = toByteString('fd')
+      b = StdUtils.VARINT_2BYTE;
       size = 2n;
     }
     else if (n < 0x100000000n) {
-      b = toByteString('fe')
+      b = StdUtils.VARINT_4BYTE;
       size = 4n;
     }
     else {
-      b = toByteString('ff')
+      b = StdUtils.VARINT_8BYTE;
       size = 8n;
     }
     return b + StdUtils.toLEUnsigned(n, size);
@@ -151,21 +167,21 @@ export class StdUtils extends SmartContractLib {
     let size = 0n;
     let header: ByteString = toByteString('');
 
-    if (n < 0x4c) {
+    if (n < StdUtils.OP_PUSHDATA1_VAL) {
       size = 1n;
       header = toByteString('');
     }
     else if (n < 0x100) {
       size = 1n;
-      header = toByteString('4c')
+      header = intToByteString(StdUtils.OP_PUSHDATA1_VAL, 1n);
     }
     else if (n < 0x10000) {
       size = 2n;
-      header = toByteString('4d');
+      header = intToByteString(StdUtils.OP_PUSHDATA2_VAL, 1n);
     }
     else if (n < 0x100000000) {
       size = 4n;
-      header = toByteString('4e');
+      header = intToByteString(StdUtils.OP_PUSHDATA4_VAL, 1n);
     }
     else {
       // shall not reach here
@@ -187,17 +203,17 @@ export class StdUtils extends SmartContractLib {
     let nextPos: bigint = pos;
     const header: ByteString = slice(buf, pos, pos + 1n);
 
-    if (header == toByteString('fd')) {
+    if (header == StdUtils.VARINT_2BYTE) {
       l = StdUtils.fromLEUnsigned(slice(buf, pos + 1n, pos + 3n));
       ret = slice(buf, pos + 3n, pos + 3n + l);
       nextPos = pos + 3n + l;
     }
-    else if (header == toByteString('fe')) {
+    else if (header == StdUtils.VARINT_4BYTE) {
       l = StdUtils.fromLEUnsigned(slice(buf, pos + 1n, pos + 5n));
       ret = slice(buf, pos + 5n, pos + 5n + l);
       nextPos = pos + 5n + l;
     }
-    else if (header == toByteString('ff')) {
+    else if (header == StdUtils.VARINT_8BYTE) {
       l = StdUtils.fromLEUnsigned(slice(buf, pos + 1n, pos + 9n));
       ret = slice(buf, pos + 9n, pos + 9n + l);
       nextPos = pos + 9n + l;

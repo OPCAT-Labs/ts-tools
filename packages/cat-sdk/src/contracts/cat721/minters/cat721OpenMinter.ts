@@ -1,6 +1,6 @@
 import { assert, BacktraceInfo, ByteString, ContextUtils, len, method, prop, PubKey, Sig, SmartContract, tags, toByteString, TxUtils, UInt64 } from "@opcat-labs/scrypt-ts-opcat"
 import { CAT721OpenMinterState, CAT721State, MerkleProof, ProofNodePos, MERKLE_TREE_MAX_CAPACITY } from "../types.js"
-import { ConstantsLib, OWNER_ADDR_P2PKH_BYTE_LEN } from "../../constants.js"
+import { ConstantsLib, MINTER_INPUT_INDEX, OWNER_ADDR_P2PKH_BYTE_LEN } from "../../constants.js"
 import { CAT721StateLib } from "../cat721StateLib.js"
 import { OwnerUtils } from "../../utils/ownerUtils.js"
 import { CAT721OpenMinterMerkleTree } from "./cat721OpenMinterMerkleTree.js"
@@ -61,7 +61,7 @@ export class CAT721OpenMinter extends SmartContract<CAT721OpenMinterState> {
         assert(this.state.nextLocalId < this.max, 'next local id must be less than max');
 
         // minter input should be the first input in curTx
-        assert(this.ctx.inputIndex == 0n, 'minter input should be the first input in curTx');
+        assert(this.ctx.inputIndex == MINTER_INPUT_INDEX, 'minter input should be the first input in curTx');
 
         // input1.utxo.data store the nft contents, images, etc.
         const input1StateHash = ContextUtils.getSpentDataHash(this.ctx.spentDataHashes, 1n);

@@ -98,6 +98,20 @@ export const OUTPUT_DATA_HASH_LEN = SHA256_HASH_LEN
 export const NULL_ADMIN_SCRIPT_HASH = toByteString('')
 
 /**
+ * Sentinel value for unused/invalid script index in guard contracts
+ * @category Constants
+ * @onchain
+ */
+export const INVALID_INDEX = -1n
+
+/**
+ * Required input index for minter contracts (must be first input)
+ * @category Constants
+ * @onchain
+ */
+export const MINTER_INPUT_INDEX = 0n
+
+/**
  * The constants library for the CAT contracts
  * @category Constants
  * @onchain

@@ -162,12 +162,13 @@ export class ContextUtils extends SmartContractLib {
     assert(len(shPreimage.hashOutputs) == 32n, 'invalid length of hashOutputs');
     assert(shPreimage.inputIndex >= 0n, 'invalid value of inputIndex');
     assert(shPreimage.nLockTime >= 0n, 'invalid value of nLockTime');
-    assert(shPreimage.sigHashType == 1n
-      || shPreimage.sigHashType == 2n
-      || shPreimage.sigHashType == 3n
-      || shPreimage.sigHashType == 0x81n
-      || shPreimage.sigHashType == 0x82n
-      || shPreimage.sigHashType == 0x83n
+    // SigHashType values as bigint (const enum SigHashType uses number, incompatible with bigint comparison)
+    assert(shPreimage.sigHashType == 0x01n  // SigHashType.ALL
+      || shPreimage.sigHashType == 0x02n    // SigHashType.NONE
+      || shPreimage.sigHashType == 0x03n    // SigHashType.SINGLE
+      || shPreimage.sigHashType == 0x81n    // SigHashType.ANYONECANPAY_ALL
+      || shPreimage.sigHashType == 0x82n    // SigHashType.ANYONECANPAY_NONE
+      || shPreimage.sigHashType == 0x83n    // SigHashType.ANYONECANPAY_SINGLE
       , 'invalid value of sigHashType');
 
     const preimage = shPreimage.nVersion

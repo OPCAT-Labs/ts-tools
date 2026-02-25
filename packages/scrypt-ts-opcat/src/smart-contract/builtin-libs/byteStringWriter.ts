@@ -1,5 +1,5 @@
 import { method, prop } from '../decorators.js';
-import { assert, len, toByteString } from '../fns/index.js';
+import { assert, intToByteString, len, toByteString } from '../fns/index.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import { ByteString } from '../types/primitives.js';
 import { StdUtils } from './stdUtils.js';
@@ -27,17 +27,17 @@ export class ByteStringWriter extends SmartContractLib {
 
         let header: ByteString = toByteString('');
 
-        if (n < 0x4c) {
+        if (n < StdUtils.OP_PUSHDATA1_VAL) {
             header = StdUtils.toLEUnsigned(n, 1n);
         }
         else if (n < 0x100) {
-            header = toByteString('4c') + StdUtils.toLEUnsigned(n, 1n);
+            header = intToByteString(StdUtils.OP_PUSHDATA1_VAL, 1n) + StdUtils.toLEUnsigned(n, 1n);
         }
         else if (n < 0x10000) {
-            header = toByteString('4d') + StdUtils.toLEUnsigned(n, 2n);
+            header = intToByteString(StdUtils.OP_PUSHDATA2_VAL, 1n) + StdUtils.toLEUnsigned(n, 2n);
         }
         else if (n < 0x100000000) {
-            header = toByteString('4e') + StdUtils.toLEUnsigned(n, 4n);
+            header = intToByteString(StdUtils.OP_PUSHDATA4_VAL, 1n) + StdUtils.toLEUnsigned(n, 4n);
         }
         else {
             // shall not reach here
@@ -70,16 +70,16 @@ export class ByteStringWriter extends SmartContractLib {
             size = 1n;
         }
         else if (x < 0x10000n) {
-            this.buf += toByteString('fd');
+            this.buf += StdUtils.VARINT_2BYTE;
             size = 2n;
         }
         else if (x < 0x100000000n) {
             size = 4n;
-            this.buf += toByteString('fe');
+            this.buf += StdUtils.VARINT_4BYTE;
         }
         else {
             size = 8n;
-            this.buf += toByteString('ff');
+            this.buf += StdUtils.VARINT_8BYTE;
         }
         this.buf += StdUtils.toLEUnsigned(x, size);
     }

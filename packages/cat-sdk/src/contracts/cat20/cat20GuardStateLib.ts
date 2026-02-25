@@ -1,6 +1,6 @@
 import { StateLib, method, assert, ByteString, len, SHA256_HASH_LEN, FixedArray, toByteString, fill, byteStringToInt, slice, intToByteString } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT20GuardConstState } from "./types.js";
-import { ConstantsLib, GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX_6, TX_INPUT_COUNT_MAX_12 } from "../constants.js";
+import { ConstantsLib, GUARD_TOKEN_TYPE_MAX, INVALID_INDEX, TX_INPUT_COUNT_MAX_6, TX_INPUT_COUNT_MAX_12 } from "../constants.js";
 
 /**
  * The CAT20 guard state library
@@ -22,7 +22,7 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
     assert(len(_state.tokenScriptIndexes) == BigInt(txInputCountMax))
     for (let i = 0; i < txInputCountMax; i++) {
       const scriptIndex = byteStringToInt(slice(_state.tokenScriptIndexes, BigInt(i), BigInt(i + 1)))
-      assert(scriptIndex >= -1 && scriptIndex < GUARD_TOKEN_TYPE_MAX)
+      assert(scriptIndex >= Number(INVALID_INDEX) && scriptIndex < GUARD_TOKEN_TYPE_MAX)
     }
   }
 
@@ -58,7 +58,7 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
     tokenScriptHashes[2] = ConstantsLib.TOKEN_SCRIPT_HASH_PLACEHOLDER_FD
     tokenScriptHashes[3] = ConstantsLib.TOKEN_SCRIPT_HASH_PLACEHOLDER_FC
 
-    const tokenScriptIndexesArray = fill(-1n, txInputCountMax)
+    const tokenScriptIndexesArray = fill(INVALID_INDEX, txInputCountMax)
     const tokenScriptIndexes = tokenScriptIndexesArray.map(index => intToByteString(index, 1n)).join('')
 
     return {

@@ -28,6 +28,7 @@ import {
     ConstantsLib,
     TX_OUTPUT_COUNT_MAX_12,
     GUARD_TOKEN_TYPE_MAX,
+    INVALID_INDEX,
 } from '../constants.js'
 import { CAT20State, CAT20GuardConstState, CAT20_AMOUNT } from './types.js'
 import { CAT20GuardStateLib } from './cat20GuardStateLib.js'
@@ -133,7 +134,7 @@ export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
 
         // sum token input amount, data comes from cat20 raw states passed in by the user
         const sumInputTokens = fill(0n, GUARD_TOKEN_TYPE_MAX_4)
-        let tokenScriptIndexMax = -1n
+        let tokenScriptIndexMax = INVALID_INDEX
         const inputCount = this.ctx.inputCount;
         // F11 Fix: Ensure input count doesn't exceed variant's maximum
         assert(inputCount <= TX_INPUT_COUNT_MAX_12, 'input count exceeds variant maximum')
@@ -141,7 +142,7 @@ export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
             const tokenScriptIndex = byteStringToInt(slice(this.state.tokenScriptIndexes, BigInt(i), BigInt(i + 1)));
             if (i < inputCount) {
                 assert(tokenScriptIndex < inputTokenTypes, 'token script index is invalid')
-                if (tokenScriptIndex != -1n) {
+                if (tokenScriptIndex != INVALID_INDEX) {
                     // this is a token input
                     const tokenScriptHash =
                         this.state.tokenScriptHashes[Number(tokenScriptIndex)]
@@ -155,7 +156,7 @@ export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
                             : tokenScriptIndexMax
                 }
             } else {
-                assert(tokenScriptIndex == -1n, 'token script index is invalid')
+                assert(tokenScriptIndex == INVALID_INDEX, 'token script index is invalid')
             }
         }
         // verify inputTokenTypes by tokenScriptIndexMax
@@ -175,7 +176,7 @@ export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
                 const ownerAddrOrScriptHash = ownerAddrOrScriptHashes[i]
                 const tokenScriptHashIndex = tokenScriptHashIndexes[i]
                 assert(tokenScriptHashIndex < inputTokenTypes, 'token script hash index is invalid')
-                if (tokenScriptHashIndex != -1n) {
+                if (tokenScriptHashIndex != INVALID_INDEX) {
                     // this is a token output
                     // C.4 Fix: Validate owner address encoding
                     OwnerUtils.checkOwnerAddr(ownerAddrOrScriptHash)
@@ -209,7 +210,7 @@ export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
                 }
             } else {
                 assert(len(ownerAddrOrScriptHashes[i]) == 0n, 'owner addr or script hash is invalid, should be 0')
-                assert(tokenScriptHashIndexes[i] == -1n, 'token script hash index is invalid, should be -1')
+                assert(tokenScriptHashIndexes[i] == INVALID_INDEX, 'token script hash index is invalid, should be -1')
                 assert(outputTokens[i] == 0n, 'output tokens is invalid, should be 0')
                 assert(nextStateHashes[i] == toByteString(''), 'next state hash is invalid, should be empty')
                 assert(outputSatoshis[i] == 0n, 'output satoshis is invalid, should be 0')
