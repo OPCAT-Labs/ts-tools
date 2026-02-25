@@ -250,6 +250,9 @@ async function attemptTransferWithInvalidIndex(
   spendType: bigint,
   invalidIndex: bigint
 ) {
+  // F14 Fix: Get the raw pubkey string for guard signature
+  const pubkey = await testSigner.getPublicKey()
+
   const totalAmount = cat20.utxos.reduce(
     (acc, utxo) => acc + CAT20.deserializeState(utxo.data).amount,
     0n
@@ -264,7 +267,8 @@ async function attemptTransferWithInvalidIndex(
     cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
     receivers,
     txInputCount,
-    txOutputCount
+    txOutputCount,
+    guardOwnerAddr
   );
 
   // Get guardState from guard
@@ -342,7 +346,12 @@ async function attemptTransferWithInvalidIndex(
       curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
     );
 
+    // F14 Fix: Get deployer signature for guard
+    const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
     contract.unlock(
+      deployerSig,
+      PubKey(pubkey),
       tokenAmounts,
       tokenBurnAmounts,
       nextStateHashes,

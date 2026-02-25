@@ -81,7 +81,8 @@ export const burnToken = createFeatureWithDryRun(async function(
     inputTokenUtxos.map((utxo, index) => ({
       token: utxo,
       inputIndex: index,
-    }))
+    })),
+    toTokenOwnerAddress(changeAddress) // deployerAddr
   )
   guard.state = guardState
 
@@ -176,7 +177,13 @@ export const burnToken = createFeatureWithDryRun(async function(
         nextStateHashes,
         tx.txOutputs.map((output) => sha256(toHex(output.data)))
       )
+
+      // F14 Fix: Get deployer signature for guard
+      const deployerSig = tx.getSig(guardInputIndex, { publicKey: pubkey })
+
       contract.unlock(
+        deployerSig,
+        PubKey(pubkey),
         tokenAmounts as any,
         tokenBurnAmounts as any,
         nextStateHashes as any,

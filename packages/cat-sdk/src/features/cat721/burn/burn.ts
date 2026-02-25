@@ -128,7 +128,13 @@ export const burnNft = createFeatureWithDryRun(async function(
             nextStateHashes,
             tx.txOutputs.map((output) => sha256(toHex(output.data)))
         )
+
+        // F14 Fix: Get deployer signature for guard
+        const deployerSig = tx.getSig(guardInputIndex, { publicKey: pubkey })
+
         contract.unlock(
+            deployerSig,
+            PubKey(pubkey),
             nextStateHashes as any,
             ownerAddrOrScript as any,
             outputLocalIds as any,

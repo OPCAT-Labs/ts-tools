@@ -257,7 +257,13 @@ export async function singleSendNftStep2(
         const inputCAT721States = fill(CAT721StateLib.create(0n, toByteString('')), txInputCountMax)
         applyFixedArray(inputCAT721States, inputNftStates)
         const outputCount = BigInt(tx.txOutputs.length)
+
+        // F14 Fix: Get deployer signature for guard
+        const deployerSig = tx.getSig(guardInputIndex, { publicKey })
+
         contract.unlock(
+            deployerSig,
+            PubKey(publicKey),
             nextStateHashes as any,
             ownerAddrOrScriptHashes as any,
             outputLocalIds as any,

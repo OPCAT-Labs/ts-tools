@@ -72,6 +72,9 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
     });
 
     async function testCase(cat20: TestCat20, outputAmountList: bigint[], burnAmountList: bigint[]) {
+        // F14 Fix: Get the raw pubkey string for guard signature
+        const pubkey = await testSigner.getPublicKey()
+
         const outputStates: CAT20State[] = outputAmountList
             .filter((amount) => amount > 0n)
             .map((amount) => ({
@@ -97,11 +100,14 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
             cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
             receivers,
             txInputCount,
-            txOutputCount
+            txOutputCount,
+            guardOwnerAddr
         );
 
         // Now manually construct the guardState with incorrect amounts for testing
         const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax);
+        // F14 Fix: Set deployer address (required)
+        guardState.deployerAddr = guardOwnerAddr
         guardState.tokenScriptHashes[0] = ContractPeripheral.scriptHash(cat20.utxos[0].script);
 
         const tokenAmounts = fill(0n, GUARD_TOKEN_TYPE_MAX);
@@ -187,7 +193,13 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
               nextStateHashes,
               curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
             )
+
+            // F14 Fix: Get deployer signature for guard
+            const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
             contract.unlock(
+                deployerSig,
+                PubKey(pubkey),
                 tokenAmounts,
                 tokenBurnAmounts,
                 nextStateHashes,

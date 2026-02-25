@@ -313,6 +313,7 @@ export class CAT20GuardPeripheral {
     }[],
     txInputCount: number,
     txOutputCount: number,
+    deployerAddr: ByteString,
   ): {
     guard: CAT20GuardVariant
     guardState: CAT20GuardConstState
@@ -358,6 +359,9 @@ export class CAT20GuardPeripheral {
 
     // Create guard state based on the selected guard size
     const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax)
+
+    // F14 Fix: Set deployer address (required)
+    guardState.deployerAddr = deployerAddr
 
     // Process token inputs to get token amounts and script hash mapping
     const { tokenAmounts: tokenAmountsMap, tokenScriptHashes, tokenScriptIndexes, guardTokenTypes } = this.processTokenInputs(
@@ -415,6 +419,7 @@ export class CAT20GuardPeripheral {
       token: UTXO
       inputIndex: number
     }[],
+    deployerAddr: ByteString,
   ): {
     guard: CAT20GuardVariant
     guardState: CAT20GuardConstState
@@ -444,6 +449,9 @@ export class CAT20GuardPeripheral {
 
     // Create guard state based on the selected guard size
     const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax)
+
+    // F14 Fix: Set deployer address (required)
+    guardState.deployerAddr = deployerAddr
 
     // Process token inputs to get token amounts and script hash mapping
     const { tokenAmounts: tokenAmountsMap, tokenScriptHashes, tokenScriptIndexes } = this.processTokenInputs(

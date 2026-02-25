@@ -98,6 +98,9 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
 
 
     async function testCase(cat20: TestCat20, callback: (psbt: ExtPsbt) => void) {
+        // F14 Fix: Get the raw pubkey string for guard signature
+        const pubkey = await testSigner.getPublicKey()
+
         const outputAmountList: bigint[] = [cat20.utxos.reduce((acc, utxo) => acc + CAT20StateLib.deserializeState(utxo.data).amount, 0n)];
         const outputStates: CAT20State[] = outputAmountList.map((amount) => ({
             ownerAddr: CAT20StateLib.deserializeState(cat20.utxos[0].data).ownerAddr,
@@ -114,7 +117,8 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
             cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
             outputStates.map((state, index) => ({ address: state.ownerAddr, amount: state.amount, outputIndex: index })),
             txInputCount,
-            txOutputCount
+            txOutputCount,
+            guardOwnerAddr
         );
         guard.state = guardState;
 
@@ -186,7 +190,13 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
               nextStateHashes,
               curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
             )
+
+            // F14 Fix: Get deployer signature for guard
+            const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
             contract.unlock(
+                deployerSig,
+                PubKey(pubkey),
                 tokenAmounts,
                 tokenBurnAmounts,
                 nextStateHashes,
@@ -215,6 +225,9 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
     }
 
     async function testCaseWithOutputCountMax(cat20: TestCat20, callback: (psbt: ExtPsbt, txOutputCountMax: number) => void) {
+        // F14 Fix: Get the raw pubkey string for guard signature
+        const pubkey = await testSigner.getPublicKey()
+
         const outputAmountList: bigint[] = [cat20.utxos.reduce((acc, utxo) => acc + CAT20StateLib.deserializeState(utxo.data).amount, 0n)];
         const outputStates: CAT20State[] = outputAmountList.map((amount) => ({
             ownerAddr: CAT20StateLib.deserializeState(cat20.utxos[0].data).ownerAddr,
@@ -231,7 +244,8 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
             cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
             outputStates.map((state, index) => ({ address: state.ownerAddr, amount: state.amount, outputIndex: index })),
             txInputCount,
-            txOutputCount
+            txOutputCount,
+            guardOwnerAddr
         );
         guard.state = guardState;
 
@@ -298,12 +312,18 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
                 applyFixedArray(cat20States, inputCat20States, cat20InputStartIndex);
             }
             const outputCount = curPsbt.txOutputs.length;
-            const nextStateHashes = fill(toByteString(''), txOutputCountMax) 
+            const nextStateHashes = fill(toByteString(''), txOutputCountMax)
             applyFixedArray(
               nextStateHashes,
               curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
             )
+
+            // F14 Fix: Get deployer signature for guard
+            const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
             contract.unlock(
+                deployerSig,
+                PubKey(pubkey),
                 tokenAmounts,
                 tokenBurnAmounts,
                 nextStateHashes,

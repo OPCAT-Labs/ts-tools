@@ -2,7 +2,7 @@ import { ByteString, ChainProvider, ExtPsbt, Signer, UTXO, UtxoProvider, assert,
 import { CAT20GuardStateLib, CAT20StateLib, CAT20, GUARD_TOKEN_TYPE_MAX, CAT20GuardConstState, CAT20State, SPEND_TYPE_USER_SPEND, CAT20_AMOUNT } from "../../../../src/contracts";
 import { CAT20GuardPeripheral, ContractPeripheral } from "../../../../src/utils/contractPeripheral";
 import { Postage } from "../../../../src/typeConstants";
-import { applyFixedArray, filterFeeUtxos } from "../../../../src/utils";
+import { applyFixedArray, filterFeeUtxos, toTokenOwnerAddress } from "../../../../src/utils";
 import * as opcat from '@opcat-labs/opcat';
 import { Transaction } from '@opcat-labs/opcat';
 
@@ -131,22 +131,6 @@ export async function multiSendTokens(
     // output counts must be <= maxOutputCount
     assert(outputCount <= maxOutputCount, `outputCount (${outputCount}) exceeds maxOutputCount (${maxOutputCount})`);
 
-    // 3. build guard state
-    const { guardState, tokenAmounts, tokenBurnAmounts } = createMultiSendGuardState(
-        [type1TokenUtxos, type2TokenUtxos, type3TokenUtxos, type4TokenUtxos],
-        [type1TokenReceivers, type2TokenReceivers, type3TokenReceivers, type4TokenReceivers],
-        actualTokenTypeCount,
-        maxInputCount
-    );
-
-    // Select the appropriate guard based on guard capacity parameters
-    const { guard } = CAT20GuardPeripheral.selectCAT20Guard(
-        maxInputCount,
-        maxOutputCount,
-        guardTokenTypeCapacity
-    );
-    guard.state = guardState;
-
     // Get necessary information
     const pubkey = await signer.getPublicKey();
     const feeChangeAddress = await signer.getAddress();
@@ -158,6 +142,24 @@ export async function multiSendTokens(
     }
 
     const network = await provider.getNetwork();
+
+    // 3. build guard state
+    const deployerAddr = toTokenOwnerAddress(feeChangeAddress);
+    const { guardState, tokenAmounts, tokenBurnAmounts } = createMultiSendGuardState(
+        [type1TokenUtxos, type2TokenUtxos, type3TokenUtxos, type4TokenUtxos],
+        [type1TokenReceivers, type2TokenReceivers, type3TokenReceivers, type4TokenReceivers],
+        actualTokenTypeCount,
+        maxInputCount,
+        deployerAddr
+    );
+
+    // Select the appropriate guard based on guard capacity parameters
+    const { guard } = CAT20GuardPeripheral.selectCAT20Guard(
+        maxInputCount,
+        maxOutputCount,
+        guardTokenTypeCapacity
+    );
+    guard.state = guardState;
 
     // 4. build guard psbt
     const guardPsbt = new ExtPsbt({ network })
@@ -340,7 +342,12 @@ export async function multiSendTokens(
             tx.txOutputs.map((output) => sha256(toHex(output.data)))
         );
 
+        // F14 Fix: Get deployer signature for guard
+        const deployerSig = tx.getSig(guardInputIndex, { publicKey: pubkey })
+
         contract.unlock(
+            deployerSig,
+            PubKey(pubkey),
             tokenAmounts as any,
             tokenBurnAmounts as any,
             nextStateHashes as any,
@@ -400,7 +407,8 @@ function createMultiSendGuardState(
     tokenTypeUtxos: UTXO[][],
     tokenTypeReceivers: CAT20Reciever[][],
     actualTokenTypeCount: number,
-    maxInputCount: 6 | 12
+    maxInputCount: 6 | 12,
+    deployerAddr: ByteString
 ): {
     guardState: CAT20GuardConstState;
     tokenAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>;
@@ -408,6 +416,9 @@ function createMultiSendGuardState(
 } {
     // Create empty guard state
     const guardState = CAT20GuardStateLib.createEmptyState(maxInputCount);
+
+    // F14 Fix: Set deployer address (required)
+    guardState.deployerAddr = deployerAddr
 
     // Map to track amounts and find actual token type indices
     const tokenInputAmounts = new Map<number, bigint>();

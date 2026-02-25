@@ -2,7 +2,7 @@ import { ByteString, ChainProvider, ExtPsbt, Signer, UTXO, UtxoProvider, assert,
 import { CAT721GuardStateLib, CAT721StateLib, CAT721, NFT_GUARD_COLLECTION_TYPE_MAX, CAT721GuardConstState, CAT721State } from "../../../../src/contracts";
 import { CAT721GuardPeripheral, ContractPeripheral } from "../../../../src/utils/contractPeripheral";
 import { Postage } from "../../../../src/typeConstants";
-import { applyFixedArray, filterFeeUtxos } from "../../../../src/utils";
+import { applyFixedArray, filterFeeUtxos, toTokenOwnerAddress } from "../../../../src/utils";
 import * as opcat from '@opcat-labs/opcat';
 import { Transaction } from '@opcat-labs/opcat';
 
@@ -125,22 +125,6 @@ export async function multiSendNfts(
     // output counts must be <= maxOutputCount
     assert(outputCount <= maxOutputCount, `outputCount (${outputCount}) exceeds maxOutputCount (${maxOutputCount})`);
 
-    // 3. build guard state
-    const guardState = createMultiSendGuardState(
-        [collection1NftUtxos, collection2NftUtxos, collection3NftUtxos, collection4NftUtxos],
-        [collection1NftReceivers, collection2NftReceivers, collection3NftReceivers, collection4NftReceivers],
-        actualCollectionTypeCount,
-        maxInputCount
-    );
-
-    // Select the appropriate guard based on guard capacity parameters
-    const { guard } = CAT721GuardPeripheral.selectCAT721Guard(
-        maxInputCount,
-        maxOutputCount,
-        guardCollectionTypeCapacity
-    );
-    guard.state = guardState;
-
     // Get necessary information
     const pubkey = await signer.getPublicKey();
     const feeChangeAddress = await signer.getAddress();
@@ -152,6 +136,24 @@ export async function multiSendNfts(
     }
 
     const network = await provider.getNetwork();
+
+    // 3. build guard state
+    const deployerAddr = toTokenOwnerAddress(feeChangeAddress);
+    const guardState = createMultiSendGuardState(
+        [collection1NftUtxos, collection2NftUtxos, collection3NftUtxos, collection4NftUtxos],
+        [collection1NftReceivers, collection2NftReceivers, collection3NftReceivers, collection4NftReceivers],
+        actualCollectionTypeCount,
+        maxInputCount,
+        deployerAddr
+    );
+
+    // Select the appropriate guard based on guard capacity parameters
+    const { guard } = CAT721GuardPeripheral.selectCAT721Guard(
+        maxInputCount,
+        maxOutputCount,
+        guardCollectionTypeCapacity
+    );
+    guard.state = guardState;
 
     // 4. build guard psbt
     const guardPsbt = new ExtPsbt({ network })
@@ -327,7 +329,12 @@ export async function multiSendNfts(
             tx.txOutputs.map((output) => sha256(toHex(output.data)))
         );
 
+        // F14 Fix: Get deployer signature for guard
+        const deployerSig = tx.getSig(guardInputIndex, { publicKey: pubkey })
+
         contract.unlock(
+            deployerSig,
+            PubKey(pubkey),
             nextStateHashes as any,
             ownerAddrOrScriptHashes as any,
             outputLocalIds as any,
@@ -383,10 +390,14 @@ function createMultiSendGuardState(
     collectionNftUtxos: UTXO[][],
     collectionNftReceivers: CAT721Receiver[][],
     actualCollectionTypeCount: number,
-    maxInputCount: 6 | 12
+    maxInputCount: 6 | 12,
+    deployerAddr: ByteString
 ): CAT721GuardConstState {
     // Create empty guard state
     const guardState = CAT721GuardStateLib.createEmptyState(maxInputCount);
+
+    // F14 Fix: Set deployer address (required)
+    guardState.deployerAddr = deployerAddr
 
     // Find which collection types are actually being used
     const actualCollectionTypeIndices: number[] = [];

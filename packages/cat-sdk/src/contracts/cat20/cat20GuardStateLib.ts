@@ -44,6 +44,12 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
   }
 
 
+  /**
+   * Creates an empty CAT20 guard state with default values
+   * @param txInputCountMax Maximum number of transaction inputs supported by this guard variant
+   * @returns Empty guard state with placeholder token script hashes and -1 indexes for all inputs
+   * @note F21 Fix: Uses intToByteString(index, 1) to encode -1 as 0x81 for consistency with on-chain validation
+   */
   static createEmptyState(txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12): CAT20GuardConstState {
     const tokenScriptHashes = fill(toByteString(''), GUARD_TOKEN_TYPE_MAX)
     // default value to ensure the uniqueness of token scripts
@@ -56,6 +62,7 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
     const tokenScriptIndexes = tokenScriptIndexesArray.map(index => intToByteString(index, 1n)).join('')
 
     return {
+      deployerAddr: toByteString(''),
       tokenScriptHashes: tokenScriptHashes,
       tokenScriptIndexes,
     }

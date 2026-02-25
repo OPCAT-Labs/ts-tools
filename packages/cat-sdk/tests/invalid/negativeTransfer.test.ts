@@ -104,6 +104,9 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
         inputAmountList: bigint[],
         outputAmountList: bigint[],
     ) {
+        // F14 Fix: Get the raw pubkey string for guard signature
+        const pubkey = await testSigner.getPublicKey()
+
         const utxoList = await Promise.all(inputAmountList.map(fakeCAT20))
 
         const outputStates: CAT20State[] = outputAmountList
@@ -121,7 +124,8 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
             utxoList.map((utxo, index) => ({ token: utxo.utxo, inputIndex: index })),
             outputStates.map((state, index) => ({ address: state.ownerAddr, amount: state.amount, outputIndex: index })),
             txInputCount,
-            txOutputCount
+            txOutputCount,
+            guardOwnerAddr
         )
         guard.state = guardState
         {
@@ -188,7 +192,13 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
                 nextStateHashes,
                 curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
             )
+
+            // F14 Fix: Get deployer signature for guard
+            const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
             contract.unlock(
+                deployerSig,
+                PubKey(pubkey),
                 tokenAmounts,
                 tokenBurnAmounts,
                 nextStateHashes,
@@ -219,6 +229,9 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
         inputLocalIds: bigint[],
         outputLocalIds: bigint[],
     ) {
+        // F14 Fix: Get the raw pubkey string for guard signature
+        const pubkey = await testSigner.getPublicKey()
+
         const utxoList = await Promise.all(inputLocalIds.map(fakeCAT721))
 
         const outputStates: CAT721State[] = outputLocalIds.map((localId) => {
@@ -318,7 +331,13 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
                 nextStateHashes,
                 curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
             )
+
+            // F14 Fix: Get deployer signature for guard
+            const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
             contract.unlock(
+                deployerSig,
+                PubKey(pubkey),
                 nextStateHashes,
                 ownerAddrOrScripts,
                 _outputLocalIds,

@@ -18,6 +18,8 @@ import {
     tags,
     byteStringToInt,
     slice,
+    Sig,
+    PubKey,
 } from '@opcat-labs/scrypt-ts-opcat'
 import {
     TX_INPUT_COUNT_MAX_12,
@@ -44,6 +46,9 @@ import { OwnerUtils } from '../utils/ownerUtils.js'
 export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
     @method()
     public unlock(
+        // deployer signature to prevent guard reuse
+        deployerSig: Sig,
+        deployerPubKey: PubKey,
         // total number of tokens for each type of token in curTx inputs
         // e.g. [100, 200, 0, 0] means there are a total of 100 token1 and 200 token2 in curTx inputs
         tokenAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>,
@@ -77,6 +82,10 @@ export class CAT20Guard_12_12_4 extends SmartContract<CAT20GuardConstState> {
         // the number of curTx outputs except for the state hash root output
         outputCount: bigint
     ) {
+        // F14 Fix: Verify deployer signature to prevent guard reuse
+        OwnerUtils.checkUserOwner(deployerPubKey, this.state.deployerAddr)
+        assert(this.checkSig(deployerSig, deployerPubKey), 'deployer signature is invalid')
+
         // check current input state hash empty
 
         CAT20GuardStateLib.formalCheckState(this.state, 12);

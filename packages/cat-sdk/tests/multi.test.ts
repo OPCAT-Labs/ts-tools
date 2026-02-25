@@ -176,6 +176,9 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
         }
 
         async test() {
+            // F14 Fix: Get the raw pubkey string for guard signature
+            const pubkey = await testSigner.getPublicKey()
+
             if (this.tested) {
                 throw new Error('TestCase already tested');
             }
@@ -262,7 +265,8 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                     this.cat20s.map((item, idx) => ({ token: item.cat20.utxo, inputIndex: idx })),
                     tempReceivers,
                     txInputCount,
-                    txOutputCount
+                    txOutputCount,
+                    guardOwnerAddr
                 );
 
                 // Now set the correct burn amounts by type
@@ -362,7 +366,13 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                         nextStateHashes,
                         curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
                     )
+
+                    // F14 Fix: Get deployer signature for guard
+                    const deployerSig = curPsbt.getSig(cat20GuardInputIndex, { publicKey: pubkey })
+
                     contract.unlock(
+                        deployerSig,
+                        PubKey(pubkey),
                         cat20TokenAmounts,
                         cat20TokenBurnAmounts,
                         nextStateHashes,
@@ -500,7 +510,13 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                         nextStateHashes,
                         curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
                     )
+
+                    // F14 Fix: Get deployer signature for guard
+                    const deployerSig = curPsbt.getSig(cat721GuardInputIndex, { publicKey: pubkey })
+
                     contract.unlock(
+                        deployerSig,
+                        PubKey(pubkey),
                         nextStateHashes,
                         ownerAddrOrScripts,
                         _outputLocalIds,

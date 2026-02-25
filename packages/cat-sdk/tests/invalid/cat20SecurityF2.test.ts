@@ -159,7 +159,8 @@ isLocalTest(testProvider) && describe('Test F.2 - Contract Owner Authorization S
         cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
         receivers,
         txInputCount,
-        txOutputCount
+        txOutputCount,
+        guardOwnerAddr
       );
 
       const guardScriptHash = ContractPeripheral.scriptHash(guard.lockingScript.toHex());
@@ -237,6 +238,9 @@ async function attemptTransferWithSelfReference(
   mainPubKey: PubKey,
   tokenInputIndex: number
 ) {
+  // F14 Fix: Get the raw pubkey string for guard signature
+  const pubkey = await testSigner.getPublicKey()
+
   const totalAmount = cat20.utxos.reduce(
     (acc, utxo) => acc + CAT20.deserializeState(utxo.data).amount,
     0n
@@ -251,7 +255,8 @@ async function attemptTransferWithSelfReference(
     cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
     receivers,
     txInputCount,
-    txOutputCount
+    txOutputCount,
+    guardOwnerAddr
   );
 
   const guardState = guard.state;
@@ -328,7 +333,12 @@ async function attemptTransferWithSelfReference(
       curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
     );
 
+    // F14 Fix: Get deployer signature for guard
+    const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
     contract.unlock(
+      deployerSig,
+      PubKey(pubkey),
       tokenAmounts,
       tokenBurnAmounts,
       nextStateHashes,
@@ -371,6 +381,9 @@ async function attemptTransferWithGuardReference(
   mainAddress: string,
   mainPubKey: PubKey
 ) {
+  // F14 Fix: Get the raw pubkey string for guard signature
+  const pubkey = await testSigner.getPublicKey()
+
   const totalAmount = cat20.utxos.reduce(
     (acc, utxo) => acc + CAT20.deserializeState(utxo.data).amount,
     0n
@@ -385,7 +398,8 @@ async function attemptTransferWithGuardReference(
     cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
     receivers,
     txInputCount,
-    txOutputCount
+    txOutputCount,
+    guardOwnerAddr
   );
 
   const guardState = guard.state;
@@ -462,7 +476,12 @@ async function attemptTransferWithGuardReference(
       curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
     );
 
+    // F14 Fix: Get deployer signature for guard
+    const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
     contract.unlock(
+      deployerSig,
+      PubKey(pubkey),
       tokenAmounts,
       tokenBurnAmounts,
       nextStateHashes,
@@ -505,6 +524,9 @@ async function attemptAdminTransferWithSelfReference(
   mainPubKey: PubKey,
   tokenInputIndex: number
 ) {
+  // F14 Fix: Get the raw pubkey string for guard signature
+  const pubkey = await testSigner.getPublicKey()
+
   const totalAmount = cat20.utxos.reduce(
     (acc, utxo) => acc + CAT20.deserializeState(utxo.data).amount,
     0n
@@ -519,7 +541,8 @@ async function attemptAdminTransferWithSelfReference(
     cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
     receivers,
     txInputCount,
-    txOutputCount
+    txOutputCount,
+    guardOwnerAddr
   );
 
   const guardState = guard.state;
@@ -596,7 +619,12 @@ async function attemptAdminTransferWithSelfReference(
       curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
     );
 
+    // F14 Fix: Get deployer signature for guard
+    const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
     contract.unlock(
+      deployerSig,
+      PubKey(pubkey),
       tokenAmounts,
       tokenBurnAmounts,
       nextStateHashes,
@@ -637,6 +665,9 @@ async function attemptAdminTransferWithGuardReference(
   mainAddress: string,
   mainPubKey: PubKey
 ) {
+  // F14 Fix: Get the raw pubkey string for guard signature
+  const pubkey = await testSigner.getPublicKey()
+
   const totalAmount = cat20.utxos.reduce(
     (acc, utxo) => acc + CAT20.deserializeState(utxo.data).amount,
     0n
@@ -651,7 +682,8 @@ async function attemptAdminTransferWithGuardReference(
     cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
     receivers,
     txInputCount,
-    txOutputCount
+    txOutputCount,
+    guardOwnerAddr
   );
 
   const guardState = guard.state;
@@ -726,7 +758,12 @@ async function attemptAdminTransferWithGuardReference(
       curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
     );
 
+    // F14 Fix: Get deployer signature for guard
+    const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
     contract.unlock(
+      deployerSig,
+      PubKey(pubkey),
       tokenAmounts,
       tokenBurnAmounts,
       nextStateHashes,
@@ -767,6 +804,9 @@ async function attemptUserTransfer(
   mainAddress: string,
   mainPubKey: PubKey
 ) {
+  // F14 Fix: Get the raw pubkey string for guard signature
+  const pubkey = await testSigner.getPublicKey()
+
   const totalAmount = cat20.utxos.reduce(
     (acc, utxo) => acc + CAT20.deserializeState(utxo.data).amount,
     0n
@@ -781,7 +821,8 @@ async function attemptUserTransfer(
     cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
     receivers,
     txInputCount,
-    txOutputCount
+    txOutputCount,
+    guardOwnerAddr
   );
 
   const guardState = guard.state;
@@ -858,7 +899,12 @@ async function attemptUserTransfer(
       curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
     );
 
+    // F14 Fix: Get deployer signature for guard
+    const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
     contract.unlock(
+      deployerSig,
+      PubKey(pubkey),
       tokenAmounts,
       tokenBurnAmounts,
       nextStateHashes,

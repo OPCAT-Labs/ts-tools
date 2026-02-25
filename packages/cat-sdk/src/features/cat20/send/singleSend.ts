@@ -89,7 +89,8 @@ export const singleSend = createFeatureWithDryRun(async function(
     receivers,
     feeChangeAddress,
     tokenChangeAddress,
-    feeRate
+    feeRate,
+    toTokenOwnerAddress(await signer.getAddress()) // deployerAddr
   );
   const signedGuardPsbt = ExtPsbt.fromHex(await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions()))
   guardPsbt.combine(signedGuardPsbt).finalizeAllInputs()
@@ -139,6 +140,7 @@ export const singleSend = createFeatureWithDryRun(async function(
  * @param feeChangeAddress the address for the change output
  * @param tokenChangeAddress the address for the change output
  * @param feeRate the fee rate for the transaction
+ * @param guardOwnerAddr the owner address of the guard (used as deployerAddr)
  * @returns the guard and the output token states
  */
 export async function singleSendStep1(
@@ -151,7 +153,8 @@ export async function singleSendStep1(
   }>,
   feeChangeAddress: ByteString,
   tokenChangeAddress: ByteString,
-  feeRate: number
+  feeRate: number,
+  guardOwnerAddr: ByteString,
 ) {
   if (inputTokenUtxos.length + 2 > TX_INPUT_COUNT_MAX) {
     throw new Error(
@@ -203,7 +206,8 @@ export async function singleSendStep1(
         outputIndex: index,
       })),
       txInputCount,
-      txOutputCount
+      txOutputCount,
+      guardOwnerAddr
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined
@@ -362,7 +366,12 @@ export async function singleSendStep2(
       tx.txOutputs.map((output) => sha256(toHex(output.data)))
     )
 
+    // F14 Fix: Get deployer signature for guard
+    const deployerSig = tx.getSig(guardInputIndex, { publicKey })
+
     contract.unlock(
+      deployerSig,
+      PubKey(publicKey),
       tokenAmounts as any,
       tokenBurnAmounts as any,
       nextStateHashes as any,

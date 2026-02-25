@@ -21,6 +21,9 @@ import { OwnerUtils } from "../utils/ownerUtils.js";
 export class CAT721Guard_6_6_2 extends SmartContract<CAT721GuardConstState> {
     @method()
     public unlock(
+        // deployer signature to prevent guard reuse
+        deployerSig: Sig,
+        deployerPubKey: PubKey,
         nextStateHashes: FixedArray<ByteString, typeof TX_OUTPUT_COUNT_MAX_6>,
         // the logic is the same as cat20 guard
         ownerAddrOrScriptHashes: FixedArray<ByteString, typeof TX_OUTPUT_COUNT_MAX_6>,
@@ -44,6 +47,10 @@ export class CAT721Guard_6_6_2 extends SmartContract<CAT721GuardConstState> {
         // the number of curTx outputs except for the state hash root output
         outputCount: bigint
     ) {
+        // F14 Fix: Verify deployer signature to prevent guard reuse
+        OwnerUtils.checkUserOwner(deployerPubKey, this.state.deployerAddr)
+        assert(this.checkSig(deployerSig, deployerPubKey), 'deployer signature is invalid')
+
         CAT721GuardStateLib.formalCheckState(this.state, 6);
 
         // how many different types of nfts in curTx inputs
@@ -171,19 +178,5 @@ export class CAT721Guard_6_6_2 extends SmartContract<CAT721GuardConstState> {
 
         // confine curTx outputs
         assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
-    }
-
-    /**
-     * Destroys this Guard UTXO, allowing the deployer to reclaim the satoshis.
-     * Only the original deployer (whose address matches deployerAddr) can authorize this method.
-     * The satoshis are sent to the change output address specified in the transaction.
-     * @param userSig - Signature from the deployer
-     * @param userPubKey - Public key of the deployer
-     */
-    @method()
-    public destroy(userSig: Sig, userPubKey: PubKey) {
-        OwnerUtils.checkUserOwner(userPubKey, this.state.deployerAddr)
-        assert(this.checkSig(userSig, userPubKey))
-        assert(this.checkOutputs(this.buildChangeOutput()), 'Outputs mismatch with the transaction context');
     }
 }

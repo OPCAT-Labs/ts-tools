@@ -50,10 +50,13 @@ export async function contractSend(
         `Too many inputs that exceed the maximum input limit of ${TX_INPUT_COUNT_MAX}`
       )
     }
-  
+
     const changeAddress = await signer.getAddress()
+    const pubkey = await signer.getPublicKey()
     // we use the p2pkh contract as the contract owner
     const expectContractOwner = toTokenOwnerAddress(changeAddress, true)
+    // F14 Fix: Use user's owner address for deployerAddr (guard deployer is the user, not the contract)
+    const deployerAddr = toTokenOwnerAddress(changeAddress)
   
     let utxos = await provider.getUtxos(changeAddress)
     utxos = filterFeeUtxos(utxos).slice(0, TX_INPUT_COUNT_MAX)
@@ -107,7 +110,8 @@ export async function contractSend(
           outputIndex: index,
         })),
         txInputCount,
-        txOutputCount
+        txOutputCount,
+        deployerAddr // F14 Fix: use user's owner address as deployerAddr
       )
     const outputTokens: CAT20State[] = _outputTokens.filter(
       (v) => v != undefined
@@ -222,7 +226,13 @@ export async function contractSend(
           nextStateHashes,
           tx.txOutputs.map((output) => sha256(toHex(output.data)))
         )
+
+        // F14 Fix: Get deployer signature for guard
+        const deployerSig = tx.getSig(guardInputIndex, { publicKey: pubkey })
+
         contract.unlock(
+          deployerSig,
+          PubKey(pubkey),
           tokenAmounts as any,
           tokenBurnAmounts as any,
           nextStateHashes as any,
