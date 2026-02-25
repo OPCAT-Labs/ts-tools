@@ -126,7 +126,6 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
   }
 
   const changeAddress = await signer.getAddress()
-  // F14 Fix: Use user's owner address for deployerAddr (guard deployer is the user, not the contract)
   const deployerAddr = toTokenOwnerAddress(changeAddress)
 
   let utxos = await provider.getUtxos(changeAddress)
@@ -158,7 +157,7 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
         token: utxo,
         inputIndex: index,
       })),
-      deployerAddr, // F14 Fix: use user's owner address as deployerAddr
+      deployerAddr,
       burnTxInputCount,
       burnTxOutputCount,
     )
@@ -268,7 +267,7 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
       tx.txOutputs.map((output) => sha256(toHex(output.data)))
     )
 
-    // F14 Fix: Get deployer signature for guard
+    // Get deployer signature for guard
     const deployerSig = tx.getSig(guardInputIndex, { publicKey: pubkey })
 
     contract.unlock(
