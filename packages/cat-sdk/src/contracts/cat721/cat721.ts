@@ -55,6 +55,10 @@ export class CAT721 extends SmartContract<CAT721State> {
     if (len(this.state.ownerAddr) == OWNER_ADDR_CONTRACT_HASH_BYTE_LEN) {
       // unlock token owned by contract script
       assert(unlockArgs.contractInputIndex >= 0n && unlockArgs.contractInputIndex < this.ctx.inputCount, 'contract input index is invalid')
+      // C2/F3 Fix: Prevent self-reference attack
+      assert(unlockArgs.contractInputIndex != this.ctx.inputIndex, 'contractInputIndex cannot reference self')
+      // C3 Fix: Prevent pointing to guard input
+      assert(unlockArgs.contractInputIndex != guardInputIndex, 'contractInputIndex cannot reference guard')
       assert(this.state.ownerAddr == ContextUtils.getSpentScriptHash(this.ctx.spentScriptHashes, unlockArgs.contractInputIndex), 'contract input script is invalid')
     } else {
       OwnerUtils.checkUserOwner(unlockArgs.userPubKey, this.state.ownerAddr);

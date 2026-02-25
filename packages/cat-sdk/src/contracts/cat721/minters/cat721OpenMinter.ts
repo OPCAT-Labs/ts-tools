@@ -1,5 +1,5 @@
 import { assert, BacktraceInfo, ByteString, ContextUtils, len, method, prop, PubKey, Sig, SmartContract, tags, toByteString, TxUtils, UInt64 } from "@opcat-labs/scrypt-ts-opcat"
-import { CAT721OpenMinterState, CAT721State, MerkleProof, ProofNodePos } from "../types.js"
+import { CAT721OpenMinterState, CAT721State, MerkleProof, ProofNodePos, MERKLE_TREE_MAX_CAPACITY } from "../types.js"
 import { ConstantsLib, OWNER_ADDR_P2PKH_BYTE_LEN } from "../../constants.js"
 import { CAT721StateLib } from "../cat721StateLib.js"
 import { OwnerUtils } from "../../utils/ownerUtils.js"
@@ -117,6 +117,8 @@ export class CAT721OpenMinter extends SmartContract<CAT721OpenMinterState> {
 
     public checkProps() {
         assert(this.max > 0n, 'max must be greater than 0')
+        // C7 Fix: Ensure max doesn't exceed merkle tree capacity
+        assert(this.max <= BigInt(MERKLE_TREE_MAX_CAPACITY), 'max exceeds merkle tree capacity')
         assert(this.premine >= 0n && this.premine <= this.max, 'premine must be greater or equal to 0 and less than or equal to max')
         if (this.premine > 0n) {
             assert(len(this.preminerAddr) == OWNER_ADDR_P2PKH_BYTE_LEN, 'preminerAddr must be set')

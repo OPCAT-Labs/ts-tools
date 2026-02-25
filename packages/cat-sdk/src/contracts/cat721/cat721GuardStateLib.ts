@@ -18,8 +18,10 @@ export class CAT721GuardStateLib extends StateLib<CAT721GuardConstState> {
             const scriptLen = len(_state.nftScriptHashes[i]);
             assert(scriptLen == SHA256_HASH_LEN);
         }
-        
+
         assert(len(_state.nftScriptIndexes) == BigInt(txInputCountMax))
+        // F18 Fix: Check nftBurnMasks length
+        assert(len(_state.nftBurnMasks) == BigInt(txInputCountMax), 'nftBurnMasks length is invalid')
         for (let i = 0; i < txInputCountMax; i++) {
             const scriptIndex = byteStringToInt(slice(_state.nftScriptIndexes, BigInt(i), BigInt(i + 1)));
             assert(scriptIndex >= -1 && scriptIndex < NFT_GUARD_COLLECTION_TYPE_MAX);

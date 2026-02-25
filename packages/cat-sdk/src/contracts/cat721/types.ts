@@ -61,16 +61,32 @@ export type CAT721ClosedMinterState = {
 }
 
 /**
- * The height of the merkle proof for CAT721 open minter
+ * The height of the merkle tree for CAT721 open minter
  * @onchain
  */
 export const HEIGHT = 15;
 
 /**
- * The merkle proof for CAT721 open minter
+ * The number of proof elements needed for merkle verification
+ * (HEIGHT - 1 because the loop iterates from leaf to root, excluding the root itself)
+ * F20 Fix: Proof arrays now match actual on-chain usage
  * @onchain
  */
-export type MerkleProof = FixedArray<ByteString, typeof HEIGHT>;
+export const MERKLE_PROOF_HEIGHT = 14;
+
+/**
+ * Maximum number of NFTs that can be minted with merkle tree of HEIGHT
+ * C7 Fix: Used to validate max parameter
+ * @onchain
+ */
+export const MERKLE_TREE_MAX_CAPACITY = 16384; // 2^14 = 2^(HEIGHT-1)
+
+/**
+ * The merkle proof for CAT721 open minter
+ * F20 Fix: Uses MERKLE_PROOF_HEIGHT (14) instead of HEIGHT (15) to match on-chain loop
+ * @onchain
+ */
+export type MerkleProof = FixedArray<ByteString, typeof MERKLE_PROOF_HEIGHT>;
 
 
 /**
@@ -78,9 +94,10 @@ export type MerkleProof = FixedArray<ByteString, typeof HEIGHT>;
  * to indicate whether the node in merkle proof is on the left or right
  * if the node is on the right, then the value is true
  * otherwise, the value is false
+ * F20 Fix: Uses MERKLE_PROOF_HEIGHT (14) instead of HEIGHT (15) to match on-chain loop
  * @onchain
  */
-export type ProofNodePos = FixedArray<boolean, typeof HEIGHT>;
+export type ProofNodePos = FixedArray<boolean, typeof MERKLE_PROOF_HEIGHT>;
 
 /**
  * The merkle leaf for CAT721 open minter

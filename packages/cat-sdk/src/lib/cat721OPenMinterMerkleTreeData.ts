@@ -84,8 +84,7 @@ export class CAT721OpenMinterMerkleTreeData {
             }
             prevIndex = curIndex;
         }
-        neighbor.push('');
-        neighborType.push(false);
+        // F20 Fix: Removed unused sentinel element - proof array now matches on-chain usage (14 elements)
         return {
             leaf: leafNodeHash,
             leafNode: leafNode,
@@ -160,8 +159,7 @@ export class CAT721OpenMinterMerkleTreeData {
             }
             prevIndex = curIndex;
         }
-        neighbor.push('');
-        neighborType.push(false);
+        // F20 Fix: Removed unused sentinel element - proof array now matches on-chain usage (14 elements)
         return { neighbor, neighborType };
     }
 
