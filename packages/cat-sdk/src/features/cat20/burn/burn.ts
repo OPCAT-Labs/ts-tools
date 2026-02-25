@@ -87,7 +87,6 @@ export const burnToken = createFeatureWithDryRun(async function(
     toTokenOwnerAddress(changeAddress), // deployerAddr
     burnTxInputCount,
   )
-  guard.state = guardState
 
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
