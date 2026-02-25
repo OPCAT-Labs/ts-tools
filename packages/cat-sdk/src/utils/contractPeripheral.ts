@@ -185,9 +185,9 @@ export class CAT20GuardPeripheral {
   }
 
   /**
-   * Select appropriate CAT20 guard based on input/output token count and token types
-   * @param inputTokenCount - Number of token inputs (excluding guard input)
-   * @param outputTokenCount - Number of token outputs
+   * Select appropriate CAT20 guard based on total transaction input/output count and token types
+   * @param txInputCount - Total number of transaction inputs (token inputs + guard + fee + any extra)
+   * @param txOutputCount - Total number of transaction outputs
    * @param guardTokenTypes - Number of unique token types
    * @returns guard - The selected guard contract instance
    * @returns txInputCountMax - Maximum input count for the selected guard
