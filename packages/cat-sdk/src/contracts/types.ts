@@ -6,9 +6,12 @@ import {
 } from '@opcat-labs/scrypt-ts-opcat'
 import { TX_OUTPUT_COUNT_MAX } from './constants.js'
 
-export const SPEND_TYPE_USER_SPEND = 0n
-export const SPEND_TYPE_CONTRACT_SPEND = 1n
-export const SPEND_TYPE_ADMIN_SPEND = 2n
+export const SpendType = {
+  UserSpend: 0n,
+  ContractSpend: 1n,
+  AdminSpend: 2n,
+} as const
+export type SpendType = typeof SpendType[keyof typeof SpendType]
 
 /**
  * The arguments to unlock a token UTXO
@@ -16,8 +19,7 @@ export const SPEND_TYPE_ADMIN_SPEND = 2n
  * @onchain
  */
 export type CAT20ContractUnlockArgs = {
-  // 0 userSpend, 1 contractSpend, 2 adminSpend
-  spendType: bigint
+  spendType: SpendType
   // user spend args
   userPubKey: PubKey
   userSig: Sig

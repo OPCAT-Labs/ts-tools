@@ -15,6 +15,7 @@ import {
     getBackTraceInfo,
   } from '@opcat-labs/scrypt-ts-opcat'
 import { CAT20_AMOUNT, CAT20State } from '../../../../src/contracts/cat20/types'
+import { SpendType } from '../../../../src/contracts/types'
 import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from '../../../../src/contracts/constants'
 import { Postage } from '../../../../src/typeConstants'
 import { CAT20 } from '../../../../src/contracts/cat20/cat20'
@@ -163,7 +164,7 @@ export async function contractSend(
               userPubKey: '' as PubKey,
               userSig: '' as Sig,
               spendScriptInputIndex: BigInt(contractInputIndexVal),
-              spendType: 1n, // contract spend
+              spendType: SpendType.ContractSpend,
             },
 
             guardState,

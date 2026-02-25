@@ -35,7 +35,7 @@ import {
 } from '../../../utils/contractPeripheral.js'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib.js'
 import { CAT20Admin } from '../../../contracts/cat20/cat20Admin.js'
-import { SPEND_TYPE_ADMIN_SPEND } from '../../../contracts/index.js'
+import { SpendType } from '../../../contracts/index.js'
 
 /**
  * Burns CAT20 tokens using admin privileges without requiring owner approval.
@@ -211,7 +211,7 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
     sendPsbt.addContractInput(inputTokens[index], (contract) => {
       contract.unlock(
         {
-          spendType: SPEND_TYPE_ADMIN_SPEND,
+          spendType: SpendType.AdminSpend,
           userPubKey: '' as PubKey,
           userSig: '' as Sig,
           spendScriptInputIndex: BigInt(adminInputIndex),
