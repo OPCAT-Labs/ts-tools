@@ -57,6 +57,13 @@ export const burnToken = createFeatureWithDryRun(async function(
   guardTxid: string
   burnTxid: string
 }> {
+  // token inputs + guard input + fee input = length + 2
+  if (inputTokenUtxos.length + 2 > TX_INPUT_COUNT_MAX) {
+    throw new Error(
+      `Too many inputs that exceed the maximum input limit of ${TX_INPUT_COUNT_MAX}`
+    )
+  }
+
   const pubkey = await signer.getPublicKey()
   const changeAddress = await signer.getAddress()
 
@@ -79,6 +86,8 @@ export const burnToken = createFeatureWithDryRun(async function(
   )
   // tokens + guard + fee
   const burnTxInputCount = inputTokenUtxos.length + 2
+  // change output only
+  const burnTxOutputCount = 1
   const { guard, guardState, tokenAmounts, tokenBurnAmounts, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createBurnGuard(
     inputTokenUtxos.map((utxo, index) => ({
       token: utxo,
@@ -86,6 +95,7 @@ export const burnToken = createFeatureWithDryRun(async function(
     })),
     toTokenOwnerAddress(changeAddress), // deployerAddr
     burnTxInputCount,
+    burnTxOutputCount,
   )
 
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })

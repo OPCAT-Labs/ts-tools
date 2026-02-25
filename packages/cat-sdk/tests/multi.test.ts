@@ -142,7 +142,6 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
         }
 
         private static async createCat20GuardContract(guard: any, guardState: CAT20GuardConstState) {
-            guard.state = guardState;
             const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8})
                 .spendUTXO(getDummyUtxo(mainAddress))
                 // 1e8 is enough for the next txn's fee
@@ -154,7 +153,6 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
         }
 
         private static async createCat721GuardContract(guard: any, guardState: CAT721GuardConstState) {
-            guard.state = guardState;
             const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8})
                 .spendUTXO(getDummyUtxo(mainAddress))
                 // 1e8 is enough for the next txn's fee

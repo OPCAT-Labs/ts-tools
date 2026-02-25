@@ -37,20 +37,31 @@ export const burnNft = createFeatureWithDryRun(async function(
         throw new Error('Insufficient satoshis input amount')
     }
 
+    // nft inputs + guard input + fee input = length + 2
+    if (inputNftUtxos.length + 2 > TX_INPUT_COUNT_MAX) {
+        throw new Error(
+            `Too many inputs that exceed the maximum input limit of ${TX_INPUT_COUNT_MAX}`
+        )
+    }
+
     const cat721 = new CAT721(minterScriptHash)
     const cat721Script = cat721.lockingScript.toHex()
     inputNftUtxos = normalizeUtxoScripts(inputNftUtxos, cat721Script)
 
     const inputNftStates = inputNftUtxos.map((utxo) => CAT721StateLib.deserializeState(utxo.data))
-    const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
+    // nfts + guard + fee
+    const burnTxInputCount = inputNftUtxos.length + 2
+    // change output only
+    const burnTxOutputCount = 1
     const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT721GuardPeripheral.createBurnGuard(
         inputNftUtxos.map((utxo, index) => ({
             nft: utxo,
             inputIndex: index,
         })),
-        guardOwnerAddr
+        toTokenOwnerAddress(changeAddress),
+        burnTxInputCount,
+        burnTxOutputCount,
     )
-    guard.state = guardState
 
     const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .spendUTXO(utxos)
