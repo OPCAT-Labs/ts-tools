@@ -434,12 +434,8 @@ export class CAT20GuardPeripheral {
       throw new Error('No spent tokens')
     }
 
-    // Validate input token count
-    const inputTokenCount = tokenInputs.length
-    if (inputTokenCount > TX_INPUT_COUNT_MAX - 2) {
-      throw new Error(
-        `Too many token inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX - 2}`
-      )
+    if (txInputCount > TX_INPUT_COUNT_MAX) {
+      throw new Error(`Too many transaction inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX}`)
     }
 
     // Use txInputCount consistently for both state size and guard variant selection
@@ -481,6 +477,7 @@ export class CAT20GuardPeripheral {
       totalTxOutputCount,
       guardTokenTypes
     )
+    guard.state = guardState
 
     const outputTokens = fill(undefined, TX_OUTPUT_COUNT_MAX)
 

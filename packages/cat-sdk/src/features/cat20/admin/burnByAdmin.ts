@@ -162,7 +162,6 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined
   ) as CAT20State[]
-  guard.state = guardState
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
     .addContractOutput(guard, Postage.GUARD_POSTAGE)
