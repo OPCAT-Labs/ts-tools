@@ -77,12 +77,15 @@ export const burnToken = createFeatureWithDryRun(async function(
   const inputTokenStates = inputTokenUtxos.map((utxo) =>
     CAT20.deserializeState(utxo.data)
   )
+  // tokens + guard + fee
+  const burnTxInputCount = inputTokenUtxos.length + 2
   const { guard, guardState, tokenAmounts, tokenBurnAmounts, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createBurnGuard(
     inputTokenUtxos.map((utxo, index) => ({
       token: utxo,
       inputIndex: index,
     })),
-    toTokenOwnerAddress(changeAddress) // deployerAddr
+    toTokenOwnerAddress(changeAddress), // deployerAddr
+    burnTxInputCount,
   )
   guard.state = guardState
 

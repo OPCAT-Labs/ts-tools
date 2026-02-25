@@ -420,6 +420,7 @@ export class CAT20GuardPeripheral {
       inputIndex: number
     }[],
     deployerAddr: ByteString,
+    txInputCount: number,
   ): {
     guard: CAT20GuardVariant
     guardState: CAT20GuardConstState
@@ -433,19 +434,16 @@ export class CAT20GuardPeripheral {
       throw new Error('No spent tokens')
     }
 
-    // Validate counts first
-    const inputTokenCount = tokenInputs.length
-    const outputTokenCount = 0 // No token outputs for burn
-
     // Validate input token count
-    if (inputTokenCount > TX_INPUT_COUNT_MAX - 1) {
+    const inputTokenCount = tokenInputs.length
+    if (inputTokenCount > TX_INPUT_COUNT_MAX - 2) {
       throw new Error(
-        `Too many token inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX - 1}`
+        `Too many token inputs that exceed the maximum limit of ${TX_INPUT_COUNT_MAX - 2}`
       )
     }
 
-    // Determine which size guard to use based on input count
-    const txInputCountMax = (inputTokenCount + 1) <= TX_INPUT_COUNT_MAX_6 ? TX_INPUT_COUNT_MAX_6 : TX_INPUT_COUNT_MAX_12
+    // Use txInputCount consistently for both state size and guard variant selection
+    const txInputCountMax = txInputCount <= TX_INPUT_COUNT_MAX_6 ? TX_INPUT_COUNT_MAX_6 : TX_INPUT_COUNT_MAX_12
 
     // Create guard state based on the selected guard size
     const guardState = CAT20GuardStateLib.createEmptyState(txInputCountMax)
@@ -474,14 +472,12 @@ export class CAT20GuardPeripheral {
       tokenBurnAmounts[index] = amount  // All tokens are burned
     })
 
-    // Auto-detect guardTokenTypes and select final guard
+    // Select guard variant using the same txInputCount
     const guardTokenTypes = tokenScriptHashes.size
-    // For burn transactions: tokenInputs + guardInput + adminInput + feeInput
-    const totalTxInputCount = inputTokenCount + 3
-    // For burn transactions: adminOutput + changeOutput (typically 1-2 outputs)
-    const totalTxOutputCount = 2 // Conservative estimate for admin output + change
+    // Burn txs have very few outputs (change, or admin output + change)
+    const totalTxOutputCount = 2
     const { guard, txInputCountMax: finalTxInputCountMax, txOutputCountMax } = this.selectCAT20Guard(
-      totalTxInputCount,
+      txInputCount,
       totalTxOutputCount,
       guardTokenTypes
     )
