@@ -35,6 +35,11 @@ const SigHashType = {
  *   nSequence and hashOutputs (in ALL mode) are still accessible
  *
  * Key validation: hash256(data) == hashXxx
+ *
+ * Also tests that timeLock() works correctly in ALL sighash types:
+ * - timeLock uses nSequence (current input's sequence) and nLockTime from preimage
+ * - These fields are always available regardless of sighash type
+ * - timeLock does NOT use hashSequences, which is empty in ANYONECANPAY mode
  */
 export class SighashCtxTest extends SmartContract {
   // Empty hash constant (32 zero bytes) - used when sighash type doesn't include certain fields
@@ -42,6 +47,15 @@ export class SighashCtxTest extends SmartContract {
   static readonly EMPTY_HASH: ByteString = toByteString(
     '0000000000000000000000000000000000000000000000000000000000000000'
   );
+
+  // Mature time for timeLock testing
+  @prop()
+  matureTime: bigint;
+
+  constructor(matureTime: bigint) {
+    super(...arguments);
+    this.matureTime = matureTime;
+  }
 
   /**
    * SIGHASH_ALL (0x01) - verify all ctx variables
@@ -90,6 +104,10 @@ export class SighashCtxTest extends SmartContract {
     // Verify hashOutputs is accessible
     const hashOutputs = this.ctx.hashOutputs;
     assert(hashOutputs === hashOutputs, 'hashOutputs should be accessible');
+
+    // Test timeLock - uses nSequence and nLockTime from preimage
+    // timeLock should work in ALL sighash types since it uses current input's nSequence
+    assert(this.timeLock(this.matureTime), 'timeLock should work in SIGHASH_ALL');
   }
 
   /**
@@ -137,6 +155,10 @@ export class SighashCtxTest extends SmartContract {
       this.ctx.hashOutputs === SighashCtxTest.EMPTY_HASH,
       'hashOutputs should be empty in NONE mode'
     );
+
+    // Test timeLock - uses nSequence and nLockTime from preimage
+    // timeLock should work in ALL sighash types since it uses current input's nSequence
+    assert(this.timeLock(this.matureTime), 'timeLock should work in SIGHASH_NONE');
   }
 
   /**
@@ -181,6 +203,10 @@ export class SighashCtxTest extends SmartContract {
     // Note: hashOutputs only covers output at same index in SINGLE mode, but still accessible
     const hashOutputs = this.ctx.hashOutputs;
     assert(hashOutputs === hashOutputs, 'hashOutputs should be accessible');
+
+    // Test timeLock - uses nSequence and nLockTime from preimage
+    // timeLock should work in ALL sighash types since it uses current input's nSequence
+    assert(this.timeLock(this.matureTime), 'timeLock should work in SIGHASH_SINGLE');
   }
 
   /**
@@ -239,6 +265,10 @@ export class SighashCtxTest extends SmartContract {
     // buildChangeOutput is allowed with ANYONECANPAY_ALL
     const outputs = this.buildChangeOutput();
     assert(this.checkOutputs(outputs), 'outputs mismatch');
+
+    // Test timeLock - uses nSequence and nLockTime from preimage
+    // timeLock should work in ALL sighash types since it uses current input's nSequence (NOT hashSequences)
+    assert(this.timeLock(this.matureTime), 'timeLock should work in ANYONECANPAY_ALL');
   }
 
   /**
@@ -293,6 +323,10 @@ export class SighashCtxTest extends SmartContract {
       this.ctx.hashOutputs === SighashCtxTest.EMPTY_HASH,
       'hashOutputs should be empty in ANYONECANPAY_NONE mode'
     );
+
+    // Test timeLock - uses nSequence and nLockTime from preimage
+    // timeLock should work in ALL sighash types since it uses current input's nSequence (NOT hashSequences)
+    assert(this.timeLock(this.matureTime), 'timeLock should work in ANYONECANPAY_NONE');
   }
 
   /**
@@ -345,5 +379,9 @@ export class SighashCtxTest extends SmartContract {
     // hashOutputs is NOT empty in ANYONECANPAY_SINGLE mode (signs corresponding output)
     const hashOutputs = this.ctx.hashOutputs;
     assert(hashOutputs !== SighashCtxTest.EMPTY_HASH, 'hashOutputs should NOT be empty in ANYONECANPAY_SINGLE mode');
+
+    // Test timeLock - uses nSequence and nLockTime from preimage
+    // timeLock should work in ALL sighash types since it uses current input's nSequence (NOT hashSequences)
+    assert(this.timeLock(this.matureTime), 'timeLock should work in ANYONECANPAY_SINGLE');
   }
 }
