@@ -57,7 +57,8 @@ export const CALL_CHECK_SHPREIMAGE_LEGACY = `require(Tx.checkPreimageSigHashType
 // Note: checkDataSig (OP_CHECKSIGFROMSTACK) requires pure DER signature without sighash type,
 // while checkSig (OP_CHECKSIG) requires signature with sighash type appended.
 // We use sig[0 : len(sig) - 1] to strip the sighash type byte for checkDataSig.
-export const CALL_CHECK_SHPREIMAGE = `require(checkDataSig(Sig(${InjectedParam_PreimageSig}[0 : len(${InjectedParam_PreimageSig}) - 1]), sha256(ContextUtils.serializeSHPreimage(${InjectedParam_SHPreimage})), ContextUtils.pubKey) && checkSig(${InjectedParam_PreimageSig}, ContextUtils.pubKey))`;
+// We also verify that the signature's sighash flag (last byte) matches shPreimage.sigHashType.
+export const CALL_CHECK_SHPREIMAGE = `require(unpack(${InjectedParam_PreimageSig}[len(${InjectedParam_PreimageSig}) - 1 : ]) == ${InjectedParam_SHPreimage}.sigHashType && checkDataSig(Sig(${InjectedParam_PreimageSig}[0 : len(${InjectedParam_PreimageSig}) - 1]), sha256(ContextUtils.serializeSHPreimage(${InjectedParam_SHPreimage})), ContextUtils.pubKey) && checkSig(${InjectedParam_PreimageSig}, ContextUtils.pubKey))`;
 
 export const CALL_BUILD_CHANGE_OUTPUT = {
   accessArgument: `(${InjectedParam_ChangeInfo}.satoshis > 0 ? TxUtils.buildDataOutput(sha256(TxUtils.buildP2PKHScript(${InjectedParam_ChangeInfo}.pubkeyhash)), ${InjectedParam_ChangeInfo}.satoshis, ${InjectedParam_ChangeInfo}.dataHash) : b'')`,

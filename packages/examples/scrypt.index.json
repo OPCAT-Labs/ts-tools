@@ -18,7 +18,7 @@
   {
    "symbol": "AtomicSwap",
    "path": "contracts/atomicSwap.scrypt.tpl",
-   "md5": "d9e7871e4666e83e36ee54dbc0443ef3"
+   "md5": "0133a003a96e0d2c537667aa50b577d4"
   },
   {
    "symbol": "TxUtils",
@@ -27,7 +27,7 @@
   {
    "symbol": "Auction",
    "path": "contracts/auction.scrypt.tpl",
-   "md5": "7ef256f2a3c6b915afd1b56a86b5e66f",
+   "md5": "5156994c4aa908a3b752b25fc326e930",
    "stateType": "AuctionState"
   },
   {
@@ -41,7 +41,7 @@
   {
    "symbol": "B2GCounter",
    "path": "contracts/b2GCounter.scrypt.tpl",
-   "md5": "3d2b7887b6ab6ee8e96fa89f7b817dd0",
+   "md5": "03b7100a8c0a717829ed69f1f38ca5d5",
    "stateType": "CounterState"
   },
   {
@@ -56,7 +56,7 @@
   {
    "symbol": "Crowdfund",
    "path": "contracts/crowdfund.scrypt.tpl",
-   "md5": "fe12d89c8d8c24597944f8a5c36278b4"
+   "md5": "5f38074828f6a2f29602117f2057c329"
   },
   {
    "symbol": "Examples",
@@ -70,7 +70,7 @@
   {
    "symbol": "LamportP2PK",
    "path": "contracts/lamportSig.scrypt.tpl",
-   "md5": "c7d8d68954838e7fdcc5ecd8aa1041b5"
+   "md5": "734e917e77c397f7eed4055d180b3c85"
   },
   {
    "symbol": "Matrix",
@@ -95,7 +95,7 @@
   {
    "symbol": "Rule110",
    "path": "contracts/rule110.scrypt.tpl",
-   "md5": "ea6e2e5c61588a40488a8e3c6fc0528c",
+   "md5": "337b9e37520550008c3b48243f722a0d",
    "stateType": "Rule110State"
   },
   {
@@ -123,7 +123,7 @@
   {
    "symbol": "TuringMachine",
    "path": "contracts/turingMachine.scrypt.tpl",
-   "md5": "5656231b0dd90fc807d61d8220e2dc4f",
+   "md5": "0a823bba401c25c264ab6baa0e4c02fe",
    "stateType": "TuringMachineState"
   },
   {
@@ -145,7 +145,7 @@
   {
    "symbol": "Voting",
    "path": "contracts/voting.scrypt.tpl",
-   "md5": "afaba90728c4e8bcf7e1ca16108ede92",
+   "md5": "2fd14a80a7cf60047165e58ee4aad7ab",
    "stateType": "VotingState"
   },
   {
