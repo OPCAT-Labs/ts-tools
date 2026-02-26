@@ -18,7 +18,7 @@ import { CAT20_AMOUNT, CAT20State } from '../../../../src/contracts/cat20/types'
 import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from '../../../../src/contracts/constants'
 import { Postage } from '../../../../src/typeConstants'
 import { CAT20 } from '../../../../src/contracts/cat20/cat20'
-import { SpendType } from '../../../../src/contracts/types'
+import { SPEND_TYPE_CONTRACT_SPEND } from '../../../../src/contracts/constants'
 import { CAT20GuardPeripheral } from '../../../../src/utils/contractPeripheral'
 import { ContractPeripheral } from '../../../../src/utils/contractPeripheral'
 import { CAT20StateLib } from '../../../../src/contracts/cat20/cat20StateLib'
@@ -164,7 +164,7 @@ export async function contractSend(
               userPubKey: '' as PubKey,
               userSig: '' as Sig,
               spendScriptInputIndex: BigInt(contractInputIndexVal),
-              spendType: SpendType.ContractSpend,
+              spendType: SPEND_TYPE_CONTRACT_SPEND,
             },
 
             guardState,

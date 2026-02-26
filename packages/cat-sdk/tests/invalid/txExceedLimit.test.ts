@@ -2,7 +2,7 @@ import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, u
 import { loadAllArtifacts } from "../features/cat20/utils";
 import { createCat20, TestCat20 } from "../utils/testCAT20Generator";
 import { testSigner } from "../utils/testSigner";
-import { CAT20, CAT20State, CAT20StateLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, SpendType } from "../../src/contracts";
+import { CAT20, CAT20State, CAT20StateLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, SPEND_TYPE_USER_SPEND, SPEND_TYPE_CONTRACT_SPEND, SPEND_TYPE_ADMIN_SPEND } from "../../src/contracts";
 import { CAT20GuardPeripheral } from '../../src/utils/contractPeripheral';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -135,7 +135,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
             psbt.addContractInput(cat20Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
-                        spendType: SpendType.UserSpend,
+                        spendType: SPEND_TYPE_USER_SPEND,
                         userPubKey: mainPubKey,
                         userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
                         spendScriptInputIndex: -1n,
@@ -262,7 +262,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
             psbt.addContractInput(cat20Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
-                        spendType: SpendType.UserSpend,
+                        spendType: SPEND_TYPE_USER_SPEND,
                         userPubKey: mainPubKey,
                         userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
                         spendScriptInputIndex: -1n,

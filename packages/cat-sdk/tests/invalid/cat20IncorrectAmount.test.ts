@@ -6,7 +6,7 @@ import { loadAllArtifacts } from '../features/cat20/utils';
 import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, uint8ArrayToHex, slice, intToByteString } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from '../utils/testSigner';
 import {createCat20, TestCat20} from '../utils/testCAT20Generator';
-import { CAT20, CAT20State, CAT20StateLib, CAT20GuardStateLib, GUARD_TOKEN_TYPE_MAX, SpendType } from '../../src/contracts';
+import { CAT20, CAT20State, CAT20StateLib, CAT20GuardStateLib, GUARD_TOKEN_TYPE_MAX, SPEND_TYPE_USER_SPEND, SPEND_TYPE_CONTRACT_SPEND, SPEND_TYPE_ADMIN_SPEND } from '../../src/contracts';
 import { ContractPeripheral, CAT20GuardPeripheral } from '../../src/utils/contractPeripheral';
 import { applyFixedArray, getDummyUtxo, toTokenOwnerAddress } from '../../src/utils';
 import { Postage } from '../../src/typeConstants';
@@ -142,7 +142,7 @@ isLocalTest(testProvider) && describe('Test incorrect amount for cat20', () => {
                         userPubKey: mainPubKey,
                         userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
                         spendScriptInputIndex: -1n,
-                        spendType: SpendType.UserSpend,
+                        spendType: SPEND_TYPE_USER_SPEND,
                     },
                     guardState,
                     BigInt(guardInputIndex),

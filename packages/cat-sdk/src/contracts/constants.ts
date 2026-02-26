@@ -112,6 +112,15 @@ export const INVALID_INDEX = -1n
 export const MINTER_INPUT_INDEX = 0n
 
 /**
+ * SpendType constants for CAT20 unlock
+ * @category Constants
+ * @onchain
+ */
+export const SPEND_TYPE_USER_SPEND = 0n
+export const SPEND_TYPE_CONTRACT_SPEND = 1n
+export const SPEND_TYPE_ADMIN_SPEND = 2n
+
+/**
  * The constants library for the CAT contracts
  * @category Constants
  * @onchain

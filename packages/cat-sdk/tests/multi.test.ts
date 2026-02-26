@@ -4,10 +4,10 @@ import { isLocalTest } from './utils';
 import { testProvider } from './utils/testProvider';
 import { loadAllArtifacts } from './features/cat20/utils';
 import { loadAllArtifacts as loadAllArtifacts721} from './features/cat721/utils';
-import { ByteString, ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, slice, toByteString, toHex, uint8ArrayToHex, UTXO } from '@opcat-labs/scrypt-ts-opcat';
+import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, slice, toByteString, toHex, uint8ArrayToHex, UTXO } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from './utils/testSigner';
-import {createCat20, TestCat20, TestCAT20Generator} from './utils/testCAT20Generator';
-import { CAT20, CAT20GuardConstState, CAT20GuardStateLib, CAT20State, CAT20StateLib, CAT721, CAT721GuardConstState, CAT721GuardStateLib, CAT721StateLib, ConstantsLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, GUARD_TOKEN_TYPE_MAX, SpendType } from '../src/contracts';
+import {createCat20, TestCAT20Generator} from './utils/testCAT20Generator';
+import { CAT20, CAT20GuardConstState, CAT20StateLib, CAT721, CAT721GuardConstState, CAT721StateLib, GUARD_TOKEN_TYPE_MAX, SPEND_TYPE_USER_SPEND } from '../src/contracts';
 import { CAT20GuardPeripheral, CAT721GuardPeripheral } from '../src/utils/contractPeripheral';
 import { ContractPeripheral } from '../src/utils/contractPeripheral';
 import { applyFixedArray, getDummyUtxo, toTokenOwnerAddress } from '../src/utils';
@@ -291,7 +291,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                                 userPubKey: mainPubKey,
                                 userSig: curPsbt.getSig(localInputIndex, { address: mainAddress }),
                                 spendScriptInputIndex: -1n,
-                                spendType: SpendType.UserSpend,
+                                spendType: SPEND_TYPE_USER_SPEND,
                             },
                             cat20GuardState,
                             BigInt(cat20GuardInputIndex),

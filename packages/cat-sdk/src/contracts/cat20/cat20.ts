@@ -20,9 +20,8 @@ import { OwnerUtils } from '../utils/ownerUtils.js'
 import { CAT20State, CAT20GuardConstState } from './types.js'
 import {
   CAT20ContractUnlockArgs,
-  SpendType,
 } from '../types.js'
-import { GUARD_VARIANTS_COUNT, SHA256_HASH_LEN } from '../constants.js'
+import { GUARD_VARIANTS_COUNT, SHA256_HASH_LEN, SPEND_TYPE_USER_SPEND, SPEND_TYPE_CONTRACT_SPEND, SPEND_TYPE_ADMIN_SPEND } from '../constants.js'
 import { CAT20GuardStateLib } from './cat20GuardStateLib.js'
 import { CatTags } from '../catTags.js'
 import { CAT20GuardVariants } from './cat20GuardVariants.js'
@@ -97,14 +96,14 @@ export class CAT20 extends SmartContract<CAT20State> {
     )
 
     assert(
-      unlockArgs.spendType >= SpendType.UserSpend && unlockArgs.spendType <= SpendType.AdminSpend,
+      unlockArgs.spendType >= SPEND_TYPE_USER_SPEND && unlockArgs.spendType <= SPEND_TYPE_ADMIN_SPEND,
       'invalid spendType'
     )
 
     let spentScriptHash = toByteString('')
     // For contract or admin spend,
     // spendScriptInputIndex must be >= 0 to prevent empty script hash bypass
-    if (unlockArgs.spendType == SpendType.ContractSpend || unlockArgs.spendType == SpendType.AdminSpend) {
+    if (unlockArgs.spendType == SPEND_TYPE_CONTRACT_SPEND || unlockArgs.spendType == SPEND_TYPE_ADMIN_SPEND) {
       assert(
         unlockArgs.spendScriptInputIndex >= 0n,
         'spendScriptInputIndex must be >= 0 for contract or admin spend'
@@ -129,12 +128,12 @@ export class CAT20 extends SmartContract<CAT20State> {
         unlockArgs.spendScriptInputIndex
       )
     }
-    if (unlockArgs.spendType == SpendType.UserSpend) {
+    if (unlockArgs.spendType == SPEND_TYPE_USER_SPEND) {
       // user spend
       // unlock token owned by user key
       OwnerUtils.checkUserOwner(unlockArgs.userPubKey, this.state.ownerAddr)
       assert(this.checkSig(unlockArgs.userSig, unlockArgs.userPubKey))
-    } else if (unlockArgs.spendType == SpendType.ContractSpend) {
+    } else if (unlockArgs.spendType == SPEND_TYPE_CONTRACT_SPEND) {
       // contract spend
       // unlock token owned by contract script
       assert(this.state.ownerAddr == spentScriptHash)
