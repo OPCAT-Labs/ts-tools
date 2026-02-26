@@ -18,7 +18,7 @@ import { byteStringToInt, toHex, sha256, uint8ArrayToHex, Genesis } from '@opcat
 import { ContractLib } from '../../common/contract';
 import { RpcService } from '../rpc/rpc.service';
 import { ZmqService } from '../zmq/zmq.service';
-import { CatTags, MetadataSerializer, NULL_ADMIN_SCRIPT_HASH } from '@opcat-labs/cat-sdk';
+import { CAT20, CAT721, CatTags, ContractPeripheral, MetadataSerializer, NULL_ADMIN_SCRIPT_HASH } from '@opcat-labs/cat-sdk';
 
 @Injectable()
 export class TxService {
@@ -178,8 +178,11 @@ export class TxService {
     const input = tx.inputs[inputIndex];
     const inputGenesis = input.output;
     if (inputGenesis.script.toString() != this.genesis.lockingScript.toString()) {
-      // todo: enable this check after amm genesis is supported
-      // return false
+      // Decision: reject non-standard genesis scripts to prevent malicious token deployments.
+      // When AMM genesis (or other trusted genesis variants) need to be supported, this
+      // check should be updated to a whitelist rather than removed.
+      this.logger.warn(`[SECURITY] invalid genesis script in tx ${tx.hash}, expected standard genesis script, got ${inputGenesis.script.toHex()}. Skipping.`);
+      return false;
     }
     const tokenId = `${input.prevTxId.toString('hex')}_${input.outputIndex}`;
     // const [, _name, _symbol, _decimals] = fields;
@@ -262,8 +265,9 @@ export class TxService {
 
 
     // we only process minterd tokens/nfts here, so filter by minterScriptHash, for those tokens/nfts is not new minted, we process it in processTransferTx()
-    const inputTokenInfos: {tokenId: string, tokenScriptHash: string, minterScriptHash: string, firstMintHeight: number}[] = await this.tokenInfoEntityRepository.find({
-      select: ['tokenId', 'tokenScriptHash', 'minterScriptHash', 'firstMintHeight'],
+    // hasAdmin and adminScriptHash are needed to reconstruct and verify the expected CAT20 token script.
+    const inputTokenInfos: {tokenId: string, tokenScriptHash: string, minterScriptHash: string, firstMintHeight: number, hasAdmin: boolean, adminScriptHash: string}[] = await this.tokenInfoEntityRepository.find({
+      select: ['tokenId', 'tokenScriptHash', 'minterScriptHash', 'firstMintHeight', 'hasAdmin', 'adminScriptHash'],
       where: {
         minterScriptHash: In(uniqueInputScriptHashes),
       },
@@ -324,6 +328,32 @@ export class TxService {
         // using lockingScriptHash. If no matching tokenInfo is found in the output,
         // it confirms this is a new token and we can safely update tokenScriptHash.
         if (tokenInfoToUpdate && !outputTokenInfo) {
+          // Security: verify the output script matches the expected contract bytecode
+          // before accepting it. This prevents malicious contracts with backdoors from
+          // being listed by the tracker even if they carry valid tags and metadata.
+          // Decision: reconstruct the expected script from known constructor params
+          // (minterScriptHash, hasAdmin, adminScriptHash stored at genesis time) and
+          // compare sha256 hashes. Only accept if they match exactly.
+          const expectedScriptHash = outputTag.includes(CatTags.CAT20_TAG)
+            ? ContractPeripheral.scriptHash(
+                new CAT20(
+                  tokenInfoToUpdate.minterScriptHash,
+                  tokenInfoToUpdate.hasAdmin,
+                  tokenInfoToUpdate.adminScriptHash ?? NULL_ADMIN_SCRIPT_HASH,
+                )
+              )
+            : ContractPeripheral.scriptHash(
+                new CAT721(tokenInfoToUpdate.minterScriptHash)
+              );
+
+          if (expectedScriptHash !== lockingScriptHash) {
+            this.logger.warn(
+              `[SECURITY] invalid token script for tokenId ${tokenInfoToUpdate.tokenId}: ` +
+              `expected ${expectedScriptHash}, got ${lockingScriptHash}. Skipping.`
+            );
+            continue;
+          }
+
           tokenInfoToUpdate.tokenScriptHash = lockingScriptHash;
           promises.push(this.tokenInfoEntityRepository.save(tokenInfoToUpdate));
         }
