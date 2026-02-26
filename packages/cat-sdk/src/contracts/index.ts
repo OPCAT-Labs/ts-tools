@@ -40,7 +40,6 @@ export * from './cat721/types.js'
 
 
 export * from './utils/ownerUtils.js'
-export * from './utils/safeMath.js'
 
 export * from './constants.js'
 export * from './types.js'

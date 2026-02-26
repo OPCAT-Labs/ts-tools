@@ -30,7 +30,6 @@ import {
     GUARD_TOKEN_TYPE_MAX,
 } from '../constants.js'
 import { CAT20State, CAT20GuardConstState, CAT20_AMOUNT } from './types.js'
-import { SafeMath } from '../utils/safeMath.js'
 import { CAT20GuardStateLib } from './cat20GuardStateLib.js'
 import { CAT20StateLib } from './cat20StateLib.js'
 import { CatTags } from '../catTags.js'
@@ -149,10 +148,7 @@ export class CAT20Guard_6_6_2 extends SmartContract<CAT20GuardConstState> {
                     assert(tokenScriptHash == ContextUtils.getSpentScriptHash(this.ctx.spentScriptHashes, BigInt(i)), 'token script hash is invalid')
                     CAT20StateLib.checkState(cat20States[i])
                     assert(ContextUtils.getSpentDataHash(this.ctx.spentDataHashes, BigInt(i)) == CAT20StateLib.stateHash(cat20States[i]), 'token state hash is invalid')
-                    sumInputTokens[Number(tokenScriptIndex)] = SafeMath.add(
-                        sumInputTokens[Number(tokenScriptIndex)],
-                        cat20States[i].amount
-                    )
+                    sumInputTokens[Number(tokenScriptIndex)] = sumInputTokens[Number(tokenScriptIndex)] + cat20States[i].amount
                     tokenScriptIndexMax =
                         tokenScriptIndex > tokenScriptIndexMax
                             ? tokenScriptIndex
@@ -185,10 +181,7 @@ export class CAT20Guard_6_6_2 extends SmartContract<CAT20GuardConstState> {
                     OwnerUtils.checkOwnerAddr(ownerAddrOrScriptHash)
                     const tokenAmount = outputTokens[i]
                     assert(tokenAmount > 0n, 'token amount is invalid')
-                    sumOutputTokens[Number(tokenScriptHashIndex)] = SafeMath.add(
-                        sumOutputTokens[Number(tokenScriptHashIndex)],
-                        tokenAmount
-                    )
+                    sumOutputTokens[Number(tokenScriptHashIndex)] = sumOutputTokens[Number(tokenScriptHashIndex)] + tokenAmount
                     const tokenStateHash = CAT20StateLib.stateHash({
                         ownerAddr: ownerAddrOrScriptHash,
                         amount: tokenAmount,
@@ -228,7 +221,7 @@ export class CAT20Guard_6_6_2 extends SmartContract<CAT20GuardConstState> {
             assert(sumInputTokens[i] == tokenAmounts[i], 'sum input tokens is invalid, should be equal to token amount')
             assert(
                 sumInputTokens[i] ==
-                SafeMath.add(sumOutputTokens[i], tokenBurnAmounts[i]),
+                sumOutputTokens[i] + tokenBurnAmounts[i],
                 'sum input tokens is invalid, should be equal to sum output tokens plus sum burn tokens'
             );
             if (i < Number(inputTokenTypes)) {
