@@ -1,0 +1,373 @@
+{
+  "version": 10,
+  "compilerVersion": "1.22.0+commit.47800da",
+  "contract": "_opcat_labs_scrypt_ts_transpiler_opcat_3_4_0__rs__MultiSigHashMethods",
+  "md5": "8e7cd9eff9f2c05cd4f2f8de2d348021",
+  "structs": [
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxOut",
+      "params": [
+        {
+          "name": "scriptHash",
+          "type": "bytes"
+        },
+        {
+          "name": "dataHash",
+          "type": "bytes"
+        },
+        {
+          "name": "satoshis",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxIn",
+      "params": [
+        {
+          "name": "prevTxHash",
+          "type": "bytes"
+        },
+        {
+          "name": "prevOutputIndex",
+          "type": "int"
+        },
+        {
+          "name": "sequence",
+          "type": "int"
+        },
+        {
+          "name": "scriptHash",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxHashPreimage",
+      "params": [
+        {
+          "name": "version",
+          "type": "bytes"
+        },
+        {
+          "name": "inputList",
+          "type": "bytes"
+        },
+        {
+          "name": "outputList",
+          "type": "bytes"
+        },
+        {
+          "name": "nLockTime",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__BacktraceInfo",
+      "params": [
+        {
+          "name": "prevTxInput",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxIn"
+        },
+        {
+          "name": "prevTxInputIndex",
+          "type": "int"
+        },
+        {
+          "name": "prevPrevTxPreimage",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxHashPreimage"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__SHPreimage",
+      "params": [
+        {
+          "name": "nVersion",
+          "type": "bytes"
+        },
+        {
+          "name": "hashPrevouts",
+          "type": "bytes"
+        },
+        {
+          "name": "spentScriptHash",
+          "type": "bytes"
+        },
+        {
+          "name": "spentDataHash",
+          "type": "bytes"
+        },
+        {
+          "name": "value",
+          "type": "int"
+        },
+        {
+          "name": "nSequence",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentAmounts",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentScriptHashes",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentDataHashes",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSequences",
+          "type": "bytes"
+        },
+        {
+          "name": "hashOutputs",
+          "type": "bytes"
+        },
+        {
+          "name": "inputIndex",
+          "type": "int"
+        },
+        {
+          "name": "nLockTime",
+          "type": "int"
+        },
+        {
+          "name": "sigHashType",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__Outpoint",
+      "params": [
+        {
+          "name": "txHash",
+          "type": "bytes"
+        },
+        {
+          "name": "outputIndex",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ChangeInfo",
+      "params": [
+        {
+          "name": "pubkeyhash",
+          "type": "Ripemd160"
+        },
+        {
+          "name": "satoshis",
+          "type": "int"
+        },
+        {
+          "name": "dataHash",
+          "type": "Sha256"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ReadVarintResult",
+      "params": [
+        {
+          "name": "data",
+          "type": "bytes"
+        },
+        {
+          "name": "nextPos",
+          "type": "int"
+        }
+      ],
+      "genericTypes": []
+    }
+  ],
+  "library": [
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ContextUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__StdUtils",
+      "params": [],
+      "properties": [],
+      "genericTypes": []
+    }
+  ],
+  "alias": [],
+  "abi": [
+    {
+      "type": "function",
+      "name": "unlockAll",
+      "index": 0,
+      "params": [
+        {
+          "name": "sig",
+          "type": "Sig"
+        },
+        {
+          "name": "pubKey",
+          "type": "PubKey"
+        },
+        {
+          "name": "__scrypt_ts_shPreimage",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__SHPreimage"
+        },
+        {
+          "name": "__scrypt_ts_preimageSig",
+          "type": "Sig"
+        },
+        {
+          "name": "__scrypt_ts_changeInfo",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ChangeInfo"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "unlockNone",
+      "index": 1,
+      "params": [
+        {
+          "name": "sig",
+          "type": "Sig"
+        },
+        {
+          "name": "pubKey",
+          "type": "PubKey"
+        },
+        {
+          "name": "__scrypt_ts_shPreimage",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__SHPreimage"
+        },
+        {
+          "name": "__scrypt_ts_preimageSig",
+          "type": "Sig"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "unlockSingle",
+      "index": 2,
+      "params": [
+        {
+          "name": "sig",
+          "type": "Sig"
+        },
+        {
+          "name": "pubKey",
+          "type": "PubKey"
+        },
+        {
+          "name": "__scrypt_ts_shPreimage",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__SHPreimage"
+        },
+        {
+          "name": "__scrypt_ts_preimageSig",
+          "type": "Sig"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "unlockAnyoneCanPayAll",
+      "index": 3,
+      "params": [
+        {
+          "name": "sig",
+          "type": "Sig"
+        },
+        {
+          "name": "pubKey",
+          "type": "PubKey"
+        },
+        {
+          "name": "__scrypt_ts_shPreimage",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__SHPreimage"
+        },
+        {
+          "name": "__scrypt_ts_preimageSig",
+          "type": "Sig"
+        },
+        {
+          "name": "__scrypt_ts_changeInfo",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ChangeInfo"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "unlockAnyoneCanPayNone",
+      "index": 4,
+      "params": [
+        {
+          "name": "sig",
+          "type": "Sig"
+        },
+        {
+          "name": "pubKey",
+          "type": "PubKey"
+        },
+        {
+          "name": "__scrypt_ts_shPreimage",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__SHPreimage"
+        },
+        {
+          "name": "__scrypt_ts_preimageSig",
+          "type": "Sig"
+        }
+      ]
+    },
+    {
+      "type": "function",
+      "name": "unlockAnyoneCanPaySingle",
+      "index": 5,
+      "params": [
+        {
+          "name": "sig",
+          "type": "Sig"
+        },
+        {
+          "name": "pubKey",
+          "type": "PubKey"
+        },
+        {
+          "name": "__scrypt_ts_shPreimage",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__SHPreimage"
+        },
+        {
+          "name": "__scrypt_ts_preimageSig",
+          "type": "Sig"
+        }
+      ]
+    },
+    {
+      "type": "constructor",
+      "params": []
+    }
+  ],
+  "stateProps": [],
+  "buildType": "release",
+  "file": "../sigHashTypes.scrypt",
+  "hex": "0176018801a901ac2102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec038255790087635a79519d59795a7982778c7f75007f770118790118790118790118790118790118790118790118790118790118790118790118790118790118795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6ca85279ba63597978ac670068695a79519d577900a0635879557954797e01147e787e55797e53797e77a858795879527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c7767006876aa5f7988011a79011a79ac6b6d6d6d6d6d6d6d6d6d6d6d6d6d6c776755795187635779529d5679577982778c7f75007f770115790115790115790115790115790115790115790115790115790115790115790115790115790115795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6ca85279ba63567978ac670068695779529d011679011679ac6b6d6d6d6d6d6d6d6d6d6d6d6c776755795287635779539d5679577982778c7f75007f770115790115790115790115790115790115790115790115790115790115790115790115790115790115795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6ca85279ba63567978ac670068695779539d011679011679ac6b6d6d6d6d6d6d6d6d6d6d6d6c776755795387635a790281009d59795a7982778c7f75007f770118790118790118790118790118790118790118790118790118790118790118790118790118790118795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6ca85279ba63597978ac670068695a790281009d577900a0635879557954797e01147e787e55797e53797e77a858795879527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c7767006876aa5f7988011a79011a79ac6b6d6d6d6d6d6d6d6d6d6d6d6d6d6c7767557954876357790282009d5679577982778c7f75007f770115790115790115790115790115790115790115790115790115790115790115790115790115790115795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6ca85279ba63567978ac6700686957790282009d011679011679ac6b6d6d6d6d6d6d6d6d6d6d6d6c7767557955876357790283009d5679577982778c7f75007f770115790115790115790115790115790115790115790115790115790115790115790115790115790115795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6ca85279ba63567978ac6700686957790283009d011679011679ac6b6d6d6d6d6d6d6d6d6d6d6d6c776700686868686868"
+}

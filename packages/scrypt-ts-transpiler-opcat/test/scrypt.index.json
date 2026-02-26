@@ -476,6 +476,11 @@
    "path": "contracts/scryptParserCase1.scrypt.tpl"
   },
   {
+   "symbol": "MultiSigHashMethods",
+   "path": "contracts/sigHashTypes.scrypt.tpl",
+   "md5": "304ac42c6f4eea2a92bc61a831ee0d7e"
+  },
+  {
    "symbol": "StateTest",
    "path": "contracts/state.scrypt.tpl",
    "md5": "d3ca2ac8b1e55386a3abe8f06019380f",
@@ -649,6 +654,175 @@
    "symbol": "VoidReturn",
    "path": "contracts/voidReturn.scrypt.tpl",
    "md5": "c8c814dad85471d6ada6f32904735f20"
+  },
+  {
+   "symbol": "AccessNonProp",
+   "path": "contracts/invalid/accessNonProp.scrypt.tpl"
+  },
+  {
+   "symbol": "BadTypes",
+   "path": "contracts/invalid/badTypes.scrypt.tpl"
+  },
+  {
+   "symbol": "ByteStringSlice",
+   "path": "contracts/invalid/byteStringSlice.scrypt.tpl"
+  },
+  {
+   "symbol": "CallMethod",
+   "path": "contracts/invalid/callMethod.scrypt.tpl"
+  },
+  {
+   "symbol": "Constructor1",
+   "path": "contracts/invalid/constructor1.scrypt.tpl"
+  },
+  {
+   "symbol": "Constructor2",
+   "path": "contracts/invalid/constructor2.scrypt.tpl"
+  },
+  {
+   "symbol": "ContractLib1",
+   "path": "contracts/invalid/contractLib1.scrypt.tpl"
+  },
+  {
+   "symbol": "ContractLibWrapper1",
+   "path": "contracts/invalid/contractLib1.scrypt.tpl"
+  },
+  {
+   "symbol": "ContractLib2",
+   "path": "contracts/invalid/contractLib2.scrypt.tpl"
+  },
+  {
+   "symbol": "ContractLibWrapper2",
+   "path": "contracts/invalid/contractLib2.scrypt.tpl"
+  },
+  {
+   "symbol": "Counter4",
+   "path": "contracts/invalid/counter4.scrypt.tpl"
+  },
+  {
+   "symbol": "Ctc",
+   "path": "contracts/invalid/ctc.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidCTX",
+   "path": "contracts/invalid/ctx.scrypt.tpl"
+  },
+  {
+   "symbol": "CTX1",
+   "path": "contracts/invalid/ctx1.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidEnumC",
+   "path": "contracts/invalid/enum.scrypt.tpl"
+  },
+  {
+   "symbol": "ExplicitReturn",
+   "path": "contracts/invalid/explicitReturn.scrypt.tpl"
+  },
+  {
+   "symbol": "ExplicitReturn2",
+   "path": "contracts/invalid/explicitReturn2.scrypt.tpl"
+  },
+  {
+   "symbol": "ForLoop",
+   "path": "contracts/invalid/forLoop.scrypt.tpl"
+  },
+  {
+   "symbol": "HeritageDemoInvalid3",
+   "path": "contracts/invalid/heritageDemoInvalid3.scrypt.tpl"
+  },
+  {
+   "symbol": "HeritageDemoInvalid4",
+   "path": "contracts/invalid/heritageDemoInvalid4.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidB2G",
+   "path": "contracts/invalid/invalidB2G.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidCtx2",
+   "path": "contracts/invalid/invalidCtx2.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidFillFixedArray",
+   "path": "contracts/invalid/invalidFillFixedArray.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidState",
+   "path": "contracts/invalid/invalidState.scrypt.tpl",
+   "stateType": "InvalidStateState"
+  },
+  {
+   "symbol": "InvalidStateState",
+   "path": "contracts/invalid/invalidState.scrypt.tpl"
+  },
+  {
+   "symbol": "Issue292",
+   "path": "contracts/invalid/issue292.scrypt.tpl"
+  },
+  {
+   "symbol": "NonPublicMethod2",
+   "path": "contracts/invalid/nonPublicMethod2.scrypt.tpl"
+  },
+  {
+   "symbol": "OCS1",
+   "path": "contracts/invalid/ocs1.scrypt.tpl"
+  },
+  {
+   "symbol": "OCS2",
+   "path": "contracts/invalid/ocs2.scrypt.tpl"
+  },
+  {
+   "symbol": "OCS3",
+   "path": "contracts/invalid/ocs3.scrypt.tpl"
+  },
+  {
+   "symbol": "OperatorRequiresBoolean",
+   "path": "contracts/invalid/operatorRequiresBoolean.scrypt.tpl"
+  },
+  {
+   "symbol": "PropInitialization1",
+   "path": "contracts/invalid/propInitialization1.scrypt.tpl"
+  },
+  {
+   "symbol": "PropInitialization2",
+   "path": "contracts/invalid/propInitialization2.scrypt.tpl"
+  },
+  {
+   "symbol": "PublicMethod1",
+   "path": "contracts/invalid/publicMethod1.scrypt.tpl"
+  },
+  {
+   "symbol": "PublicMethod2",
+   "path": "contracts/invalid/publicMethod2.scrypt.tpl"
+  },
+  {
+   "symbol": "Recursion",
+   "path": "contracts/invalid/recursion.scrypt.tpl"
+  },
+  {
+   "symbol": "Recursion2",
+   "path": "contracts/invalid/recursion2.scrypt.tpl"
+  },
+  {
+   "symbol": "SigHashChangeSINGLE",
+   "path": "contracts/invalid/sigHashChange.scrypt.tpl"
+  },
+  {
+   "symbol": "InvalidStaticProp",
+   "path": "contracts/invalid/staticProp.scrypt.tpl"
+  },
+  {
+   "symbol": "StringLiteral",
+   "path": "contracts/invalid/stringLiteral.scrypt.tpl"
+  },
+  {
+   "symbol": "ToByteString",
+   "path": "contracts/invalid/toByteString.scrypt.tpl"
+  },
+  {
+   "symbol": "TypeNonSpecified",
+   "path": "contracts/invalid/typeNospecified.scrypt.tpl"
   }
  ]
 }

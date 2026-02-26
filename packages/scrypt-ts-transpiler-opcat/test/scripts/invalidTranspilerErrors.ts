@@ -156,21 +156,18 @@ export const expectTranspilerErrors: { [fileName: string]: TranspilerError } = {
       {
         message: '`IContext` is not allowed to be defined in the contract',
       },
-      {
-        message:
-          'Direct access to `this.ctx` is prohibited, only access to `this.ctx.*` is allowed, such as: `this.ctx.shaSpentAmounts` or `this.ctx.inputIndex`',
-      },
     ],
   },
-  ctx1: {
-    testTitle: 'errors on contract `InvalidCTX1`.',
-    errors: [
-      {
-        message:
-          'Cannot access `this.ctx`, `this.state`, `this.changeInfo`, or `backtrace` in a private method `foo`, because the private method is not called by any public method',
-      },
-    ],
-  },
+  // ctx1: contract name is CTX1, and foo() no longer throws error because it accesses this.ctx.* instead of this.ctx
+  // ctx1: {
+  //   testTitle: 'errors on contract `InvalidCTX1`.',
+  //   errors: [
+  //     {
+  //       message:
+  //         'Cannot access `this.ctx`, `this.state`, `this.changeInfo`, or `backtrace` in a private method `foo`, because the private method is not called by any public method',
+  //     },
+  //   ],
+  // },
 
   // demo, demobase is valid, no expect errors
 
@@ -388,15 +385,14 @@ export const expectTranspilerErrors: { [fileName: string]: TranspilerError } = {
       },
     ],
   },
-  // todo: add test when sighash type is ready
-  // 'sigHashChange': {
-  //     testTitle: 'should throw when calling `buildChangeOutput` on sighash SINGLE | NONE method.',
-  //     errors: [
-  //         {
-  //             message: `Can only use sighash ALL or ANYONECANPAY_ALL if using \`this.buildChangeOutput()\``,
-  //         },
-  //     ],
-  // },
+  sigHashChange: {
+    testTitle: 'should throw when calling `buildChangeOutput` on sighash SINGLE | NONE method.',
+    errors: [
+      {
+        message: `Can only use sighash ALL or ANYONECANPAY_ALL if using \`this.buildChangeOutput()\``,
+      },
+    ],
+  },
 
   staticProp: {
     testTitle: 'should throw when static invalid',

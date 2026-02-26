@@ -5,6 +5,11 @@ import { Outpoint, SpentAmounts, SpentDataHashes } from '../types/structs.js';
 import { assert, hash256, intToByteString, slice } from '../fns/index.js';
 import { InputIndex } from '../../globalTypes.js';
 
+// ANYONECANPAY flag (0x80)
+const SIGHASH_ANYONECANPAY = 0x80n;
+
+// Empty hash (32 zero bytes) used when ANYONECANPAY is set
+const EMPTY_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
 
 /**
  * Validates the transaction context against the provided preimage data.
@@ -32,48 +37,76 @@ export function checkCtxImpl(
   // check sHPreimage
   self.checkSHPreimage(shPreimage);
 
+  // Check if ANYONECANPAY flag is set
+  const hasAnyoneCanPay = (shPreimage.sigHashType & SIGHASH_ANYONECANPAY) !== 0n;
+
   // check inputIndex
   assert(BigInt(inputIndex) === shPreimage.inputIndex, 'inputIndex mismatch');
-  // check prevouts
-  assert(
-    tools.compare(
-      tools.fromHex(shPreimage.hashPrevouts),
-      tools.fromHex(hash256(prevouts)),
-    ) === 0,
-    'hashPrevouts mismatch',
-  );
 
-  // check prevout
-  assert(prevout.txHash + intToByteString(prevout.outputIndex, 4n) === slice(prevouts, BigInt(inputIndex)*36n, BigInt(inputIndex + 1)*36n), `invalid prevout`);
+  // For ANYONECANPAY, hashPrevouts should be empty (all zeros)
+  // Otherwise, validate against the calculated hash
+  if (hasAnyoneCanPay) {
+    assert(
+      shPreimage.hashPrevouts === EMPTY_HASH,
+      'hashPrevouts should be empty for ANYONECANPAY',
+    );
+  } else {
+    // check prevouts
+    assert(
+      tools.compare(
+        tools.fromHex(shPreimage.hashPrevouts),
+        tools.fromHex(hash256(prevouts)),
+      ) === 0,
+      'hashPrevouts mismatch',
+    );
 
-  // check spentScripts
-  assert(
-    tools.compare(
-      tools.fromHex(shPreimage.hashSpentScriptHashes),
-      tools.fromHex(
-        hash256(spentScriptHashes),
-      ),
-    ) === 0,
-    'hashSpentScriptHashes mismatch',
-  );
+    // check prevout (only meaningful when not ANYONECANPAY)
+    assert(prevout.txHash + intToByteString(prevout.outputIndex, 4n) === slice(prevouts, BigInt(inputIndex)*36n, BigInt(inputIndex + 1)*36n), `invalid prevout`);
+  }
 
-  // check spentAmounts
-  assert(
-    tools.compare(
-      tools.fromHex(shPreimage.hashSpentAmounts),
-      tools.fromHex(hash256(spentAmounts)),
-    ) === 0,
-    'hashSpentAmounts mismatch',
-  );
+  // For ANYONECANPAY, hashSpentScriptHashes, hashSpentAmounts, hashSpentDataHashes should be empty
+  if (hasAnyoneCanPay) {
+    assert(
+      shPreimage.hashSpentScriptHashes === EMPTY_HASH,
+      'hashSpentScriptHashes should be empty for ANYONECANPAY',
+    );
+    assert(
+      shPreimage.hashSpentAmounts === EMPTY_HASH,
+      'hashSpentAmounts should be empty for ANYONECANPAY',
+    );
+    assert(
+      shPreimage.hashSpentDataHashes === EMPTY_HASH,
+      'hashSpentDataHashes should be empty for ANYONECANPAY',
+    );
+  } else {
+    // check spentScripts
+    assert(
+      tools.compare(
+        tools.fromHex(shPreimage.hashSpentScriptHashes),
+        tools.fromHex(
+          hash256(spentScriptHashes),
+        ),
+      ) === 0,
+      'hashSpentScriptHashes mismatch',
+    );
 
+    // check spentAmounts
+    assert(
+      tools.compare(
+        tools.fromHex(shPreimage.hashSpentAmounts),
+        tools.fromHex(hash256(spentAmounts)),
+      ) === 0,
+      'hashSpentAmounts mismatch',
+    );
 
-  assert(
-    tools.compare(
-      tools.fromHex(shPreimage.hashSpentDataHashes),
-      tools.fromHex(hash256(stateHashes)),
-    ) === 0,
-    'hashSpentDataHashes mismatch',
-  );
+    assert(
+      tools.compare(
+        tools.fromHex(shPreimage.hashSpentDataHashes),
+        tools.fromHex(hash256(stateHashes)),
+      ) === 0,
+      'hashSpentDataHashes mismatch',
+    );
+  }
 
   return true;
 }

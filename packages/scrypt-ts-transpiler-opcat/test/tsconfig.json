@@ -26,6 +26,7 @@
     // "./contracts/state.ts",
     // "./contracts/ctx.ts",
     "./contracts/*.ts",
+    "./contracts/invalid/*.ts",
     //"./contracts/b2G.ts",
     // "./contracts/b2G2.ts",
   ],

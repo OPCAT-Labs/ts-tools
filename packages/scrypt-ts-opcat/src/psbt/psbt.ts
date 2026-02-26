@@ -687,7 +687,13 @@ export class Psbt {
       },
     ];
 
-    this.data.updateInput(inputIndex, { partialSig });
+    // Only set sighashType if not already set (to avoid duplicate data error in multi-sig scenarios)
+    const input = this.data.inputs[inputIndex];
+    if (input.sighashType === undefined) {
+      this.data.updateInput(inputIndex, { partialSig, sighashType });
+    } else {
+      this.data.updateInput(inputIndex, { partialSig });
+    }
     return this;
   }
 
@@ -725,7 +731,13 @@ export class Psbt {
         },
       ];
 
-      this.data.updateInput(inputIndex, { partialSig });
+      // Only set sighashType if not already set (to avoid duplicate data error in multi-sig scenarios)
+      const input = this.data.inputs[inputIndex];
+      if (input.sighashType === undefined) {
+        this.data.updateInput(inputIndex, { partialSig, sighashType });
+      } else {
+        this.data.updateInput(inputIndex, { partialSig });
+      }
     });
   }
 
@@ -1255,7 +1267,10 @@ function getHashForSig(
   sighashType: number;
 } {
   const unsignedTx = cache.__TX;
-  const sighashType = input.sighashType || crypto.Signature.SIGHASH_ALL;
+  // Use sighashTypes parameter first, then fall back to input.sighashType, then default to SIGHASH_ALL
+  const sighashType = (sighashTypes && sighashTypes.length > 0)
+    ? sighashTypes[0]
+    : (input.sighashType || crypto.Signature.SIGHASH_ALL);
   checkSighashTypeAllowed(sighashType, sighashTypes);
 
   const prevout: Transaction.Output = unsignedTx.inputs[inputIndex].output!;
