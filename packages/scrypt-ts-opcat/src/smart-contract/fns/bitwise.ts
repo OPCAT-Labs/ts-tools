@@ -4,39 +4,73 @@ import { byteStringToInt, intToByteString } from './byteString.js';
 import * as tools from 'uint8array-tools';
 
 
-
-function simplePow(x: bigint, y: bigint) {
-  let calced = 1n;
-  for (let i = 0, e = y; i < e; i++) {
-    calced *= x
-  }
-  return calced;
-}
-
-
-function pow2(n: bigint): bigint {
-  return simplePow(2n, n);
-};
-
 /**
-* Arithmetic left shift, returns `x * 2^n`. 
-* More detail about [Bitwise Operations]{@link https://docs.opcatlabs.io/how-to-write-a-contract/built-ins#bitwise-operator} 
-* @category Bitwise Operations
-*/
+ * Logical left shift matching on-chain OP_LSHIFT semantics.
+ *
+ * On-chain, OP_LSHIFT treats the stack item as raw bytes (sign-magnitude
+ * encoding), interprets those bytes as an unsigned big-endian integer,
+ * performs an unsigned logical left shift, and truncates the result back to
+ * the original byte length.  This function replicates that behaviour so that
+ * off-chain tests produce the same result as the deployed contract.
+ *
+ * Decision: the previous arithmetic-multiplication implementation diverged
+ * from on-chain semantics for any negative or large value; replaced with a
+ * byte-level unsigned shift + truncation to match OP_LSHIFT exactly.
+ *
+ * More detail about [Bitwise Operations]{@link https://docs.opcatlabs.io/how-to-write-a-contract/built-ins#bitwise-operator}
+ * @category Bitwise Operations
+ */
 export function lshift(x: bigint, n: bigint): bigint {
-  assert(n >= 0, 'n < 0');
-  return x * pow2(n);
+  assert(n >= 0n, 'n < 0');
+  const hex = intToByteString(x);
+  if (hex.length === 0 || n === 0n) return x;
+  const buf = tools.fromHex(hex);
+  const origLen = buf.length;
+  // Treat raw bytes as unsigned big-endian integer and shift left
+  const unsigned = BigInt('0x' + tools.toHex(buf));
+  const shifted = unsigned << n;
+  // Truncate to original byte length: take last origLen bytes
+  const shiftedHex = shifted.toString(16);
+  const paddedHex = shiftedHex.length < origLen * 2
+    ? shiftedHex.padStart(origLen * 2, '0')
+    : shiftedHex;
+  const truncatedHex = paddedHex.slice(-origLen * 2);
+  return byteStringToInt(truncatedHex);
 }
 
 /**
-* Arithmetic right shift, returns `x / 2^n`.
-* More detail about [Bitwise Operations]{@link https://docs.opcatlabs.io/how-to-write-a-contract/built-ins#bitwise-operator} 
-* @category Bitwise Operations
-*/
+ * Logical right shift matching on-chain OP_RSHIFT semantics.
+ *
+ * On-chain, OP_RSHIFT treats the stack item as raw bytes (sign-magnitude
+ * encoding), interprets those bytes as an unsigned big-endian integer,
+ * performs an unsigned logical right shift, and truncates the result back to
+ * the original byte length.  This function replicates that behaviour so that
+ * off-chain tests produce the same result as the deployed contract.
+ *
+ * Decision: the previous arithmetic-division implementation diverged from
+ * on-chain semantics for any negative value; replaced with a byte-level
+ * unsigned shift + truncation to match OP_RSHIFT exactly.
+ *
+ * Example: rshift(-6n, 2n)
+ *   -6 in sign-magnitude = 0x86; unsigned = 134; 134 >>> 2 = 33 = 0x21
+ *   result = byteStringToInt('21') = 33n  (not -1n as the old code returned)
+ *
+ * More detail about [Bitwise Operations]{@link https://docs.opcatlabs.io/how-to-write-a-contract/built-ins#bitwise-operator}
+ * @category Bitwise Operations
+ */
 export function rshift(x: bigint, n: bigint): bigint {
-  assert(n >= 0, 'n < 0');
-  const ret = x / pow2(n);
-  return n == 0n ? x : (x % 2n == -1n ? (ret - 1n) : (x < 0n && ret == 0n) ? -1n : ret);
+  assert(n >= 0n, 'n < 0');
+  const hex = intToByteString(x);
+  if (hex.length === 0 || n === 0n) return x;
+  const buf = tools.fromHex(hex);
+  const origLen = buf.length;
+  // Treat raw bytes as unsigned big-endian integer and shift right
+  const unsigned = BigInt('0x' + tools.toHex(buf));
+  const shifted = unsigned >> n;
+  // Truncate to original byte length: take last origLen bytes
+  const shiftedHex = shifted.toString(16).padStart(origLen * 2, '0');
+  const truncatedHex = shiftedHex.slice(-origLen * 2);
+  return byteStringToInt(truncatedHex);
 }
 
 
