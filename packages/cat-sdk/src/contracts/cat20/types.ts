@@ -26,7 +26,7 @@ export type CAT20GuardConstState = {
    * The address of the deployer who created this Guard UTXO.
    * Used to authorize the `unlock` method, preventing other users from using this guard.
    * Format: P2PKH locking script (76a914 + hash160(pubKey) + 88ac)
-   * @note F14 Fix: Added to prevent guard reuse by unauthorized users
+   * @note F14 Fix: Added to prevent guard hijack by unauthorized users
    */
   deployerAddr: ByteString
   // scripts of all the different types of tokens in curTx inputs

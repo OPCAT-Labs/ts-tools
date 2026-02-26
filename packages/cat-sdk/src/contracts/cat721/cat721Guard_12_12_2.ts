@@ -21,7 +21,7 @@ import { OwnerUtils } from "../utils/ownerUtils.js";
 export class CAT721Guard_12_12_2 extends SmartContract<CAT721GuardConstState> {
     @method()
     public unlock(
-        // deployer signature to prevent guard reuse
+        // deployer signature to prevent guard hijack
         deployerSig: Sig,
         deployerPubKey: PubKey,
         nextStateHashes: FixedArray<ByteString, typeof TX_OUTPUT_COUNT_MAX_12>,
@@ -47,7 +47,7 @@ export class CAT721Guard_12_12_2 extends SmartContract<CAT721GuardConstState> {
         // the number of curTx outputs except for the state hash root output
         outputCount: bigint
     ) {
-        // F14 Fix: Verify deployer signature to prevent guard reuse
+        // F14 Fix: Verify deployer signature to prevent guard hijack
         OwnerUtils.checkUserOwner(deployerPubKey, this.state.deployerAddr)
         assert(this.checkSig(deployerSig, deployerPubKey), 'deployer signature is invalid')
 
