@@ -393,6 +393,33 @@ export const expectTranspilerErrors: { [fileName: string]: TranspilerError } = {
     ],
   },
 
+  sighashCheckOutputsNone: {
+    testTitle: 'should throw when calling `checkOutputs` on sighash NONE method.',
+    errors: [
+      {
+        message: `Cannot use \`this.checkOutputs()\` with sighash NONE or ANYONECANPAY_NONE because hashOutputs is empty`,
+      },
+    ],
+  },
+
+  sighashAnyonecanpayPrevouts: {
+    testTitle: 'should throw when accessing `ctx.prevouts` with ANYONECANPAY sighash.',
+    errors: [
+      {
+        message: `Cannot access \`this.ctx.prevouts\` with ANYONECANPAY sighash because hashPrevouts is empty`,
+      },
+    ],
+  },
+
+  sighashAnyonecanpaySpentAmounts: {
+    testTitle: 'should throw when accessing `ctx.spentAmounts` with ANYONECANPAY sighash.',
+    errors: [
+      {
+        message: `Cannot access \`this.ctx.spentAmounts\` with ANYONECANPAY sighash because hashSpentAmounts is empty`,
+      },
+    ],
+  },
+
   staticProp: {
     testTitle: 'should throw when static invalid',
     errors: [

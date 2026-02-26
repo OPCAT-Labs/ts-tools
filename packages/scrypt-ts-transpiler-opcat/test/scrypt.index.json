@@ -814,6 +814,18 @@
    "path": "contracts/invalid/sigHashChange.scrypt.tpl"
   },
   {
+   "symbol": "SighashAnyonecanpayPrevouts",
+   "path": "contracts/invalid/sighashAnyonecanpayPrevouts.scrypt.tpl"
+  },
+  {
+   "symbol": "SighashAnyonecanpaySpentAmounts",
+   "path": "contracts/invalid/sighashAnyonecanpaySpentAmounts.scrypt.tpl"
+  },
+  {
+   "symbol": "SighashCheckOutputsNone",
+   "path": "contracts/invalid/sighashCheckOutputsNone.scrypt.tpl"
+  },
+  {
    "symbol": "InvalidStaticProp",
    "path": "contracts/invalid/staticProp.scrypt.tpl"
   },
