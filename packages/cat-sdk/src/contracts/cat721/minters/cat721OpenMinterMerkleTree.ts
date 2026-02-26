@@ -1,5 +1,5 @@
 import { ByteString, SmartContractLib, assert, hash160, intToByteString, len, method, toByteString } from "@opcat-labs/scrypt-ts-opcat";
-import { ProofNodePos, MerkleProof, HEIGHT, CAT721MerkleLeaf } from "../types.js";
+import { ProofNodePos, MerkleProof, MERKLE_PROOF_HEIGHT, CAT721MerkleLeaf } from "../types.js";
 import { OUTPUT_DATA_HASH_LEN } from "../../constants.js";
 
 
@@ -25,7 +25,7 @@ export class CAT721OpenMinterMerkleTree extends SmartContractLib {
     ): ByteString {
         let oldRoot = oldLeaf;
         let newRoot = newLeaf;
-        for (let i = 0; i < HEIGHT - 1; i++) {
+        for (let i = 0; i < MERKLE_PROOF_HEIGHT; i++) {
             if (proofNodePos[i]) {
                 // proof node is on the right
                 oldRoot = hash160(oldRoot + proof[i]);
