@@ -1,7 +1,7 @@
 import { assert, BacktraceInfo, ByteString, len, method, prop, PubKey, Sig, SmartContract, tags, toByteString, TxUtils, UInt64 } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721ClosedMinterState, CAT721State } from "../types.js";
 import { OwnerUtils } from "../../utils/ownerUtils.js";
-import { ConstantsLib, OWNER_ADDR_P2PKH_BYTE_LEN } from "../../constants.js";
+import { ConstantsLib, MINTER_INPUT_INDEX, OWNER_ADDR_P2PKH_BYTE_LEN } from "../../constants.js";
 import { CAT721StateLib } from "../cat721StateLib.js";
 import { CatTags } from "../../catTags.js";
 
@@ -53,7 +53,7 @@ export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
         assert(nftRemaining > 0n && nftRemaining <= this.max, 'nftRemaining is invalid');
 
         // minter input should be the first input in curTx
-        assert(this.ctx.inputIndex == 0n, 'minter input should be the first input in curTx');
+        assert(this.ctx.inputIndex == MINTER_INPUT_INDEX, 'minter input should be the first input in curTx');
 
         const nextLocalId = this.state.nextLocalId + 1n;
         let outputs = toByteString('');
