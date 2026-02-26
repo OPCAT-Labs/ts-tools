@@ -1632,6 +1632,78 @@ export class Transpiler {
     }
   }
 
+  /**
+   * Parse sigHashType from decorator options.
+   * Supports both new object syntax: @method({ sigHashType: SigHashType.ALL })
+   * and legacy direct syntax: @method(SigHash.ALL)
+   * @returns hex string representing the sigHashType ('01', '02', '03', '81', '82', '83')
+   */
+  private parseSigHashType(methodDec: ts.Decorator): string {
+    const expression = methodDec.expression;
+    let sigHashType = '01'; // default: SigHash.ALL (0x01)
+
+    if (!ts.isCallExpression(expression) || !expression.arguments[0]) {
+      return sigHashType;
+    }
+
+    const argTxt = expression.arguments[0].getText();
+
+    // Try to match object syntax: { sigHashType: SigHashType.XXX }
+    const objectMatch = /sigHashType:\s*SigHashType\.(\w+)/.exec(argTxt);
+    if (objectMatch) {
+      const sigHashTypeName = objectMatch[1];
+      switch (sigHashTypeName) {
+        case 'ANYONECANPAY_SINGLE':
+          sigHashType = '83'; // 0x83 = 131
+          break;
+        case 'ANYONECANPAY_ALL':
+          sigHashType = '81'; // 0x81 = 129
+          break;
+        case 'ANYONECANPAY_NONE':
+          sigHashType = '82'; // 0x82 = 130
+          break;
+        case 'ALL':
+          sigHashType = '01'; // 0x01 = 1
+          break;
+        case 'SINGLE':
+          sigHashType = '03'; // 0x03 = 3
+          break;
+        case 'NONE':
+          sigHashType = '02'; // 0x02 = 2
+          break;
+        default:
+          break;
+      }
+      return sigHashType;
+    }
+
+    // Legacy direct syntax: @method(SigHash.XXX)
+    switch (argTxt) {
+      case 'SigHash.ANYONECANPAY_SINGLE':
+        sigHashType = '83'; // 0x83 = 131
+        break;
+      case 'SigHash.ANYONECANPAY_ALL':
+        sigHashType = '81'; // 0x81 = 129
+        break;
+      case 'SigHash.ANYONECANPAY_NONE':
+        sigHashType = '82'; // 0x82 = 130
+        break;
+      case 'SigHash.ALL':
+        sigHashType = '01'; // 0x01 = 1
+        break;
+      case 'SigHash.SINGLE':
+        sigHashType = '03'; // 0x03 = 3
+        break;
+      case 'SigHash.NONE':
+        sigHashType = '02'; // 0x02 = 2
+        break;
+      default:
+        break;
+    }
+
+    return sigHashType;
+  }
+
   private transformMethodDeclaration(
     node: ts.MethodDeclaration,
     toSection: EmittedSection,
@@ -1649,30 +1721,8 @@ export class Transpiler {
     this.setMethodDecOptions(methodDec);
     this._currentMethodName = node.name.getText();
 
-    let sigHashType = '41'; //SigHash.ALL;
-
-    switch (match[1]) {
-      case 'SigHash.ANYONECANPAY_SINGLE':
-        sigHashType = 'c3'; // SigHash.ANYONECANPAY_SINGLE;
-        break;
-      case 'SigHash.ANYONECANPAY_ALL':
-        sigHashType = 'c1'; //SigHash.ANYONECANPAY_ALL;
-        break;
-      case 'SigHash.ANYONECANPAY_NONE':
-        sigHashType = 'c2'; //SigHash.ANYONECANPAY_NONE;
-        break;
-      case 'SigHash.ALL':
-        sigHashType = '41'; //SigHash.ALL;
-        break;
-      case 'SigHash.SINGLE':
-        sigHashType = '43'; //SigHash.SINGLE;
-        break;
-      case 'SigHash.NONE':
-        sigHashType = '42'; //SigHash.NONE;
-        break;
-      default:
-        break;
-    }
+    // Parse sigHashType from decorator options (supports both object and legacy syntax)
+    const sigHashType = this.parseSigHashType(methodDec);
 
     const isPublicMethod = Transpiler.isPublicMethod(node);
     if (isPublicMethod) {
@@ -1729,7 +1779,7 @@ export class Transpiler {
       shouldAutoAppendSighashPreimage.shouldAppendArguments &&
       buildChangeOutputExpression !== undefined
     ) {
-      const allowedSighashType = ['c1', '41']; // Only sighash ALL allowed.
+      const allowedSighashType = ['81', '01']; // Only sighash ALL or ANYONECANPAY_ALL allowed.
       if (!allowedSighashType.includes(sigHashType)) {
         throw new TranspileError(
           `Can only use sighash ALL or ANYONECANPAY_ALL if using \`this.buildChangeOutput()\``,
@@ -1875,7 +1925,12 @@ export class Transpiler {
         this,
         (sec) => {
           if (shouldAutoAppendSighashPreimage.shouldAppendArguments) {
+            // Convert sigHashType hex to decimal for the require statement
+            const sigHashTypeDecimal = parseInt(sigHashType, 16);
             sec
+              .append('\n')
+              // Verify sigHashType matches the decorator-specified value
+              .append(`require(${InjectedParam_SHPreimage}.sigHashType == ${sigHashTypeDecimal});`)
               .append('\n')
               .append(`${CALL_CHECK_SHPREIMAGE};`)
               .append(`\n`);

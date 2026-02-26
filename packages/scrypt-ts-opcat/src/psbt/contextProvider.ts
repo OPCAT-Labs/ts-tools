@@ -112,7 +112,9 @@ export class ContextProvider {
   calculateInputSHPreimages(): SHPreimage[] {
 
     return this._curPsbt.unsignedTx.inputs.map((_, inputIndex) => {
-      const rawSHPreimage = this._curPsbt.unsignedTx.getPreimage(inputIndex, crypto.Signature.SIGHASH_ALL);
+      const sigHashType = this._curPsbt.getSigHashType(inputIndex);
+      const sighash = sigHashType !== undefined ? sigHashType : crypto.Signature.SIGHASH_ALL;
+      const rawSHPreimage = this._curPsbt.unsignedTx.getPreimage(inputIndex, sighash);
 
       return decodeSHPreimage(new Uint8Array(rawSHPreimage))
     })
