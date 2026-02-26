@@ -481,6 +481,11 @@
    "md5": "a6bc488864a8aa2f9c42f432784a860b"
   },
   {
+   "symbol": "SighashCtxTest",
+   "path": "contracts/sighashCtxTest.scrypt.tpl",
+   "md5": "957777d4ee0a4dbc4216bd85ef42a87b"
+  },
+  {
    "symbol": "StateTest",
    "path": "contracts/state.scrypt.tpl",
    "md5": "767b9dc86df5c27b422a25376180e92d",
