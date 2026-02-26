@@ -2837,30 +2837,14 @@ export class Transpiler {
   }
 
   private shouldAutoAppendSighashPreimage(node: ts.MethodDeclaration) {
-    // const hasSigHashPreimageParameters = node.parameters.find(
-    //   (p) => p.type?.getText() === 'SigHashPreimage',
-    // );
-
-    // if (hasSigHashPreimageParameters) {
-    //   return false;
-    // }
-
-    const methodInfo = this.findMethodInfo(node.name.getText());
-
-    if (!methodInfo) {
-      throw new UnknownError(
-        `No method info found for \`${node.name.getText()}\``,
-        this.getRange(node.name),
-      );
-    }
-    const { accessSHPreimage, accessSHPreimageInSubCall } = methodInfo.accessInfo;
-    const { isPublic } = methodInfo;
-
-    const shouldAppendArguments = accessSHPreimage && isPublic;
-    const shouldAppendThisAssignment = accessSHPreimage && accessSHPreimageInSubCall && isPublic;
-    const shouldAccessThis = (!isPublic || accessSHPreimageInSubCall) && accessSHPreimage;
-
-    return { shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis };
+    return this._shouldAutoAppend(node, (methodInfo) => {
+      const { accessSHPreimage, accessSHPreimageInSubCall } = methodInfo.accessInfo;
+      const { isPublic } = methodInfo;
+      const shouldAppendArguments = accessSHPreimage && isPublic;
+      const shouldAppendThisAssignment = accessSHPreimage && accessSHPreimageInSubCall && isPublic;
+      const shouldAccessThis = (!isPublic || accessSHPreimageInSubCall) && accessSHPreimage;
+      return [shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis];
+    });
   }
 
   private transformParameter(

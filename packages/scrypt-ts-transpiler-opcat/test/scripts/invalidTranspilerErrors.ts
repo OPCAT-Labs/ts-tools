@@ -158,16 +158,15 @@ export const expectTranspilerErrors: { [fileName: string]: TranspilerError } = {
       },
     ],
   },
-  // ctx1: contract name is CTX1, and foo() no longer throws error because it accesses this.ctx.* instead of this.ctx
-  // ctx1: {
-  //   testTitle: 'errors on contract `InvalidCTX1`.',
-  //   errors: [
-  //     {
-  //       message:
-  //         'Cannot access `this.ctx`, `this.state`, `this.changeInfo`, or `backtrace` in a private method `foo`, because the private method is not called by any public method',
-  //     },
-  //   ],
-  // },
+  ctx1: {
+    testTitle: 'errors on contract `InvalidCTX1`.',
+    errors: [
+      {
+        message:
+          'Cannot access `this.ctx`, `this.state`, `this.changeInfo`, or `backtrace` in a private method `foo`, because the private method is not called by any public method',
+      },
+    ],
+  },
 
   // demo, demobase is valid, no expect errors
 
