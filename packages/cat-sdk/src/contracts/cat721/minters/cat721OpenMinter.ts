@@ -36,6 +36,15 @@ export class CAT721OpenMinter extends SmartContract<CAT721OpenMinterState> {
         this.max = max
         this.premine = premine
         this.preminerAddr = preminerAddr
+        // Validate in constructor so that any attempt to instantiate an over-capacity
+        // minter fails early, both in tests and in the SDK. MAX_OPEN_MINTER_NFT_COUNT
+        // is a plain constant (not computed with **) to avoid exponentiation inside
+        // the constructor.
+        assert(this.max <= BigInt(MERKLE_TREE_MAX_CAPACITY), 'max exceeds merkle tree capacity of 2^(HEIGHT-1)')
+        assert(this.premine >= 0n && this.premine <= this.max, 'premine must be greater or equal to 0 and less than or equal to max')
+        if (this.premine > 0n) {
+            assert(len(this.preminerAddr) == OWNER_ADDR_P2PKH_BYTE_LEN, 'preminerAddr must be set')
+        }
     }
 
     @method()
@@ -75,12 +84,12 @@ export class CAT721OpenMinter extends SmartContract<CAT721OpenMinterState> {
             CAT721OpenMinterMerkleTree.leafStateHash({
                 contentDataHash: openMintInfo.contentDataHash,
                 localId: openMintInfo.localId,
-                isMined: false,
+                hasMintedBefore: false,
             }),
             CAT721OpenMinterMerkleTree.leafStateHash({
                 contentDataHash: openMintInfo.contentDataHash,
                 localId: openMintInfo.localId,
-                isMined: true
+                hasMintedBefore: true
             }),
             proof,
             proofNodePos,
@@ -115,13 +124,4 @@ export class CAT721OpenMinter extends SmartContract<CAT721OpenMinterState> {
         assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
     }
 
-    public checkProps() {
-        assert(this.max > 0n, 'max must be greater than 0')
-        // C7 Fix: Ensure max doesn't exceed merkle tree capacity
-        assert(this.max <= BigInt(MERKLE_TREE_MAX_CAPACITY), 'max exceeds merkle tree capacity')
-        assert(this.premine >= 0n && this.premine <= this.max, 'premine must be greater or equal to 0 and less than or equal to max')
-        if (this.premine > 0n) {
-            assert(len(this.preminerAddr) == OWNER_ADDR_P2PKH_BYTE_LEN, 'preminerAddr must be set')
-        }
-    }
 }

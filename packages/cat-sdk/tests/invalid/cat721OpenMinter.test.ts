@@ -1,4 +1,4 @@
-import { CAT20ClosedMinter, CAT20, CAT20ClosedMinterState, ConstantsLib, CAT20_AMOUNT, CAT721OpenMinter, CAT721, CAT721OpenMinterState, CAT721MerkleLeaf, HEIGHT, MerkleProof, ProofNodePos } from "../../src/contracts";
+import { CAT20ClosedMinter, CAT20, CAT20ClosedMinterState, ConstantsLib, CAT20_AMOUNT, CAT721OpenMinter, CAT721, CAT721OpenMinterState, CAT721MerkleLeaf, HEIGHT, MERKLE_TREE_MAX_CAPACITY, MerkleProof, ProofNodePos } from "../../src/contracts";
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import { isLocalTest } from '../utils';
@@ -32,6 +32,24 @@ const defaultMintConfig = {
     addDummyContentInput: false,
     addDummyMintInfoInput: false,
 }
+describe('Test CAT721OpenMinter constructor validation', () => {
+    before(() => {
+        loadAllArtifacts();
+    });
+
+    it('should fail when max exceeds merkle tree capacity', () => {
+        expect(() => {
+            new CAT721OpenMinter(toByteString(''), BigInt(MERKLE_TREE_MAX_CAPACITY) + 1n, 0n, toByteString(''))
+        }).to.throw('max exceeds merkle tree capacity of 2^(HEIGHT-1)');
+    });
+
+    it('should succeed when max equals merkle tree capacity', () => {
+        expect(() => {
+            new CAT721OpenMinter(toByteString(''), BigInt(MERKLE_TREE_MAX_CAPACITY), 0n, toByteString(''))
+        }).to.not.throw();
+    });
+})
+
 isLocalTest(testProvider) && describe('Test invalid mint for cat721OpenMinter', () => {
     let mainAddress: string;
     let mainPubKey: PubKey
@@ -543,7 +561,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721OpenMinter', 
         const oldLeaf = merkleTree.getLeaf(Number(mintLocalId));
         const newLeaf = {
             ...oldLeaf,
-            isMined: true,
+            hasMintedBefore: true,
         }
         return merkleTree.updateLeaf(newLeaf, Number(mintLocalId));
     }
@@ -566,7 +584,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat721OpenMinter', 
             nftMerkleLeafList.push({
                 contentDataHash: sha256(nftStr),
                 localId: i,
-                isMined: false,
+                hasMintedBefore: false,
             })
         }
         return nftMerkleLeafList

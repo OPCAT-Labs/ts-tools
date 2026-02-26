@@ -53,7 +53,7 @@ export class CAT721OpenMinterMerkleTree extends SmartContractLib {
     @method()
     static leafPropHashes(leaf: CAT721MerkleLeaf): ByteString {
         CAT721OpenMinterMerkleTree.checkLeaf(leaf);
-        const isMined = leaf.isMined ? toByteString('01') : toByteString('00');
-        return hash160(leaf.contentDataHash) + hash160(intToByteString(leaf.localId)) + hash160(isMined);
+        const hasMintedBefore = leaf.hasMintedBefore ? toByteString('01') : toByteString('00');
+        return hash160(leaf.contentDataHash) + hash160(intToByteString(leaf.localId)) + hash160(hasMintedBefore);
     }
 }

@@ -107,9 +107,8 @@ export type CAT721MerkleLeaf = {
     // content data hash of this nft
     contentDataHash: ByteString
     localId: bigint
-    // todo: maybe we should change the field name to `isMinted`
-    // a flag to indicate whether this nft is mined
-    isMined: boolean
+    // a flag to indicate whether this nft has been minted before
+    hasMintedBefore: boolean
 }
 
 /**

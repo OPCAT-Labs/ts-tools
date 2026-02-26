@@ -41,7 +41,6 @@ export class DeployCommand extends CommandRunner {
       exit(-1);
     }
 
-    // TODO: If private key was generated just now, then exit.
     await stepCmd('Generating private key', 'npm run genprivkey');
 
     // Run deploy script.

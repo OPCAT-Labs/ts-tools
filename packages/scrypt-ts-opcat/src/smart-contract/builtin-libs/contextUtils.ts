@@ -71,7 +71,6 @@ export class ContextUtils extends SmartContractLib {
    */
   @method()
   static sign(h: bigint, privKey: PrivKey, inverseK: bigint, r: bigint, rBigEndian: ByteString, sigHashType: ByteString): Sig {
-    // TODO: r * privKey can also be precomputed
     let s: bigint = inverseK * (h + r * privKey);
     const N: bigint = 0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
     s = ContextUtils.normalize(s, N);

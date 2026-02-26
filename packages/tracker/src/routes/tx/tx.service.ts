@@ -49,9 +49,8 @@ export class TxService {
   ) { }
 
   /**
-   * todo: fix it to opcat layer tx parsing
-   * @param txid 
-   * @returns 
+   * @param txid
+   * @returns
    */
   async parseTransferTxTokenOutputs(txid: string) {
     const raw = await this.commonService.getRawTx(txid);
@@ -175,11 +174,6 @@ export class TxService {
    * Queries both tx_out and tx_out_archive tables and deduplicates by txid.
    * Filters by token type scope using decimals field from token_info table.
    *
-   * TODO: Performance optimization - Consider adding a `token_type` column (fungible/nonfungible)
-   * to tx_out and tx_out_archive tables to avoid expensive JOIN with token_info table.
-   * This would improve query performance by 5-10x for high-frequency queries.
-   * Trade-off: Requires data redundancy and migration, but eliminates JOIN overhead.
-   *
    * @param ownerPubKeyHash - Owner public key hash
    * @param scope - Token type scope (Fungible for CAT-20, NonFungible for CAT-721)
    * @returns Total count of unique transaction IDs
@@ -219,11 +213,6 @@ export class TxService {
    * Query paginated list of unique transactions by address.
    * Queries both tx_out and tx_out_archive tables and deduplicates by txid.
    * Filters by token type scope using decimals field from token_info table.
-   *
-   * TODO: Performance optimization - Consider adding a `token_type` column (fungible/nonfungible)
-   * to tx_out and tx_out_archive tables to avoid expensive JOIN with token_info table.
-   * This would improve query performance by 5-10x for high-frequency queries.
-   * Trade-off: Requires data redundancy and migration, but eliminates JOIN overhead.
    *
    * @param ownerPubKeyHash - Owner public key hash
    * @param scope - Token type scope (Fungible for CAT-20, NonFungible for CAT-721)

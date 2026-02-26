@@ -911,7 +911,6 @@ export class CAT721OpenMinterPeripheral {
       metadata.premine,
       metadata.preminerAddr
     )
-    contract.checkProps()
     return contract
   }
 }
@@ -930,7 +929,6 @@ export class CAT721ClosedMinterPeripheral {
       outpoint2ByteString(collectionId),
       metadata.max
     )
-    contract.checkProps()
     return contract
   }
 }

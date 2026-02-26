@@ -150,7 +150,6 @@ function transformFile(
 
     const scComponents = transpiler.getSCComponents();
 
-    // TODO: process duplicated names.
     scComponents.forEach((cls) => {
       allContractsAST.set(cls.name!.getText(), cls);
     });

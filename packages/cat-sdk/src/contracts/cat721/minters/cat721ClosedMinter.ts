@@ -28,6 +28,8 @@ export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
         this.issuerAddress = issuerAddress
         this.genesisOutpoint = genesisOutpoint
         this.max = max
+        assert(this.max > 0n, 'max must be greater than 0')
+        assert(len(this.issuerAddress) == OWNER_ADDR_P2PKH_BYTE_LEN, 'issuerAddress must be a valid p2pkh address')
     }
 
     @method()
@@ -78,9 +80,4 @@ export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
         assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
     }
 
-
-    public checkProps() {
-        assert(this.max > 0n, 'max must be greater than 0')
-        assert(len(this.issuerAddress) == OWNER_ADDR_P2PKH_BYTE_LEN, 'issuerAddress must be a valid p2pkh address')
-    }
 }
