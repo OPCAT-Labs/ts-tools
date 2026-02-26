@@ -5,7 +5,7 @@ import { createCat721, TestCAT721Generator } from "../utils/testCAT721Generator"
 import { ExtPsbt, fill, getBackTraceInfo, PubKey, Script, sha256, Signer, toByteString, toHex, Transaction, uint8ArrayToHex, UTXO } from "@opcat-labs/scrypt-ts-opcat";
 import { testSigner } from "../utils/testSigner";
 import { applyFixedArray, getDummyUtxo, toTokenOwnerAddress } from "../../src/utils";
-import { CAT20, CAT20GuardStateLib, CAT20State, CAT20StateLib, CAT721, CAT721GuardStateLib, CAT721State, CAT721StateLib, ConstantsLib, OUTPUT_DATA_HASH_INDEX, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../src/contracts";
+import { CAT20, CAT20GuardStateLib, CAT20State, CAT20StateLib, CAT721, CAT721GuardStateLib, CAT721State, CAT721StateLib, ConstantsLib, OUTPUT_DATA_HASH_INDEX, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, SpendType } from "../../src/contracts";
 import { ContractPeripheral, CAT20GuardPeripheral, CAT721GuardPeripheral } from "../../src/utils/contractPeripheral";
 import { Postage } from "../../src/typeConstants";
 import { expect, use } from 'chai';
@@ -143,7 +143,7 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
                         userPubKey: mainPubKey,
                         userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
                         spendScriptInputIndex: -1n,
-                        spendType: 0n,
+                        spendType: SpendType.UserSpend,
                     },
                     guardState,
                     BigInt(guardInputIndex),

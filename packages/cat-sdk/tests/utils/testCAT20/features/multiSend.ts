@@ -1,5 +1,5 @@
 import { ByteString, ChainProvider, ExtPsbt, Signer, UTXO, UtxoProvider, assert, fill, intToByteString, sha256, toByteString, slice, PubKey, getBackTraceInfo, toHex, markSpent, fromSupportedNetwork, FixedArray } from "@opcat-labs/scrypt-ts-opcat";
-import { CAT20GuardStateLib, CAT20StateLib, CAT20, GUARD_TOKEN_TYPE_MAX, CAT20GuardConstState, CAT20State, SPEND_TYPE_USER_SPEND, CAT20_AMOUNT } from "../../../../src/contracts";
+import { CAT20GuardStateLib, CAT20StateLib, CAT20, GUARD_TOKEN_TYPE_MAX, CAT20GuardConstState, CAT20State, SpendType, CAT20_AMOUNT } from "../../../../src/contracts";
 import { CAT20GuardPeripheral, ContractPeripheral } from "../../../../src/utils/contractPeripheral";
 import { Postage } from "../../../../src/typeConstants";
 import { applyFixedArray, filterFeeUtxos, toTokenOwnerAddress } from "../../../../src/utils";
@@ -249,7 +249,7 @@ export async function multiSendTokens(
             });
             return cat20.unlock(
                 {
-                    spendType: SPEND_TYPE_USER_SPEND,
+                    spendType: SpendType.UserSpend,
                     userPubKey: PubKey(pubkey),
                     userSig: sig,
                     spendScriptInputIndex: -1n,

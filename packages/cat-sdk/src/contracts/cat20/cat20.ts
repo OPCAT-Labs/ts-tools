@@ -20,6 +20,7 @@ import { OwnerUtils } from '../utils/ownerUtils.js'
 import { CAT20State, CAT20GuardConstState } from './types.js'
 import {
   CAT20ContractUnlockArgs,
+  SpendType,
 } from '../types.js'
 import { GUARD_VARIANTS_COUNT, SHA256_HASH_LEN } from '../constants.js'
 import { CAT20GuardStateLib } from './cat20GuardStateLib.js'
@@ -96,14 +97,14 @@ export class CAT20 extends SmartContract<CAT20State> {
     )
 
     assert(
-      unlockArgs.spendType >= 0n && unlockArgs.spendType <= 2n,
+      unlockArgs.spendType >= SpendType.UserSpend && unlockArgs.spendType <= SpendType.AdminSpend,
       'invalid spendType'
     )
 
     let spentScriptHash = toByteString('')
-    // For contract (spendType=1) or admin (spendType=2) spend,
+    // For contract or admin spend,
     // spendScriptInputIndex must be >= 0 to prevent empty script hash bypass
-    if (unlockArgs.spendType == 1n || unlockArgs.spendType == 2n) {
+    if (unlockArgs.spendType == SpendType.ContractSpend || unlockArgs.spendType == SpendType.AdminSpend) {
       assert(
         unlockArgs.spendScriptInputIndex >= 0n,
         'spendScriptInputIndex must be >= 0 for contract or admin spend'
@@ -128,12 +129,12 @@ export class CAT20 extends SmartContract<CAT20State> {
         unlockArgs.spendScriptInputIndex
       )
     }
-    if (unlockArgs.spendType == 0n) {
+    if (unlockArgs.spendType == SpendType.UserSpend) {
       // user spend
       // unlock token owned by user key
       OwnerUtils.checkUserOwner(unlockArgs.userPubKey, this.state.ownerAddr)
       assert(this.checkSig(unlockArgs.userSig, unlockArgs.userPubKey))
-    } else if (unlockArgs.spendType == 1n) {
+    } else if (unlockArgs.spendType == SpendType.ContractSpend) {
       // contract spend
       // unlock token owned by contract script
       assert(this.state.ownerAddr == spentScriptHash)

@@ -31,7 +31,7 @@ import { CAT20 } from '../../../contracts/cat20/cat20.js'
 import * as opcat from '@opcat-labs/opcat'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib.js'
 import { Transaction } from '@opcat-labs/opcat'
-import { SPEND_TYPE_USER_SPEND } from '../../../contracts/index.js'
+import { SpendType } from '../../../contracts/index.js'
 
 /**
  * Sends a CAT20 token using `CAT20Guard` contract
@@ -299,7 +299,7 @@ export async function singleSendStep2(
       })
       return cat20.unlock(
         {
-          spendType: SPEND_TYPE_USER_SPEND,
+          spendType: SpendType.UserSpend,
           userPubKey: PubKey(publicKey),
           userSig: sig,
           spendScriptInputIndex: -1n,

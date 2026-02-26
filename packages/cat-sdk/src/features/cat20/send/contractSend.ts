@@ -35,7 +35,7 @@ import {
   ContractPeripheral,
 } from '../../../utils/contractPeripheral.js'
 import { CAT20StateLib } from '../../../contracts/cat20/cat20StateLib.js'
-import { SPEND_TYPE_CONTRACT_SPEND } from '../../../contracts/index.js'
+import { SpendType } from '../../../contracts/index.js'
 
 /**
  * Send CAT20 tokens to the list of recipients.
@@ -194,7 +194,7 @@ export const contractSend = createFeatureWithDryRun(async function(
       )
       contract.unlock(
         {
-          spendType: SPEND_TYPE_CONTRACT_SPEND,
+          spendType: SpendType.ContractSpend,
           userPubKey: '' as PubKey,
           userSig: '' as Sig,
           spendScriptInputIndex: BigInt(contractInputIndexVal),

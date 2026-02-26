@@ -14,7 +14,7 @@ import {
   toHex,
   uint8ArrayToHex,
 } from '@opcat-labs/scrypt-ts-opcat';
-import { CAT20, CAT20State, CAT20StateLib, GUARD_TOKEN_TYPE_MAX } from '../../src/contracts';
+import { CAT20, CAT20State, CAT20StateLib, GUARD_TOKEN_TYPE_MAX, SpendType } from '../../src/contracts';
 import { CAT20GuardPeripheral, ContractPeripheral } from '../../src/utils/contractPeripheral';
 import { createCat20 } from '../utils/testCAT20Generator';
 import { testSigner } from '../utils/testSigner';
@@ -287,7 +287,7 @@ async function attemptTransferWithSelfReference(
           userPubKey: mainPubKey,
           userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
           spendScriptInputIndex: BigInt(tokenInputIndex),  // F2 ATTACK: pointing to token itself
-          spendType: 1n,  // contract spend
+          spendType: SpendType.ContractSpend,
         },
         guardState,
         BigInt(guardInputIndex),
@@ -430,7 +430,7 @@ async function attemptTransferWithGuardReference(
           userPubKey: mainPubKey,
           userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
           spendScriptInputIndex: BigInt(guardInputIndex),  // F2 ATTACK: pointing to guard
-          spendType: 1n,  // contract spend
+          spendType: SpendType.ContractSpend,
         },
         guardState,
         BigInt(guardInputIndex),
@@ -573,7 +573,7 @@ async function attemptAdminTransferWithSelfReference(
           userPubKey: mainPubKey,
           userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
           spendScriptInputIndex: BigInt(tokenInputIndex),  // F2 ATTACK: pointing to itself
-          spendType: 2n,  // admin spend
+          spendType: SpendType.AdminSpend,
         },
         guardState,
         BigInt(guardInputIndex),
@@ -713,7 +713,7 @@ async function attemptAdminTransferWithGuardReference(
           userPubKey: mainPubKey,
           userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
           spendScriptInputIndex: BigInt(guardInputIndex),  // F2 ATTACK: pointing to guard
-          spendType: 2n,  // admin spend
+          spendType: SpendType.AdminSpend,
         },
         guardState,
         BigInt(guardInputIndex),
@@ -853,7 +853,7 @@ async function attemptUserTransfer(
           userPubKey: mainPubKey,
           userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
           spendScriptInputIndex: -1n,  // Not used for user spend
-          spendType: 0n,  // user spend
+          spendType: SpendType.UserSpend,
         },
         guardState,
         BigInt(guardInputIndex),

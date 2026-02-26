@@ -29,7 +29,7 @@ import {
   CAT20GuardPeripheral,
   ContractPeripheral,
 } from '../../../utils/contractPeripheral.js'
-import { SPEND_TYPE_USER_SPEND } from '../../../contracts/index.js'
+import { SpendType } from '../../../contracts/index.js'
 
 /**
  * Burns a CAT20 token using `CAT20Guard` contract
@@ -145,7 +145,7 @@ export const burnToken = createFeatureWithDryRun(async function(
     burnPsbt.addContractInput(inputTokens[index], (contract, tx) => {
       contract.unlock(
         {
-          spendType: SPEND_TYPE_USER_SPEND,
+          spendType: SpendType.UserSpend,
           userPubKey: PubKey(pubkey),
           userSig: tx.getSig(index, { address: changeAddress }),
           spendScriptInputIndex: BigInt(-1),
