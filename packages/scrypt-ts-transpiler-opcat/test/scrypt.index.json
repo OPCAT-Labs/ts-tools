@@ -118,6 +118,11 @@
    "md5": "82503eee8993d3ae409f8c03aa8a7d6c"
   },
   {
+   "symbol": "CheckSigWithFlagTest",
+   "path": "contracts/checkSigWithFlag.scrypt.tpl",
+   "md5": "20a5dcbdc67c2ba3839825987092f963"
+  },
+  {
    "symbol": "Clone",
    "path": "contracts/clone.scrypt.tpl",
    "md5": "5801eb22c342a69ca046a804af8d2e83"

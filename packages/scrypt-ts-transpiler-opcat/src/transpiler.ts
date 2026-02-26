@@ -236,6 +236,7 @@ const SmartContractBuiltinMethods = [
   'buildStateOutputs',
   'timeLock',
   'checkSig',
+  'checkSigWithFlag',
   'checkMultiSig',
   'checkDataSig',
   'checkPreimageAdvanced',
@@ -5131,6 +5132,9 @@ export class Transpiler {
       if (name === 'checkSig') {
         return this.transformCallCheckSig(node, toSection);
       }
+      if (name === 'checkSigWithFlag') {
+        return this.transformCallCheckSigWithFlag(node, toSection);
+      }
       if (name === 'checkMultiSig') {
         return this.transformCallCheckMultiSig(node, toSection);
       }
@@ -5470,6 +5474,31 @@ export class Transpiler {
         .appendWith(this, (toSec) => this.transformExpression(arg, toSec))
         .append(index < args.length - 1 ? ', ' : '');
     });
+    return toSection.append('))', srcLoc);
+  }
+
+  private transformCallCheckSigWithFlag(
+    node: ts.CallExpression,
+    toSection: EmittedSection,
+  ): EmittedSection {
+    const srcLoc = this.getCoordinates(node.getStart());
+
+    // checkSigWithFlag(sig, pubKey, flag) -> (unpack(sig[len(sig) - 1 : ]) == flag && checkSig(sig, pubKey))
+    const sigArg = node.arguments[0];
+    const pubKeyArg = node.arguments[1];
+    const flagArg = node.arguments[2];
+
+    // Generate: (unpack(sig[len(sig) - 1 : ]) == flag && checkSig(sig, pubKey))
+    toSection.append('(unpack(', srcLoc);
+    toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
+    toSection.append(`[len(`);
+    toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
+    toSection.append(`) - 1 : ]) == `);
+    toSection.appendWith(this, (toSec) => this.transformExpression(flagArg, toSec));
+    toSection.append(` && checkSig(`);
+    toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
+    toSection.append(`, `);
+    toSection.appendWith(this, (toSec) => this.transformExpression(pubKeyArg, toSec));
     return toSection.append('))', srcLoc);
   }
 
