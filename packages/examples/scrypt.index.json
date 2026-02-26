@@ -41,7 +41,7 @@
   {
    "symbol": "B2GCounter",
    "path": "contracts/b2GCounter.scrypt.tpl",
-   "md5": "74b7975d681bb65975f2bf7f5f12b285",
+   "md5": "3d2b7887b6ab6ee8e96fa89f7b817dd0",
    "stateType": "CounterState"
   },
   {
