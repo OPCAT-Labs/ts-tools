@@ -127,7 +127,6 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
             txOutputCount,
             guardOwnerAddr
         )
-        guard.state = guardState
         {
             const psbt = new ExtPsbt({ network: await testProvider.getNetwork(), maximumFeeRate: 1e8 }).spendUTXO(getDummyUtxo(mainAddress)).addContractOutput(guard, 1e8);
             const signedPsbtHex = await testSigner.signPsbt(psbt.seal().toHex(), psbt.psbtOptions());
@@ -253,7 +252,6 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
             txOutputCount,
             cat721GuardOwnerAddr
         );
-        guard.state = guardState
         {
             const psbt = new ExtPsbt({
                 network: await testProvider.getNetwork(),

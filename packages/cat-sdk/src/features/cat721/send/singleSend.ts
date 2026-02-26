@@ -130,7 +130,6 @@ export async function singleSendNftStep1(
         guardOwnerAddr
     )
     const outputNfts: CAT721State[] = _outputNfts.filter((v) => v != undefined) as CAT721State[]
-    guard.state = guardState
     const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .spendUTXO(feeUtxos)
         .addContractOutput(guard, Postage.GUARD_POSTAGE)

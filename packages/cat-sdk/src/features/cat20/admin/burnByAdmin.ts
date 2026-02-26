@@ -79,7 +79,6 @@ import { SPEND_TYPE_ADMIN_SPEND } from '../../../contracts/index.js'
  *
  * @throws {Error} If input count exceeds maximum transaction input limit
  * @throws {Error} If insufficient satoshis for transaction fees
- * @throws {Error} If token ownership validation fails (internal check)
  *
  * @example
  * ```typescript
@@ -119,16 +118,14 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
   newCAT20Utxos: UTXO[]
   changeTokenOutputIndex: number
 }> {
-  if (inputTokenUtxos.length + 2 > TX_INPUT_COUNT_MAX) {
+  // tokens + guard input + admin input + fee input = length + 3
+  if (inputTokenUtxos.length + 3 > TX_INPUT_COUNT_MAX) {
     throw new Error(
       `Too many inputs that exceed the maximum input limit of ${TX_INPUT_COUNT_MAX}`
     )
   }
 
   const changeAddress = await signer.getAddress()
-  // we use the p2pkh contract as the contract owner
-  const expectContractOwner = toTokenOwnerAddress(changeAddress, true)
-  // F14 Fix: Use user's owner address for deployerAddr (guard deployer is the user, not the contract)
   const deployerAddr = toTokenOwnerAddress(changeAddress)
 
   let utxos = await provider.getUtxos(changeAddress)
@@ -149,26 +146,24 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
   const inputTokenStates = inputTokenUtxos.map((utxo) =>
     CAT20.deserializeState(utxo.data)
   )
-  inputTokenStates.map((state, index) => {
-    if (state.ownerAddr != expectContractOwner) {
-      throw new Error(
-        `the ${index} input token owner=${state.ownerAddr} is not ${expectContractOwner}`
-      )
-    }
-  })
   const changeTokenOutputIndex = -1
+  // tokens + guard input + admin input + fee input = length + 3
+  const burnTxInputCount = inputTokenUtxos.length + 3
+  // admin contract output + change output
+  const burnTxOutputCount = 2
   const { guard, guardState, tokenAmounts, tokenBurnAmounts, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
     CAT20GuardPeripheral.createBurnGuard(
       inputTokenUtxos.map((utxo, index) => ({
         token: utxo,
         inputIndex: index,
       })),
-      deployerAddr // F14 Fix: use user's owner address as deployerAddr
+      deployerAddr,
+      burnTxInputCount,
+      burnTxOutputCount,
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined
   ) as CAT20State[]
-  guard.state = guardState
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
     .addContractOutput(guard, Postage.GUARD_POSTAGE)
@@ -272,7 +267,7 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
       tx.txOutputs.map((output) => sha256(toHex(output.data)))
     )
 
-    // F14 Fix: Get deployer signature for guard
+    // Get deployer signature for guard
     const deployerSig = tx.getSig(guardInputIndex, { publicKey: pubkey })
 
     contract.unlock(

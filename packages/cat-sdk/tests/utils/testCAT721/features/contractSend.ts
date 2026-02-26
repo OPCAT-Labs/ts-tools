@@ -46,7 +46,6 @@ export async function contractSendNft(
         txOutputCount,
         guardOwnerAddr
     )
-    guard.state = guardState
     const inputNfts: CAT721[] = inputNftUtxos.map(
         (utxo, index) => new CAT721(minterScriptHash).bindToUtxo({
             ...utxo,
