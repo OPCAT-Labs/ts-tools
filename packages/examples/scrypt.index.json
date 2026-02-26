@@ -18,7 +18,7 @@
   {
    "symbol": "AtomicSwap",
    "path": "contracts/atomicSwap.scrypt.tpl",
-   "md5": "0133a003a96e0d2c537667aa50b577d4"
+   "md5": "47ab84cc3af0a050c055adc7b7282d1c"
   },
   {
    "symbol": "TxUtils",
@@ -27,7 +27,7 @@
   {
    "symbol": "Auction",
    "path": "contracts/auction.scrypt.tpl",
-   "md5": "5156994c4aa908a3b752b25fc326e930",
+   "md5": "ce4b58d2aa7ed9898854d59c31f255db",
    "stateType": "AuctionState"
   },
   {
@@ -51,12 +51,12 @@
   {
    "symbol": "CoinToss",
    "path": "contracts/cointoss.scrypt.tpl",
-   "md5": "b4e9af2cd8d5d5d7234150f721b94db9"
+   "md5": "03659bdd07b05e5ef766b299a01da544"
   },
   {
    "symbol": "Crowdfund",
    "path": "contracts/crowdfund.scrypt.tpl",
-   "md5": "5f38074828f6a2f29602117f2057c329"
+   "md5": "a8f27bcc4aa9106686ff5d40597b6bb2"
   },
   {
    "symbol": "Examples",
@@ -114,7 +114,7 @@
   {
    "symbol": "TimedCommit",
    "path": "contracts/timedCommit.scrypt.tpl",
-   "md5": "c44fc9f85ffda68e02aff766013bdc32"
+   "md5": "4df85f38a39cb4dad1711006679de995"
   },
   {
    "symbol": "ArrayUtils",
@@ -159,7 +159,7 @@
   {
    "symbol": "XORPuzzle",
    "path": "contracts/xorpuzzle.scrypt.tpl",
-   "md5": "29fda55efd2e9e47eced4dc99cfca7b5"
+   "md5": "186300d0c6e432ffd975d57ead38f3ac"
   }
  ]
 }
