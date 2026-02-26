@@ -5440,6 +5440,24 @@ export class Transpiler {
     toSection: EmittedSection,
   ): EmittedSection {
     const srcLoc = this.getCoordinates(node.getStart());
+
+    // Get the method's sigHashType from decorator
+    const methodNode = this.getMethodContainsTheNode(node);
+    const methodDec = Transpiler.findDecorator(methodNode, DecoratorName.Method);
+    const sigHashTypeHex = methodDec ? this.parseSigHashType(methodDec) : '01';
+    const sigHashTypeDecimal = parseInt(sigHashTypeHex, 16);
+
+    // Get the signature argument (first argument)
+    const sigArg = node.arguments[0];
+
+    // Generate: (unpack(sig[len(sig) - 1 : ]) == sigHashType && checkSig(sig, pubKey))
+    toSection.append('(unpack(', srcLoc);
+    toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
+    toSection.append(`[len(`);
+    toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
+    toSection.append(`) - 1 : ]) == ${sigHashTypeDecimal} && `);
+
+    // Append checkSig call
     toSection.appendWith(this, (toSec) => {
       const _e: ts.PropertyAccessExpression = node.expression as ts.PropertyAccessExpression;
       return this.transformExpression(_e.name, toSec);
@@ -5452,7 +5470,7 @@ export class Transpiler {
         .appendWith(this, (toSec) => this.transformExpression(arg, toSec))
         .append(index < args.length - 1 ? ', ' : '');
     });
-    return toSection.append(')', srcLoc);
+    return toSection.append('))', srcLoc);
   }
 
   private transformCallCheckMultiSig(

@@ -14,7 +14,7 @@
   {
    "symbol": "AccumulatorMultiSig",
    "path": "contracts/accumulatorMultiSig.scrypt.tpl",
-   "md5": "e525ea0969f6d6d3c0d0a66a7925f249"
+   "md5": "f8c83bfe95c58b0bd5ff334a9cbd4490"
   },
   {
    "symbol": "TxUtils",
@@ -33,7 +33,7 @@
   {
    "symbol": "Auction",
    "path": "contracts/auction.scrypt.tpl",
-   "md5": "5156994c4aa908a3b752b25fc326e930",
+   "md5": "ce4b58d2aa7ed9898854d59c31f255db",
    "stateType": "AuctionState"
   },
   {
@@ -110,7 +110,7 @@
   {
    "symbol": "CheckDataSigAndSig",
    "path": "contracts/checkDataSig.scrypt.tpl",
-   "md5": "3e38285ac561931e0062babfe1053b38"
+   "md5": "3b1f99b2274c4afac1a4c00fbadc6d1a"
   },
   {
    "symbol": "CheckMultiSig",
@@ -176,7 +176,7 @@
   {
    "symbol": "CounterP2PKH",
    "path": "contracts/counterP2PKH.scrypt.tpl",
-   "md5": "814e08101ff4d81d6ce6cd3380edb8f3",
+   "md5": "6c48f474103efdf6dd1fbe98c57dbd75",
    "stateType": "CounterP2PKHState"
   },
   {
@@ -439,7 +439,7 @@
   {
    "symbol": "CodeSeparator",
    "path": "contracts/ocs.scrypt.tpl",
-   "md5": "c17b5b1e2450f5aaa00961998a3df005"
+   "md5": "47737e4b6a621a3b98bc6ff8a1ec59e9"
   },
   {
    "symbol": "Operator",
@@ -449,12 +449,12 @@
   {
    "symbol": "P2PKH",
    "path": "contracts/p2pkh.scrypt.tpl",
-   "md5": "c5af93cb4966b9a0201c93e84ac386be"
+   "md5": "098afe5bce6887202a9c3c03da64b6f0"
   },
   {
    "symbol": "Recallable",
    "path": "contracts/recallable.scrypt.tpl",
-   "md5": "905bb176f2194137db9e3614ae5d8170",
+   "md5": "8fb5824e1ed4a1a416f0b7ebc6787647",
    "stateType": "RecallableState"
   },
   {
@@ -478,7 +478,7 @@
   {
    "symbol": "MultiSigHashMethods",
    "path": "contracts/sigHashTypes.scrypt.tpl",
-   "md5": "a6bc488864a8aa2f9c42f432784a860b"
+   "md5": "f5f9b1edae96455acc7e6d534dcc8e36"
   },
   {
    "symbol": "SighashCtxTest",
@@ -606,7 +606,7 @@
   {
    "symbol": "TicTacToe",
    "path": "contracts/tictactoe.scrypt.tpl",
-   "md5": "e655607b1d719fab48f4f5e15dc6343a",
+   "md5": "5f241979dd6423684cd9b789ee39fd4c",
    "stateType": "TicTacToeState"
   },
   {
