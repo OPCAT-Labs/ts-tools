@@ -87,8 +87,14 @@ export class CommonService {
       throw new Error('invalid CAT20 guard input');
     }
 
-    const ownerAddrOrScriptHashes: string[] = decoded.args[1].value as string[];
-    const outputTokens: bigint[] = decoded.args[2].value as bigint[];
+    // Fix: Use correct argument indices based on CAT20Guard unlock signature:
+    // args[0]: deployerSig, args[1]: deployerPubKey, args[2]: tokenAmounts,
+    // args[3]: tokenBurnAmounts, args[4]: nextStateHashes,
+    // args[5]: ownerAddrOrScriptHashes, args[6]: outputTokens,
+    // args[7]: tokenScriptHashIndexes, args[8]: outputSatoshis,
+    // args[9]: cat20States, args[10]: outputCount
+    const ownerAddrOrScriptHashes: string[] = decoded.args[5].value as string[];
+    const outputTokens: bigint[] = decoded.args[6].value as bigint[];
 
     const tokenOutputs = new Map<
       number,
@@ -140,8 +146,14 @@ export class CommonService {
       throw new Error('invalid CAT721 guard input');
     }
 
-    const ownerAddrOrScriptHashes: string[] = decoded.args[1].value as string[];
-    const outputLocalIds: bigint[] = decoded.args[2].value as bigint[];
+    // F-23 Fix: Use correct argument indices based on CAT721Guard unlock signature:
+    // args[0]: deployerSig, args[1]: deployerPubKey, args[2]: nextStateHashes,
+    // args[3]: ownerAddrOrScriptHashes, args[4]: outputLocalIds,
+    // args[5]: nftScriptHashIndexes, args[6]: outputSatoshis,
+    // args[7]: cat721States, args[8]: outputCount
+    const ownerAddrOrScriptHashes: string[] = decoded.args[3].value as string[];
+    const outputLocalIds: bigint[] = decoded.args[4].value as bigint[];
+    const nftScriptHashIndexes: bigint[] = decoded.args[5].value as bigint[];
 
     const nftOutputs = new Map<
       number,
@@ -150,14 +162,30 @@ export class CommonService {
         localId: bigint;
       }
     >();
-    outputLocalIds.forEach((localId, index) => {
-      if (localId >= 0n) {
-        nftOutputs.set(index, {
-          ownerPubKeyHash: ownerAddrOrScriptHashes[index],
-          localId: localId,
-        });
+
+    // F-23 Fix: Use nftScriptHashIndexes to determine which outputs are NFTs
+    // and use outputNftCount to correctly index into outputLocalIds.
+    // This matches the on-chain guard logic where outputLocalIds is indexed
+    // by the NFT ordinal counter, not by output index.
+    // Example from guard comments:
+    //   nftScriptHashIndexes    [-1, 0, 1, -1, -1]
+    //   -> output nfts          [/, nftA_20, nftB_10, /, /]
+    //   -> outputLocalIds       [20, 10, -1, -1, -1]
+    let outputNftCount = 0;
+    for (let outputIndex = 0; outputIndex < nftScriptHashIndexes.length; outputIndex++) {
+      const nftScriptIndex = nftScriptHashIndexes[outputIndex];
+      if (nftScriptIndex !== -1n) {
+        // This is an NFT output
+        const localId = outputLocalIds[outputNftCount];
+        if (localId >= 0n) {
+          nftOutputs.set(outputIndex, {
+            ownerPubKeyHash: ownerAddrOrScriptHashes[outputIndex],
+            localId: localId,
+          });
+        }
+        outputNftCount++;
       }
-    });
+    }
     return nftOutputs;
   }
 

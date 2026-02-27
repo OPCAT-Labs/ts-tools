@@ -27,7 +27,7 @@
   {
    "symbol": "Auction",
    "path": "contracts/auction.scrypt.tpl",
-   "md5": "ce4b58d2aa7ed9898854d59c31f255db",
+   "md5": "eb732e45d723606d68a377721d59b88c",
    "stateType": "AuctionState"
   },
   {
@@ -41,7 +41,7 @@
   {
    "symbol": "B2GCounter",
    "path": "contracts/b2GCounter.scrypt.tpl",
-   "md5": "03b7100a8c0a717829ed69f1f38ca5d5",
+   "md5": "5cf98638ef373047c5446eacb734f84b",
    "stateType": "CounterState"
   },
   {
@@ -56,7 +56,7 @@
   {
    "symbol": "Crowdfund",
    "path": "contracts/crowdfund.scrypt.tpl",
-   "md5": "a8f27bcc4aa9106686ff5d40597b6bb2"
+   "md5": "0fc754b78d36f986add53362584a4753"
   },
   {
    "symbol": "Examples",
@@ -95,7 +95,7 @@
   {
    "symbol": "Rule110",
    "path": "contracts/rule110.scrypt.tpl",
-   "md5": "337b9e37520550008c3b48243f722a0d",
+   "md5": "75c305cc830892b3844b1b47b2db5979",
    "stateType": "Rule110State"
   },
   {
@@ -123,7 +123,7 @@
   {
    "symbol": "TuringMachine",
    "path": "contracts/turingMachine.scrypt.tpl",
-   "md5": "0a823bba401c25c264ab6baa0e4c02fe",
+   "md5": "482b2006fd7be7b2135dbd4884d59eb6",
    "stateType": "TuringMachineState"
   },
   {
@@ -145,7 +145,7 @@
   {
    "symbol": "Voting",
    "path": "contracts/voting.scrypt.tpl",
-   "md5": "2fd14a80a7cf60047165e58ee4aad7ab",
+   "md5": "f17eaad33caf68b6941b1a3f39574bcd",
    "stateType": "VotingState"
   },
   {

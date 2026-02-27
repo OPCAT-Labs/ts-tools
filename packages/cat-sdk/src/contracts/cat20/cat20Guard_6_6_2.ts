@@ -141,6 +141,8 @@ export class CAT20Guard_6_6_2 extends SmartContract<CAT20GuardConstState> {
         for (let i = 0; i < TX_INPUT_COUNT_MAX_6; i++) {
             const tokenScriptIndex = byteStringToInt(slice(this.state.tokenScriptIndexes, BigInt(i), BigInt(i + 1)));
             if (i < inputCount) {
+                // F-07 Fix: Add lower bound check for script index
+                assert(tokenScriptIndex >= INVALID_INDEX, 'token script index out of range')
                 assert(tokenScriptIndex < inputTokenTypes, 'token script index is invalid')
                 if (tokenScriptIndex != INVALID_INDEX) {
                     // this is a token input
@@ -175,6 +177,8 @@ export class CAT20Guard_6_6_2 extends SmartContract<CAT20GuardConstState> {
             if (i < outputCount) {
                 const ownerAddrOrScriptHash = ownerAddrOrScriptHashes[i]
                 const tokenScriptHashIndex = tokenScriptHashIndexes[i]
+                // F-07 Fix: Add lower bound check for script hash index
+                assert(tokenScriptHashIndex >= INVALID_INDEX, 'token script hash index out of range')
                 assert(tokenScriptHashIndex < inputTokenTypes, 'token script hash index is invalid')
                 if (tokenScriptHashIndex != INVALID_INDEX) {
                     // this is a token output
@@ -182,6 +186,8 @@ export class CAT20Guard_6_6_2 extends SmartContract<CAT20GuardConstState> {
                     OwnerUtils.checkOwnerAddr(ownerAddrOrScriptHash)
                     const tokenAmount = outputTokens[i]
                     assert(tokenAmount > 0n, 'token amount is invalid')
+                    // F-03 Fix: Ensure output satoshis is positive
+                    assert(outputSatoshis[i] > 0n, 'output satoshis must be positive')
                     sumOutputTokens[Number(tokenScriptHashIndex)] = sumOutputTokens[Number(tokenScriptHashIndex)] + tokenAmount
                     const tokenStateHash = CAT20StateLib.stateHash({
                         ownerAddr: ownerAddrOrScriptHash,

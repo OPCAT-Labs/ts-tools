@@ -58,6 +58,8 @@ export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
         const nextLocalId = this.state.nextLocalId + 1n;
         let outputs = toByteString('');
         if (nextLocalId < this.state.maxLocalId) {
+            // F-03 Fix: Ensure minter satoshis is positive
+            assert(minterSatoshis > 0n, 'minter satoshis must be positive');
             outputs += TxUtils.buildDataOutput(
                 this.ctx.spentScriptHash,
                 minterSatoshis,
@@ -71,6 +73,8 @@ export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
         // next nft output
         CAT721StateLib.checkState(nftMint);
         assert(nftMint.localId == this.state.nextLocalId, 'nft localId is invalid');
+        // F-03 Fix: Ensure nft satoshis is positive
+        assert(nftSatoshis > 0n, 'nft satoshis must be positive');
         outputs += TxUtils.buildDataOutput(this.state.nftScriptHash, nftSatoshis, CAT721StateLib.stateHash(nftMint))
 
         // confine curTx outputs
