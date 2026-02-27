@@ -3,18 +3,15 @@
  "bindings": [
   {
    "symbol": "AbsTimeLock",
-   "path": "contracts/absTimeLock.scrypt.tpl",
-   "md5": "3083a24ffeab4f17d01e894306da5a19"
+   "path": "contracts/absTimeLock.scrypt.tpl"
   },
   {
    "symbol": "AccessContext",
-   "path": "contracts/accessContext.scrypt.tpl",
-   "md5": "94201879bf4b390d1a1df9aab22cd7f0"
+   "path": "contracts/accessContext.scrypt.tpl"
   },
   {
    "symbol": "AccumulatorMultiSig",
-   "path": "contracts/accumulatorMultiSig.scrypt.tpl",
-   "md5": "f8c83bfe95c58b0bd5ff334a9cbd4490"
+   "path": "contracts/accumulatorMultiSig.scrypt.tpl"
   },
   {
    "symbol": "TxUtils",
@@ -22,19 +19,16 @@
   },
   {
    "symbol": "AnyoneCanSpend",
-   "path": "contracts/acs.scrypt.tpl",
-   "md5": "c146d172d48e7e89d45fb234933d07b7"
+   "path": "contracts/acs.scrypt.tpl"
   },
   {
    "symbol": "ArrayTest",
-   "path": "contracts/array.scrypt.tpl",
-   "md5": "43c730d6e7d91bbd3174e785714c2634"
+   "path": "contracts/array.scrypt.tpl"
   },
   {
    "symbol": "Auction",
-   "path": "contracts/auction.scrypt.tpl",
-   "md5": "eb732e45d723606d68a377721d59b88c",
-   "stateType": "AuctionState"
+   "stateType": "AuctionState",
+   "path": "contracts/auction.scrypt.tpl"
   },
   {
    "symbol": "AuctionState",
@@ -46,19 +40,16 @@
   },
   {
    "symbol": "B2G",
-   "path": "contracts/b2G.scrypt.tpl",
-   "md5": "a7767453411d3630eed27ecbc3de7797"
+   "path": "contracts/b2G.scrypt.tpl"
   },
   {
    "symbol": "B2G2",
-   "path": "contracts/b2G2.scrypt.tpl",
-   "md5": "dd7d3bbc9befb3569d74c190d49fb194"
+   "path": "contracts/b2G2.scrypt.tpl"
   },
   {
    "symbol": "B2GState",
-   "path": "contracts/b2GState.scrypt.tpl",
-   "md5": "6fccea5629958a61bb448d602e5ba494",
-   "stateType": "State"
+   "stateType": "State",
+   "path": "contracts/b2GState.scrypt.tpl"
   },
   {
    "symbol": "State",
@@ -66,9 +57,8 @@
   },
   {
    "symbol": "BaseCounter",
-   "path": "contracts/basecounter.scrypt.tpl",
-   "md5": "7d0a8674f6fb78532bfa05dd78f006e3",
-   "stateType": "BaseCounterState"
+   "stateType": "BaseCounterState",
+   "path": "contracts/basecounter.scrypt.tpl"
   },
   {
    "symbol": "BaseCounterState",
@@ -76,23 +66,19 @@
   },
   {
    "symbol": "BaseDemo",
-   "path": "contracts/basedemo.scrypt.tpl",
-   "md5": "b2a83d8cef4f4824e4f564d3193e05c7"
+   "path": "contracts/basedemo.scrypt.tpl"
   },
   {
    "symbol": "Builtins",
-   "path": "contracts/builtins.scrypt.tpl",
-   "md5": "075f131490a08c50930ff6e00513f6a1"
+   "path": "contracts/builtins.scrypt.tpl"
   },
   {
    "symbol": "ByteStringTest",
-   "path": "contracts/byteString.scrypt.tpl",
-   "md5": "94af6c162b2cbffd8ffef41ba70457d0"
+   "path": "contracts/byteString.scrypt.tpl"
   },
   {
    "symbol": "Callee",
-   "path": "contracts/callee.scrypt.tpl",
-   "md5": "bfd002c12aa0fb3b2260cdb792220b78"
+   "path": "contracts/callee.scrypt.tpl"
   },
   {
    "symbol": "Coeff",
@@ -100,8 +86,7 @@
   },
   {
    "symbol": "ChangeAmountExample",
-   "path": "contracts/changeAmountExample.scrypt.tpl",
-   "md5": "e41938d4c3f2835fa0965b9f1b937624"
+   "path": "contracts/changeAmountExample.scrypt.tpl"
   },
   {
    "symbol": "CheckDataSig",
@@ -109,23 +94,19 @@
   },
   {
    "symbol": "CheckDataSigAndSig",
-   "path": "contracts/checkDataSig.scrypt.tpl",
-   "md5": "3b1f99b2274c4afac1a4c00fbadc6d1a"
+   "path": "contracts/checkDataSig.scrypt.tpl"
   },
   {
    "symbol": "CheckMultiSig",
-   "path": "contracts/checkMultisig.scrypt.tpl",
-   "md5": "82503eee8993d3ae409f8c03aa8a7d6c"
+   "path": "contracts/checkMultisig.scrypt.tpl"
   },
   {
    "symbol": "CheckSigWithFlagTest",
-   "path": "contracts/checkSigWithFlag.scrypt.tpl",
-   "md5": "558694afd8f4029b7cfd547ff12b2f17"
+   "path": "contracts/checkSigWithFlag.scrypt.tpl"
   },
   {
    "symbol": "Clone",
-   "path": "contracts/clone.scrypt.tpl",
-   "md5": "dab5ca71430a19de5b9f8699a4b134e5"
+   "path": "contracts/clone.scrypt.tpl"
   },
   {
    "symbol": "SHPreimage",
@@ -149,20 +130,18 @@
   },
   {
    "symbol": "CounterStateLib",
-   "path": "contracts/counter.scrypt.tpl",
-   "stateType": "CounterState"
+   "stateType": "CounterState",
+   "path": "contracts/counter.scrypt.tpl"
   },
   {
    "symbol": "Counter",
-   "path": "contracts/counter.scrypt.tpl",
-   "md5": "0fa9c10ad53fa71a92578a97413a7782",
-   "stateType": "CounterState"
+   "stateType": "CounterState",
+   "path": "contracts/counter.scrypt.tpl"
   },
   {
    "symbol": "Counter2",
-   "path": "contracts/counter2.scrypt.tpl",
-   "md5": "3bb68e6b66a800249394be2aea622266",
-   "stateType": "Counter2State"
+   "stateType": "Counter2State",
+   "path": "contracts/counter2.scrypt.tpl"
   },
   {
    "symbol": "Counter2State",
@@ -170,9 +149,8 @@
   },
   {
    "symbol": "Counter3",
-   "path": "contracts/counter3.scrypt.tpl",
-   "md5": "5efb641599228bfbacb58c76176fb5cf",
-   "stateType": "Counter3State"
+   "stateType": "Counter3State",
+   "path": "contracts/counter3.scrypt.tpl"
   },
   {
    "symbol": "Counter3State",
@@ -180,9 +158,8 @@
   },
   {
    "symbol": "CounterP2PKH",
-   "path": "contracts/counterP2PKH.scrypt.tpl",
-   "md5": "5f8569b3efa7f50665e61e65dd195065",
-   "stateType": "CounterP2PKHState"
+   "stateType": "CounterP2PKHState",
+   "path": "contracts/counterP2PKH.scrypt.tpl"
   },
   {
    "symbol": "CounterP2PKHState",
@@ -190,13 +167,11 @@
   },
   {
    "symbol": "CtcBigNumber",
-   "path": "contracts/ctcBigNumber.scrypt.tpl",
-   "md5": "40bb691df435ebed4a4be98be2cba7e1"
+   "path": "contracts/ctcBigNumber.scrypt.tpl"
   },
   {
    "symbol": "CtcExpression",
-   "path": "contracts/ctcExpression.scrypt.tpl",
-   "md5": "7dd80bee99d8a04ee5b8541daf5688ae"
+   "path": "contracts/ctcExpression.scrypt.tpl"
   },
   {
    "symbol": "FFF",
@@ -204,44 +179,36 @@
   },
   {
    "symbol": "CtcImport",
-   "path": "contracts/ctcImport.scrypt.tpl",
-   "md5": "83f0e008bbb6bfb21757e5adcfff3f23"
+   "path": "contracts/ctcImport.scrypt.tpl"
   },
   {
    "symbol": "CtcImportLib",
-   "path": "contracts/ctcImportlib.scrypt.tpl",
-   "md5": "83f0e008bbb6bfb21757e5adcfff3f23"
+   "path": "contracts/ctcImportlib.scrypt.tpl"
   },
   {
    "symbol": "CtcParameter",
-   "path": "contracts/ctcParameter.scrypt.tpl",
-   "md5": "bfba252ca19a1901de8fb9c9fdde19ef"
+   "path": "contracts/ctcParameter.scrypt.tpl"
   },
   {
    "symbol": "CtorWithNonProp",
-   "path": "contracts/ctorWithNonProp.scrypt.tpl",
-   "md5": "369a6a0e21215586a1cd0db394fe1918"
+   "path": "contracts/ctorWithNonProp.scrypt.tpl"
   },
   {
    "symbol": "CTX",
-   "path": "contracts/ctx.scrypt.tpl",
-   "md5": "270ef1ae812a08b7f49a083e26f501bc"
+   "path": "contracts/ctx.scrypt.tpl"
   },
   {
    "symbol": "CTX2",
-   "path": "contracts/ctx2.scrypt.tpl",
-   "md5": "a4ecb418a0e5407c4cc78338553f611f"
+   "path": "contracts/ctx2.scrypt.tpl"
   },
   {
    "symbol": "CTX3",
-   "path": "contracts/ctx3.scrypt.tpl",
-   "md5": "b1144548865e77fb963d8241f046299d"
+   "path": "contracts/ctx3.scrypt.tpl"
   },
   {
    "symbol": "DebugFunctionsTest",
-   "path": "contracts/debugFunctions.scrypt.tpl",
-   "md5": "5efb641599228bfbacb58c76176fb5cf",
-   "stateType": "DebugFunctionsTestState"
+   "stateType": "DebugFunctionsTestState",
+   "path": "contracts/debugFunctions.scrypt.tpl"
   },
   {
    "symbol": "DebugFunctionsTestState",
@@ -249,33 +216,27 @@
   },
   {
    "symbol": "Demo",
-   "path": "contracts/demo.scrypt.tpl",
-   "md5": "b2a83d8cef4f4824e4f564d3193e05c7"
+   "path": "contracts/demo.scrypt.tpl"
   },
   {
    "symbol": "DemoBigInt",
-   "path": "contracts/demoBigInt.scrypt.tpl",
-   "md5": "ad8f76129566fe52b0f6ca08dc005aa2"
+   "path": "contracts/demoBigInt.scrypt.tpl"
   },
   {
    "symbol": "DesignatedReceivers",
-   "path": "contracts/designatedReceivers.scrypt.tpl",
-   "md5": "b25f0231f086b3e1b5f6e0571a10e914"
+   "path": "contracts/designatedReceivers.scrypt.tpl"
   },
   {
    "symbol": "DomainSubtypes",
-   "path": "contracts/domainSubtypes.scrypt.tpl",
-   "md5": "308e531f6d85fbe073bb7349a0e994ad"
+   "path": "contracts/domainSubtypes.scrypt.tpl"
   },
   {
    "symbol": "EndingAssert",
-   "path": "contracts/ending_assert.scrypt.tpl",
-   "md5": "095ca6d2e90ff7bc4d12ae885f14c364"
+   "path": "contracts/ending_assert.scrypt.tpl"
   },
   {
    "symbol": "EnumC",
-   "path": "contracts/enum.scrypt.tpl",
-   "md5": "c3ae4ea427e6665ea123d08e6fd5a7f3"
+   "path": "contracts/enum.scrypt.tpl"
   },
   {
    "symbol": "EnumExample",
@@ -283,8 +244,7 @@
   },
   {
    "symbol": "Enum2",
-   "path": "contracts/enum2.scrypt.tpl",
-   "md5": "abc7d9240c812a2cbaa89ddd7ee52041"
+   "path": "contracts/enum2.scrypt.tpl"
   },
   {
    "symbol": "Status",
@@ -292,13 +252,11 @@
   },
   {
    "symbol": "Examples",
-   "path": "contracts/examples.scrypt.tpl",
-   "md5": "45a606419033cd310e7bc0d4ea799805"
+   "path": "contracts/examples.scrypt.tpl"
   },
   {
    "symbol": "Expr",
-   "path": "contracts/expr.scrypt.tpl",
-   "md5": "ef827ffbb0b989a7b69356a96f0b772c"
+   "path": "contracts/expr.scrypt.tpl"
   },
   {
    "symbol": "STS",
@@ -310,8 +268,7 @@
   },
   {
    "symbol": "FillFixedArray",
-   "path": "contracts/fillFixedArray.scrypt.tpl",
-   "md5": "fc7b9b69216cd058d6e026c448161e28"
+   "path": "contracts/fillFixedArray.scrypt.tpl"
   },
   {
    "symbol": "St",
@@ -319,35 +276,29 @@
   },
   {
    "symbol": "FixedArrayDemo",
-   "path": "contracts/fixedArray.scrypt.tpl",
-   "md5": "191308da606261ff26a891c4b6d50637"
+   "path": "contracts/fixedArray.scrypt.tpl"
   },
   {
    "symbol": "FixedArrayDemo2",
-   "path": "contracts/fixedArray2.scrypt.tpl",
-   "md5": "417b9bb7a8b3a962cf3fc33abaa04db2"
+   "path": "contracts/fixedArray2.scrypt.tpl"
   },
   {
    "symbol": "GetterSetter",
-   "path": "contracts/getterSetter.scrypt.tpl",
-   "md5": "2838023a778dfaecdc212708f721b788"
+   "path": "contracts/getterSetter.scrypt.tpl"
   },
   {
    "symbol": "HashPuzzle",
-   "path": "contracts/hashpuzzle.scrypt.tpl",
-   "md5": "6e7a00751d746fbe3ae5d776b11d83f9"
+   "path": "contracts/hashpuzzle.scrypt.tpl"
   },
   {
    "symbol": "HeritageCounter",
-   "path": "contracts/heritageCounter.scrypt.tpl",
-   "md5": "27409fe56340f5d4ae9fbf60d8f96bd6",
-   "stateType": "BaseCounterState"
+   "stateType": "BaseCounterState",
+   "path": "contracts/heritageCounter.scrypt.tpl"
   },
   {
    "symbol": "HeritageCounter2",
-   "path": "contracts/heritageCounter2.scrypt.tpl",
-   "md5": "134718fb8eda960b3b6a2cf066906043",
-   "stateType": "HeritageCounter2State"
+   "stateType": "HeritageCounter2State",
+   "path": "contracts/heritageCounter2.scrypt.tpl"
   },
   {
    "symbol": "HeritageCounter2State",
@@ -355,23 +306,19 @@
   },
   {
    "symbol": "HeritageDemo",
-   "path": "contracts/heritageDemo.scrypt.tpl",
-   "md5": "975d7554aa6aed61f7baac36f2364c53"
+   "path": "contracts/heritageDemo.scrypt.tpl"
   },
   {
    "symbol": "HeritageDemo1",
-   "path": "contracts/heritageDemo1.scrypt.tpl",
-   "md5": "7e04b6bb5c5167380ec93704f9f839c7"
+   "path": "contracts/heritageDemo1.scrypt.tpl"
   },
   {
    "symbol": "HeritageDemo2",
-   "path": "contracts/heritageDemo2.scrypt.tpl",
-   "md5": "3892e20c65f984d6f0b643adb7c655f3"
+   "path": "contracts/heritageDemo2.scrypt.tpl"
   },
   {
    "symbol": "Issue102",
-   "path": "contracts/issue102.scrypt.tpl",
-   "md5": "3cb3a2f065cd5e0eb6d7683bb70b0f93"
+   "path": "contracts/issue102.scrypt.tpl"
   },
   {
    "symbol": "Point",
@@ -383,8 +330,7 @@
   },
   {
    "symbol": "Issue170",
-   "path": "contracts/issue170.scrypt.tpl",
-   "md5": "01ec810ab385f0c00fb3314c5a5004d2"
+   "path": "contracts/issue170.scrypt.tpl"
   },
   {
    "symbol": "STInOtherFile",
@@ -392,13 +338,11 @@
   },
   {
    "symbol": "Issue170_1",
-   "path": "contracts/issue170_1.scrypt.tpl",
-   "md5": "01ec810ab385f0c00fb3314c5a5004d2"
+   "path": "contracts/issue170_1.scrypt.tpl"
   },
   {
    "symbol": "LastAssert",
-   "path": "contracts/lastAssert.scrypt.tpl",
-   "md5": "2838023a778dfaecdc212708f721b788"
+   "path": "contracts/lastAssert.scrypt.tpl"
   },
   {
    "symbol": "Lib",
@@ -410,18 +354,15 @@
   },
   {
    "symbol": "TestLibST",
-   "path": "contracts/libST.scrypt.tpl",
-   "md5": "95e00ba80debb3d4ce844c68d22a74a3"
+   "path": "contracts/libST.scrypt.tpl"
   },
   {
    "symbol": "TestLib",
-   "path": "contracts/libTest.scrypt.tpl",
-   "md5": "880684984e8d37d6f788e59a6bb52d58"
+   "path": "contracts/libTest.scrypt.tpl"
   },
   {
    "symbol": "Matrix",
-   "path": "contracts/matrix.scrypt.tpl",
-   "md5": "7a52dd11930ba84ba6ce34620c105e1c"
+   "path": "contracts/matrix.scrypt.tpl"
   },
   {
    "symbol": "MerklePath",
@@ -433,34 +374,28 @@
   },
   {
    "symbol": "MerklePathTest",
-   "path": "contracts/merklePath.scrypt.tpl",
-   "md5": "206d58a6f2ba6551784dc20c6fdf40cf"
+   "path": "contracts/merklePath.scrypt.tpl"
   },
   {
    "symbol": "NonPublicMethodWithoutReturn",
-   "path": "contracts/nonPublicMethodWithoutReturn.scrypt.tpl",
-   "md5": "7c4795d51eec6041f528b1b3c2a2a4d2"
+   "path": "contracts/nonPublicMethodWithoutReturn.scrypt.tpl"
   },
   {
    "symbol": "CodeSeparator",
-   "path": "contracts/ocs.scrypt.tpl",
-   "md5": "47737e4b6a621a3b98bc6ff8a1ec59e9"
+   "path": "contracts/ocs.scrypt.tpl"
   },
   {
    "symbol": "Operator",
-   "path": "contracts/operator.scrypt.tpl",
-   "md5": "ad9cd4d2c2c0578d1b2f44ffb707bb0c"
+   "path": "contracts/operator.scrypt.tpl"
   },
   {
    "symbol": "P2PKH",
-   "path": "contracts/p2pkh.scrypt.tpl",
-   "md5": "098afe5bce6887202a9c3c03da64b6f0"
+   "path": "contracts/p2pkh.scrypt.tpl"
   },
   {
    "symbol": "Recallable",
-   "path": "contracts/recallable.scrypt.tpl",
-   "md5": "11d683ef43b08519a85c4e5ca6b583ff",
-   "stateType": "RecallableState"
+   "stateType": "RecallableState",
+   "path": "contracts/recallable.scrypt.tpl"
   },
   {
    "symbol": "RecallableState",
@@ -468,13 +403,11 @@
   },
   {
    "symbol": "RelTimeLock",
-   "path": "contracts/relTimeLock.scrypt.tpl",
-   "md5": "323654b381f5ae6fbcb20ddd0cfc1b9d"
+   "path": "contracts/relTimeLock.scrypt.tpl"
   },
   {
    "symbol": "ScryptParserCase1",
-   "path": "contracts/scryptParserCase1.scrypt.tpl",
-   "md5": "5c05dc3d9b94d3f988d58c4580bf37b1"
+   "path": "contracts/scryptParserCase1.scrypt.tpl"
   },
   {
    "symbol": "ScryptParserCase1T",
@@ -482,19 +415,16 @@
   },
   {
    "symbol": "MultiSigHashMethods",
-   "path": "contracts/sigHashTypes.scrypt.tpl",
-   "md5": "96a3cf03c6d95b9a0974c1b72c5608d2"
+   "path": "contracts/sigHashTypes.scrypt.tpl"
   },
   {
    "symbol": "SighashCtxTest",
-   "path": "contracts/sighashCtxTest.scrypt.tpl",
-   "md5": "e0fc7b4df623ef923b439120a42c2870"
+   "path": "contracts/sighashCtxTest.scrypt.tpl"
   },
   {
    "symbol": "StateTest",
-   "path": "contracts/state.scrypt.tpl",
-   "md5": "767b9dc86df5c27b422a25376180e92d",
-   "stateType": "A"
+   "stateType": "A",
+   "path": "contracts/state.scrypt.tpl"
   },
   {
    "symbol": "A",
@@ -510,8 +440,8 @@
   },
   {
    "symbol": "DelegatorStateLib",
-   "path": "contracts/stateLibs.scrypt.tpl",
-   "stateType": "DelegatorState"
+   "stateType": "DelegatorState",
+   "path": "contracts/stateLibs.scrypt.tpl"
   },
   {
    "symbol": "DelegatorState",
@@ -519,9 +449,8 @@
   },
   {
    "symbol": "DelegateeStateLib",
-   "path": "contracts/stateLibs.scrypt.tpl",
-   "md5": "d41d8cd98f00b204e9800998ecf8427e",
-   "stateType": "DelegateeState"
+   "stateType": "DelegateeState",
+   "path": "contracts/stateLibs.scrypt.tpl"
   },
   {
    "symbol": "DelegateeState",
@@ -529,21 +458,18 @@
   },
   {
    "symbol": "StateDelegatee",
-   "path": "contracts/stateDelegatee.scrypt.tpl",
-   "md5": "123d3a47b05508a22da49707aebcc8b5",
-   "stateType": "DelegateeState"
+   "stateType": "DelegateeState",
+   "path": "contracts/stateDelegatee.scrypt.tpl"
   },
   {
    "symbol": "StateDelegator",
-   "path": "contracts/stateDelegator.scrypt.tpl",
-   "md5": "00e7feb1665c5654f67a147ff71c6725",
-   "stateType": "DelegatorState"
+   "stateType": "DelegatorState",
+   "path": "contracts/stateDelegator.scrypt.tpl"
   },
   {
    "symbol": "StateMethods",
-   "path": "contracts/stateMethods.scrypt.tpl",
-   "md5": "be22f07917161c59f6c74f199d7d5c07",
-   "stateType": "StateMethodsState"
+   "stateType": "StateMethodsState",
+   "path": "contracts/stateMethods.scrypt.tpl"
   },
   {
    "symbol": "StateMethodsState",
@@ -551,9 +477,8 @@
   },
   {
    "symbol": "StateType",
-   "path": "contracts/stateType.scrypt.tpl",
-   "md5": "be11789e376038f26de914b1c492d9af",
-   "stateType": "StateTypeState"
+   "stateType": "StateTypeState",
+   "path": "contracts/stateType.scrypt.tpl"
   },
   {
    "symbol": "StateTypeState",
@@ -565,18 +490,15 @@
   },
   {
    "symbol": "Statement",
-   "path": "contracts/statement.scrypt.tpl",
-   "md5": "08f5cd92c1940ff9af7e6deefa71ee19"
+   "path": "contracts/statement.scrypt.tpl"
   },
   {
    "symbol": "StaticProp",
-   "path": "contracts/staticProp.scrypt.tpl",
-   "md5": "c54932b4afd7f396537e87a42b458ce0"
+   "path": "contracts/staticProp.scrypt.tpl"
   },
   {
    "symbol": "Struct1",
-   "path": "contracts/struct1.scrypt.tpl",
-   "md5": "b7eb67aaa7aa40468eb7878c9876ec53"
+   "path": "contracts/struct1.scrypt.tpl"
   },
   {
    "symbol": "ST11",
@@ -592,8 +514,7 @@
   },
   {
    "symbol": "Struct2",
-   "path": "contracts/struct2.scrypt.tpl",
-   "md5": "d0155566e0af82b7c0bdd75e0d59d404"
+   "path": "contracts/struct2.scrypt.tpl"
   },
   {
    "symbol": "ST21",
@@ -605,14 +526,12 @@
   },
   {
    "symbol": "TestCtx",
-   "path": "contracts/testCtx.scrypt.tpl",
-   "md5": "d44ebd5bf7b3a15f1ec44caf05e82076"
+   "path": "contracts/testCtx.scrypt.tpl"
   },
   {
    "symbol": "TicTacToe",
-   "path": "contracts/tictactoe.scrypt.tpl",
-   "md5": "53794ae4a43e65eb8fabf6a9b588a2f5",
-   "stateType": "TicTacToeState"
+   "stateType": "TicTacToeState",
+   "path": "contracts/tictactoe.scrypt.tpl"
   },
   {
    "symbol": "TicTacToeState",
@@ -620,13 +539,11 @@
   },
   {
    "symbol": "TimeLock",
-   "path": "contracts/timeLock.scrypt.tpl",
-   "md5": "23d305ada09e782adfce11dfb668dba7"
+   "path": "contracts/timeLock.scrypt.tpl"
   },
   {
    "symbol": "Types",
-   "path": "contracts/types.scrypt.tpl",
-   "md5": "6e9c4d2faa784b0df33c67d2a3e256c4"
+   "path": "contracts/types.scrypt.tpl"
   },
   {
    "symbol": "S",
@@ -638,8 +555,7 @@
   },
   {
    "symbol": "Util",
-   "path": "contracts/util.scrypt.tpl",
-   "md5": "9abdec4706c8f91f94df3f603095db0f"
+   "path": "contracts/util.scrypt.tpl"
   },
   {
    "symbol": "UtilsA",
@@ -647,14 +563,12 @@
   },
   {
    "symbol": "VerifyContext",
-   "path": "contracts/verifyContext.scrypt.tpl",
-   "md5": "f77729afe513e628a691a13ae272ae4b"
+   "path": "contracts/verifyContext.scrypt.tpl"
   },
   {
    "symbol": "VirtualUTXO",
-   "path": "contracts/virtualUTXO.scrypt.tpl",
-   "md5": "42f4314677c3d7469f374ac7a5e9c5ad",
-   "stateType": "VirtualUTXOState"
+   "stateType": "VirtualUTXOState",
+   "path": "contracts/virtualUTXO.scrypt.tpl"
   },
   {
    "symbol": "VirtualUTXOState",
@@ -662,8 +576,7 @@
   },
   {
    "symbol": "VoidReturn",
-   "path": "contracts/voidReturn.scrypt.tpl",
-   "md5": "c8c814dad85471d6ada6f32904735f20"
+   "path": "contracts/voidReturn.scrypt.tpl"
   },
   {
    "symbol": "AccessNonProp",
@@ -759,8 +672,8 @@
   },
   {
    "symbol": "InvalidState",
-   "path": "contracts/invalid/invalidState.scrypt.tpl",
-   "stateType": "InvalidStateState"
+   "stateType": "InvalidStateState",
+   "path": "contracts/invalid/invalidState.scrypt.tpl"
   },
   {
    "symbol": "InvalidStateState",

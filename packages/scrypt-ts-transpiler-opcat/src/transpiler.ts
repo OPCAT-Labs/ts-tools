@@ -5454,12 +5454,12 @@ export class Transpiler {
     // Get the signature argument (first argument)
     const sigArg = node.arguments[0];
 
-    // Generate: (unpack(sig[len(sig) - 1 : ]) == sigHashType && checkSig(sig, pubKey))
-    toSection.append('(unpack(', srcLoc);
+    // Generate: (sig[len(sig) - 1 : ] == num2bin(sigHashType, 2)[0 : 1] && num2bin(sigHashType, 2)[1 : ] == b'00' && checkSig(sig, pubKey))
+    toSection.append('(', srcLoc);
     toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
     toSection.append(`[len(`);
     toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
-    toSection.append(`) - 1 : ]) == ${sigHashTypeDecimal} && `);
+    toSection.append(`) - 1 : ] == num2bin(${sigHashTypeDecimal}, 2)[0 : 1] && num2bin(${sigHashTypeDecimal}, 2)[1 : ] == b'00' && `);
 
     // Append checkSig call
     toSection.appendWith(this, (toSec) => {
@@ -5483,19 +5483,21 @@ export class Transpiler {
   ): EmittedSection {
     const srcLoc = this.getCoordinates(node.getStart());
 
-    // checkSigWithFlag(sig, pubKey, flag) -> (unpack(sig[len(sig) - 1 : ]) == flag && checkSig(sig, pubKey))
+    // checkSigWithFlag(sig, pubKey, flag) -> (sig[len(sig) - 1 : ] == num2bin(flag, 2)[0 : 1] && num2bin(flag, 2)[1 : ] == b'00' && checkSig(sig, pubKey))
     const sigArg = node.arguments[0];
     const pubKeyArg = node.arguments[1];
     const flagArg = node.arguments[2];
 
-    // Generate: (unpack(sig[len(sig) - 1 : ]) == flag && checkSig(sig, pubKey))
-    toSection.append('(unpack(', srcLoc);
+    // Generate: (sig[len(sig) - 1 : ] == num2bin(flag, 2)[0 : 1] && num2bin(flag, 2)[1 : ] == b'00' && checkSig(sig, pubKey))
+    toSection.append('(', srcLoc);
     toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
     toSection.append(`[len(`);
     toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
-    toSection.append(`) - 1 : ]) == `);
+    toSection.append(`) - 1 : ] == num2bin(`);
     toSection.appendWith(this, (toSec) => this.transformExpression(flagArg, toSec));
-    toSection.append(` && checkSig(`);
+    toSection.append(`, 2)[0 : 1] && num2bin(`);
+    toSection.appendWith(this, (toSec) => this.transformExpression(flagArg, toSec));
+    toSection.append(`, 2)[1 : ] == b'00' && checkSig(`);
     toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
     toSection.append(`, `);
     toSection.appendWith(this, (toSec) => this.transformExpression(pubKeyArg, toSec));
