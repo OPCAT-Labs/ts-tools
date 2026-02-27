@@ -1,30 +1,29 @@
-import { method, prop, SmartContract, assert, hash256, SigHash } from '@opcat-labs/scrypt-ts-opcat';
+import { method, SmartContract, assert, Sig, PubKey } from '@opcat-labs/scrypt-ts-opcat';
 
+// Local SigHashType object for decorator parameters
+// This is needed because const enum is not available at runtime in tsx
+const SigHashType = {
+  ALL: 0x01,
+  NONE: 0x02,
+  SINGLE: 0x03,
+  ANYONECANPAY: 0x80,
+  ANYONECANPAY_ALL: 0x81,
+  ANYONECANPAY_NONE: 0x82,
+  ANYONECANPAY_SINGLE: 0x83,
+} as const;
+
+/**
+ * Invalid contract: uses buildChangeOutput() with ANYONECANPAY_SINGLE sighash type
+ * This should throw a transpiler error because buildChangeOutput() can only be used with
+ * ALL or ANYONECANPAY_ALL sighash types.
+ */
 export class SigHashChangeSINGLE extends SmartContract {
-  @prop(true)
-  counter: bigint;
-
-  constructor(counter: bigint) {
-    super(...arguments);
-    this.counter = counter;
-  }
-
-  @method(SigHash.ANYONECANPAY_SINGLE)
-  public incOnchain() {
-    this.incCounter();
-
-    let out = this.buildStateOutput(this.ctx.utxo.value);
-    out += this.buildChangeOutput();
-    assert(this.ctx.hashOutputs == hash256(out), 'hashOutputs check failed');
-  }
-
-  @method()
-  incCounter(): boolean {
-    this.counter++;
-    return true;
-  }
-
-  incLocally() {
-    this.incCounter();
+  @method({ sigHashType: SigHashType.ANYONECANPAY_SINGLE })
+  public unlock(sig: Sig, pubKey: PubKey) {
+    // This should cause a transpiler error:
+    // buildChangeOutput() requires sigHashType ALL or ANYONECANPAY_ALL
+    const outputs = this.buildChangeOutput();
+    assert(this.checkOutputs(outputs), 'outputs mismatch');
+    assert(this.checkSig(sig, pubKey), 'signature check failed');
   }
 }

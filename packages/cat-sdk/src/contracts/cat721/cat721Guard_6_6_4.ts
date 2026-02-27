@@ -95,6 +95,8 @@ export class CAT721Guard_6_6_4 extends SmartContract<CAT721GuardConstState> {
             const nftScriptIndex = byteStringToInt(slice(this.state.nftScriptIndexes, i, i + 1n));
             const burnMask = slice(this.state.nftBurnMasks, i, i + 1n) == toByteString('01') ? true : false;
             if (i < inputCount) {
+                // F-07 Fix: Add lower bound check for script index
+                assert(nftScriptIndex >= INVALID_INDEX, 'nft script index out of range');
                 assert(nftScriptIndex < inputNftTypes);
                 if (nftScriptIndex != INVALID_INDEX) {
                     // this is a nft input
@@ -126,11 +128,15 @@ export class CAT721Guard_6_6_4 extends SmartContract<CAT721GuardConstState> {
             if (i < outputCount) {
                 const ownerAddrOrScriptHash = ownerAddrOrScriptHashes[Number(i)];
                 const nftScriptIndex = nftScriptHashIndexes[Number(i)];
+                // F-07 Fix: Add lower bound check for script index
+                assert(nftScriptIndex >= INVALID_INDEX, 'nft script index out of range');
                 assert(nftScriptIndex < inputNftTypes, 'nft script index is invalid');
                 if (nftScriptIndex != INVALID_INDEX) {
                     // this is an nft output
                     // C.4 Fix: Validate owner address encoding
                     OwnerUtils.checkOwnerAddr(ownerAddrOrScriptHash)
+                    // F-03 Fix: Ensure output satoshis is positive
+                    assert(outputSatoshis[Number(i)] > 0n, 'output satoshis must be positive');
                     const nftScriptHash = this.state.nftScriptHashes[Number(nftScriptIndex)];
                     const localId = outputLocalIds[Number(outputNftCount)];
                     assert(localId >= 0n, 'local id is invalid');

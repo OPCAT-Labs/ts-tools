@@ -18,7 +18,7 @@
   {
    "symbol": "AtomicSwap",
    "path": "contracts/atomicSwap.scrypt.tpl",
-   "md5": "d9e7871e4666e83e36ee54dbc0443ef3"
+   "md5": "a413eb173b41962a2c7c1994106ed8ca"
   },
   {
    "symbol": "TxUtils",
@@ -27,7 +27,7 @@
   {
    "symbol": "Auction",
    "path": "contracts/auction.scrypt.tpl",
-   "md5": "7ef256f2a3c6b915afd1b56a86b5e66f",
+   "md5": "bfb96ceccd5d4faa54f49c06275e4804",
    "stateType": "AuctionState"
   },
   {
@@ -41,7 +41,7 @@
   {
    "symbol": "B2GCounter",
    "path": "contracts/b2GCounter.scrypt.tpl",
-   "md5": "74b7975d681bb65975f2bf7f5f12b285",
+   "md5": "3cbfde779285d10d83027fba48ad96ae",
    "stateType": "CounterState"
   },
   {
@@ -51,12 +51,12 @@
   {
    "symbol": "CoinToss",
    "path": "contracts/cointoss.scrypt.tpl",
-   "md5": "b4e9af2cd8d5d5d7234150f721b94db9"
+   "md5": "4d7f9d3d5c6d51a0c67c691f25d686c9"
   },
   {
    "symbol": "Crowdfund",
    "path": "contracts/crowdfund.scrypt.tpl",
-   "md5": "fe12d89c8d8c24597944f8a5c36278b4"
+   "md5": "e7ce4c71d5b32d4485f2588bed28cfb5"
   },
   {
    "symbol": "Examples",
@@ -70,7 +70,7 @@
   {
    "symbol": "LamportP2PK",
    "path": "contracts/lamportSig.scrypt.tpl",
-   "md5": "c7d8d68954838e7fdcc5ecd8aa1041b5"
+   "md5": "3b479ad0ac3e7927cafc8ae4f7487126"
   },
   {
    "symbol": "Matrix",
@@ -95,7 +95,7 @@
   {
    "symbol": "Rule110",
    "path": "contracts/rule110.scrypt.tpl",
-   "md5": "ea6e2e5c61588a40488a8e3c6fc0528c",
+   "md5": "8e861ae0002f36e9631d848da8f5aa5d",
    "stateType": "Rule110State"
   },
   {
@@ -114,7 +114,7 @@
   {
    "symbol": "TimedCommit",
    "path": "contracts/timedCommit.scrypt.tpl",
-   "md5": "c44fc9f85ffda68e02aff766013bdc32"
+   "md5": "cd3fe275df282dfd381d528a9f19f5e0"
   },
   {
    "symbol": "ArrayUtils",
@@ -123,7 +123,7 @@
   {
    "symbol": "TuringMachine",
    "path": "contracts/turingMachine.scrypt.tpl",
-   "md5": "5656231b0dd90fc807d61d8220e2dc4f",
+   "md5": "eb1b5395f3d6b08fb1cc94a0500847ea",
    "stateType": "TuringMachineState"
   },
   {
@@ -145,7 +145,7 @@
   {
    "symbol": "Voting",
    "path": "contracts/voting.scrypt.tpl",
-   "md5": "afaba90728c4e8bcf7e1ca16108ede92",
+   "md5": "320595a60009f893105951a40e98088b",
    "stateType": "VotingState"
   },
   {
@@ -159,7 +159,7 @@
   {
    "symbol": "XORPuzzle",
    "path": "contracts/xorpuzzle.scrypt.tpl",
-   "md5": "29fda55efd2e9e47eced4dc99cfca7b5"
+   "md5": "7b1ef72107bd62c939d44e79fb4f3c7a"
   }
  ]
 }

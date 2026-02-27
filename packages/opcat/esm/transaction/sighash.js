@@ -10,6 +10,7 @@ import $ from '../util/preconditions.js';
 import _ from '../util/_.js';
 
 var SIGHASH_SINGLE_BUG = Buffer.from('0000000000000000000000000000000000000000000000000000000000000001', 'hex')
+var EMPTY_HASH = Buffer.alloc(32, 0)
 
 /**
  * Represents a Sighash utility for cryptographic signature operations.
@@ -36,8 +37,18 @@ Sighash.sighashPreimage = function (transaction, sighashType, inputNumber) {
   _.each(transaction.inputs, function (input) {
     $.checkState(input.output instanceof Output, 'input.output must be an instance of Output')
   })
-  $.checkArgument(sighashType === Signature.SIGHASH_ALL, 'only SIGHASH_ALL is supported')
+
+  // Validate sighash type
+  var baseType = sighashType & 0x1f
+  $.checkArgument(
+    baseType >= Signature.SIGHASH_ALL && baseType <= Signature.SIGHASH_SINGLE,
+    'invalid sighash type'
+  )
   $.checkArgument(inputNumber < transaction.inputs.length, 'inputNumber must be less than the number of inputs')
+
+  var hasAnyoneCanPay = (sighashType & Signature.SIGHASH_ANYONECANPAY) !== 0
+  var isNone = baseType === Signature.SIGHASH_NONE
+  var isSingle = baseType === Signature.SIGHASH_SINGLE
 
   var nVersion
   var prevouts = []
@@ -60,14 +71,16 @@ Sighash.sighashPreimage = function (transaction, sighashType, inputNumber) {
     return separatedScript
   }
 
-  // all inputs
-  _.each(transaction.inputs, function (input) {
-    prevouts.push(input.toPrevout())
-    spentAmounts.push(new BufferWriter().writeUInt64LEBN(input.output.satoshisBN).toBuffer())
-    spentScriptHashes.push(Hash.sha256(getSeparatedScript(input.output.script).toBuffer()))
-    spentDataHashes.push(Hash.sha256(input.output.data))
-    sequences.push(new BufferWriter().writeUInt32LE(input.sequenceNumber).toBuffer())
-  })
+  // all inputs - only process if not ANYONECANPAY
+  if (!hasAnyoneCanPay) {
+    _.each(transaction.inputs, function (input) {
+      prevouts.push(input.toPrevout())
+      spentAmounts.push(new BufferWriter().writeUInt64LEBN(input.output.satoshisBN).toBuffer())
+      spentScriptHashes.push(Hash.sha256(getSeparatedScript(input.output.script).toBuffer()))
+      spentDataHashes.push(Hash.sha256(input.output.data))
+      sequences.push(new BufferWriter().writeUInt32LE(input.sequenceNumber).toBuffer())
+    })
+  }
 
   // current input
   spentScriptHash = Hash.sha256(getSeparatedScript(transaction.inputs[inputNumber].output.script).toBuffer())
@@ -77,10 +90,17 @@ Sighash.sighashPreimage = function (transaction, sighashType, inputNumber) {
   inputIndex = new BufferWriter().writeUInt32LE(inputNumber).toBuffer()
   sighashTypeBuf = new BufferWriter().writeUInt32LE(sighashType).toBuffer()
 
-  // all outputs
-  _.each(transaction.outputs, function (output) {
-    outputs.push(output.toBufferWriter(true).toBuffer())
-  })
+  // outputs - depends on sighash type
+  if (!isNone && !isSingle) {
+    // ALL: hash all outputs
+    _.each(transaction.outputs, function (output) {
+      outputs.push(output.toBufferWriter(true).toBuffer())
+    })
+  } else if (isSingle && inputNumber < transaction.outputs.length) {
+    // SINGLE: only hash the output at the same index
+    outputs.push(transaction.outputs[inputNumber].toBufferWriter(true).toBuffer())
+  }
+  // NONE: outputs array stays empty
 
   // tx.version
   nVersion = new BufferWriter().writeUInt32LE(transaction.version).toBuffer()
@@ -90,17 +110,52 @@ Sighash.sighashPreimage = function (transaction, sighashType, inputNumber) {
   let bw = new BufferWriter()
 
   bw.write(nVersion)
-  bw.write(Hash.sha256sha256(Buffer.concat([...prevouts])))
+
+  // hashPrevouts - empty if ANYONECANPAY
+  if (hasAnyoneCanPay) {
+    bw.write(EMPTY_HASH)
+  } else {
+    bw.write(Hash.sha256sha256(Buffer.concat([...prevouts])))
+  }
+
   bw.write(spentScriptHash)
   bw.write(spentDataHash)
   bw.write(spentAmount)
   bw.write(sequence)
 
-  bw.write(Hash.sha256sha256(Buffer.concat([...spentAmounts])))
-  bw.write(Hash.sha256sha256(Buffer.concat([...spentScriptHashes])))
-  bw.write(Hash.sha256sha256(Buffer.concat([...spentDataHashes])))
-  bw.write(Hash.sha256sha256(Buffer.concat([...sequences])))
-  bw.write(Hash.sha256sha256(Buffer.concat([...outputs])))
+  // hashSpentAmounts, hashSpentScriptHashes, hashSpentDataHashes - empty if ANYONECANPAY
+  if (hasAnyoneCanPay) {
+    bw.write(EMPTY_HASH)
+    bw.write(EMPTY_HASH)
+    bw.write(EMPTY_HASH)
+  } else {
+    bw.write(Hash.sha256sha256(Buffer.concat([...spentAmounts])))
+    bw.write(Hash.sha256sha256(Buffer.concat([...spentScriptHashes])))
+    bw.write(Hash.sha256sha256(Buffer.concat([...spentDataHashes])))
+  }
+
+  // hashSequences - empty if ANYONECANPAY or SINGLE or NONE
+  if (hasAnyoneCanPay || isSingle || isNone) {
+    bw.write(EMPTY_HASH)
+  } else {
+    bw.write(Hash.sha256sha256(Buffer.concat([...sequences])))
+  }
+
+  // hashOutputs - depends on sighash type
+  if (isNone) {
+    // NONE: empty hash
+    bw.write(EMPTY_HASH)
+  } else if (isSingle) {
+    // SINGLE: hash only the output at same index, or empty if no corresponding output
+    if (inputNumber < transaction.outputs.length) {
+      bw.write(Hash.sha256sha256(Buffer.concat([...outputs])))
+    } else {
+      bw.write(EMPTY_HASH)
+    }
+  } else {
+    // ALL: hash all outputs
+    bw.write(Hash.sha256sha256(Buffer.concat([...outputs])))
+  }
 
   bw.write(inputIndex)
   bw.write(nLockTime)

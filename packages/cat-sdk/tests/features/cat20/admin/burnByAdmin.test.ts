@@ -94,7 +94,7 @@ describe('Test the feature `burnByAdmin` for `Cat20`', () => {
 
   async function testBurnByAdminResult(cat20Utxos: UTXO[]) {
     const cat20Admin = new CAT20Admin(
-      outpoint2ByteString(cat20Generator.deployInfo.tokenId)
+      outpoint2ByteString(cat20Generator.getAdminGenesisOutpoint())
     )
     cat20Admin.bindToUtxo(cat20Generator.getCat20AdminUtxo())
     const { guardPsbt, sendPsbt } = await  runWithDryCheck(testProvider, burnByAdmin)(

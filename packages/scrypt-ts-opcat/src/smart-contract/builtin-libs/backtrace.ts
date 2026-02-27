@@ -105,6 +105,7 @@ export class Backtrace extends SmartContractLib {
   @method()
   static verifyFromOutpoint(
     backtraceInfo: BacktraceInfo,
+    t_prevOutputIndex: bigint,
     t_genesisOutpoint: ByteString,
     t_selfScript: ByteString,
     t_prevTxInputList: ByteString,
@@ -116,9 +117,10 @@ export class Backtrace extends SmartContractLib {
         res.prevPrevScript == Backtrace.GENESIS_SCRIPT_HASH,
         `prevPrevScript does not match Genesis contract script`,
       );
+      assert(t_prevOutputIndex == 0n, 'prevOutputIndex must be 0 for genesis validation');
     }
     assert(
-      res.prevPrevOutpoint === t_genesisOutpoint || res.prevPrevScript == t_selfScript,
+      res.prevPrevOutpoint == t_genesisOutpoint || res.prevPrevScript == t_selfScript,
       `can not backtrace to the genesis outpoint`,
     );
   }

@@ -27,7 +27,13 @@ export function backtraceToOutpointImpl(
     throw new Error('utxo should have txHashPreimage for backtrace to genesis outpoint');
   }
   const prevTxHashPreimage = toTxHashPreimage(hexToUint8Array(prevTxHashPreimageBytes!));
-  Backtrace.verifyFromOutpoint(_backtraceInfo, _genesisOutpoint, _self.ctx.spentScriptHash, prevTxHashPreimage.inputList);
+  Backtrace.verifyFromOutpoint(
+    _backtraceInfo,
+    BigInt((_self as any).utxo.outputIndex),
+    _genesisOutpoint,
+    _self.ctx.spentScriptHash,
+    prevTxHashPreimage.inputList
+  );
   return true;
 }
 
