@@ -54,6 +54,32 @@ describe('Test checkSigWithFlag', () => {
       await psbt.signAndFinalize(testSigner);
       expect(bvmVerify(psbt, 0)).to.eq(true);
     });
+
+    it('should fail when method expects ALL but tries to use NONE sigHashType', async () => {
+      const contract = new CheckSigWithFlagTest();
+      const address = await testSigner.getAddress();
+      const pubKey = await testSigner.getPublicKey();
+
+      contract.bindToUtxo({
+        txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 10000,
+        data: '',
+      });
+
+      // The unlockWithAllFlag method has sigHashType.ALL decorator.
+      // Trying to set a different sigHashType should fail.
+      expect(() => {
+        new ExtPsbt({ network: testSigner.network })
+          .addContractInput(contract, (c, psbt) => {
+            const sig = psbt.getSig(0, { address });
+            c.unlockWithAllFlag(sig, PubKey(pubKey));
+          })
+          .setSighashType(0, SigHashType.NONE)
+          .change(address, 1)
+          .seal();
+      }).to.throw();
+    });
   });
 
   describe('unlockWithNoneFlag - verify SIGHASH_NONE flag (0x02)', () => {
@@ -79,6 +105,32 @@ describe('Test checkSigWithFlag', () => {
 
       await psbt.signAndFinalize(testSigner);
       expect(bvmVerify(psbt, 0)).to.eq(true);
+    });
+
+    it('should fail when method expects NONE but tries to use ALL sigHashType', async () => {
+      const contract = new CheckSigWithFlagTest();
+      const address = await testSigner.getAddress();
+      const pubKey = await testSigner.getPublicKey();
+
+      contract.bindToUtxo({
+        txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 10000,
+        data: '',
+      });
+
+      // The unlockWithNoneFlag method has sigHashType.NONE decorator.
+      // Trying to set a different sigHashType should fail.
+      expect(() => {
+        new ExtPsbt({ network: testSigner.network })
+          .addContractInput(contract, (c, psbt) => {
+            const sig = psbt.getSig(0, { address });
+            c.unlockWithNoneFlag(sig, PubKey(pubKey));
+          })
+          .setSighashType(0, SigHashType.ALL)
+          .change(address, 1)
+          .seal();
+      }).to.throw();
     });
   });
 
@@ -145,6 +197,45 @@ describe('Test checkSigWithFlag', () => {
       }
 
       // The TypeScript runtime check in checkSigWithFlag should throw an error
+      // because the signature flag (1) doesn't match the expected flag (2)
+      expect(error).to.be.instanceOf(Error);
+      expect(error?.message).to.include('signature flag mismatch');
+    });
+  });
+
+  describe('unlockWithMismatchedFlag - decorator vs checkSigWithFlag mismatch', () => {
+    it('should fail when decorator sigHashType (ALL) differs from checkSigWithFlag flag (NONE)', async () => {
+      const contract = new CheckSigWithFlagTest();
+      const address = await testSigner.getAddress();
+      const pubKey = await testSigner.getPublicKey();
+
+      contract.bindToUtxo({
+        txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 10000,
+        data: '',
+      });
+
+      // The unlockWithMismatchedFlag method has sigHashType.ALL decorator (1)
+      // but calls checkSigWithFlag with flag=2 (NONE).
+      // This should fail because the signature is created with flag=1,
+      // but checkSigWithFlag verifies for flag=2.
+      let error: Error | undefined;
+      try {
+        const psbt = new ExtPsbt({ network: testSigner.network })
+          .addContractInput(contract, (c, psbt) => {
+            const sig = psbt.getSig(0, { address });
+            c.unlockWithMismatchedFlag(sig, PubKey(pubKey));
+          })
+          .change(address, 1)
+          .seal();
+
+        await psbt.signAndFinalize(testSigner);
+      } catch (e) {
+        error = e as Error;
+      }
+
+      // The assertion in checkSigWithFlag should throw an error
       // because the signature flag (1) doesn't match the expected flag (2)
       expect(error).to.be.instanceOf(Error);
       expect(error?.message).to.include('signature flag mismatch');

@@ -1267,10 +1267,10 @@ function getHashForSig(
   sighashType: number;
 } {
   const unsignedTx = cache.__TX;
-  // Use sighashTypes parameter first, then fall back to input.sighashType, then default to SIGHASH_ALL
-  const sighashType = (sighashTypes && sighashTypes.length > 0)
+  // Use input.sighashType as the actual signing type (set by first _signInput call), then fall back to first allowed type from sighashTypes, then default to SIGHASH_ALL. sighashTypes is purely used as a whitelist for validation.
+  const sighashType = input.sighashType || (sighashTypes && sighashTypes.length > 0
     ? sighashTypes[0]
-    : (input.sighashType || crypto.Signature.SIGHASH_ALL);
+    : crypto.Signature.SIGHASH_ALL);
   checkSighashTypeAllowed(sighashType, sighashTypes);
 
   const prevout: Transaction.Output = unsignedTx.inputs[inputIndex].output!;

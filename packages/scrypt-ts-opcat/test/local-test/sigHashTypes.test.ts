@@ -52,10 +52,33 @@ describe('Test SigHashTypes', () => {
         .change(address, 1)
         .seal();
 
-      expect(async () => {
-        await psbt.signAndFinalize(testSigner);
-        expect(bvmVerify(psbt, 0)).to.eq(true);
-      }).not.throw();
+      await psbt.signAndFinalize(testSigner);
+      expect(bvmVerify(psbt, 0)).to.eq(true);
+    });
+
+    it('should fail when using wrong sigHashType for unlockAll', async () => {
+      const contract = new MultiSigHashMethods();
+      const address = await testSigner.getAddress();
+      const pubKey = await testSigner.getPublicKey();
+
+      contract.bindToUtxo({
+        txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 10000,
+        data: '',
+      });
+
+      // Try to use NONE sigHashType with unlockAll which expects ALL
+      expect(() => {
+        new ExtPsbt({ network: testSigner.network })
+          .addContractInput(contract, (c, psbt) => {
+            const sig = psbt.getSig(0, { address });
+            c.unlockAll(sig, PubKey(pubKey));
+          })
+          .setSighashType(0, SigHashType.NONE)
+          .change(address, 1)
+          .seal();
+      }).to.throw();
     });
   });
 
@@ -80,10 +103,33 @@ describe('Test SigHashTypes', () => {
         .change(address, 1)
         .seal();
 
-      expect(async () => {
-        await psbt.signAndFinalize(testSigner);
-        expect(bvmVerify(psbt, 0)).to.eq(true);
-      }).not.throw();
+      await psbt.signAndFinalize(testSigner);
+      expect(bvmVerify(psbt, 0)).to.eq(true);
+    });
+
+    it('should fail when using wrong sigHashType for unlockNone', async () => {
+      const contract = new MultiSigHashMethods();
+      const address = await testSigner.getAddress();
+      const pubKey = await testSigner.getPublicKey();
+
+      contract.bindToUtxo({
+        txId: 'c1a1a777a52f765ebfa295a35c12280279edd46073d41f4767602f819f574f82',
+        outputIndex: 0,
+        satoshis: 10000,
+        data: '',
+      });
+
+      // Try to use ALL sigHashType with unlockNone which expects NONE
+      expect(() => {
+        new ExtPsbt({ network: testSigner.network })
+          .addContractInput(contract, (c, psbt) => {
+            const sig = psbt.getSig(0, { address });
+            c.unlockNone(sig, PubKey(pubKey));
+          })
+          .setSighashType(0, SigHashType.ALL)
+          .change(address, 1)
+          .seal();
+      }).to.throw();
     });
   });
 
@@ -108,10 +154,8 @@ describe('Test SigHashTypes', () => {
         .change(address, 1)
         .seal();
 
-      expect(async () => {
-        await psbt.signAndFinalize(testSigner);
-        expect(bvmVerify(psbt, 0)).to.eq(true);
-      }).not.throw();
+      await psbt.signAndFinalize(testSigner);
+      expect(bvmVerify(psbt, 0)).to.eq(true);
     });
   });
 
@@ -136,10 +180,8 @@ describe('Test SigHashTypes', () => {
         .change(address, 1)
         .seal();
 
-      expect(async () => {
-        await psbt.signAndFinalize(testSigner);
-        expect(bvmVerify(psbt, 0)).to.eq(true);
-      }).not.throw();
+      await psbt.signAndFinalize(testSigner);
+      expect(bvmVerify(psbt, 0)).to.eq(true);
     });
   });
 
@@ -164,10 +206,8 @@ describe('Test SigHashTypes', () => {
         .change(address, 1)
         .seal();
 
-      expect(async () => {
-        await psbt.signAndFinalize(testSigner);
-        expect(bvmVerify(psbt, 0)).to.eq(true);
-      }).not.throw();
+      await psbt.signAndFinalize(testSigner);
+      expect(bvmVerify(psbt, 0)).to.eq(true);
     });
   });
 
@@ -192,10 +232,8 @@ describe('Test SigHashTypes', () => {
         .change(address, 1)
         .seal();
 
-      expect(async () => {
-        await psbt.signAndFinalize(testSigner);
-        expect(bvmVerify(psbt, 0)).to.eq(true);
-      }).not.throw();
+      await psbt.signAndFinalize(testSigner);
+      expect(bvmVerify(psbt, 0)).to.eq(true);
     });
   });
 
@@ -252,9 +290,7 @@ describe('Test SigHashTypes', () => {
 
       psbt.change(address, 1).seal();
 
-      expect(async () => {
-        await psbt.signAndFinalize(testSigner);
-      }).not.throw();
+      await psbt.signAndFinalize(testSigner);
     });
   });
 });

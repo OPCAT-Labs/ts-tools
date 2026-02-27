@@ -48,7 +48,7 @@ async function testSigHashType(
   provider: OpenApiProvider,
   methodName: string,
   sigHashTypeValue: number,
-  unlockMethod: (contract: MultiSigHashMethods, psbt: ExtPsbt, sig: any, pubKey: string) => void
+  unlockMethod: (contract: MultiSigHashMethods, psbt: ExtPsbt, sig: any, pubKey: string, sigHashType: number) => void
 ): Promise<TestResult> {
   const result: TestResult = {
     method: methodName,
@@ -115,8 +115,8 @@ async function testSigHashType(
 
     const unlockPsbt = new ExtPsbt({ network: signer.network })
       .addContractInput(contract, (c, psbt) => {
-        const sig = psbt.getSig(0, { address });
-        unlockMethod(c, psbt, sig, pubKey);
+        const sig = psbt.getSig(0, { address, sighashTypes: [sigHashTypeValue] });
+        unlockMethod(c, psbt, sig, pubKey, sigHashTypeValue);
       })
       .change(address, 1)
       .seal();
@@ -180,7 +180,7 @@ async function main() {
   console.log('-'.repeat(60));
   console.log('Testing SigHashType.ALL (unlockAll)');
   console.log('-'.repeat(60));
-  results.push(await testSigHashType(signer, provider, 'unlockAll', SigHashType.ALL, (c, psbt, sig, pubKey) => {
+  results.push(await testSigHashType(signer, provider, 'unlockAll', SigHashType.ALL, (c, psbt, sig, pubKey, sigHashType) => {
     c.unlockAll(sig, PubKey(pubKey));
   }));
 
@@ -190,7 +190,7 @@ async function main() {
   console.log('-'.repeat(60));
   console.log('Testing SigHashType.NONE (unlockNone)');
   console.log('-'.repeat(60));
-  results.push(await testSigHashType(signer, provider, 'unlockNone', SigHashType.NONE, (c, psbt, sig, pubKey) => {
+  results.push(await testSigHashType(signer, provider, 'unlockNone', SigHashType.NONE, (c, psbt, sig, pubKey, sigHashType) => {
     c.unlockNone(sig, PubKey(pubKey));
   }));
 
@@ -199,7 +199,7 @@ async function main() {
   console.log('-'.repeat(60));
   console.log('Testing SigHashType.SINGLE (unlockSingle)');
   console.log('-'.repeat(60));
-  results.push(await testSigHashType(signer, provider, 'unlockSingle', SigHashType.SINGLE, (c, psbt, sig, pubKey) => {
+  results.push(await testSigHashType(signer, provider, 'unlockSingle', SigHashType.SINGLE, (c, psbt, sig, pubKey, sigHashType) => {
     c.unlockSingle(sig, PubKey(pubKey));
   }));
 
@@ -208,7 +208,7 @@ async function main() {
   console.log('-'.repeat(60));
   console.log('Testing SigHashType.ANYONECANPAY_ALL (unlockAnyoneCanPayAll)');
   console.log('-'.repeat(60));
-  results.push(await testSigHashType(signer, provider, 'unlockAnyoneCanPayAll', SigHashType.ANYONECANPAY_ALL, (c, psbt, sig, pubKey) => {
+  results.push(await testSigHashType(signer, provider, 'unlockAnyoneCanPayAll', SigHashType.ANYONECANPAY_ALL, (c, psbt, sig, pubKey, sigHashType) => {
     c.unlockAnyoneCanPayAll(sig, PubKey(pubKey));
   }));
 
@@ -217,7 +217,7 @@ async function main() {
   console.log('-'.repeat(60));
   console.log('Testing SigHashType.ANYONECANPAY_NONE (unlockAnyoneCanPayNone)');
   console.log('-'.repeat(60));
-  results.push(await testSigHashType(signer, provider, 'unlockAnyoneCanPayNone', SigHashType.ANYONECANPAY_NONE, (c, psbt, sig, pubKey) => {
+  results.push(await testSigHashType(signer, provider, 'unlockAnyoneCanPayNone', SigHashType.ANYONECANPAY_NONE, (c, psbt, sig, pubKey, sigHashType) => {
     c.unlockAnyoneCanPayNone(sig, PubKey(pubKey));
   }));
 
@@ -226,7 +226,7 @@ async function main() {
   console.log('-'.repeat(60));
   console.log('Testing SigHashType.ANYONECANPAY_SINGLE (unlockAnyoneCanPaySingle)');
   console.log('-'.repeat(60));
-  results.push(await testSigHashType(signer, provider, 'unlockAnyoneCanPaySingle', SigHashType.ANYONECANPAY_SINGLE, (c, psbt, sig, pubKey) => {
+  results.push(await testSigHashType(signer, provider, 'unlockAnyoneCanPaySingle', SigHashType.ANYONECANPAY_SINGLE, (c, psbt, sig, pubKey, sigHashType) => {
     c.unlockAnyoneCanPaySingle(sig, PubKey(pubKey));
   }));
 

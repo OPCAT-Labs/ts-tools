@@ -8,7 +8,16 @@ import { InputIndex } from '../../globalTypes.js';
 // ANYONECANPAY flag (0x80)
 const SIGHASH_ANYONECANPAY = 0x80n;
 
-// Empty hash (32 zero bytes) used when ANYONECANPAY is set
+// SIGHASH_NONE flag (0x02) - excludes outputs from signature
+const SIGHASH_NONE = 0x02n;
+
+// SIGHASH_SINGLE flag (0x03) - only signs the output at the same index
+const SIGHASH_SINGLE = 0x03n;
+
+// Mask to extract base sighash type (without ANYONECANPAY)
+const SIGHASH_BASE_MASK = 0x1fn;
+
+// Empty hash (32 zero bytes) used when ANYONECANPAY is set or for SIGHASH_NONE outputs
 const EMPTY_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
 
 /**
@@ -39,6 +48,12 @@ export function checkCtxImpl(
 
   // Check if ANYONECANPAY flag is set
   const hasAnyoneCanPay = (shPreimage.sigHashType & SIGHASH_ANYONECANPAY) !== 0n;
+
+  // Extract base sighash type (without ANYONECANPAY)
+  const baseSigHashType = shPreimage.sigHashType & SIGHASH_BASE_MASK;
+
+  // Check if SIGHASH_NONE is set
+  const isSigHashNone = baseSigHashType === SIGHASH_NONE;
 
   // check inputIndex
   assert(BigInt(inputIndex) === shPreimage.inputIndex, 'inputIndex mismatch');
@@ -105,6 +120,14 @@ export function checkCtxImpl(
         tools.fromHex(hash256(stateHashes)),
       ) === 0,
       'hashSpentDataHashes mismatch',
+    );
+  }
+
+  // For SIGHASH_NONE, hashOutputs should be empty (no outputs are signed)
+  if (isSigHashNone) {
+    assert(
+      shPreimage.hashOutputs === EMPTY_HASH,
+      'hashOutputs should be empty for SIGHASH_NONE',
     );
   }
 
