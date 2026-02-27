@@ -2,7 +2,7 @@
   "version": 10,
   "compilerVersion": "1.22.0+commit.47800da",
   "contract": "_opcat_labs_scrypt_ts_transpiler_opcat_3_4_0__rs__CheckSigWithFlagTest",
-  "md5": "20a5dcbdc67c2ba3839825987092f963",
+  "md5": "558694afd8f4029b7cfd547ff12b2f17",
   "structs": [
     {
       "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxOut",
@@ -280,6 +280,21 @@
       ]
     },
     {
+      "type": "function",
+      "name": "unlockWithMismatchedFlag",
+      "index": 4,
+      "params": [
+        {
+          "name": "sig",
+          "type": "Sig"
+        },
+        {
+          "name": "pubKey",
+          "type": "PubKey"
+        }
+      ]
+    },
+    {
       "type": "constructor",
       "params": []
     }
@@ -287,5 +302,5 @@
   "stateProps": [],
   "buildType": "release",
   "file": "../checkSigWithFlag.scrypt",
-  "hex": "760087635279537982778c7f7781519c636f75ac67006877777767765187635279537982778c7f7781529c636f75ac67006877777767765287635279537982778c7f77810281009c636f75ac67006877777767765387635379547982778c7f778152799c6370ac6700686b6d6d6c670068686868"
+  "hex": "760087635279537982778c7f7781519c636f75ac67006877777767765187635279537982778c7f7781529c636f75ac67006877777767765287635279537982778c7f77810281009c636f75ac67006877777767765387635379547982778c7f778152799c6370ac6700686b6d6d6c67765487635279537982778c7f7781529c636f75ac67006877777767006868686868"
 }

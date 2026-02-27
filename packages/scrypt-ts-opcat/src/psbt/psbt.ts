@@ -1267,7 +1267,7 @@ function getHashForSig(
   sighashType: number;
 } {
   const unsignedTx = cache.__TX;
-  // Use input.sighashType as the actual signing type (set by first _signInput call), then fall back to first allowed type from sighashTypes, then default to SIGHASH_ALL. sighashTypes is purely used as a whitelist for validation.
+  // Use input.sighashType as the actual signing type (set by first _signInput call), then fall back to first allowed type from sighashTypes, then default to SIGHASH_ALL. Note: sighashTypes serves dual purpose - as a whitelist for validation AND as the source for default sighash type when input.sighashType is not set.
   const sighashType = input.sighashType || (sighashTypes && sighashTypes.length > 0
     ? sighashTypes[0]
     : crypto.Signature.SIGHASH_ALL);

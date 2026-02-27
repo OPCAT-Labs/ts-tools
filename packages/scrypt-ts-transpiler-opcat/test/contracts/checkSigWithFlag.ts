@@ -38,4 +38,16 @@ export class CheckSigWithFlagTest extends SmartContract {
     // Note: This method defaults to SIGHASH_ALL, but checkSigWithFlag will verify against expectedFlag
     assert(this.checkSigWithFlag(sig, pubKey, expectedFlag), 'signature flag mismatch');
   }
+
+  /**
+   * Test method where decorator sigHashType (ALL) differs from checkSigWithFlag flag (NONE).
+   * This demonstrates mismatch detection: the signature will be signed with ALL,
+   * but checkSigWithFlag verifies for NONE, which should fail.
+   */
+  @method({ sigHashType: SigHashType.ALL })
+  public unlockWithMismatchedFlag(sig: Sig, pubKey: PubKey) {
+    // Decorator uses SIGHASH_ALL (1), but we verify for SIGHASH_NONE (2)
+    // This should fail because the actual signature has flag=1 but we check for flag=2
+    assert(this.checkSigWithFlag(sig, pubKey, 2n), 'signature flag mismatch expected');
+  }
 }

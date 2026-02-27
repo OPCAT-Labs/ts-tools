@@ -55,6 +55,9 @@ export function checkCtxImpl(
   // Check if SIGHASH_NONE is set
   const isSigHashNone = baseSigHashType === SIGHASH_NONE;
 
+  // Check if SIGHASH_SINGLE is set
+  const isSigHashSingle = baseSigHashType === SIGHASH_SINGLE;
+
   // check inputIndex
   assert(BigInt(inputIndex) === shPreimage.inputIndex, 'inputIndex mismatch');
 
@@ -120,6 +123,14 @@ export function checkCtxImpl(
         tools.fromHex(hash256(stateHashes)),
       ) === 0,
       'hashSpentDataHashes mismatch',
+    );
+  }
+
+  // For ANYONECANPAY, SIGHASH_NONE, or SIGHASH_SINGLE, hashSequences should be empty
+  if (hasAnyoneCanPay || isSigHashNone || isSigHashSingle) {
+    assert(
+      shPreimage.hashSequences === EMPTY_HASH,
+      'hashSequences should be empty for ANYONECANPAY, SIGHASH_NONE, or SIGHASH_SINGLE',
     );
   }
 

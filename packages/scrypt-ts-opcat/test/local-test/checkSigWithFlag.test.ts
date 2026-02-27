@@ -7,10 +7,10 @@ import {
   ExtPsbt,
   PubKey,
   bvmVerify,
-  PrivateKey,
 } from '@opcat-labs/scrypt-ts-opcat';
 import { CheckSigWithFlagTest } from '../contracts/checkSigWithFlag.js';
 import artifact from '../fixtures/checkSigWithFlag.json' with { type: 'json' };
+import { testKeyPair } from '../utils/privateKey.js';
 
 // Local SigHashType values for test usage
 const SigHashType = {
@@ -24,7 +24,7 @@ const SigHashType = {
 };
 
 describe('Test checkSigWithFlag', () => {
-  const testSigner = new DefaultSigner(PrivateKey.fromWIF('cQfb2vnBvKryZjG7MuWwDoeMpvHBNAqaNyJH3cNxdHxnHWd6Kv7f'));
+  const testSigner = new DefaultSigner(testKeyPair);
 
   before(() => {
     CheckSigWithFlagTest.loadArtifact(artifact);

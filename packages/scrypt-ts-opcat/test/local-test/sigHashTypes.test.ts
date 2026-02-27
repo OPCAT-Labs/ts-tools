@@ -7,10 +7,10 @@ import {
   ExtPsbt,
   PubKey,
   bvmVerify,
-  PrivateKey,
 } from '@opcat-labs/scrypt-ts-opcat';
 import { MultiSigHashMethods } from '../contracts/sigHashTypes.js';
 import artifact from '../fixtures/multiSigHashMethods.json' with { type: 'json' };
+import { testKeyPair } from '../utils/privateKey.js';
 
 // Local SigHashType values for test usage
 // (const enum SigHashType from @opcat-labs/scrypt-ts-opcat is not available at runtime)
@@ -25,7 +25,7 @@ const SigHashType = {
 };
 
 describe('Test SigHashTypes', () => {
-  const testSigner = new DefaultSigner(PrivateKey.fromWIF('cQfb2vnBvKryZjG7MuWwDoeMpvHBNAqaNyJH3cNxdHxnHWd6Kv7f'));
+  const testSigner = new DefaultSigner(testKeyPair);
 
   before(() => {
     MultiSigHashMethods.loadArtifact(artifact);

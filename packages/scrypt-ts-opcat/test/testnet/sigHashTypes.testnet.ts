@@ -13,7 +13,6 @@ import {
   PubKey,
   PrivateKey,
   OpenApiProvider,
-  UTXO,
 } from '../../src/index.js';
 import { MultiSigHashMethods } from '../contracts/sigHashTypes.js';
 import artifact from '../fixtures/multiSigHashMethods.json' with { type: 'json' };
