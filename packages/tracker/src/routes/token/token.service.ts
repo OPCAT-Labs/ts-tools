@@ -833,7 +833,7 @@ export class TokenService {
     trackerBlockHeight: number;
   }> {
 
-    const finalOffset = Number(offset || 0);
+    const finalOffset = Math.max(0, parseInt(String(offset || '0'), 10) || 0);
     const finalLimit = Math.min(Number(limit) || Constants.QUERY_PAGING_DEFAULT_LIMIT, Constants.QUERY_PAGING_MAX_LIMIT);
     const key = `holders-${tokenIdOrTokenAddr}-${scope}-${finalOffset}-${finalLimit}`;
 
