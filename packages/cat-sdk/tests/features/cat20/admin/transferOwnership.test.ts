@@ -71,7 +71,7 @@ describe('Test the feature `transferOwnership` for `Cat20`', () => {
     newAddress: PubKeyHash
   ) {
     const cat20Admin = new CAT20Admin(
-      outpoint2ByteString(cat20Generator.deployInfo.tokenId)
+      outpoint2ByteString(cat20Generator.getAdminGenesisOutpoint())
     )
     cat20Admin.bindToUtxo(cat20Generator.getCat20AdminUtxo())
     const { sendPsbt } = await  runWithDryCheck(testProvider, transferOwnership)(

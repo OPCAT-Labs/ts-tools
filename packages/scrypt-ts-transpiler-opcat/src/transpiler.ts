@@ -2348,7 +2348,16 @@ export class Transpiler {
               Object.assign(accessInfo, {
                 accessSHPreimage: true,
               });
-            } else if (['backtraceToOutpoint', 'backtraceToScript'].includes(methodName)) {
+            } else if (methodName === 'backtraceToOutpoint') {
+              Object.assign(accessInfo, {
+                accessSHPreimage: true,
+                accessPrevouts: true,
+                accessPrevout: true,
+                accessSpentScripts: true,
+                accessSpentAmounts: true,
+                accessBacktrace: true,
+              });
+            } else if (methodName === 'backtraceToScript') {
               Object.assign(accessInfo, {
                 accessSHPreimage: true,
                 accessPrevouts: true,
@@ -5730,13 +5739,15 @@ export class Transpiler {
     const { shouldAccessThis } = this.shouldAutoAppendSighashPreimage(methodNode);
     this._accessBuiltinsSymbols.add('Backtrace');
 
-
+    const prevout = `${shouldAccessThis ? 'this.' : ''}${InjectedProp_Prevout}`;
     const spentScriptHashes = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScriptHashes}`;
     const inputIndex = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex`;
 
     return toSection
       .append('Backtrace.verifyFromOutpoint(')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
+      .append(', ')
+      .append(`${prevout}.outputIndex`)
       .append(', ')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
       .append(', ')

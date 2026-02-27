@@ -19,13 +19,19 @@ import { createFeatureWithDryRun } from '../../../utils/index.js'
 /**
  * Deploys a CAT20 token and its metadata using `CAT20ClosedMinter` contract
  * Only the token issuer can mint token
+ *
+ * When hasAdmin is true, the deployment creates two Genesis outputs and deploys
+ * Minter and Admin in separate transactions. This ensures both contracts are
+ * deployed at output[0] of their respective deploy transactions, satisfying
+ * the genesis validation requirement (prevOutputIndex must be 0).
+ *
  * @category Feature
  * @param signer the signer for the deployer
  * @param provider the provider for the blockchain and UTXO operations
  * @param metadata the metadata for the token
  * @param feeRate the fee rate for the transaction
  * @param changeAddress the address for the change output
- * @returns the token info and the PSBTs for the genesis and deploy transactions
+ * @returns the token info and the PSBTs for the genesis, deploy, and optional admin deploy transactions
  */
 export const deployClosedMinterToken = createFeatureWithDryRun(async function(
   signer: Signer,
@@ -39,6 +45,7 @@ export const deployClosedMinterToken = createFeatureWithDryRun(async function(
   CAT20TokenInfo<ClosedMinterCAT20Meta> & {
     genesisPsbt: ExtPsbt
     deployPsbt: ExtPsbt
+    adminDeployPsbt?: ExtPsbt
   }
 > {
   const address = await signer.getAddress()
@@ -59,11 +66,20 @@ export const deployClosedMinterToken = createFeatureWithDryRun(async function(
   const genesis = new Genesis()
   genesis.data = MetadataSerializer.serialize('Token', deployInfo)
 
+  // Create genesis transaction with one or two Genesis outputs depending on hasAdmin
   const genesisTx = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
     .addContractOutput(genesis, Postage.GENESIS_POSTAGE)
-    .change(changeAddress, feeRate)
-    .seal()
+
+  // If hasAdmin, create a second Genesis output for Admin deployment
+  let adminGenesis: Genesis | undefined
+  if (metadata.hasAdmin) {
+    adminGenesis = new Genesis()
+    adminGenesis.data = MetadataSerializer.serialize('Token', deployInfo)
+    genesisTx.addContractOutput(adminGenesis, Postage.GENESIS_POSTAGE)
+  }
+
+  genesisTx.change(changeAddress, feeRate).seal()
 
   const signedGenesisTx = await signer.signPsbt(
     genesisTx.toHex(),
@@ -72,13 +88,24 @@ export const deployClosedMinterToken = createFeatureWithDryRun(async function(
   genesisTx.combine(ExtPsbt.fromHex(signedGenesisTx))
   genesisTx.finalizeAllInputs()
 
+  // Minter uses Genesis output[0]
   const genesisUtxo = genesisTx.getUtxo(0)!
   const tokenId = `${genesisUtxo.txId}_${genesisUtxo.outputIndex}`
+
+  // Admin uses Genesis output[1] (if hasAdmin)
+  const adminGenesisUtxo = metadata.hasAdmin ? genesisTx.getUtxo(1)! : undefined
+  const adminTokenId = adminGenesisUtxo
+    ? `${adminGenesisUtxo.txId}_${adminGenesisUtxo.outputIndex}`
+    : undefined
+
   const closeMinter = new CAT20ClosedMinter(
     toTokenOwnerAddress(address),
     outpoint2ByteString(tokenId)
   )
-  const admin = new CAT20Admin(outpoint2ByteString(tokenId))
+  // Admin uses its own genesis outpoint (from output[1])
+  const admin = metadata.hasAdmin
+    ? new CAT20Admin(outpoint2ByteString(adminTokenId!))
+    : new CAT20Admin(outpoint2ByteString(tokenId)) // fallback, won't be used
   const minterScriptHash = ContractPeripheral.scriptHash(closeMinter)
   const adminScriptHash = metadata.hasAdmin ? ContractPeripheral.scriptHash(admin) : NULL_ADMIN_SCRIPT_HASH;
   const cat20 = new CAT20(
@@ -98,19 +125,14 @@ export const deployClosedMinterToken = createFeatureWithDryRun(async function(
   closeMinter.state = minterState
   admin.state = adminState
 
-  // Bind Genesis contract to UTXO
+  // Bind Genesis contract to UTXO (for minter)
   genesis.bindToUtxo(genesisTx.getUtxo(0))
 
+  // Deploy Minter (output[0] of deployTx)
   const deployTx = new ExtPsbt({ network: await provider.getNetwork() })
     .addContractInput(genesis, genesisCheckDeploy())
     .spendUTXO(genesisTx.getChangeUTXO()!)
     .addContractOutput(closeMinter, Postage.MINTER_POSTAGE)
-
-  if (metadata.hasAdmin) {
-    deployTx.addContractOutput(admin, Postage.ADMIN_POSTAGE)
-  }
-
-  deployTx
     .change(changeAddress, feeRate)
     .seal()
 
@@ -121,22 +143,51 @@ export const deployClosedMinterToken = createFeatureWithDryRun(async function(
   deployTx.combine(ExtPsbt.fromHex(signedDeployTx))
   deployTx.finalizeAllInputs()
 
+  // Broadcast genesis and minter deploy transactions
   await provider.broadcast(genesisTx.extractTransaction().toHex())
   markSpent(provider, genesisTx.extractTransaction())
   await provider.broadcast(deployTx.extractTransaction().toHex())
   markSpent(provider, deployTx.extractTransaction())
-  addChangeUtxoToProvider(provider, deployTx)
+
+  // Deploy Admin separately if hasAdmin (output[0] of adminDeployTx)
+  let adminDeployTx: ExtPsbt | undefined
+  if (metadata.hasAdmin && adminGenesis && adminGenesisUtxo) {
+    // Bind Admin Genesis to its UTXO (output[1] of genesisTx)
+    adminGenesis.bindToUtxo(adminGenesisUtxo)
+
+    adminDeployTx = new ExtPsbt({ network: await provider.getNetwork() })
+      .addContractInput(adminGenesis, genesisCheckDeploy())
+      .spendUTXO(deployTx.getChangeUTXO()!)
+      .addContractOutput(admin, Postage.ADMIN_POSTAGE)
+      .change(changeAddress, feeRate)
+      .seal()
+
+    const signedAdminDeployTx = await signer.signPsbt(
+      adminDeployTx.toHex(),
+      adminDeployTx.psbtOptions()
+    )
+    adminDeployTx.combine(ExtPsbt.fromHex(signedAdminDeployTx))
+    adminDeployTx.finalizeAllInputs()
+
+    await provider.broadcast(adminDeployTx.extractTransaction().toHex())
+    markSpent(provider, adminDeployTx.extractTransaction())
+    addChangeUtxoToProvider(provider, adminDeployTx)
+  } else {
+    addChangeUtxoToProvider(provider, deployTx)
+  }
 
   return {
     tokenId,
     tokenScriptHash,
     hasAdmin: metadata.hasAdmin,
     adminScriptHash,
+    adminGenesisOutpoint: adminTokenId,
     minterScriptHash,
     genesisPsbt: genesisTx,
     genesisTxid: genesisTx.extractTransaction().id,
     deployPsbt: deployTx,
     deployTxid: deployTx.extractTransaction().id,
+    adminDeployPsbt: adminDeployTx,
     metadata,
     timestamp: Date.now(),
   }

@@ -17,6 +17,8 @@ export interface CAT20TokenInfo<T extends CAT20Metadata> {
   hasAdmin: boolean
   /** admin lockingScript hash */
   adminScriptHash: string
+  /** admin genesis outpoint (different from tokenId when hasAdmin is true) */
+  adminGenesisOutpoint?: string
   /** minter lockingScript hash */
   minterScriptHash: string
   /** genesis txid */
