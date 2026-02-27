@@ -195,7 +195,7 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
       const cat20 = await createCat20([1000n], mainAddress, 'test_contract_neg1');
 
       return expect(
-        attemptTransferWithInvalidIndex(cat20, mainAddress, mainPubKey, SPEND_TYPE_CONTRACT_SPEND, -1n)
+        attemptTransferWithSpendScriptIndex(cat20, mainAddress, mainPubKey, SPEND_TYPE_CONTRACT_SPEND, -1n)
       ).to.eventually.be.rejectedWith(
         'spendScriptInputIndex must be >= 0 for contract or admin spend'
       );
@@ -205,7 +205,7 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
       const cat20 = await createCat20([1000n], mainAddress, 'test_admin_neg1');
 
       return expect(
-        attemptTransferWithInvalidIndex(cat20, mainAddress, mainPubKey, SPEND_TYPE_ADMIN_SPEND, -1n)
+        attemptTransferWithSpendScriptIndex(cat20, mainAddress, mainPubKey, SPEND_TYPE_ADMIN_SPEND, -1n)
       ).to.eventually.be.rejectedWith(
         'spendScriptInputIndex must be >= 0 for contract or admin spend'
       );
@@ -215,7 +215,7 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
       const cat20 = await createCat20([1000n], mainAddress, 'test_contract_neg5');
 
       return expect(
-        attemptTransferWithInvalidIndex(cat20, mainAddress, mainPubKey, SPEND_TYPE_CONTRACT_SPEND, -5n)
+        attemptTransferWithSpendScriptIndex(cat20, mainAddress, mainPubKey, SPEND_TYPE_CONTRACT_SPEND, -5n)
       ).to.eventually.be.rejectedWith(
         'spendScriptInputIndex must be >= 0 for contract or admin spend'
       );
@@ -225,7 +225,7 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
       const cat20 = await createCat20([1000n], mainAddress, 'test_admin_neg10');
 
       return expect(
-        attemptTransferWithInvalidIndex(cat20, mainAddress, mainPubKey, SPEND_TYPE_ADMIN_SPEND, -10n)
+        attemptTransferWithSpendScriptIndex(cat20, mainAddress, mainPubKey, SPEND_TYPE_ADMIN_SPEND, -10n)
       ).to.eventually.be.rejectedWith(
         'spendScriptInputIndex must be >= 0 for contract or admin spend'
       );
@@ -235,20 +235,20 @@ isLocalTest(testProvider) && describe('Test C.1 - Admin Script Hash Security', (
       const cat20 = await createCat20([1000n], mainAddress, 'test_user_ok');
 
       // User spend should succeed even with negative index (it's ignored)
-      await attemptTransferWithInvalidIndex(cat20, mainAddress, mainPubKey, SPEND_TYPE_USER_SPEND, -1n);
+      await attemptTransferWithSpendScriptIndex(cat20, mainAddress, mainPubKey, SPEND_TYPE_USER_SPEND, -1n);
     });
   });
 });
 
 /**
- * Helper function to attempt a transfer with invalid spendScriptInputIndex
+ * Helper function to attempt a transfer with a given spendScriptInputIndex
  */
-async function attemptTransferWithInvalidIndex(
+async function attemptTransferWithSpendScriptIndex(
   cat20: Awaited<ReturnType<typeof createCat20>>,
   mainAddress: string,
   mainPubKey: PubKey,
   spendType: bigint,
-  invalidIndex: bigint
+  spendScriptInputIndex: bigint
 ) {
   // F14 Fix: Get the raw pubkey string for guard signature
   const pubkey = await testSigner.getPublicKey()
@@ -299,7 +299,7 @@ async function attemptTransferWithInvalidIndex(
         {
           userPubKey: mainPubKey,
           userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
-          spendScriptInputIndex: invalidIndex,  // INVALID INDEX - should fail for spendType 1/2
+          spendScriptInputIndex: spendScriptInputIndex,
           spendType: spendType,  // 0=user, 1=contract, 2=admin
         },
         guardState,
