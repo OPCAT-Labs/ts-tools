@@ -1,4 +1,4 @@
-import { method, SmartContract, assert, Sig, PubKey } from '@opcat-labs/scrypt-ts-opcat';
+import { method, SmartContract, assert, Sig, PubKey, ByteString } from '@opcat-labs/scrypt-ts-opcat';
 
 // Local SigHashType object for decorator parameters
 const SigHashType = {
@@ -11,17 +11,17 @@ const SigHashType = {
 } as const;
 
 /**
- * Invalid contract: accesses ctx.prevouts with ANYONECANPAY sighash type
+ * Invalid contract: accesses ctx.hashPrevouts with ANYONECANPAY sighash type
  * This should throw a transpiler error because ANYONECANPAY modes have
- * empty hashPrevouts (32 zero bytes), so verification would fail.
+ * empty hashPrevouts (32 zero bytes).
  */
-export class SighashAnyonecanpayPrevouts extends SmartContract {
+export class SighashAnyonecanpayHashPrevouts extends SmartContract {
   @method({ sigHashType: SigHashType.ANYONECANPAY_ALL })
   public unlock(sig: Sig, pubKey: PubKey) {
     // This should cause a transpiler error:
-    // ctx.prevouts cannot be accessed with ANYONECANPAY sighash
-    const prevouts = this.ctx.prevouts;
-    assert(prevouts.length > 0n, 'prevouts should not be empty');
+    // ctx.hashPrevouts cannot be accessed with ANYONECANPAY sighash
+    const hashPrevouts: ByteString = this.ctx.hashPrevouts;
+    assert(hashPrevouts.length > 0n, 'hashPrevouts should not be empty');
     assert(this.checkSig(sig, pubKey), 'signature check failed');
   }
 }

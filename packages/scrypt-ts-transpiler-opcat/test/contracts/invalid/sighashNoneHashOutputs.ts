@@ -11,16 +11,17 @@ const SigHashType = {
 } as const;
 
 /**
- * Invalid contract: uses checkOutputs() with SIGHASH_NONE sighash type
- * This should throw a transpiler error because checkOutputs() cannot be used with
- * SIGHASH_NONE or ANYONECANPAY_NONE (hashOutputs is empty).
+ * Invalid contract: accesses ctx.hashOutputs with SIGHASH_NONE
+ * This should throw a transpiler error because hashOutputs is empty
+ * in NONE mode.
  */
-export class SighashCheckOutputsNone extends SmartContract {
+export class SighashNoneHashOutputs extends SmartContract {
   @method({ sigHashType: SigHashType.NONE })
-  public unlock(sig: Sig, pubKey: PubKey, outputs: ByteString) {
+  public unlock(sig: Sig, pubKey: PubKey) {
     // This should cause a transpiler error:
-    // checkOutputs() requires hashOutputs to be non-empty
-    assert(this.checkOutputs(outputs), 'outputs mismatch');
+    // ctx.hashOutputs cannot be accessed with sighash NONE
+    const hashOutputs: ByteString = this.ctx.hashOutputs;
+    assert(hashOutputs.length > 0n, 'hashOutputs should not be empty');
     assert(this.checkSig(sig, pubKey), 'signature check failed');
   }
 }

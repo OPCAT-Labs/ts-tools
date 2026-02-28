@@ -420,6 +420,15 @@ export const expectTranspilerErrors: { [fileName: string]: TranspilerError } = {
     ],
   },
 
+  sighashAnyonecanpayCheckInputState: {
+    testTitle: 'should throw when calling `checkInputState` with ANYONECANPAY sighash.',
+    errors: [
+      {
+        message: `Cannot use \`this.checkInputState()\` with ANYONECANPAY sighash because spentDataHashes is empty`,
+      },
+    ],
+  },
+
   staticProp: {
     testTitle: 'should throw when static invalid',
     errors: [

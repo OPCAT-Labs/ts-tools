@@ -7,6 +7,7 @@ import {
   alterFileExt,
   checkByteStringLiteral,
   findBuildChangeOutputExpression,
+  findChangeInfoExpression,
   findCheckOutputsExpression,
   findPackageDir,
   findReturnStatement,
@@ -269,6 +270,16 @@ type AccessInfo = {
   accessBacktrace: boolean; // this.backtraceToOutpoint, this.backtraceToScript
   accessBacktraceInSubCall: boolean; // this.backtraceToOutpoint, this.backtraceToScript in private function call
   accessCLTV: boolean;
+  // Direct ctx hash field access (for sighash restrictions)
+  accessHashPrevouts: boolean; // this.ctx.hashPrevouts
+  accessInputIndex: boolean; // this.ctx.inputIndex
+  accessHashSpentAmounts: boolean; // this.ctx.hashSpentAmounts
+  accessHashSpentScriptHashes: boolean; // this.ctx.hashSpentScriptHashes
+  accessHashSpentDataHashes: boolean; // this.ctx.hashSpentDataHashes
+  accessHashSequences: boolean; // this.ctx.hashSequences
+  accessHashOutputs: boolean; // this.ctx.hashOutputs
+  accessInputCount: boolean; // this.ctx.inputCount
+  accessCheckInputState: boolean; // this.checkInputState()
 };
 
 type MethodInfo = {
@@ -1807,11 +1818,34 @@ export class Transpiler {
       }
     }
 
+    // Warning: changeInfo/buildChangeOutput without checkOutputs
+    const changeInfoExpression = findChangeInfoExpression(node);
+    if (
+      shouldAutoAppendSighashPreimage.shouldAppendArguments &&
+      (buildChangeOutputExpression !== undefined || changeInfoExpression !== undefined) &&
+      checkOutputsExpression === undefined
+    ) {
+      console.warn(
+        `Warning: Using changeInfo/buildChangeOutput without checkOutputs() in method '${node.name.getText()}'. ` +
+        `The changeInfo data is not verified without checkOutputs().`
+      );
+    }
+
     // Check for ctx variable access + ANYONECANPAY conflict
     // ANYONECANPAY modes (0x81, 0x82, 0x83) have empty hash fields for prevouts, spentAmounts, etc.
     // Accessing these ctx variables would fail verification.
     const anyonecanpaySighashTypes = ['81', '82', '83'];
     const isAnyonecanpay = anyonecanpaySighashTypes.includes(sigHashType);
+
+    // Check for checkInputState first for better error message
+    // (checkInputState depends on spentAmounts and spentDataHashes, so check it before those)
+    const methodInfo = this.findMethodInfo(node.name.getText());
+    if (methodInfo && isAnyonecanpay && methodInfo.accessInfo.accessCheckInputState) {
+      throw new TranspileError(
+        `Cannot use \`this.checkInputState()\` with ANYONECANPAY sighash because spentDataHashes is empty`,
+        this.getRange(node),
+      );
+    }
 
     if (isAnyonecanpay && shouldAutoAppendPrevouts.shouldAppendArguments) {
       throw new TranspileError(
@@ -1837,6 +1871,64 @@ export class Transpiler {
     if (isAnyonecanpay && shouldAutoAppendSpentDataHashes.shouldAppendArguments) {
       throw new TranspileError(
         `Cannot access \`this.ctx.spentDataHashes\` with ANYONECANPAY sighash because hashSpentDataHashes is empty`,
+        this.getRange(node),
+      );
+    }
+
+    // ANYONECANPAY restrictions for direct ctx hash field access
+    if (methodInfo && isAnyonecanpay) {
+      const accessInfo = methodInfo.accessInfo;
+      if (accessInfo.accessHashPrevouts) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.hashPrevouts\` with ANYONECANPAY sighash because it's empty (all zeros)`,
+          this.getRange(node),
+        );
+      }
+      if (accessInfo.accessInputIndex) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.inputIndex\` with ANYONECANPAY sighash because input index is not defined`,
+          this.getRange(node),
+        );
+      }
+      if (accessInfo.accessHashSpentAmounts) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.hashSpentAmounts\` with ANYONECANPAY sighash because it's empty (all zeros)`,
+          this.getRange(node),
+        );
+      }
+      if (accessInfo.accessHashSpentScriptHashes) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.hashSpentScriptHashes\` with ANYONECANPAY sighash because it's empty (all zeros)`,
+          this.getRange(node),
+        );
+      }
+      if (accessInfo.accessHashSpentDataHashes) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.hashSpentDataHashes\` with ANYONECANPAY sighash because it's empty (all zeros)`,
+          this.getRange(node),
+        );
+      }
+      if (accessInfo.accessHashSequences) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.hashSequences\` with ANYONECANPAY sighash because it's empty (all zeros)`,
+          this.getRange(node),
+        );
+      }
+      if (accessInfo.accessInputCount) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.inputCount\` with ANYONECANPAY sighash because input count is not defined`,
+          this.getRange(node),
+        );
+      }
+      // Note: accessCheckInputState is checked earlier for better error message
+    }
+
+    // NONE sighash restrictions for hashOutputs access
+    const noneSighashTypes = ['02', '82']; // SIGHASH_NONE and ANYONECANPAY_NONE
+    const isNone = noneSighashTypes.includes(sigHashType);
+    if (methodInfo && isNone && methodInfo.accessInfo.accessHashOutputs) {
+      throw new TranspileError(
+        `Cannot access \`this.ctx.hashOutputs\` with sighash NONE because it's empty (all zeros)`,
         this.getRange(node),
       );
     }
@@ -2274,6 +2366,16 @@ export class Transpiler {
       accessBacktrace: false,
       accessBacktraceInSubCall: false,
       accessCLTV: false,
+      // Direct ctx hash field access
+      accessHashPrevouts: false,
+      accessInputIndex: false,
+      accessHashSpentAmounts: false,
+      accessHashSpentScriptHashes: false,
+      accessHashSpentDataHashes: false,
+      accessHashSequences: false,
+      accessHashOutputs: false,
+      accessInputCount: false,
+      accessCheckInputState: false,
     };
 
     function vistMethodChild(self: Transpiler, node: ts.Node) {
@@ -2310,6 +2412,48 @@ export class Transpiler {
               Object.assign(accessInfo, {
                 accessSpentAmounts: true,
                 accessSpentDataHashes: true,
+              });
+              break;
+            // Direct ctx hash field access (for sighash restrictions)
+            case 'hashPrevouts':
+              Object.assign(accessInfo, {
+                accessHashPrevouts: true,
+              });
+              break;
+            case 'inputIndex':
+              Object.assign(accessInfo, {
+                accessInputIndex: true,
+              });
+              break;
+            case 'hashSpentAmounts':
+              Object.assign(accessInfo, {
+                accessHashSpentAmounts: true,
+              });
+              break;
+            case 'hashSpentScriptHashes':
+              Object.assign(accessInfo, {
+                accessHashSpentScriptHashes: true,
+              });
+              break;
+            case 'hashSpentDataHashes':
+              Object.assign(accessInfo, {
+                accessHashSpentDataHashes: true,
+              });
+              break;
+            case 'hashSequences':
+              Object.assign(accessInfo, {
+                accessHashSequences: true,
+              });
+              break;
+            case 'hashOutputs':
+              Object.assign(accessInfo, {
+                accessHashOutputs: true,
+              });
+              break;
+            case 'inputCount':
+              Object.assign(accessInfo, {
+                accessSpentAmounts: true,
+                accessInputCount: true,
               });
               break;
           }
@@ -2351,6 +2495,8 @@ export class Transpiler {
                 accessSHPreimage: true, // accessSpentDataHashes depends on shPreimage
                 accessState: true,
                 accessSpentDataHashes: true,
+                accessSpentAmounts: true, // spentDataHashes verification needs inputCount from spentAmounts
+                accessCheckInputState: true,
               });
             } else if (['timeLock'].includes(methodName)) {
               Object.assign(accessInfo, {

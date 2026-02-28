@@ -223,7 +223,6 @@ export const enum SigHashType {
   ALL = 0x01,
   NONE = 0x02,
   SINGLE = 0x03,
-  ANYONECANPAY = 0x80,
   ANYONECANPAY_ALL = 0x81,
   ANYONECANPAY_NONE = 0x82,
   ANYONECANPAY_SINGLE = 0x83,
