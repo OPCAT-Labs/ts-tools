@@ -2,7 +2,7 @@ import { method, prop } from '../decorators.js';
 import { assert } from '../fns/assert.js';
 import { SmartContractLib } from '../smartContractLib.js';
 import { ByteString } from '../types/index.js';
-import { BacktraceInfo, Prevouts, TxHashPreimage } from '../types/structs.js';
+import { BacktraceInfo, TxHashPreimage } from '../types/structs.js';
 import { TxUtils } from './txUtils.js';
 import { TX_INPUT_BYTE_LEN, TX_OUTPUT_BYTE_LEN, TX_OUTPUT_SATOSHI_BYTE_LEN, TX_OUTPUT_SCRIPT_HASH_LEN } from '../consts.js';
 import { slice, toByteString } from '../fns/byteString.js';
@@ -46,22 +46,20 @@ export class Backtrace extends SmartContractLib {
   static readonly GENESIS_SCRIPT_HASH: ByteString = toByteString('6712360d7ad09ba9a59cd236aab61db7183c8d881c74ea029debd1f6b26711f8');
 
   /**
-   * Verifies that the transaction hash preimage matches the previous transaction hash 
-   * at the specified input index in the prevouts.
-   * 
+   * Verifies that the transaction hash preimage matches the previous transaction hash
+   * from the outpoint in SHPreimage.
+   *
    * @param txHashPreimage - The transaction hash preimage to verify
-   * @param t_prevouts - The previous outputs containing the expected transaction hash
-   * @param t_inputIndex - The index of the input to check against in prevouts
+   * @param t_outpoint - The outpoint from SHPreimage (36 bytes: txHash + outputIndex)
    * @throws Will throw an error if the hashes don't match
    */
   @method()
   static checkPrevTxHashPreimage(
     txHashPreimage: TxHashPreimage,
-    t_prevouts: Prevouts,
-    t_inputIndex: bigint,
+    t_outpoint: ByteString,
   ): void {
     const txHash = TxHashPreimageUtils.getTxHashFromTxHashPreimage(txHashPreimage);
-    assert(txHash == slice(t_prevouts, t_inputIndex * 36n, t_inputIndex * 36n + 32n), 'prevTxHash mismatch');
+    assert(txHash == slice(t_outpoint, 0n, 32n), 'prevTxHash mismatch');
   }
   /**
    * Back-to-genesis backtrace verification for a contract which can be backtraced to the genesis outpoint.
