@@ -2086,12 +2086,11 @@ export class Transpiler {
               ? `${this._currentContract.name.getText()}.stateHash(${InjectedParam_CurState})`
               : "b''";
 
-            // here no need to access this, because it's in public function, the variable we access is in the arguments
-            this._accessBuiltinsSymbols.add('StateUtils');
+            // use shPreimage.spentDataHash directly to verify state, no need for spentDataHashes parameter
             sec
               .append('\n')
               .append(
-                `StateUtils.checkInputState(${InjectedParam_SHPreimage}.inputIndex, ${stateHash}, ${InjectedParam_SpentDataHashes});`,
+                `require(${InjectedParam_SHPreimage}.spentDataHash == ${stateHash});`,
               )
               .append('\n');
           }
@@ -2100,7 +2099,7 @@ export class Transpiler {
             sec
               .append('\n')
               .append(
-                `Backtrace.checkPrevTxHashPreimage(${InjectedParam_PrevTxHashPreimage}, ${InjectedParam_Prevouts}, ${InjectedParam_SHPreimage}.inputIndex);`,
+                `Backtrace.checkPrevTxHashPreimage(${InjectedParam_PrevTxHashPreimage}, ${InjectedParam_SHPreimage}.outpoint);`,
               )
               .append('\n');
           }
@@ -2294,7 +2293,6 @@ export class Transpiler {
             case 'prevout':
               Object.assign(accessInfo, {
                 accessPrevout: true,
-                accessSpentAmounts: true,
               });
               break;
             case 'spentAmounts':
@@ -2324,10 +2322,9 @@ export class Transpiler {
             });
           } else if (node.name.getText() === 'state') {
             Object.assign(accessInfo, {
-              accessSHPreimage: true, // accessSpentDataHashes depends on shPreimage
+              accessSHPreimage: true,
               accessState: true,
-              accessSpentAmounts: true, // spentDataHashes depends on spentAmounts
-              accessSpentDataHashes: true, // state depends on spentDataHashes
+              // state validation uses shPreimage.spentDataHash, no longer depends on spentAmounts and spentDataHashes
             });
           } else if (node.name.getText() ==='ctx') {
             Object.assign(accessInfo, {
@@ -2367,18 +2364,12 @@ export class Transpiler {
             } else if (methodName === 'backtraceToOutpoint') {
               Object.assign(accessInfo, {
                 accessSHPreimage: true,
-                accessPrevouts: true,
                 accessPrevout: true,
-                accessSpentScripts: true,
-                accessSpentAmounts: true,
                 accessBacktrace: true,
               });
             } else if (methodName === 'backtraceToScript') {
               Object.assign(accessInfo, {
                 accessSHPreimage: true,
-                accessPrevouts: true,
-                accessSpentScripts: true,
-                accessSpentAmounts: true,
                 accessBacktrace: true,
               });
             }
@@ -5756,8 +5747,7 @@ export class Transpiler {
     this._accessBuiltinsSymbols.add('Backtrace');
 
     const prevout = `${shouldAccessThis ? 'this.' : ''}${InjectedProp_Prevout}`;
-    const spentScriptHashes = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScriptHashes}`;
-    const inputIndex = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex`;
+    const shPreimage = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}`;
 
     return toSection
       .append('Backtrace.verifyFromOutpoint(')
@@ -5767,9 +5757,7 @@ export class Transpiler {
       .append(', ')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
       .append(', ')
-      .append(
-        `${spentScriptHashes}[${inputIndex} * 32 : (${inputIndex} + 1) * 32]`,
-      )
+      .append(`${shPreimage}.spentScriptHash`)
       .append(', ')
       .appendWith(this, (toSec) => {
         return this.transformAccessPrevTxHashPreimage(node, toSec).append(
@@ -5786,17 +5774,14 @@ export class Transpiler {
     const methodNode = this.getMethodContainsTheNode(node);
     const { shouldAccessThis } = this.shouldAutoAppendSighashPreimage(methodNode);
     this._accessBuiltinsSymbols.add('Backtrace');
-    const spentScriptHashes = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScriptHashes}`;
-    const inputIndex = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex`;
+    const shPreimage = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}`;
     return toSection
       .append('Backtrace.verifyFromScript(')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
       .append(', ')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
       .append(', ')
-      .append(
-        `${spentScriptHashes}[${inputIndex} * 32 : (${inputIndex} + 1) * 32]`,
-      )
+      .append(`${shPreimage}.spentScriptHash`)
       .append(', ')
       .appendWith(this, (toSec) => {
         return this.transformAccessPrevTxHashPreimage(node, toSec).append(
