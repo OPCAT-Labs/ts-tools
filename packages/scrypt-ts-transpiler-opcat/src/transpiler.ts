@@ -1906,9 +1906,14 @@ export class Transpiler {
           paramLen += 1;
         }
 
-        // note this should be the third from bottom parameter if exists
-        if (shouldAutoAppendPrevouts.shouldAppendArguments) {
+        // Add Outpoint type if prevout or prevouts is accessed
+        if (shouldAutoAppendPrevout.shouldAppendArguments || shouldAutoAppendPrevouts.shouldAppendArguments) {
           this._accessBuiltinsSymbols.add('Outpoint');
+        }
+
+        // note this should be the third from bottom parameter if exists
+        // Only inject prevouts parameter when prevouts (not just prevout) is accessed
+        if (shouldAutoAppendPrevouts.shouldAppendArguments) {
           if (paramLen > 0) {
             psSec.append(', ');
           }
@@ -2006,16 +2011,27 @@ export class Transpiler {
               .append('\n');
           }
 
+          // When prevouts is accessed, validate it
           if (shouldAutoAppendPrevouts.shouldAppendArguments) {
             sec
               .append('\n')
               .append(
-                `Outpoint ${InjectedProp_Prevout} = ContextUtils.checkPrevouts(${InjectedParam_Prevouts}, ${InjectedParam_SHPreimage}.hashPrevouts, ${InjectedParam_SHPreimage}.inputIndex, ${InjectedVar_InputCount});`,
+                `ContextUtils.checkPrevouts(${InjectedParam_Prevouts}, ${InjectedParam_SHPreimage}.hashPrevouts, ${InjectedParam_SHPreimage}.inputIndex, ${InjectedVar_InputCount});`,
               )
               .append('\n');
           }
           if (shouldAutoAppendPrevouts.shouldAppendThisAssignment) {
             sec.append(thisAssignment(InjectedProp_PrevoutsCtx)).append('\n');
+          }
+
+          // When prevout is accessed (either directly or via prevouts), extract from shPreimage
+          if (shouldAutoAppendPrevout.shouldAppendArguments || shouldAutoAppendPrevouts.shouldAppendArguments) {
+            sec
+              .append('\n')
+              .append(
+                `Outpoint ${InjectedProp_Prevout} = ContextUtils.getOutpoint(${InjectedParam_SHPreimage});`,
+              )
+              .append('\n');
           }
           if (shouldAutoAppendPrevout.shouldAppendThisAssignment) {
             sec.append(thisAssignment(InjectedProp_Prevout)).append('\n');

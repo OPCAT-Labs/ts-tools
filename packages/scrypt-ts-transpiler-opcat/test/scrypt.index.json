@@ -47,17 +47,17 @@
   {
    "symbol": "B2G",
    "path": "contracts/b2G.scrypt.tpl",
-   "md5": "574f3903e0cca3ff223ad3234395561a"
+   "md5": "842191d470492c0b6ab29f9b31aa1926"
   },
   {
    "symbol": "B2G2",
    "path": "contracts/b2G2.scrypt.tpl",
-   "md5": "59a6fbf3ed492eafc9cb80d7263d1e02"
+   "md5": "55212050f529853151be79fe267d4fdb"
   },
   {
    "symbol": "B2GState",
    "path": "contracts/b2GState.scrypt.tpl",
-   "md5": "c72b326d0334984b85a066782756b4ce",
+   "md5": "9f40518b64b4f3b49a14ee87d2fe58f4",
    "stateType": "State"
   },
   {
@@ -225,17 +225,17 @@
   {
    "symbol": "CTX",
    "path": "contracts/ctx.scrypt.tpl",
-   "md5": "b63c96034b0b2004a962462e8f2414c9"
+   "md5": "4426b17ad35a435f22f4291fad8aa6ba"
   },
   {
    "symbol": "CTX2",
    "path": "contracts/ctx2.scrypt.tpl",
-   "md5": "26d56bdb1cd9cec1caa31960c865f467"
+   "md5": "1cec8f1895b126b36d529f5cc4ac0a2b"
   },
   {
    "symbol": "CTX3",
    "path": "contracts/ctx3.scrypt.tpl",
-   "md5": "b457127d748df80b5b746764a4593ad4"
+   "md5": "20d7fcd540483f17fe0c23de28c4d8f8"
   },
   {
    "symbol": "DebugFunctionsTest",
@@ -488,7 +488,7 @@
   {
    "symbol": "SighashCtxTest",
    "path": "contracts/sighashCtxTest.scrypt.tpl",
-   "md5": "dcc91aac25557098fa90ffce4f5c8ef9"
+   "md5": "ed33531404f955014f2311ce5525a71c"
   },
   {
    "symbol": "StateTest",
@@ -648,12 +648,12 @@
   {
    "symbol": "VerifyContext",
    "path": "contracts/verifyContext.scrypt.tpl",
-   "md5": "6d6d8ee7ecaf5a8b24a3af97675ced60"
+   "md5": "b79704bb73660e07f5dbec9813771243"
   },
   {
    "symbol": "VirtualUTXO",
    "path": "contracts/virtualUTXO.scrypt.tpl",
-   "md5": "16b67a6a89dd1d663781893d2bfcb4f4",
+   "md5": "44952e94f1b340a09d2c7d499dca409b",
    "stateType": "VirtualUTXOState"
   },
   {

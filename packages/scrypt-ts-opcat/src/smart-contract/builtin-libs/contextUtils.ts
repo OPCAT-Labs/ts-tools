@@ -189,6 +189,20 @@ export class ContextUtils extends SmartContractLib {
   }
 
   /**
+   * Extract outpoint directly from SHPreimage.
+   * Use this for current input's outpoint instead of slicing from prevouts.
+   * @param shPreimage - The SHPreimage containing the outpoint field
+   * @returns The Outpoint struct with txHash and outputIndex
+   */
+  @method()
+  static getOutpoint(shPreimage: SHPreimage): Outpoint {
+    return {
+      txHash: slice(shPreimage.outpoint, 0n, 32n),
+      outputIndex: StdUtils.byteStringToUInt32(slice(shPreimage.outpoint, 32n, 36n)),
+    };
+  }
+
+  /**
    * Verify that the prevouts context passed in by the user is authentic
    * @param prevouts prevouts context passed in by the user that need to be verified
    * @param prevout prevout context passed in by the user that need to be verified
