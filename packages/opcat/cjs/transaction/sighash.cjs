@@ -118,6 +118,13 @@ Sighash.sighashPreimage = function (transaction, sighashType, inputNumber) {
     bw.write(Hash.sha256sha256(Buffer.concat([...prevouts])))
   }
 
+  // inputIndex (ANYONECANPAY: 0, otherwise: actual inputIndex)
+  var nInForPreimage = hasAnyoneCanPay ? 0 : inputNumber
+  bw.write(new BufferWriter().writeUInt32LE(nInForPreimage).toBuffer())
+
+  // outpoint (current input's prevout: txHash + outputIndex)
+  bw.write(transaction.inputs[inputNumber].toPrevout())
+
   bw.write(spentScriptHash)
   bw.write(spentDataHash)
   bw.write(spentAmount)
@@ -157,7 +164,7 @@ Sighash.sighashPreimage = function (transaction, sighashType, inputNumber) {
     bw.write(Hash.sha256sha256(Buffer.concat([...outputs])))
   }
 
-  bw.write(inputIndex)
+  // inputIndex moved after hashPrevouts
   bw.write(nLockTime)
   bw.write(sighashTypeBuf)
 
