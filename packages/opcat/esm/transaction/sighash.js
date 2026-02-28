@@ -119,10 +119,16 @@ Sighash.sighashPreimage = function (transaction, sighashType, inputNumber) {
   }
 
   // inputIndex (ANYONECANPAY: 0, otherwise: actual inputIndex)
+  // Note: When ANYONECANPAY is set, inputIndex is forced to 0 per Layer protocol spec,
+  // but the outpoint below still contains the actual input's prevout. This is intentional:
+  // - inputIndex=0 allows the signature to be valid regardless of input position in the tx
+  // - outpoint identifies which specific UTXO is being spent (required for validation)
+  // This follows BIP-341/342 Taproot sighash semantics adapted for Layer.
   var nInForPreimage = hasAnyoneCanPay ? 0 : inputNumber
   bw.write(new BufferWriter().writeUInt32LE(nInForPreimage).toBuffer())
 
   // outpoint (current input's prevout: txHash + outputIndex)
+  // Always uses actual input's prevout, even with ANYONECANPAY (see note above)
   bw.write(transaction.inputs[inputNumber].toPrevout())
 
   bw.write(spentScriptHash)

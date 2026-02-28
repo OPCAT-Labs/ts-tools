@@ -1,11 +1,11 @@
 {
   "version": 10,
   "compilerVersion": "1.22.0+commit.47800da",
-  "contract": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__AccessContext",
-  "md5": "6d79b239638fe0b531d9d022bcc916c3",
+  "contract": "_opcat_labs_scrypt_ts_transpiler_opcat_3_4_0__rs__AccessContext",
+  "md5": "320c638213dc9b5cb50e98495a66e467",
   "structs": [
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxOut",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxOut",
       "params": [
         {
           "name": "scriptHash",
@@ -23,7 +23,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxIn",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxIn",
       "params": [
         {
           "name": "prevTxHash",
@@ -45,7 +45,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxHashPreimage",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxHashPreimage",
       "params": [
         {
           "name": "version",
@@ -67,11 +67,11 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__BacktraceInfo",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__BacktraceInfo",
       "params": [
         {
           "name": "prevTxInput",
-          "type": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxIn"
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxIn"
         },
         {
           "name": "prevTxInputIndex",
@@ -79,13 +79,13 @@
         },
         {
           "name": "prevPrevTxPreimage",
-          "type": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxHashPreimage"
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxHashPreimage"
         }
       ],
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__SHPreimage",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__SHPreimage",
       "params": [
         {
           "name": "nVersion",
@@ -93,6 +93,14 @@
         },
         {
           "name": "hashPrevouts",
+          "type": "bytes"
+        },
+        {
+          "name": "inputIndex",
+          "type": "int"
+        },
+        {
+          "name": "outpoint",
           "type": "bytes"
         },
         {
@@ -132,10 +140,6 @@
           "type": "bytes"
         },
         {
-          "name": "inputIndex",
-          "type": "int"
-        },
-        {
           "name": "nLockTime",
           "type": "int"
         },
@@ -147,7 +151,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__Outpoint",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__Outpoint",
       "params": [
         {
           "name": "txHash",
@@ -161,7 +165,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__ChangeInfo",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ChangeInfo",
       "params": [
         {
           "name": "pubkeyhash",
@@ -179,7 +183,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__ReadVarintResult",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ReadVarintResult",
       "params": [
         {
           "name": "data",
@@ -195,19 +199,19 @@
   ],
   "library": [
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__ContextUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ContextUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__StdUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__StdUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
@@ -222,7 +226,7 @@
       "params": [
         {
           "name": "__scrypt_ts_shPreimage",
-          "type": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__SHPreimage"
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__SHPreimage"
         },
         {
           "name": "__scrypt_ts_preimageSig",
@@ -230,23 +234,7 @@
         },
         {
           "name": "__scrypt_ts_changeInfo",
-          "type": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__ChangeInfo"
-        },
-        {
-          "name": "__scrypt_ts_prevouts",
-          "type": "bytes"
-        },
-        {
-          "name": "__scrypt_ts_spentAmounts",
-          "type": "bytes"
-        },
-        {
-          "name": "__scrypt_ts_spentDataHashes",
-          "type": "bytes"
-        },
-        {
-          "name": "__scrypt_ts_spentScriptHashes",
-          "type": "bytes"
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ChangeInfo"
         }
       ]
     },
@@ -258,5 +246,5 @@
   "stateProps": [],
   "buildType": "release",
   "file": "../accessContext.scrypt",
-  "hex": "0176018801a901ac2102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec03825c795d7982778c7f75007f77011b79011b79011b79011b79011b79011b79011b79011b79011b79011b79011b79011b79011b79011b795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6ca85279ba635c7978ac67006869577901157978aa7888785878827d77527997009d6e7c966b6d6d6c775979011b7901127970aa5379886e9f69765479012478827d77527997009d6e7c967777779d537952798b0124957f7552790124957f7d7701207f75007f777801247f7501207f77768277549d767601007e817777726d726d7b75587901177954795279aa527988765379012078827d77527997009d6e7c967777779d6d75597901167954795279aa527988765379012078827d77527997009d6e7c967777779d6d75011d79040100000088011179009d5b79aa011d79886e54807e5c7901147951012495937f750114790124957f77885979aa011679885879aa011779885a79aa01187988011279009d5279529d6079519d5d7900a0635e79587957797e01147e787e58797e56797e77a85e795e79527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c7767006876aa011579876b6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6c77"
+  "hex": "0176018801a901ac2102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec03825979519d5879597982778c7f775a795280517f75007f77876359795280517f77010087670068635879597982778c7f75007f770118790118790118790118790118790118790118790118790118790118790118790118790118790118790118795e798277549d5d79827701209d5c7900a2695b79827701249d5a79827701209d5979827701209d587900a26957798277549d5679827701209d5579827701209d5479827701209d5379827701209d5279827701209d7800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695e795e797e5d79546e8b806e7c7f75007f6b6d6d6c7e5c797e5b797e5a797e5979767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e58797e57797e56797e55797e54797e53797e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6c77a85279ba67006863587978ac67006869011579009d567900a0635779557954797e01147e787e55797e53797e77a857795779527982777882777801209d7601209d537900a0695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c7767006876aa5d79876b6d6d6d6d6d6d6d6d6d6d6d6d6c77"
 }

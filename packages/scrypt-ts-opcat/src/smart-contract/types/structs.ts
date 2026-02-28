@@ -78,6 +78,18 @@ export type SHPreimage = {
   hashPrevouts: ByteString;
 
   /**
+   * 4 bytes little endian.
+   * ANYONECANPAY: 0, otherwise: actual inputIndex
+   */
+  inputIndex: UInt32;
+
+  /**
+   * 36 bytes.
+   * current input's prevout (txHash(32 bytes) + outputIndex(4 bytes))
+   */
+  outpoint: ByteString;
+
+  /**
    * 32 bytes.
    * current input's prevout script hash, SHA256
    */
@@ -129,12 +141,6 @@ export type SHPreimage = {
    */
   hashOutputs: ByteString;
 
-  /**
-   * 4 bytes little endian.
-   */
-  inputIndex: UInt32;
-
-  
   /**
    * 4 bytes little endian.
    */
