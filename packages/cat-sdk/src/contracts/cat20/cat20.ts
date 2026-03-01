@@ -85,6 +85,12 @@ export class CAT20 extends SmartContract<CAT20State> {
   ) {
     this.backtraceToScript(backtraceInfo, this.minterScriptHash)
 
+    // F1 Fix: Validate guardInputIndex bounds before using it
+    assert(
+      guardInputIndex >= 0n && guardInputIndex < this.ctx.inputCount,
+      'guardInputIndex out of bounds'
+    )
+
     // make sure tx inputs contain a valid guard
     this.checkGuard(
       guardState,

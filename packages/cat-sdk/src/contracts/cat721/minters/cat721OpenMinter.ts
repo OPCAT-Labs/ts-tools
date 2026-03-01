@@ -72,6 +72,9 @@ export class CAT721OpenMinter extends SmartContract<CAT721OpenMinterState> {
         // minter input should be the first input in curTx
         assert(this.ctx.inputIndex == MINTER_INPUT_INDEX, 'minter input should be the first input in curTx');
 
+        // F1 Fix: Validate inputCount bounds before accessing hardcoded indices 1 and 2
+        assert(this.ctx.inputCount >= 3n, 'at least 3 inputs required for minting');
+
         // input1.utxo.data store the nft contents, images, etc.
         const input1StateHash = ContextUtils.getSpentDataHash(this.ctx.spentDataHashes, 1n);
         assert(input1StateHash == openMintInfo.contentDataHash, 'input1 state hash mismatch');
