@@ -20,6 +20,7 @@ export * from './cat20/cat20Guard_12_12_2.js'
 export * from './cat20/cat20Guard_12_12_4.js'
 export * from './cat20/cat20GuardStateLib.js'
 export * from './cat20/cat20StateLib.js'
+export * from './cat20/cat20GuardVariants.js'
 export * from './cat20/types.js'
 
 export * from './cat721/minters/cat721ClosedMinter.js'
@@ -36,6 +37,7 @@ export * from './cat721/cat721Guard_12_12_2.js'
 export * from './cat721/cat721Guard_12_12_4.js'
 export * from './cat721/cat721GuardStateLib.js'
 export * from './cat721/cat721StateLib.js'
+export * from './cat721/cat721GuardVariants.js'
 export * from './cat721/types.js'
 
 
