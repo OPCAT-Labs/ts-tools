@@ -76,9 +76,10 @@ export const mintClosedMinterNft = createFeatureWithDryRun(async function(
         localId: closedMinter.state.nextLocalId,
         ownerAddr: nftReceiver
     }
+    const nextLocalId = closedMinter.state.nextLocalId + 1n
     const nextMinter = closedMinter.next({
         ...closedMinter.state,
-        nextLocalId: closedMinter.state.nextLocalId + 1n,
+        nextLocalId: nextLocalId,
     })
 
     const issuerPubKey = await issuerSigner.getPublicKey()
@@ -89,8 +90,13 @@ export const mintClosedMinterNft = createFeatureWithDryRun(async function(
         // minter is always the first input
         0
     )
-    const cat721 = new CAT721(ContractPeripheral.scriptHash(closedMinter), CAT721GuardPeripheral.getGuardVariantScriptHashes())
+    const cat721 = new CAT721(ContractPeripheral.scriptHash(closedMinter))
     cat721.state = nftState
+
+    // The contract only outputs a minter UTXO when nextLocalId < maxLocalId.
+    // Omit the minter output on the last NFT to match the on-chain constraint.
+    const isLastNft = nextLocalId >= closedMinter.state.maxLocalId
+
     const minterPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .addContractInput(closedMinter, (contract, tx) => {
             contract.mint(
@@ -104,7 +110,12 @@ export const mintClosedMinterNft = createFeatureWithDryRun(async function(
         })
         .spendUTXO(createNftRes.contentUtxo)
         .spendUTXO(createNftRes.mintInfoUtxo)
-        .addContractOutput(nextMinter, Postage.MINTER_POSTAGE)
+
+    if (!isLastNft) {
+        minterPsbt.addContractOutput(nextMinter, Postage.MINTER_POSTAGE)
+    }
+
+    minterPsbt
         .addContractOutput(cat721, Postage.NFT_POSTAGE)
         .change(changeAddress, feeRate)
         .seal()

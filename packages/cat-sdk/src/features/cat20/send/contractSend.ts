@@ -77,8 +77,11 @@ export const contractSend = createFeatureWithDryRun(async function(
   }
 
   const changeAddress = await signer.getAddress()
+  const pubkey = await signer.getPublicKey()
   // we use the p2pkh contract as the contract owner
   const expectContractOwner = toTokenOwnerAddress(changeAddress, true)
+  // F14 Fix: Use user's owner address for deployerAddr (guard deployer is the user, not the contract)
+  const deployerAddr = toTokenOwnerAddress(changeAddress)
 
   let utxos = await provider.getUtxos(changeAddress)
   utxos = filterFeeUtxos(utxos).slice(0, TX_INPUT_COUNT_MAX)
@@ -87,10 +90,8 @@ export const contractSend = createFeatureWithDryRun(async function(
     throw new Error('Insufficient satoshis input amount')
   }
 
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
   const cat20 = new CAT20(
     minterScriptHash,
-    guardScriptHashes,
     hasAdmin,
     adminScriptHash
   );
@@ -128,8 +129,7 @@ export const contractSend = createFeatureWithDryRun(async function(
 
   const txInputCount = inputTokenUtxos.length + 2; // tokens + guard + fee
   const txOutputCount = receivers.length + 1; // receivers + change
-  const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
-  const { guard, guardState, outputTokens: _outputTokens } =
+  const { guard, guardState, tokenAmounts, tokenBurnAmounts, outputTokens: _outputTokens } =
     CAT20GuardPeripheral.createTransferGuard(
       inputTokenUtxos.map((utxo, index) => ({
         token: utxo,
@@ -141,7 +141,7 @@ export const contractSend = createFeatureWithDryRun(async function(
       })),
       txInputCount,
       txOutputCount,
-      guardOwnerAddr
+      deployerAddr // F14 Fix: use user's owner address as deployerAddr
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined
@@ -166,7 +166,6 @@ export const contractSend = createFeatureWithDryRun(async function(
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
     new CAT20(
       minterScriptHash,
-      guardScriptHashes,
       hasAdmin,
       adminScriptHash
     ).bindToUtxo(utxo)
@@ -217,7 +216,6 @@ export const contractSend = createFeatureWithDryRun(async function(
   for (const outputToken of outputTokens) {
     const outputCat20 = new CAT20(
       minterScriptHash,
-      guardScriptHashes,
       hasAdmin,
       adminScriptHash
     )
@@ -262,7 +260,15 @@ export const contractSend = createFeatureWithDryRun(async function(
       nextStateHashes,
       tx.txOutputs.map((output) => sha256(toHex(output.data)))
     )
+
+    // F14 Fix: Get deployer signature for guard
+    const deployerSig = tx.getSig(guardInputIndex, { publicKey: pubkey })
+
     contract.unlock(
+      deployerSig,
+      PubKey(pubkey),
+      tokenAmounts as any,
+      tokenBurnAmounts as any,
       nextStateHashes as any,
       ownerAddrOrScript as any,
       outputTokenAmts as any,

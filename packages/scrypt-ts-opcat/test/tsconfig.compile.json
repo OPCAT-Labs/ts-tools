@@ -1,0 +1,27 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "plugins": [
+      {
+        "transform": "../../scrypt-ts-transpiler-opcat/dist/index.js",
+        "transformProgram": "true",
+        "outDir": "artifacts",
+        "debug": true
+      }
+    ]
+  },
+  "include": [
+    "./contracts/b2GCounter.ts",
+    "./contracts/b2GAnyonecanpay.ts",
+    "./contracts/cltv.ts",
+    "./contracts/MultiDimArray.ts",
+    "./contracts/demoWithTags.ts"
+  ],
+  "exclude": [
+    "artifacts"
+  ]
+}

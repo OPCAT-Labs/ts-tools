@@ -6,10 +6,6 @@ import {
 } from '@opcat-labs/scrypt-ts-opcat'
 import { TX_OUTPUT_COUNT_MAX } from './constants.js'
 
-export const SPEND_TYPE_USER_SPEND = 0n
-export const SPEND_TYPE_CONTRACT_SPEND = 1n
-export const SPEND_TYPE_ADMIN_SPEND = 2n
-
 /**
  * The arguments to unlock a token UTXO
  * @category Types

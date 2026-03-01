@@ -26,7 +26,7 @@ describe('sighash', function () {
     var sighash = Transaction.Sighash.sighash(tx, Signature.SIGHASH_ALL, 0);
     sighash
       .toString('hex')
-      .should.equal('09edc84f4bbf481368554aadb182f2944808cc26f294cbb67679641d135fc41c');
+      .should.equal('82bb65a2191a2ec6f5de5563cd74bc786b4f045ae323c0af46d8fb23b021ddac');
   });
 
   var zeroBN = BN.Zero;

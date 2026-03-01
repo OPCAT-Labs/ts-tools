@@ -106,6 +106,14 @@
           "type": "bytes"
         },
         {
+          "name": "inputIndex",
+          "type": "int"
+        },
+        {
+          "name": "outpoint",
+          "type": "bytes"
+        },
+        {
           "name": "spentScriptHash",
           "type": "bytes"
         },
@@ -140,10 +148,6 @@
         {
           "name": "hashOutputs",
           "type": "bytes"
-        },
-        {
-          "name": "inputIndex",
-          "type": "int"
         },
         {
           "name": "nLockTime",

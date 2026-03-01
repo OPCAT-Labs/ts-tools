@@ -57,6 +57,13 @@ export const burnToken = createFeatureWithDryRun(async function(
   guardTxid: string
   burnTxid: string
 }> {
+  // token inputs + guard input + fee input = length + 2
+  if (inputTokenUtxos.length + 2 > TX_INPUT_COUNT_MAX) {
+    throw new Error(
+      `Too many inputs that exceed the maximum input limit of ${TX_INPUT_COUNT_MAX}`
+    )
+  }
+
   const pubkey = await signer.getPublicKey()
   const changeAddress = await signer.getAddress()
 
@@ -66,10 +73,8 @@ export const burnToken = createFeatureWithDryRun(async function(
     throw new Error('Insufficient satoshis input amount')
   }
 
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
   const cat20 = new CAT20(
     minterScriptHash,
-    guardScriptHashes,
     hasAdmin,
     adminScriptHash
   )
@@ -79,16 +84,19 @@ export const burnToken = createFeatureWithDryRun(async function(
   const inputTokenStates = inputTokenUtxos.map((utxo) =>
     CAT20.deserializeState(utxo.data)
   )
-  const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
-  const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createBurnGuard(
+  // tokens + guard + fee
+  const burnTxInputCount = inputTokenUtxos.length + 2
+  // change output only
+  const burnTxOutputCount = 1
+  const { guard, guardState, tokenAmounts, tokenBurnAmounts, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createBurnGuard(
     inputTokenUtxos.map((utxo, index) => ({
       token: utxo,
       inputIndex: index,
     })),
-    guardOwnerAddr
+    toTokenOwnerAddress(changeAddress), // deployerAddr
+    burnTxInputCount,
+    burnTxOutputCount,
   )
-  guardState.tokenBurnAmounts[0] = guardState.tokenAmounts[0]
-  guard.state = guardState
 
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
@@ -118,7 +126,6 @@ export const burnToken = createFeatureWithDryRun(async function(
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo, index) =>
     new CAT20(
       minterScriptHash,
-      guardScriptHashes,
       hasAdmin,
       adminScriptHash
     ).bindToUtxo({
@@ -182,7 +189,15 @@ export const burnToken = createFeatureWithDryRun(async function(
         nextStateHashes,
         tx.txOutputs.map((output) => sha256(toHex(output.data)))
       )
+
+      // F14 Fix: Get deployer signature for guard
+      const deployerSig = tx.getSig(guardInputIndex, { publicKey: pubkey })
+
       contract.unlock(
+        deployerSig,
+        PubKey(pubkey),
+        tokenAmounts as any,
+        tokenBurnAmounts as any,
         nextStateHashes as any,
         ownerAddrOrScript as any,
         outputTokenAmts as any,

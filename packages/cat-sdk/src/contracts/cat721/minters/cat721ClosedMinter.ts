@@ -1,7 +1,7 @@
 import { assert, BacktraceInfo, ByteString, len, method, prop, PubKey, Sig, SmartContract, tags, toByteString, TxUtils, UInt64 } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721ClosedMinterState, CAT721State } from "../types.js";
 import { OwnerUtils } from "../../utils/ownerUtils.js";
-import { ConstantsLib, OWNER_ADDR_P2PKH_BYTE_LEN } from "../../constants.js";
+import { ConstantsLib, MINTER_INPUT_INDEX, OWNER_ADDR_P2PKH_BYTE_LEN } from "../../constants.js";
 import { CAT721StateLib } from "../cat721StateLib.js";
 import { CatTags } from "../../catTags.js";
 
@@ -28,6 +28,8 @@ export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
         this.issuerAddress = issuerAddress
         this.genesisOutpoint = genesisOutpoint
         this.max = max
+        assert(this.max > 0n, 'max must be greater than 0')
+        assert(len(this.issuerAddress) == OWNER_ADDR_P2PKH_BYTE_LEN, 'issuerAddress must be a valid p2pkh address')
     }
 
     @method()
@@ -53,11 +55,13 @@ export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
         assert(nftRemaining > 0n && nftRemaining <= this.max, 'nftRemaining is invalid');
 
         // minter input should be the first input in curTx
-        assert(this.ctx.inputIndex == 0n, 'minter input should be the first input in curTx');
+        assert(this.ctx.inputIndex == MINTER_INPUT_INDEX, 'minter input should be the first input in curTx');
 
         const nextLocalId = this.state.nextLocalId + 1n;
         let outputs = toByteString('');
         if (nextLocalId < this.state.maxLocalId) {
+            // F-03 Fix: Ensure minter satoshis is positive
+            assert(minterSatoshis > 0n, 'minter satoshis must be positive');
             outputs += TxUtils.buildDataOutput(
                 this.ctx.spentScriptHash,
                 minterSatoshis,
@@ -71,6 +75,8 @@ export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
         // next nft output
         CAT721StateLib.checkState(nftMint);
         assert(nftMint.localId == this.state.nextLocalId, 'nft localId is invalid');
+        // F-03 Fix: Ensure nft satoshis is positive
+        assert(nftSatoshis > 0n, 'nft satoshis must be positive');
         outputs += TxUtils.buildDataOutput(this.state.nftScriptHash, nftSatoshis, CAT721StateLib.stateHash(nftMint))
 
         // confine curTx outputs
@@ -78,9 +84,4 @@ export class CAT721ClosedMinter extends SmartContract<CAT721ClosedMinterState> {
         assert(this.checkOutputs(outputs), 'Outputs mismatch with the transaction context');
     }
 
-
-    public checkProps() {
-        assert(this.max > 0n, 'max must be greater than 0')
-        assert(len(this.issuerAddress) == OWNER_ADDR_P2PKH_BYTE_LEN, 'issuerAddress must be a valid p2pkh address')
-    }
 }

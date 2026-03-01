@@ -34,8 +34,7 @@ export const singleSendNft = createFeatureWithDryRun(async function(
     const feeChangeAddress = await signer.getAddress()
     let feeUtxos = await provider.getUtxos(feeChangeAddress)
 
-    const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes()
-    const cat721 = new CAT721(minterScriptHash, guardScriptHashes)
+    const cat721 = new CAT721(minterScriptHash)
     const cat721Script = cat721.lockingScript.toHex()
     inputNftUtxos = normalizeUtxoScripts(inputNftUtxos, cat721Script)
 
@@ -131,7 +130,6 @@ export async function singleSendNftStep1(
         guardOwnerAddr
     )
     const outputNfts: CAT721State[] = _outputNfts.filter((v) => v != undefined) as CAT721State[]
-    guard.state = guardState
     const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
         .spendUTXO(feeUtxos)
         .addContractOutput(guard, Postage.GUARD_POSTAGE)
@@ -174,14 +172,13 @@ export async function singleSendNftStep2(
     const guardUtxo = guardPsbt.getUtxo(0)
     const feeUtxo = guardPsbt.getChangeUTXO()!
 
-    const guardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes()
     const backtraces = await CAT721GuardPeripheral.getBackTraceInfo(
         minterScriptHash,
         inputNftUtxos,
         provider
     )
     const inputNfts: CAT721[] = inputNftUtxos.map(
-        (_nft, index) => new CAT721(minterScriptHash, guardScriptHashes).bindToUtxo({
+        (_nft, index) => new CAT721(minterScriptHash).bindToUtxo({
             ..._nft,
             txHashPreimage: toHex(new Transaction(backtraces[index].prevTxHex).toTxHashPreimage()),
         })
@@ -216,7 +213,7 @@ export async function singleSendNftStep2(
     }
     // add nft outputs
     for (const outputNft of outputNftStates) {
-        const nft = new CAT721(minterScriptHash, guardScriptHashes)
+        const nft = new CAT721(minterScriptHash)
         nft.state = outputNft
         sendPsbt.addContractOutput(nft, Postage.NFT_POSTAGE)
     }
@@ -259,7 +256,13 @@ export async function singleSendNftStep2(
         const inputCAT721States = fill(CAT721StateLib.create(0n, toByteString('')), txInputCountMax)
         applyFixedArray(inputCAT721States, inputNftStates)
         const outputCount = BigInt(tx.txOutputs.length)
+
+        // F14 Fix: Get deployer signature for guard
+        const deployerSig = tx.getSig(guardInputIndex, { publicKey })
+
         contract.unlock(
+            deployerSig,
+            PubKey(publicKey),
             nextStateHashes as any,
             ownerAddrOrScriptHashes as any,
             outputLocalIds as any,

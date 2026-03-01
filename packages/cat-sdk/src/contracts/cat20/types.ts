@@ -24,8 +24,9 @@ export type CAT20State = {
 export type CAT20GuardConstState = {
   /**
    * The address of the deployer who created this Guard UTXO.
-   * Used to authorize the `destroy` method, allowing only the deployer to reclaim the Guard's satoshis.
+   * Used to authorize the `unlock` method, preventing other users from using this guard.
    * Format: P2PKH locking script (76a914 + hash160(pubKey) + 88ac)
+   * @note F14 Fix: Added to prevent guard hijack by unauthorized users
    */
   deployerAddr: ByteString
   // scripts of all the different types of tokens in curTx inputs
@@ -35,17 +36,6 @@ export type CAT20GuardConstState = {
   // the default placeholders are TOKEN_SCRIPT_HASH_PLACEHOLDER_FF, TOKEN_SCRIPT_HASH_PLACEHOLDER_FE, TOKEN_SCRIPT_HASH_PLACEHOLDER_FD, and TOKEN_SCRIPT_HASH_PLACEHOLDER_FC to ensure the uniqueness of token scripts
   tokenScriptHashes: FixedArray<ByteString, typeof GUARD_TOKEN_TYPE_MAX>
 
-  // total number of tokens for each type of token in curTx inputs
-  // e.g.
-  // [100, 200, 0, 0]
-  // this means there are a total of 100 token1 and 200 token2 in curTx inputs
-  tokenAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>
-  // total number of tokens to be burned for each type of token in curTx
-  // e.g.
-  // [0, 50, 0, 0]
-  // this means 50 token2 will be burned in curTx
-  tokenBurnAmounts: FixedArray<CAT20_AMOUNT, typeof GUARD_TOKEN_TYPE_MAX>
-
   // for each input of curTx
   /**
    * Maps each transaction input to its token type index in tokenScriptHashes array
@@ -54,13 +44,13 @@ export type CAT20GuardConstState = {
    * - Each index occupies 1 byte
    *
    * @example
-   * Given tokenScriptIndexes = "ff00010100ff" (hex representation of [-1, 0, 1, 1, 0, -1]):
-   * - Input #0: non-token (0xFF = -1)
+   * Given tokenScriptIndexes = "810001010081" (hex representation of [-1, 0, 1, 1, 0, -1]):
+   * - Input #0: non-token (0x81 = -1)
    * - Input #1: token type 0 (tokenScriptHashes[0])
    * - Input #2: token type 1 (tokenScriptHashes[1])
    * - Input #3: token type 1 (tokenScriptHashes[1])
    * - Input #4: token type 0 (tokenScriptHashes[0])
-   * - Input #5: non-token (0xFF = -1)
+   * - Input #5: non-token (0x81 = -1)
    */
   tokenScriptIndexes: ByteString
 }

@@ -79,7 +79,6 @@ import { SPEND_TYPE_ADMIN_SPEND } from '../../../contracts/index.js'
  *
  * @throws {Error} If input count exceeds maximum transaction input limit
  * @throws {Error} If insufficient satoshis for transaction fees
- * @throws {Error} If token ownership validation fails (internal check)
  *
  * @example
  * ```typescript
@@ -119,15 +118,15 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
   newCAT20Utxos: UTXO[]
   changeTokenOutputIndex: number
 }> {
-  if (inputTokenUtxos.length + 2 > TX_INPUT_COUNT_MAX) {
+  // tokens + guard input + admin input + fee input = length + 3
+  if (inputTokenUtxos.length + 3 > TX_INPUT_COUNT_MAX) {
     throw new Error(
       `Too many inputs that exceed the maximum input limit of ${TX_INPUT_COUNT_MAX}`
     )
   }
 
   const changeAddress = await signer.getAddress()
-  // we use the p2pkh contract as the contract owner
-  const expectContractOwner = toTokenOwnerAddress(changeAddress, true)
+  const deployerAddr = toTokenOwnerAddress(changeAddress)
 
   let utxos = await provider.getUtxos(changeAddress)
   utxos = filterFeeUtxos(utxos).slice(0, TX_INPUT_COUNT_MAX)
@@ -136,10 +135,8 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
     throw new Error('Insufficient satoshis input amount')
   }
 
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
   const cat20 = new CAT20(
     minterScriptHash,
-    guardScriptHashes,
     hasAdmin,
     adminScriptHash
   )
@@ -149,28 +146,24 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
   const inputTokenStates = inputTokenUtxos.map((utxo) =>
     CAT20.deserializeState(utxo.data)
   )
-  inputTokenStates.map((state, index) => {
-    if (state.ownerAddr != expectContractOwner) {
-      throw new Error(
-        `the ${index} input token owner=${state.ownerAddr} is not ${expectContractOwner}`
-      )
-    }
-  })
   const changeTokenOutputIndex = -1
-  const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
-  const { guard, guardState, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
+  // tokens + guard input + admin input + fee input = length + 3
+  const burnTxInputCount = inputTokenUtxos.length + 3
+  // admin contract output + change output
+  const burnTxOutputCount = 2
+  const { guard, guardState, tokenAmounts, tokenBurnAmounts, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
     CAT20GuardPeripheral.createBurnGuard(
       inputTokenUtxos.map((utxo, index) => ({
         token: utxo,
         inputIndex: index,
       })),
-      guardOwnerAddr
+      deployerAddr,
+      burnTxInputCount,
+      burnTxOutputCount,
     )
   const outputTokens: CAT20State[] = _outputTokens.filter(
     (v) => v != undefined
   ) as CAT20State[]
-  guardState.tokenBurnAmounts[0] = guardState.tokenAmounts[0]
-  guard.state = guardState
   const guardPsbt = new ExtPsbt({ network: await provider.getNetwork() })
     .spendUTXO(utxos)
     .addContractOutput(guard, Postage.GUARD_POSTAGE)
@@ -189,7 +182,6 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
   const inputTokens: CAT20[] = inputTokenUtxos.map((utxo) =>
     new CAT20(
       minterScriptHash,
-      guardScriptHashes,
       true,
       adminScriptHash
     ).bindToUtxo(utxo)
@@ -274,7 +266,15 @@ export const burnByAdmin = createFeatureWithDryRun(async function(
       nextStateHashes,
       tx.txOutputs.map((output) => sha256(toHex(output.data)))
     )
+
+    // Get deployer signature for guard
+    const deployerSig = tx.getSig(guardInputIndex, { publicKey: pubkey })
+
     contract.unlock(
+      deployerSig,
+      PubKey(pubkey),
+      tokenAmounts as any,
+      tokenBurnAmounts as any,
       nextStateHashes as any,
       ownerAddrOrScript as any,
       outputTokenAmts as any,

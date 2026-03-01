@@ -245,6 +245,35 @@ export class SmartContract<StateT extends OpcatState = undefined>
     return fSuccess;
   }
 
+  /**
+   * Verifies an ECDSA signature with an explicit sighash flag check.
+   * This method validates that the signature's trailing sighash flag byte matches
+   * the explicitly provided flag parameter before performing the signature verification.
+   *
+   * @param signature - The signature to verify (DER encoded with sighash flag appended)
+   * @param publickey - The public key to verify the signature against
+   * @param sigHashFlag - The expected sighash flag value (e.g., 1n for ALL, 2n for NONE, 129n for ANYONECANPAY_ALL)
+   * @returns true if the flag matches AND the signature is valid, false otherwise
+   * @onchain
+   * @category Signature Verification
+   */
+  checkSigWithFlag(
+    signature: Sig,
+    publickey: PubKey,
+    sigHashFlag: bigint,
+  ): boolean {
+    // Extract the last byte of the signature (sighash flag)
+    const sigHex = signature as string;
+    const lastByte = parseInt(sigHex.slice(-2), 16);
+
+    // Check if the flag matches
+    if (BigInt(lastByte) !== sigHashFlag) {
+      return false;
+    }
+
+    // Perform the actual signature check
+    return checkSigImpl(this, signature, publickey);
+  }
 
   /**
    * Compares the first signature against each public key until it finds an ECDSA match.

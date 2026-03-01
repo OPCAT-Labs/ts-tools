@@ -687,7 +687,13 @@ export class Psbt {
       },
     ];
 
-    this.data.updateInput(inputIndex, { partialSig });
+    // Only set sighashType if not already set (to avoid duplicate data error in multi-sig scenarios)
+    const input = this.data.inputs[inputIndex];
+    if (input.sighashType === undefined) {
+      this.data.updateInput(inputIndex, { partialSig, sighashType });
+    } else {
+      this.data.updateInput(inputIndex, { partialSig });
+    }
     return this;
   }
 
@@ -725,7 +731,13 @@ export class Psbt {
         },
       ];
 
-      this.data.updateInput(inputIndex, { partialSig });
+      // Only set sighashType if not already set (to avoid duplicate data error in multi-sig scenarios)
+      const input = this.data.inputs[inputIndex];
+      if (input.sighashType === undefined) {
+        this.data.updateInput(inputIndex, { partialSig, sighashType });
+      } else {
+        this.data.updateInput(inputIndex, { partialSig });
+      }
     });
   }
 
@@ -1255,7 +1267,10 @@ function getHashForSig(
   sighashType: number;
 } {
   const unsignedTx = cache.__TX;
-  const sighashType = input.sighashType || crypto.Signature.SIGHASH_ALL;
+  // Use input.sighashType as the actual signing type (set by first _signInput call), then fall back to first allowed type from sighashTypes, then default to SIGHASH_ALL. Note: sighashTypes serves dual purpose - as a whitelist for validation AND as the source for default sighash type when input.sighashType is not set.
+  const sighashType = input.sighashType || (sighashTypes && sighashTypes.length > 0
+    ? sighashTypes[0]
+    : crypto.Signature.SIGHASH_ALL);
   checkSighashTypeAllowed(sighashType, sighashTypes);
 
   const prevout: Transaction.Output = unsignedTx.inputs[inputIndex].output!;
