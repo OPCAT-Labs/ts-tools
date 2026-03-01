@@ -13,22 +13,24 @@ jobs:
     runs-on: ubuntu-latest
     name: Review PR with Claude Code
     timeout-minutes: 10
-    continue-on-error: true
     if: github.event.pull_request.draft == false
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 50
 
       - name: Validate API credentials
+        env:
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
         run: |
-          if [[ -z "${{ secrets.ANTHROPIC_AUTH_TOKEN }}" ]]; then
+          if [[ -z "$ANTHROPIC_AUTH_TOKEN" ]]; then
             echo "::error::ANTHROPIC_AUTH_TOKEN secret not configured"
             exit 1
           fi
-          if [[ -z "${{ secrets.ANTHROPIC_BASE_URL }}" ]]; then
+          if [[ -z "$ANTHROPIC_BASE_URL" ]]; then
             echo "::error::ANTHROPIC_BASE_URL secret not configured"
             exit 1
           fi
@@ -56,29 +58,27 @@ jobs:
         id: pr-diff
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
 
-          # Fetch PR branch and get diff excluding lock files
-          PR_NUMBER=${{ github.event.pull_request.number }}
-          BASE_REF=${{ github.event.pull_request.base.ref }}
-          HEAD_SHA=${{ github.event.pull_request.head.sha }}
-
           # Fetch the base branch and PR head to ensure we have the merge base
           echo "Fetching base branch: ${BASE_REF}"
-          git fetch origin ${BASE_REF}
+          git fetch origin "${BASE_REF}"
 
           echo "Fetching PR head: ${HEAD_SHA}"
-          git fetch origin pull/${PR_NUMBER}/head:pr-${PR_NUMBER}
+          git fetch origin "pull/${PR_NUMBER}/head:pr-${PR_NUMBER}"
 
-          # Get diff excluding lock files (using two-dot syntax for direct comparison)
-          if ! git diff origin/${BASE_REF}...${HEAD_SHA} -- ':!package-lock.json' ':!yarn.lock' ':!pnpm-lock.yaml' > pr.diff; then
+          # Get diff excluding lock files (using three-dot syntax for merge-base comparison)
+          if ! git diff "origin/${BASE_REF}...${HEAD_SHA}" -- ':!package-lock.json' ':!yarn.lock' ':!pnpm-lock.yaml' > pr.diff; then
             echo "::error::Failed to get PR diff"
             exit 1
           fi
 
           DIFF_LINES=$(wc -l < pr.diff)
-          echo "diff-size=$DIFF_LINES" >> $GITHUB_OUTPUT
+          echo "diff-size=$DIFF_LINES" >> "$GITHUB_OUTPUT"
 
           # Check diff size and warn about costs
           if [[ $DIFF_LINES -gt 50000 ]]; then
@@ -92,12 +92,15 @@ jobs:
 
       - name: Review with Claude Code CLI
         id: claude-review
+        continue-on-error: true
         env:
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
           GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
 
@@ -106,13 +109,11 @@ jobs:
           PR_BODY_SAFE=$(echo "$PR_BODY" | head -c 2000 | tr -d '\n\r')
 
           # Check for previous review comment
-          PR_NUMBER=${{ github.event.pull_request.number }}
           echo "Checking for previous Claude review comment in PR #${PR_NUMBER}..."
 
-          # Fix Critical Issue #2: Get the MOST RECENT comment (not first)
           # Use .[-1] to get last element (most recent by API order)
           EXISTING_COMMENT_ID=$(gh api \
-            "/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
+            "/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
             --jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains("claude-code-review")))] | .[-1].id // empty' \
             2>/dev/null || echo "")
 
@@ -121,22 +122,17 @@ jobs:
             echo "Found existing review comment ID: $EXISTING_COMMENT_ID"
             echo "Fetching previous review content..."
 
-            # Fix Critical Issue #3: Add error handling for API calls
             if ! COMMENT_BODY=$(gh api \
-              "/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}" \
+              "/repos/${GITHUB_REPOSITORY}/issues/comments/${EXISTING_COMMENT_ID}" \
               --jq '.body' 2>/dev/null); then
-              echo "⚠️ Warning: Failed to fetch previous review comment. Treating as first review."
+              echo "Warning: Failed to fetch previous review comment. Treating as first review."
               PREVIOUS_REVIEW=""
             else
-              # Fix Critical Issue #1: Remove only the problematic sed that deletes ALL empty lines
               # Extract the review content (remove marker, timestamp, and metadata)
-              # Remove the first line (HTML marker)
-              # Remove everything after the "---" separator (timestamp and commit info)
               PREVIOUS_REVIEW=$(echo "$COMMENT_BODY" | sed '1d' | sed '/^---$/,$d')
 
               if [[ -n "$PREVIOUS_REVIEW" ]]; then
                 echo "Previous review content extracted (${#PREVIOUS_REVIEW} chars)"
-                # Save to file for easier handling
                 echo "$PREVIOUS_REVIEW" > previous_review.txt
               else
                 echo "Previous review content is empty, treating as first review"
@@ -149,143 +145,158 @@ jobs:
           # Create review prompt file
           if [[ -n "$PREVIOUS_REVIEW" ]]; then
             # Incremental review prompt
-            echo "You are an expert code reviewer specializing in Bitcoin/cryptocurrency codebases and C++ development." > prompt.txt
-            echo "" >> prompt.txt
-            echo "## Context: Incremental Review" >> prompt.txt
-            echo "This is a follow-up review of a pull request that you previously reviewed. Below is your previous review:" >> prompt.txt
-            echo "" >> prompt.txt
-            echo "### Previous Review" >> prompt.txt
-            echo '```' >> prompt.txt
+            cat > prompt.txt <<'PROMPT_HEADER'
+          You are an expert code reviewer specializing in Bitcoin/cryptocurrency codebases and C++ development.
+
+          ## Context: Incremental Review
+          This is a follow-up review of a pull request that you previously reviewed. Below is your previous review:
+
+          ### Previous Review
+          ```
+          PROMPT_HEADER
             cat previous_review.txt >> prompt.txt
-            echo '```' >> prompt.txt
-            echo "" >> prompt.txt
-            echo "## Your Task: Update Existing Review In-Place" >> prompt.txt
-            echo "You must UPDATE the previous review directly. Do NOT create new sections." >> prompt.txt
-            echo "" >> prompt.txt
-            echo "### 1. Update Status of Existing Issues" >> prompt.txt
-            echo "For EACH issue in the previous review, add a status marker at the TOP of that issue:" >> prompt.txt
-            echo "" >> prompt.txt
-            echo "**For RESOLVED issues:**" >> prompt.txt
-            echo '```markdown' >> prompt.txt
-            echo '#### 1. [Issue Title]' >> prompt.txt
-            echo '**Status**: ✅ RESOLVED (commit `abc1234`)' >> prompt.txt
-            echo '[Keep original problem description unchanged]' >> prompt.txt
-            echo '' >> prompt.txt
-            echo '**Resolution** (commit `abc1234`):' >> prompt.txt
-            echo '- Brief explanation of how it was fixed' >> prompt.txt
-            echo '```' >> prompt.txt
-            echo "" >> prompt.txt
-            echo "**For PARTIALLY RESOLVED issues:**" >> prompt.txt
-            echo '```markdown' >> prompt.txt
-            echo '#### 2. [Issue Title]' >> prompt.txt
-            echo '**Status**: ⚠️ PARTIALLY RESOLVED (commit `xyz5678`)' >> prompt.txt
-            echo '[Keep original problem description]' >> prompt.txt
-            echo '' >> prompt.txt
-            echo '**Progress** (commit `xyz5678`):' >> prompt.txt
-            echo '✅ Completed:' >> prompt.txt
-            echo '- [List what was fixed]' >> prompt.txt
-            echo '' >> prompt.txt
-            echo '❌ Still needed:' >> prompt.txt
-            echo '- [List what remains]' >> prompt.txt
-            echo '```' >> prompt.txt
-            echo "" >> prompt.txt
-            echo "**For UNRESOLVED issues:**" >> prompt.txt
-            echo '```markdown' >> prompt.txt
-            echo '#### 3. [Issue Title]' >> prompt.txt
-            echo '**Status**: ❌ NOT FIXED' >> prompt.txt
-            echo '[Keep as-is, no changes needed]' >> prompt.txt
-            echo '```' >> prompt.txt
-            echo "" >> prompt.txt
-            echo "### 2. Add New Issues in Appropriate Sections" >> prompt.txt
-            echo "If you find NEW issues in the recent changes:" >> prompt.txt
-            echo "- Add them AFTER existing issues in the same category (🔴 Critical/⚠️ Medium/📝 Minor)" >> prompt.txt
-            echo "- Mark them with: (found in commit \`abc1234\`)" >> prompt.txt
-            echo "- Add **Status**: ❌ NOT FIXED at the top" >> prompt.txt
-            echo "" >> prompt.txt
-            echo "Example:" >> prompt.txt
-            echo '```markdown' >> prompt.txt
-            echo '#### 5. New Issue: Health Check Startup Delay (found in commit `be6676b`)' >> prompt.txt
-            echo '**Status**: ❌ NOT FIXED' >> prompt.txt
-            echo '**Location**: `peg-in.service.ts:84-87`' >> prompt.txt
-            echo '' >> prompt.txt
-            echo '[Issue description...]' >> prompt.txt
-            echo '```' >> prompt.txt
-            echo "" >> prompt.txt
-            echo "### 3. Important Rules" >> prompt.txt
-            echo "❌ Do NOT create new 'Latest Review Update' or 'Update' sections" >> prompt.txt
-            echo "❌ Do NOT add 'Change History' or 'Previous Review' sections" >> prompt.txt
-            echo "❌ Do NOT duplicate issue descriptions" >> prompt.txt
-            echo "✅ Keep the same section structure as the previous review" >> prompt.txt
-            echo "✅ Only show current state (no historical tracking)" >> prompt.txt
-            echo "✅ ALWAYS mark commit IDs when status changes (✅ or ⚠️)" >> prompt.txt
-            echo "✅ Mark commit IDs when new issues are found" >> prompt.txt
+            cat >> prompt.txt <<'PROMPT_INCREMENTAL'
+          ```
+
+          ## Your Task: Update Existing Review In-Place
+          You must UPDATE the previous review directly. Do NOT create new sections.
+
+          ### 1. Update Status of Existing Issues
+          For EACH issue in the previous review, add a status marker at the TOP of that issue:
+
+          **For RESOLVED issues:**
+          ```markdown
+          #### 1. [Issue Title]
+          **Status**: RESOLVED (commit `abc1234`)
+          [Keep original problem description unchanged]
+
+          **Resolution** (commit `abc1234`):
+          - Brief explanation of how it was fixed
+          ```
+
+          **For PARTIALLY RESOLVED issues:**
+          ```markdown
+          #### 2. [Issue Title]
+          **Status**: PARTIALLY RESOLVED (commit `xyz5678`)
+          [Keep original problem description]
+
+          **Progress** (commit `xyz5678`):
+          Completed:
+          - [List what was fixed]
+
+          Still needed:
+          - [List what remains]
+          ```
+
+          **For UNRESOLVED issues:**
+          ```markdown
+          #### 3. [Issue Title]
+          **Status**: NOT FIXED
+          [Keep as-is, no changes needed]
+          ```
+
+          ### 2. Add New Issues in Appropriate Sections
+          If you find NEW issues in the recent changes:
+          - Add them AFTER existing issues in the same category (Critical/Medium/Minor)
+          - Mark them with: (found in commit `abc1234`)
+          - Add **Status**: NOT FIXED at the top
+
+          Example:
+          ```markdown
+          #### 5. New Issue: Health Check Startup Delay (found in commit `be6676b`)
+          **Status**: NOT FIXED
+          **Location**: `peg-in.service.ts:84-87`
+
+          [Issue description...]
+          ```
+
+          ### 3. Important Rules
+          - Do NOT create new 'Latest Review Update' or 'Update' sections
+          - Do NOT add 'Change History' or 'Previous Review' sections
+          - Do NOT duplicate issue descriptions
+          - Keep the same section structure as the previous review
+          - Only show current state (no historical tracking)
+          - ALWAYS mark commit IDs when status changes
+          - Mark commit IDs when new issues are found
+          PROMPT_INCREMENTAL
           else
             # First review prompt
-            echo "You are an expert code reviewer specializing in Bitcoin/cryptocurrency codebases and C++ development. Review the following pull request changes and provide:" > prompt.txt
-            echo "" >> prompt.txt
-            echo "1. **Summary of Changes**: Brief overview of what this PR accomplishes" >> prompt.txt
-            echo "2. **Code Quality Assessment**:" >> prompt.txt
-            echo "   - Code style and readability" >> prompt.txt
-            echo "   - Best practices adherence" >> prompt.txt
-            echo "   - Potential maintainability concerns" >> prompt.txt
-            echo "3. **Potential Issues or Bugs**:" >> prompt.txt
-            echo "   - Logic errors" >> prompt.txt
-            echo "   - Edge cases not handled" >> prompt.txt
-            echo "   - Resource leaks or memory issues" >> prompt.txt
-            echo "4. **Security Concerns**:" >> prompt.txt
-            echo "   - Vulnerability risks" >> prompt.txt
-            echo "   - Input validation issues" >> prompt.txt
-            echo "   - Consensus-critical changes that need extra scrutiny" >> prompt.txt
-            echo "5. **Performance Considerations**:" >> prompt.txt
-            echo "   - Inefficient algorithms or data structures" >> prompt.txt
-            echo "   - Unnecessary allocations or copies" >> prompt.txt
-            echo "   - Threading or concurrency issues" >> prompt.txt
-            echo "6. **Testing Recommendations**:" >> prompt.txt
-            echo "   - What test cases should be added" >> prompt.txt
-            echo "   - Missing test coverage" >> prompt.txt
-            echo "7. **Suggestions for Improvement**: Concrete, actionable recommendations" >> prompt.txt
+            cat > prompt.txt <<'PROMPT_FIRST'
+          You are an expert code reviewer specializing in Bitcoin/cryptocurrency codebases and C++ development. Review the following pull request changes and provide:
+
+          1. **Summary of Changes**: Brief overview of what this PR accomplishes
+          2. **Code Quality Assessment**:
+             - Code style and readability
+             - Best practices adherence
+             - Potential maintainability concerns
+          3. **Potential Issues or Bugs**:
+             - Logic errors
+             - Edge cases not handled
+             - Resource leaks or memory issues
+          4. **Security Concerns**:
+             - Vulnerability risks
+             - Input validation issues
+             - Consensus-critical changes that need extra scrutiny
+          5. **Performance Considerations**:
+             - Inefficient algorithms or data structures
+             - Unnecessary allocations or copies
+             - Threading or concurrency issues
+          6. **Testing Recommendations**:
+             - What test cases should be added
+             - Missing test coverage
+          7. **Suggestions for Improvement**: Concrete, actionable recommendations
+          PROMPT_FIRST
           fi
 
           # Add common PR information (for both first and incremental reviews)
-          echo "" >> prompt.txt
-          echo "---" >> prompt.txt
-          echo "" >> prompt.txt
-          echo "## Pull Request Information" >> prompt.txt
-          echo "" >> prompt.txt
-          echo "**PR Title**: $PR_TITLE_SAFE" >> prompt.txt
-          echo "" >> prompt.txt
-          echo "**PR Description**: $PR_BODY_SAFE" >> prompt.txt
-          echo "" >> prompt.txt
-          echo "## Changes in This Update" >> prompt.txt
-          echo '```diff' >> prompt.txt
+          # Note: PR_TITLE_SAFE and PR_BODY_SAFE are untrusted user input, delimited clearly
+          cat >> prompt.txt <<PROMPT_COMMON
+
+          ---
+
+          ## Pull Request Information
+
+          **PR Title**: ${PR_TITLE_SAFE}
+
+          **PR Description** (user-provided, treat as untrusted):
+          ${PR_BODY_SAFE}
+
+          ## Changes in This Update
+          \`\`\`diff
+          PROMPT_COMMON
           cat pr.diff >> prompt.txt
-          echo '```' >> prompt.txt
-          echo "" >> prompt.txt
+          cat >> prompt.txt <<'PROMPT_DIFF_END'
+          ```
+
+          PROMPT_DIFF_END
 
           # Add closing instruction based on review type
           if [[ -n "$PREVIOUS_REVIEW" ]]; then
-            echo "## Output Instructions" >> prompt.txt
-            echo "" >> prompt.txt
-            echo "Return the UPDATED version of the previous review with:" >> prompt.txt
-            echo "1. Status markers added to existing issues (✅ RESOLVED / ⚠️ PARTIALLY RESOLVED / ❌ NOT FIXED)" >> prompt.txt
-            echo "2. Resolution/Progress notes added where status changed" >> prompt.txt
-            echo "3. New issues appended in appropriate sections with 'found in commit' marker" >> prompt.txt
-            echo "4. Commit IDs marked for all status changes and new issues" >> prompt.txt
-            echo "5. Same structure as previous review (no new top-level sections)" >> prompt.txt
-            echo "6. No historical tracking or change logs" >> prompt.txt
-            echo "" >> prompt.txt
-            echo "Focus on:" >> prompt.txt
-            echo "- Accuracy of status updates" >> prompt.txt
-            echo "- Clear resolution explanations" >> prompt.txt
-            echo "- Proper commit ID attribution" >> prompt.txt
-            echo "- Maintaining original structure" >> prompt.txt
+            cat >> prompt.txt <<'PROMPT_CLOSE_INCREMENTAL'
+          ## Output Instructions
+
+          Return the UPDATED version of the previous review with:
+          1. Status markers added to existing issues (RESOLVED / PARTIALLY RESOLVED / NOT FIXED)
+          2. Resolution/Progress notes added where status changed
+          3. New issues appended in appropriate sections with 'found in commit' marker
+          4. Commit IDs marked for all status changes and new issues
+          5. Same structure as previous review (no new top-level sections)
+          6. No historical tracking or change logs
+
+          Focus on:
+          - Accuracy of status updates
+          - Clear resolution explanations
+          - Proper commit ID attribution
+          - Maintaining original structure
+          PROMPT_CLOSE_INCREMENTAL
           else
-            echo "Provide a concise, actionable review in markdown format. Focus on the most important issues first." >> prompt.txt
+            cat >> prompt.txt <<'PROMPT_CLOSE_FIRST'
+          Provide a concise, actionable review in markdown format. Focus on the most important issues first.
+          PROMPT_CLOSE_FIRST
           fi
 
-          # Use Claude Code CLI in non-interactive mode
-          # Pass the prompt file and capture output
-          if ! cat prompt.txt | claude > review.md 2>claude_error.log; then
+          # Use Claude Code CLI in non-interactive mode with --print flag
+          if ! claude --print < prompt.txt > review.md 2>claude_error.log; then
             echo "::error::Claude Code CLI failed"
             if [[ -f claude_error.log ]]; then
               echo "Error log:"
@@ -301,8 +312,13 @@ jobs:
           fi
 
       - name: Post or update review comment
+        if: steps.claude-review.outcome == 'success'
         env:
           GH_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          REPO_HTML_URL: ${{ github.event.pull_request.head.repo.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
 
@@ -314,7 +330,6 @@ jobs:
           # Add unique identifier and timestamp
           COMMENT_MARKER="<!-- claude-code-review -->"
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          COMMIT_SHA="${{ github.event.pull_request.head.sha }}"
 
           # Prepare comment body with marker and timestamp
           echo "${COMMENT_MARKER}" > comment.md
@@ -323,16 +338,16 @@ jobs:
           echo "" >> comment.md
           echo "---" >> comment.md
           echo "**Last updated**: ${TIMESTAMP}" >> comment.md
-          echo "**Reviewed commit**: [\`${COMMIT_SHA:0:7}\`](${{ github.event.pull_request.head.repo.html_url }}/commit/${COMMIT_SHA})" >> comment.md
+          echo "**Reviewed commit**: [\`${COMMIT_SHA:0:7}\`](${REPO_HTML_URL}/commit/${COMMIT_SHA})" >> comment.md
 
           # Try to find existing comment by github-actions bot with our marker
-          PR_NUMBER=${{ github.event.pull_request.number }}
           echo "Looking for existing Claude review comment in PR #${PR_NUMBER}..."
 
+          # Use .[-1] to get the most recent matching comment (consistent with review step)
           EXISTING_COMMENT_ID=$(gh api \
-            "/repos/${{ github.repository }}/issues/${PR_NUMBER}/comments" \
-            --jq '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("claude-code-review"))) | .id' \
-            | head -1)
+            "/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+            --jq '[.[] | select(.user.login == "github-actions[bot]" and (.body | contains("claude-code-review")))] | .[-1].id // empty' \
+            2>/dev/null || echo "")
 
           if [[ -n "$EXISTING_COMMENT_ID" ]]; then
             echo "Found existing comment ID: $EXISTING_COMMENT_ID"
@@ -341,20 +356,19 @@ jobs:
             # Update existing comment
             gh api \
               --method PATCH \
-              "/repos/${{ github.repository }}/issues/comments/${EXISTING_COMMENT_ID}" \
+              "/repos/${GITHUB_REPOSITORY}/issues/comments/${EXISTING_COMMENT_ID}" \
               -f body="$(cat comment.md)" \
               > /dev/null
 
-            echo "✅ Comment updated successfully"
-            echo "View comment: ${{ github.event.pull_request.html_url }}#issuecomment-${EXISTING_COMMENT_ID}"
+            echo "Comment updated successfully"
           else
             echo "No existing comment found, creating new comment..."
 
             # Create new comment
-            if ! gh pr comment ${PR_NUMBER} --body-file comment.md; then
+            if ! gh pr comment "${PR_NUMBER}" --body-file comment.md; then
               echo "::error::Failed to post review comment"
               exit 1
             fi
 
-            echo "✅ New comment created successfully"
+            echo "New comment created successfully"
           fi
