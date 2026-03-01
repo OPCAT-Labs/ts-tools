@@ -164,6 +164,30 @@ export function findCheckOutputsExpression(node: ts.Node): ts.Node | undefined {
   return res;
 }
 
+export function findChangeInfoExpression(node: ts.Node): ts.Node | undefined {
+  let res: ts.Node | undefined = undefined;
+
+  function visit(node: ts.Node): void {
+    if (res) {
+      return;
+    }
+
+    if (ts.isPropertyAccessExpression(node)) {
+      const expr = node as ts.PropertyAccessExpression;
+      const name = expr.name.getText();
+      if (name === 'changeInfo') {
+        res = expr;
+        return;
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  }
+
+  visit(node);
+  return res;
+}
+
 export function allowByteStringLiteral(node: ts.Node) {
   if (ts.isCallExpression(node)) {
     if (

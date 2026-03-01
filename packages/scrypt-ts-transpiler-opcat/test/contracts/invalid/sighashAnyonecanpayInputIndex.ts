@@ -11,17 +11,17 @@ const SigHashType = {
 } as const;
 
 /**
- * Invalid contract: accesses ctx.prevouts with ANYONECANPAY sighash type
- * This should throw a transpiler error because ANYONECANPAY modes have
- * empty hashPrevouts (32 zero bytes), so verification would fail.
+ * Invalid contract: accesses ctx.inputIndex with ANYONECANPAY sighash type
+ * This should throw a transpiler error because inputIndex is not defined
+ * in ANYONECANPAY modes.
  */
-export class SighashAnyonecanpayPrevouts extends SmartContract {
+export class SighashAnyonecanpayInputIndex extends SmartContract {
   @method({ sigHashType: SigHashType.ANYONECANPAY_ALL })
   public unlock(sig: Sig, pubKey: PubKey) {
     // This should cause a transpiler error:
-    // ctx.prevouts cannot be accessed with ANYONECANPAY sighash
-    const prevouts = this.ctx.prevouts;
-    assert(prevouts.length > 0n, 'prevouts should not be empty');
+    // ctx.inputIndex cannot be accessed with ANYONECANPAY sighash
+    const inputIndex: bigint = this.ctx.inputIndex;
+    assert(inputIndex >= 0n, 'inputIndex should be >= 0');
     assert(this.checkSig(sig, pubKey), 'signature check failed');
   }
 }

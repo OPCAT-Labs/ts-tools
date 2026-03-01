@@ -150,6 +150,8 @@ export class ContextUtils extends SmartContractLib {
   static serializeSHPreimage(shPreimage: SHPreimage): SigHashPreimage {
     assert(len(shPreimage.nVersion) == 4n, 'invalid length of nVersion');
     assert(len(shPreimage.hashPrevouts) == 32n, 'invalid length of hashPrevouts');
+    assert(shPreimage.inputIndex >= 0n, 'invalid value of inputIndex');
+    assert(len(shPreimage.outpoint) == 36n, 'invalid length of outpoint');
     assert(len(shPreimage.spentScriptHash) == 32n, 'invalid length of spentScriptHash');
     assert(len(shPreimage.spentDataHash) == 32n, 'invalid length of spentDataHash');
     assert(shPreimage.value >= 0n, 'invalid value of value');
@@ -159,7 +161,6 @@ export class ContextUtils extends SmartContractLib {
     assert(len(shPreimage.hashSpentDataHashes) == 32n, 'invalid length of hashSpentDataHashes');
     assert(len(shPreimage.hashSequences) == 32n, 'invalid length of hashSequences');
     assert(len(shPreimage.hashOutputs) == 32n, 'invalid length of hashOutputs');
-    assert(shPreimage.inputIndex >= 0n, 'invalid value of inputIndex');
     assert(shPreimage.nLockTime >= 0n, 'invalid value of nLockTime');
     assert(shPreimage.sigHashType == 1n
       || shPreimage.sigHashType == 2n
@@ -171,6 +172,8 @@ export class ContextUtils extends SmartContractLib {
 
     const preimage = shPreimage.nVersion
       + shPreimage.hashPrevouts
+      + StdUtils.toLEUnsigned(shPreimage.inputIndex, 4n)
+      + shPreimage.outpoint
       + shPreimage.spentScriptHash
       + shPreimage.spentDataHash
       + TxUtils.satoshisToByteString(shPreimage.value)
@@ -180,10 +183,23 @@ export class ContextUtils extends SmartContractLib {
       + shPreimage.hashSpentDataHashes
       + shPreimage.hashSequences
       + shPreimage.hashOutputs
-      + StdUtils.toLEUnsigned(shPreimage.inputIndex, 4n)
       + StdUtils.toLEUnsigned(shPreimage.nLockTime, 4n)
       + intToByteString(shPreimage.sigHashType, 4n);
     return SigHashPreimage(preimage);
+  }
+
+  /**
+   * Extract outpoint directly from SHPreimage.
+   * Use this for current input's outpoint instead of slicing from prevouts.
+   * @param shPreimage - The SHPreimage containing the outpoint field
+   * @returns The Outpoint struct with txHash and outputIndex
+   */
+  @method()
+  static getOutpoint(shPreimage: SHPreimage): Outpoint {
+    return {
+      txHash: slice(shPreimage.outpoint, 0n, 32n),
+      outputIndex: StdUtils.byteStringToUInt32(slice(shPreimage.outpoint, 32n, 36n)),
+    };
   }
 
   /**

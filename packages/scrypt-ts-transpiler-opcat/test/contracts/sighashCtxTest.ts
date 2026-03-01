@@ -6,6 +6,7 @@ import {
   toByteString,
   ByteString,
   prop,
+  len,
 } from '@opcat-labs/scrypt-ts-opcat';
 
 // Local SigHashType object for decorator parameters
@@ -14,7 +15,6 @@ const SigHashType = {
   ALL: 0x01,
   NONE: 0x02,
   SINGLE: 0x03,
-  ANYONECANPAY: 0x80,
   ANYONECANPAY_ALL: 0x81,
   ANYONECANPAY_NONE: 0x82,
   ANYONECANPAY_SINGLE: 0x83,
@@ -27,19 +27,16 @@ const SigHashType = {
  * - SIGHASH_ALL (0x01): prevouts, spentAmounts, spentScriptHashes, spentDataHashes,
  *   nSequence, hashSequences, hashOutputs are all available
  * - SIGHASH_NONE (0x02): prevouts, spentAmounts, spentScriptHashes are available,
- *   hashOutputs is empty (32 zero bytes)
- * - SIGHASH_SINGLE (0x03): prevouts, spentAmounts, spentScriptHashes are available,
- *   hashOutputs covers only the output at the same index
- * - ANYONECANPAY_* (0x81-0x83): hashPrevouts/hashSpentAmounts/hashSpentScriptHashes/hashSequences
- *   are empty (32 zero bytes), cannot access prevouts/spentAmounts/spentScriptHashes
- *   nSequence and hashOutputs (in ALL mode) are still accessible
+ *   hashOutputs is blocked at transpile time (empty at runtime)
+ * - SIGHASH_SINGLE (0x03): prevouts, spentAmounts, spentScriptHashes, hashOutputs are available
+ * - ANYONECANPAY_* (0x81-0x83): hash fields are blocked at transpile time,
+ *   only direct fields (prevout, outpoint, spentScriptHash, spentDataHash, value) are allowed
  *
  * Key validation: hash256(data) == hashXxx
  *
  * Also tests that timeLock() works correctly in ALL sighash types:
  * - timeLock uses nSequence (current input's sequence) and nLockTime from preimage
  * - These fields are always available regardless of sighash type
- * - timeLock does NOT use hashSequences, which is empty in ANYONECANPAY mode
  */
 export class SighashCtxTest extends SmartContract {
   // Empty hash constant (32 zero bytes) - used when sighash type doesn't include certain fields
@@ -113,7 +110,7 @@ export class SighashCtxTest extends SmartContract {
   /**
    * SIGHASH_NONE (0x02) - verify ctx variables
    * Signs only inputs, outputs can be modified
-   * Note: hashOutputs is empty (32 zero bytes) in NONE mode
+   * Note: hashOutputs access is blocked at transpile time because it's empty in NONE mode
    */
   @method({ sigHashType: SigHashType.NONE })
   public unlockNone(inputCount: bigint) {
@@ -149,12 +146,8 @@ export class SighashCtxTest extends SmartContract {
     const hashSequences = this.ctx.hashSequences;
     assert(hashSequences === hashSequences, 'hashSequences should be accessible');
 
-    // Verify hashOutputs is empty (32 zero bytes) in NONE mode
-    // Because SIGHASH_NONE does not sign any outputs
-    assert(
-      this.ctx.hashOutputs === SighashCtxTest.EMPTY_HASH,
-      'hashOutputs should be empty in NONE mode'
-    );
+    // Note: hashOutputs access is blocked at transpile time because it's empty in NONE mode
+    // Cannot verify it at runtime anymore
 
     // Test timeLock - uses nSequence and nLockTime from preimage
     // timeLock should work in ALL sighash types since it uses current input's nSequence
@@ -210,11 +203,11 @@ export class SighashCtxTest extends SmartContract {
   }
 
   /**
-   * ANYONECANPAY_ALL (0x81) - hash fields are empty, cannot access prevouts etc
-   * Note: In ANYONECANPAY mode, hashPrevouts/hashSpentAmounts/hashSpentScriptHashes/hashSpentDataHashes/hashSequences
-   * are empty (32 zero bytes), so ContextUtils.checkXxx() would fail if we try
-   * to access prevouts/spentAmounts/spentScriptHashes.
-   * We verify that these hash fields are empty and use buildChangeOutput which is allowed with ANYONECANPAY_ALL.
+   * ANYONECANPAY_ALL (0x81) - hash fields are blocked at transpile time
+   * In ANYONECANPAY mode, hash fields (hashPrevouts, hashSpentAmounts, etc.) are empty,
+   * so their access is blocked at transpile time.
+   * Only direct fields (prevout, outpoint, spentScriptHash, spentDataHash, value) and
+   * nSequence, hashOutputs are allowed.
    */
   @method({ sigHashType: SigHashType.ANYONECANPAY_ALL })
   public unlockAnyonecanpayAll() {
@@ -224,35 +217,12 @@ export class SighashCtxTest extends SmartContract {
       'sigHashType should be ANYONECANPAY_ALL (129)'
     );
 
-    // Verify hashPrevouts is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashPrevouts === SighashCtxTest.EMPTY_HASH,
-      'hashPrevouts should be empty in ANYONECANPAY mode'
-    );
+    // Note: hash fields access (hashPrevouts, hashSpentAmounts, etc.) is blocked at transpile time
+    // because they are empty in ANYONECANPAY mode
 
-    // Verify hashSpentAmounts is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashSpentAmounts === SighashCtxTest.EMPTY_HASH,
-      'hashSpentAmounts should be empty in ANYONECANPAY mode'
-    );
-
-    // Verify hashSpentScriptHashes is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashSpentScriptHashes === SighashCtxTest.EMPTY_HASH,
-      'hashSpentScriptHashes should be empty in ANYONECANPAY mode'
-    );
-
-    // Verify hashSpentDataHashes is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashSpentDataHashes === SighashCtxTest.EMPTY_HASH,
-      'hashSpentDataHashes should be empty in ANYONECANPAY mode'
-    );
-
-    // Verify hashSequences is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashSequences === SighashCtxTest.EMPTY_HASH,
-      'hashSequences should be empty in ANYONECANPAY mode'
-    );
+    // Direct fields are still accessible
+    const prevout = this.ctx.prevout;
+    assert(len(prevout.txHash) > 0n, 'prevout should be accessible');
 
     // nSequence is accessible in ANYONECANPAY mode (current input's sequence)
     const nSequence = this.ctx.nSequence;
@@ -273,8 +243,8 @@ export class SighashCtxTest extends SmartContract {
 
   /**
    * ANYONECANPAY_NONE (0x82)
-   * Cannot access global input info like prevouts/spentAmounts/spentScriptHashes
-   * All hash fields except hashOutputs are empty, and hashOutputs is also empty (NONE mode)
+   * Hash fields are blocked at transpile time.
+   * hashOutputs is also blocked because NONE mode doesn't sign outputs.
    */
   @method({ sigHashType: SigHashType.ANYONECANPAY_NONE })
   public unlockAnyonecanpayNone() {
@@ -284,45 +254,15 @@ export class SighashCtxTest extends SmartContract {
       'sigHashType should be ANYONECANPAY_NONE (130)'
     );
 
-    // Verify hashPrevouts is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashPrevouts === SighashCtxTest.EMPTY_HASH,
-      'hashPrevouts should be empty in ANYONECANPAY mode'
-    );
+    // Note: hash fields access (hashPrevouts, hashSpentAmounts, hashOutputs, etc.) is blocked at transpile time
 
-    // Verify hashSpentAmounts is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashSpentAmounts === SighashCtxTest.EMPTY_HASH,
-      'hashSpentAmounts should be empty in ANYONECANPAY mode'
-    );
-
-    // Verify hashSpentScriptHashes is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashSpentScriptHashes === SighashCtxTest.EMPTY_HASH,
-      'hashSpentScriptHashes should be empty in ANYONECANPAY mode'
-    );
-
-    // Verify hashSpentDataHashes is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashSpentDataHashes === SighashCtxTest.EMPTY_HASH,
-      'hashSpentDataHashes should be empty in ANYONECANPAY mode'
-    );
-
-    // Verify hashSequences is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashSequences === SighashCtxTest.EMPTY_HASH,
-      'hashSequences should be empty in ANYONECANPAY mode'
-    );
+    // Direct fields are still accessible
+    const prevout = this.ctx.prevout;
+    assert(len(prevout.txHash) > 0n, 'prevout should be accessible');
 
     // nSequence is accessible in ANYONECANPAY mode (current input's sequence)
     const nSequence = this.ctx.nSequence;
     assert(nSequence === nSequence, 'nSequence should be accessible');
-
-    // Verify hashOutputs is empty (32 zero bytes) in ANYONECANPAY_NONE mode (NONE = no outputs signed)
-    assert(
-      this.ctx.hashOutputs === SighashCtxTest.EMPTY_HASH,
-      'hashOutputs should be empty in ANYONECANPAY_NONE mode'
-    );
 
     // Test timeLock - uses nSequence and nLockTime from preimage
     // timeLock should work in ALL sighash types since it uses current input's nSequence (NOT hashSequences)
@@ -331,8 +271,8 @@ export class SighashCtxTest extends SmartContract {
 
   /**
    * ANYONECANPAY_SINGLE (0x83)
-   * Cannot access global input info like prevouts/spentAmounts/spentScriptHashes
-   * All hash fields are empty except hashOutputs (SINGLE = signs corresponding output)
+   * Hash fields are blocked at transpile time.
+   * hashOutputs is allowed (signs corresponding output).
    */
   @method({ sigHashType: SigHashType.ANYONECANPAY_SINGLE })
   public unlockAnyonecanpaySingle() {
@@ -342,35 +282,11 @@ export class SighashCtxTest extends SmartContract {
       'sigHashType should be ANYONECANPAY_SINGLE (131)'
     );
 
-    // Verify hashPrevouts is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashPrevouts === SighashCtxTest.EMPTY_HASH,
-      'hashPrevouts should be empty in ANYONECANPAY mode'
-    );
+    // Note: hash fields access (hashPrevouts, hashSpentAmounts, etc.) is blocked at transpile time
 
-    // Verify hashSpentAmounts is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashSpentAmounts === SighashCtxTest.EMPTY_HASH,
-      'hashSpentAmounts should be empty in ANYONECANPAY mode'
-    );
-
-    // Verify hashSpentScriptHashes is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashSpentScriptHashes === SighashCtxTest.EMPTY_HASH,
-      'hashSpentScriptHashes should be empty in ANYONECANPAY mode'
-    );
-
-    // Verify hashSpentDataHashes is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashSpentDataHashes === SighashCtxTest.EMPTY_HASH,
-      'hashSpentDataHashes should be empty in ANYONECANPAY mode'
-    );
-
-    // Verify hashSequences is empty (32 zero bytes) in ANYONECANPAY mode
-    assert(
-      this.ctx.hashSequences === SighashCtxTest.EMPTY_HASH,
-      'hashSequences should be empty in ANYONECANPAY mode'
-    );
+    // Direct fields are still accessible
+    const prevout = this.ctx.prevout;
+    assert(len(prevout.txHash) > 0n, 'prevout should be accessible');
 
     // nSequence is accessible in ANYONECANPAY mode (current input's sequence)
     const nSequence = this.ctx.nSequence;
