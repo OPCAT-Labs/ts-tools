@@ -66,10 +66,4 @@ export class OwnerUtils extends SmartContractLib {
       addrLen == OWNER_ADDR_CONTRACT_HASH_BYTE_LEN // contract script hash
     )
   }
-
-  @method()
-  static serialize(ownerAddr: ByteString): ByteString {
-    // todo: confirm address len
-    return ownerAddr
-  }
 }

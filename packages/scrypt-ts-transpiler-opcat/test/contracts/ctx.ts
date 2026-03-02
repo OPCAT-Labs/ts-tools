@@ -30,7 +30,6 @@ export class CTX extends SmartContract {
     const spentDataHashes = this.ctx.spentDataHashes;
 
     // // DerivedCtx
-    // todo: calculating instead of injecting
     const prevout = this.ctx.prevout;
     const inputCount = this.ctx.inputCount;
   

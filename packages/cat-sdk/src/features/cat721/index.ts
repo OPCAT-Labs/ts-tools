@@ -9,7 +9,6 @@ export { deployOpenMinterCollection } from './deploy/cat721OpenMinter.js'
 export { deployClosedMinterCollection } from './deploy/cat721ClosedMinter.js'
 export { mintOpenMinterNft } from './mint/cat721OpenMinter.js'
 export { mintClosedMinterNft } from './mint/cat721ClosedMinter.js'
-export { destroyCAT721Guard } from './guard/destroyGuard.js'
 
 // legacy exports
 /**

@@ -1,6 +1,6 @@
 import { expect, use } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { ByteString, UTXO } from '@opcat-labs/scrypt-ts-opcat'
+import { ByteString, toByteString, UTXO } from '@opcat-labs/scrypt-ts-opcat'
 import { TestCAT20Generator } from '../../../utils/testCAT20Generator'
 import { OpenMinterCAT20Meta } from '../../../../src/contracts/cat20/types'
 import { loadAllArtifacts } from '../utils'
@@ -45,13 +45,13 @@ describe('Test the feature `burnByAdmin` for `Cat20`', () => {
 
   const getTokenUtxos = async function (
     generator: TestCAT20Generator,
-    contractHash: string,
+    ownerAddr: ByteString,
     n: number
   ) {
     const r: UTXO[] = []
     for (let index = 0; index < n; index++) {
       const utxo = await generator.mintTokenToHash160(
-        contractHash,
+        ownerAddr,
         BigInt(Math.floor(Math.random() * 1000000))
       )
       r.push(utxo)
@@ -76,11 +76,25 @@ describe('Test the feature `burnByAdmin` for `Cat20`', () => {
       )
       await testBurnByAdminResult(tokenUtxos)
     })
+    it('should burnByAdmin tokens owned by a different (non-admin) p2pkh address', async () => {
+      // Mint tokens to an unrelated address — admin should be able to burn these
+      // without being the owner (the primary use case of burnByAdmin).
+      // ownerAddr must be a valid P2PKH locking script: OP_DUP OP_HASH160 <20-byte-hash> OP_EQUALVERIFY OP_CHECKSIG
+      const otherOwnerAddr = toByteString('76a914010101010101010101010101010101010101010188ac')
+      const tokenUtxos = await getTokenUtxos(cat20Generator, otherOwnerAddr, 1)
+      await testBurnByAdminResult(tokenUtxos)
+    })
+    it('should burnByAdmin tokens owned by a contract (sha256 hash owner)', async () => {
+      // ownerAddr can also be a 32-byte contract script hash
+      const contractOwnerAddr = toByteString('0101010101010101010101010101010101010101010101010101010101010101')
+      const tokenUtxos = await getTokenUtxos(cat20Generator, contractOwnerAddr, 1)
+      await testBurnByAdminResult(tokenUtxos)
+    })
   })
 
   async function testBurnByAdminResult(cat20Utxos: UTXO[]) {
     const cat20Admin = new CAT20Admin(
-      outpoint2ByteString(cat20Generator.deployInfo.tokenId)
+      outpoint2ByteString(cat20Generator.getAdminGenesisOutpoint())
     )
     cat20Admin.bindToUtxo(cat20Generator.getCat20AdminUtxo())
     const { guardPsbt, sendPsbt } = await  runWithDryCheck(testProvider, burnByAdmin)(

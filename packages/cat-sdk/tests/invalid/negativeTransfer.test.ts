@@ -5,7 +5,7 @@ import { createCat721, TestCAT721Generator } from "../utils/testCAT721Generator"
 import { ExtPsbt, fill, getBackTraceInfo, PubKey, Script, sha256, Signer, toByteString, toHex, Transaction, uint8ArrayToHex, UTXO } from "@opcat-labs/scrypt-ts-opcat";
 import { testSigner } from "../utils/testSigner";
 import { applyFixedArray, getDummyUtxo, toTokenOwnerAddress } from "../../src/utils";
-import { CAT20, CAT20GuardStateLib, CAT20State, CAT20StateLib, CAT721, CAT721GuardStateLib, CAT721State, CAT721StateLib, ConstantsLib, OUTPUT_DATA_HASH_INDEX, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../src/contracts";
+import { CAT20, CAT20GuardStateLib, CAT20State, CAT20StateLib, CAT721, CAT721GuardStateLib, CAT721State, CAT721StateLib, ConstantsLib, OUTPUT_DATA_HASH_INDEX, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, SPEND_TYPE_USER_SPEND, SPEND_TYPE_CONTRACT_SPEND, SPEND_TYPE_ADMIN_SPEND } from "../../src/contracts";
 import { ContractPeripheral, CAT20GuardPeripheral, CAT721GuardPeripheral } from "../../src/utils/contractPeripheral";
 import { Postage } from "../../src/typeConstants";
 import { expect, use } from 'chai';
@@ -104,6 +104,9 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
         inputAmountList: bigint[],
         outputAmountList: bigint[],
     ) {
+        // F14 Fix: Get the raw pubkey string for guard signature
+        const pubkey = await testSigner.getPublicKey()
+
         const utxoList = await Promise.all(inputAmountList.map(fakeCAT20))
 
         const outputStates: CAT20State[] = outputAmountList
@@ -116,16 +119,14 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
         const txInputCount = utxoList.length + 2;
         const txOutputCount = outputStates.length + 1;
 
-        const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
         const guardOwnerAddr = toTokenOwnerAddress(mainAddress)
-        const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
+        const { guard, guardState, tokenAmounts, tokenBurnAmounts, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
             utxoList.map((utxo, index) => ({ token: utxo.utxo, inputIndex: index })),
             outputStates.map((state, index) => ({ address: state.ownerAddr, amount: state.amount, outputIndex: index })),
             txInputCount,
             txOutputCount,
             guardOwnerAddr
         )
-        guard.state = guardState
         {
             const psbt = new ExtPsbt({ network: await testProvider.getNetwork(), maximumFeeRate: 1e8 }).spendUTXO(getDummyUtxo(mainAddress)).addContractOutput(guard, 1e8);
             const signedPsbtHex = await testSigner.signPsbt(psbt.seal().toHex(), psbt.psbtOptions());
@@ -135,14 +136,14 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
         const guardInputIndex = utxoList.length
         const psbt = new ExtPsbt({ network: await testProvider.getNetwork(), maximumFeeRate: 1e8 });
         utxoList.forEach((utxo, inputIndex) => {
-            const cat20Contract = new CAT20(cat20.minterScriptHash, guardScriptHashes, cat20.deployInfo.hasAdmin, cat20.deployInfo.adminScriptHash).bindToUtxo(utxo.utxo);
+            const cat20Contract = new CAT20(cat20.minterScriptHash, cat20.deployInfo.hasAdmin, cat20.deployInfo.adminScriptHash).bindToUtxo(utxo.utxo);
             psbt.addContractInput(cat20Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
                         userPubKey: mainPubKey,
                         userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
                         spendScriptInputIndex: -1n,
-                        spendType: 0n,
+                        spendType: SPEND_TYPE_USER_SPEND,
                     },
                     guardState,
                     BigInt(guardInputIndex),
@@ -190,7 +191,15 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
                 nextStateHashes,
                 curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
             )
+
+            // F14 Fix: Get deployer signature for guard
+            const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
             contract.unlock(
+                deployerSig,
+                PubKey(pubkey),
+                tokenAmounts,
+                tokenBurnAmounts,
                 nextStateHashes,
                 ownerAddrOrScripts,
                 outputTokens,
@@ -201,7 +210,7 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
             )
         })
         outputStates.forEach((state) => {
-            const cat20Contract = new CAT20(cat20.minterScriptHash, guardScriptHashes, cat20.deployInfo.hasAdmin, cat20.deployInfo.adminScriptHash)
+            const cat20Contract = new CAT20(cat20.minterScriptHash, cat20.deployInfo.hasAdmin, cat20.deployInfo.adminScriptHash)
             cat20Contract.state = state;
             psbt.addContractOutput(
                 cat20Contract,
@@ -219,6 +228,9 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
         inputLocalIds: bigint[],
         outputLocalIds: bigint[],
     ) {
+        // F14 Fix: Get the raw pubkey string for guard signature
+        const pubkey = await testSigner.getPublicKey()
+
         const utxoList = await Promise.all(inputLocalIds.map(fakeCAT721))
 
         const outputStates: CAT721State[] = outputLocalIds.map((localId) => {
@@ -232,7 +244,6 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
         const txInputCount = utxoList.length + 2;
         const txOutputCount = outputStates.length + 1;
 
-        const guardScriptHashes721 = CAT721GuardPeripheral.getGuardVariantScriptHashes()
         const cat721GuardOwnerAddr = toTokenOwnerAddress(mainAddress)
         const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT721GuardPeripheral.createTransferGuard(
             utxoList.map((utxo, index) => ({ nft: utxo.utxo, inputIndex: index })),
@@ -241,7 +252,6 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
             txOutputCount,
             cat721GuardOwnerAddr
         );
-        guard.state = guardState
         {
             const psbt = new ExtPsbt({
                 network: await testProvider.getNetwork(),
@@ -261,7 +271,7 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
             maximumFeeRate: 1e8,
         })
         utxoList.forEach((utxo, inputIndex) => {
-            const cat721Contract = new CAT721(cat721.minterScriptHash, guardScriptHashes721).bindToUtxo(utxo.utxo);
+            const cat721Contract = new CAT721(cat721.minterScriptHash).bindToUtxo(utxo.utxo);
             psbt.addContractInput(cat721Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
@@ -319,7 +329,13 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
                 nextStateHashes,
                 curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
             )
+
+            // F14 Fix: Get deployer signature for guard
+            const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
             contract.unlock(
+                deployerSig,
+                PubKey(pubkey),
                 nextStateHashes,
                 ownerAddrOrScripts,
                 _outputLocalIds,
@@ -330,7 +346,7 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
             );
         });
         outputStates.forEach((state) => {
-            const cat721Contract = new CAT721(cat721.minterScriptHash, guardScriptHashes721)
+            const cat721Contract = new CAT721(cat721.minterScriptHash)
             cat721Contract.state = state;
             psbt.addContractOutput(cat721Contract, Postage.NFT_POSTAGE);
         });
@@ -345,7 +361,6 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
         const cat20State = CAT20StateLib.create(amount, toTokenOwnerAddress(mainAddress));
         const cat20Script = new CAT20(
             cat20.minterScriptHash,
-            cat20.guardScriptHashes,
             cat20.deployInfo.hasAdmin,
             cat20.deployInfo.adminScriptHash
         ).lockingScript.toHex()
@@ -399,8 +414,7 @@ isLocalTest(testProvider) && describe('Test negative transfer', () => {
     async function fakeCAT721(localId: bigint) {
         const cat721State = CAT721StateLib.create(localId, toTokenOwnerAddress(mainAddress));
         const cat721Script = new CAT721(
-            cat721.minterScriptHash,
-            cat721.guardScriptHashes
+            cat721.minterScriptHash
         ).lockingScript.toHex()
         const dummyInputScript = Script.buildPublicKeyHashIn(mainPubKey, Buffer.from('304402203f92d9cc4a3cd5b736569cd4bac08a24e0610d60f48e89e396670c693f5638ee02204f732e6cfe50e6eae43ba6b8a76ccb34dec8a069b9afd922cd22531d0184cf4001', 'hex')).toHex()
 

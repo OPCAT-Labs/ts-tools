@@ -154,55 +154,59 @@
           "type": "bytes"
         },
         {
-          "name": "nLockTime",
-          "type": "bytes"
-        },
-        {
-          "name": "shaPrevouts",
-          "type": "bytes"
-        },
-        {
-          "name": "shaSpentAmounts",
-          "type": "bytes"
-        },
-        {
-          "name": "shaSpentScripts",
-          "type": "bytes"
-        },
-        {
-          "name": "shaSequences",
-          "type": "bytes"
-        },
-        {
-          "name": "shaOutputs",
-          "type": "bytes"
-        },
-        {
-          "name": "spendType",
+          "name": "hashPrevouts",
           "type": "bytes"
         },
         {
           "name": "inputIndex",
+          "type": "int"
+        },
+        {
+          "name": "outpoint",
           "type": "bytes"
         },
         {
-          "name": "tapLeafHash",
+          "name": "spentScriptHash",
           "type": "bytes"
         },
         {
-          "name": "keyVersion",
+          "name": "spentDataHash",
           "type": "bytes"
         },
         {
-          "name": "codeSepPos",
+          "name": "value",
+          "type": "int"
+        },
+        {
+          "name": "nSequence",
           "type": "bytes"
         },
         {
-          "name": "_eWithoutLastByte",
+          "name": "hashSpentAmounts",
           "type": "bytes"
         },
         {
-          "name": "_eLastByte",
+          "name": "hashSpentScriptHashes",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSpentDataHashes",
+          "type": "bytes"
+        },
+        {
+          "name": "hashSequences",
+          "type": "bytes"
+        },
+        {
+          "name": "hashOutputs",
+          "type": "bytes"
+        },
+        {
+          "name": "nLockTime",
+          "type": "int"
+        },
+        {
+          "name": "sigHashType",
           "type": "int"
         }
       ],

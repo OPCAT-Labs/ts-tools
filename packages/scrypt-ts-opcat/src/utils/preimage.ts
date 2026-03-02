@@ -28,18 +28,19 @@ export function decodeSHPreimage(preimage: Uint8Array): SHPreimage {
   return {
     nVersion: toByteString(tools.toHex(preimage.subarray(0, 4))),
     hashPrevouts: tools.toHex(preimage.subarray(4, 36)),
-    spentScriptHash: tools.toHex(preimage.subarray(36, 68)),
-    spentDataHash: tools.toHex(preimage.subarray(68, 100)),
-    value: byteStringToInt(tools.toHex(preimage.subarray(100, 108))),
-    nSequence: toByteString(tools.toHex(preimage.subarray(108, 112))),
-    hashSpentAmounts: tools.toHex(preimage.subarray(112, 144)),
-    hashSpentScriptHashes: tools.toHex(preimage.subarray(144, 176)),
-    hashSpentDataHashes: tools.toHex(preimage.subarray(176, 208)),
-    hashSequences: tools.toHex(preimage.subarray(208, 240)),
-    hashOutputs: tools.toHex(preimage.subarray(240, 272)),
-    inputIndex: byteStringToInt(tools.toHex(preimage.subarray(272, 276))),
-    nLockTime: byteStringToInt(tools.toHex(preimage.subarray(276, 280))),
-    sigHashType: byteStringToInt(tools.toHex(preimage.subarray(280, 284))),
+    inputIndex: byteStringToInt(tools.toHex(preimage.subarray(36, 40))),
+    outpoint: tools.toHex(preimage.subarray(40, 76)),
+    spentScriptHash: tools.toHex(preimage.subarray(76, 108)),
+    spentDataHash: tools.toHex(preimage.subarray(108, 140)),
+    value: byteStringToInt(tools.toHex(preimage.subarray(140, 148))),
+    nSequence: toByteString(tools.toHex(preimage.subarray(148, 152))),
+    hashSpentAmounts: tools.toHex(preimage.subarray(152, 184)),
+    hashSpentScriptHashes: tools.toHex(preimage.subarray(184, 216)),
+    hashSpentDataHashes: tools.toHex(preimage.subarray(216, 248)),
+    hashSequences: tools.toHex(preimage.subarray(248, 280)),
+    hashOutputs: tools.toHex(preimage.subarray(280, 312)),
+    nLockTime: byteStringToInt(tools.toHex(preimage.subarray(312, 316))),
+    sigHashType: byteStringToInt(tools.toHex(preimage.subarray(316, 320))),
   };
 }
 
@@ -54,6 +55,8 @@ export function decodeSHPreimage(preimage: Uint8Array): SHPreimage {
 export function encodeSHPreimage(shPreimage: SHPreimage): ByteString {
   const rawSHPreimage = shPreimage.nVersion
     + shPreimage.hashPrevouts
+    + intToByteString(shPreimage.inputIndex, 4n)
+    + shPreimage.outpoint
     + shPreimage.spentScriptHash
     + shPreimage.spentDataHash
     + intToByteString(shPreimage.value, 8n)
@@ -63,7 +66,6 @@ export function encodeSHPreimage(shPreimage: SHPreimage): ByteString {
     + shPreimage.hashSpentDataHashes
     + shPreimage.hashSequences
     + shPreimage.hashOutputs
-    + intToByteString(shPreimage.inputIndex, 4n)
     + intToByteString(shPreimage.nLockTime, 4n)
     + intToByteString(shPreimage.sigHashType, 4n);
 

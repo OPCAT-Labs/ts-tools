@@ -4,10 +4,10 @@ import { isLocalTest } from './utils';
 import { testProvider } from './utils/testProvider';
 import { loadAllArtifacts } from './features/cat20/utils';
 import { loadAllArtifacts as loadAllArtifacts721} from './features/cat721/utils';
-import { ByteString, ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, slice, toByteString, toHex, uint8ArrayToHex, UTXO } from '@opcat-labs/scrypt-ts-opcat';
+import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, slice, toByteString, toHex, uint8ArrayToHex, UTXO } from '@opcat-labs/scrypt-ts-opcat';
 import { testSigner } from './utils/testSigner';
-import {createCat20, TestCat20, TestCAT20Generator} from './utils/testCAT20Generator';
-import { CAT20, CAT20GuardConstState, CAT20GuardStateLib, CAT20State, CAT20StateLib, CAT721, CAT721GuardConstState, CAT721GuardStateLib, CAT721StateLib, ConstantsLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, GUARD_TOKEN_TYPE_MAX } from '../src/contracts';
+import {createCat20, TestCAT20Generator} from './utils/testCAT20Generator';
+import { CAT20, CAT20GuardConstState, CAT20StateLib, CAT721, CAT721GuardConstState, CAT721StateLib, GUARD_TOKEN_TYPE_MAX, SPEND_TYPE_USER_SPEND } from '../src/contracts';
 import { CAT20GuardPeripheral, CAT721GuardPeripheral } from '../src/utils/contractPeripheral';
 import { ContractPeripheral } from '../src/utils/contractPeripheral';
 import { applyFixedArray, getDummyUtxo, toTokenOwnerAddress } from '../src/utils';
@@ -142,7 +142,6 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
         }
 
         private static async createCat20GuardContract(guard: any, guardState: CAT20GuardConstState) {
-            guard.state = guardState;
             const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8})
                 .spendUTXO(getDummyUtxo(mainAddress))
                 // 1e8 is enough for the next txn's fee
@@ -154,7 +153,6 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
         }
 
         private static async createCat721GuardContract(guard: any, guardState: CAT721GuardConstState) {
-            guard.state = guardState;
             const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8})
                 .spendUTXO(getDummyUtxo(mainAddress))
                 // 1e8 is enough for the next txn's fee
@@ -176,6 +174,9 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
         }
 
         async test() {
+            // F14 Fix: Get the raw pubkey string for guard signature
+            const pubkey = await testSigner.getPublicKey()
+
             if (this.tested) {
                 throw new Error('TestCase already tested');
             }
@@ -188,6 +189,8 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
 
             let cat20GuardState: any;
             let cat721GuardState: any;
+            let cat20TokenAmounts: any;
+            let cat20TokenBurnAmounts: any;
 
             let inputIndex = 0;
             let cat20GuardInputIndex = -1;
@@ -208,7 +211,6 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
             let cat721TxOutputCountMax = 0;
 
             if (hasCat20) {
-                const cat20GuardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
                 // Build script hash to index mapping
                 const cat20ScriptHashToIndex = new Map<string, number>();
@@ -257,7 +259,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                 const txOutputCount = receivers.length + (hasCat721 ? this.cat721s.filter(({ isBurn }) => !isBurn).length : 0) + 1;
 
                 const guardOwnerAddr = toTokenOwnerAddress(mainAddress)
-                const { guard: cat20Guard, guardState: _cat20GuardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
+                const { guard: cat20Guard, guardState: _cat20GuardState, tokenAmounts: _tokenAmounts, tokenBurnAmounts: _tokenBurnAmounts, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
                     this.cat20s.map((item, idx) => ({ token: item.cat20.utxo, inputIndex: idx })),
                     tempReceivers,
                     txInputCount,
@@ -266,12 +268,14 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                 );
 
                 // Now set the correct burn amounts by type
+                cat20TokenAmounts = _tokenAmounts;
+                cat20TokenBurnAmounts = _tokenBurnAmounts;
                 if (hasBurn) {
                     const burnAmounts = fill(0n, GUARD_TOKEN_TYPE_MAX);
                     cat20BurnAmountsByType.forEach((amount, index) => {
                         burnAmounts[index] = amount;
                     });
-                    _cat20GuardState.tokenBurnAmounts = burnAmounts;
+                    cat20TokenBurnAmounts = burnAmounts;
                 }
 
                 cat20GuardState = _cat20GuardState;
@@ -279,7 +283,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                 cat20TxOutputCountMax = txOutputCountMax;
 
                 this.cat20s.forEach(({ cat20, sendAmount, burnAmount }, index) => {
-                    const contract = new CAT20(cat20.generater.minterScriptHash, cat20GuardScriptHashes, cat20.generater.deployInfo.hasAdmin, cat20.generater.deployInfo.adminScriptHash).bindToUtxo(cat20.utxo);
+                    const contract = new CAT20(cat20.generater.minterScriptHash, cat20.generater.deployInfo.hasAdmin, cat20.generater.deployInfo.adminScriptHash).bindToUtxo(cat20.utxo);
                     psbt.addContractInput(contract, (contract, curPsbt) => {
                         const localInputIndex = cat20InputStartIndex + index
                         contract.unlock(
@@ -287,7 +291,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                                 userPubKey: mainPubKey,
                                 userSig: curPsbt.getSig(localInputIndex, { address: mainAddress }),
                                 spendScriptInputIndex: -1n,
-                                spendType: 0n,
+                                spendType: SPEND_TYPE_USER_SPEND,
                             },
                             cat20GuardState,
                             BigInt(cat20GuardInputIndex),
@@ -302,7 +306,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                     // cat20ScriptInputIndexes.push(BigInt(index));
                     if (sendAmount > 0n) {
                         // transfer to main address
-                        const cat20Contract = new CAT20(cat20.generater.minterScriptHash, cat20GuardScriptHashes, cat20.generater.deployInfo.hasAdmin, cat20.generater.deployInfo.adminScriptHash).bindToUtxo(cat20.utxo);
+                        const cat20Contract = new CAT20(cat20.generater.minterScriptHash, cat20.generater.deployInfo.hasAdmin, cat20.generater.deployInfo.adminScriptHash).bindToUtxo(cat20.utxo);
                         cat20Contract.state = {
                             ownerAddr: CAT20.deserializeState(cat20.utxo.data).ownerAddr,
                             amount: sendAmount,
@@ -360,7 +364,15 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                         nextStateHashes,
                         curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
                     )
+
+                    // F14 Fix: Get deployer signature for guard
+                    const deployerSig = curPsbt.getSig(cat20GuardInputIndex, { publicKey: pubkey })
+
                     contract.unlock(
+                        deployerSig,
+                        PubKey(pubkey),
+                        cat20TokenAmounts,
+                        cat20TokenBurnAmounts,
                         nextStateHashes,
                         ownerAddrOrScripts,
                         outputTokens,
@@ -374,7 +386,6 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
             if (hasCat721) {
                 cat721InputStartIndex = inputIndex;
                 cat721OutputStartIndex = outputIndex;
-                const cat721GuardScriptHashes = CAT721GuardPeripheral.getGuardVariantScriptHashes();
 
                 // Calculate number of unique collection types
                 const uniqueCollectionScripts = new Set(this.cat721s.map(({ cat721 }) => ContractPeripheral.scriptHash(cat721.utxo.script)));
@@ -420,7 +431,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                 this.cat721s.forEach(({ cat721, isBurn }, index) => {
                     inputIndex++;
 
-                    const cat721Contract = new CAT721(cat721.generater.minterScriptHash, cat721GuardScriptHashes).bindToUtxo(cat721.utxo);
+                    const cat721Contract = new CAT721(cat721.generater.minterScriptHash).bindToUtxo(cat721.utxo);
                     psbt.addContractInput(cat721Contract, (contract, curPsbt) => {
                         const localInputIndex = cat721InputStartIndex + index
                         contract.unlock(
@@ -440,7 +451,7 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                     });
                     if (!isBurn) {
                         // transfer to main address
-                        const cat721Contract = new CAT721(cat721.generater.minterScriptHash, cat721GuardScriptHashes).bindToUtxo(cat721.utxo);
+                        const cat721Contract = new CAT721(cat721.generater.minterScriptHash).bindToUtxo(cat721.utxo);
                         cat721Contract.state = {
                             ownerAddr: CAT721.deserializeState(cat721.utxo.data).ownerAddr,
                             localId: CAT721.deserializeState(cat721.utxo.data).localId,
@@ -497,7 +508,13 @@ isLocalTest(testProvider) && describe('Test multiple cat20 & cat721 token types 
                         nextStateHashes,
                         curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
                     )
+
+                    // F14 Fix: Get deployer signature for guard
+                    const deployerSig = curPsbt.getSig(cat721GuardInputIndex, { publicKey: pubkey })
+
                     contract.unlock(
+                        deployerSig,
+                        PubKey(pubkey),
                         nextStateHashes,
                         ownerAddrOrScripts,
                         _outputLocalIds,

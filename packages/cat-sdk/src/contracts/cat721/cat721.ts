@@ -6,6 +6,7 @@ import { OWNER_ADDR_CONTRACT_HASH_BYTE_LEN, NFT_GUARD_VARIANTS_COUNT } from "../
 import { OwnerUtils } from "../utils/ownerUtils.js";
 import { SpentDataHashes } from "@opcat-labs/scrypt-ts-opcat/dist/types/smart-contract/types/structs";
 import { CatTags } from "../catTags.js";
+import { CAT721GuardVariants } from "./cat721GuardVariants.js";
 
 /**
  * The CAT721 contract
@@ -15,17 +16,20 @@ import { CatTags } from "../catTags.js";
  */
 @tags([CatTags.CAT721_TAG])
 export class CAT721 extends SmartContract<CAT721State> {
+  @prop()
+  static readonly guardVariantScriptHashes: FixedArray<Sha256, typeof NFT_GUARD_VARIANTS_COUNT> = [
+    CAT721GuardVariants.CANONICAL_GUARD_6_6_2,
+    CAT721GuardVariants.CANONICAL_GUARD_6_6_4,
+    CAT721GuardVariants.CANONICAL_GUARD_12_12_2,
+    CAT721GuardVariants.CANONICAL_GUARD_12_12_4,
+  ]
 
   @prop()
   minterScriptHash: ByteString
 
-  @prop()
-  guardVariantScriptHashes: FixedArray<Sha256, typeof NFT_GUARD_VARIANTS_COUNT>;
-
-  constructor(minterScriptHash: ByteString, guardVariantScriptHashes: FixedArray<Sha256, typeof NFT_GUARD_VARIANTS_COUNT>) {
+  constructor(minterScriptHash: ByteString) {
     super(...arguments)
     this.minterScriptHash = minterScriptHash
-    this.guardVariantScriptHashes = guardVariantScriptHashes
   }
 
   @method()
@@ -39,6 +43,12 @@ export class CAT721 extends SmartContract<CAT721State> {
   ) {
     this.backtraceToScript(backtraceInfo, this.minterScriptHash);
 
+    // F1 Fix: Validate guardInputIndex bounds before using it
+    assert(
+      guardInputIndex >= 0n && guardInputIndex < this.ctx.inputCount,
+      'guardInputIndex out of bounds'
+    )
+
     this.checkGuard(
       guardState,
       this.ctx.spentScriptHash,
@@ -51,6 +61,10 @@ export class CAT721 extends SmartContract<CAT721State> {
     if (len(this.state.ownerAddr) == OWNER_ADDR_CONTRACT_HASH_BYTE_LEN) {
       // unlock token owned by contract script
       assert(unlockArgs.contractInputIndex >= 0n && unlockArgs.contractInputIndex < this.ctx.inputCount, 'contract input index is invalid')
+      // C2/F3 Fix: Prevent self-reference attack
+      assert(unlockArgs.contractInputIndex != this.ctx.inputIndex, 'contractInputIndex cannot reference self')
+      // C3 Fix: Prevent pointing to guard input
+      assert(unlockArgs.contractInputIndex != guardInputIndex, 'contractInputIndex cannot reference guard')
       assert(this.state.ownerAddr == ContextUtils.getSpentScriptHash(this.ctx.spentScriptHashes, unlockArgs.contractInputIndex), 'contract input script is invalid')
     } else {
       OwnerUtils.checkUserOwner(unlockArgs.userPubKey, this.state.ownerAddr);
@@ -70,8 +84,8 @@ export class CAT721 extends SmartContract<CAT721State> {
     // guard state contains current token state hash
     const guardScriptHash = ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndex);
     assert(
-      guardScriptHash == this.guardVariantScriptHashes[0] || guardScriptHash == this.guardVariantScriptHashes[1] ||
-      guardScriptHash == this.guardVariantScriptHashes[2] || guardScriptHash == this.guardVariantScriptHashes[3],
+      guardScriptHash == CAT721.guardVariantScriptHashes[0] || guardScriptHash == CAT721.guardVariantScriptHashes[1] ||
+      guardScriptHash == CAT721.guardVariantScriptHashes[2] || guardScriptHash == CAT721.guardVariantScriptHashes[3],
       'guard script hash is invalid'
     );
     assert(ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndex) == CAT721GuardStateLib.stateHash(guardState), 'guard state hash is invalid')

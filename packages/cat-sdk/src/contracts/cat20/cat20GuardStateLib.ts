@@ -1,6 +1,6 @@
 import { StateLib, method, assert, ByteString, len, SHA256_HASH_LEN, FixedArray, toByteString, fill, byteStringToInt, slice, intToByteString } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT20GuardConstState } from "./types.js";
-import { ConstantsLib, GUARD_TOKEN_TYPE_MAX, TX_INPUT_COUNT_MAX_6, TX_INPUT_COUNT_MAX_12 } from "../constants.js";
+import { ConstantsLib, GUARD_TOKEN_TYPE_MAX, INVALID_INDEX, TX_INPUT_COUNT_MAX_6, TX_INPUT_COUNT_MAX_12 } from "../constants.js";
 
 /**
  * The CAT20 guard state library
@@ -17,9 +17,6 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
     for (let i = 0; i < GUARD_TOKEN_TYPE_MAX; i++) {
       const scriptLen = len(_state.tokenScriptHashes[i])
       assert(scriptLen == SHA256_HASH_LEN)
-
-      assert(_state.tokenAmounts[i] >= 0)
-      assert(_state.tokenBurnAmounts[i] >= 0)
     }
 
     assert(len(_state.tokenScriptIndexes) == BigInt(txInputCountMax))
@@ -47,6 +44,12 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
   }
 
 
+  /**
+   * Creates an empty CAT20 guard state with default values
+   * @param txInputCountMax Maximum number of transaction inputs supported by this guard variant
+   * @returns Empty guard state with placeholder token script hashes and -1 indexes for all inputs
+   * @note F21 Fix: Uses intToByteString(index, 1) to encode -1 as 0x81 for consistency with on-chain validation
+   */
   static createEmptyState(txInputCountMax: typeof TX_INPUT_COUNT_MAX_6 | typeof TX_INPUT_COUNT_MAX_12): CAT20GuardConstState {
     const tokenScriptHashes = fill(toByteString(''), GUARD_TOKEN_TYPE_MAX)
     // default value to ensure the uniqueness of token scripts
@@ -55,14 +58,12 @@ export class CAT20GuardStateLib extends StateLib<CAT20GuardConstState> {
     tokenScriptHashes[2] = ConstantsLib.TOKEN_SCRIPT_HASH_PLACEHOLDER_FD
     tokenScriptHashes[3] = ConstantsLib.TOKEN_SCRIPT_HASH_PLACEHOLDER_FC
 
-    const tokenScriptIndexesArray = fill(-1n, txInputCountMax)
+    const tokenScriptIndexesArray = fill(INVALID_INDEX, txInputCountMax)
     const tokenScriptIndexes = tokenScriptIndexesArray.map(index => intToByteString(index, 1n)).join('')
 
     return {
       deployerAddr: toByteString(''),
       tokenScriptHashes: tokenScriptHashes,
-      tokenAmounts: fill(0n, GUARD_TOKEN_TYPE_MAX),
-      tokenBurnAmounts: fill(0n, GUARD_TOKEN_TYPE_MAX),
       tokenScriptIndexes,
     }
   }

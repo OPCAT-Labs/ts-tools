@@ -79,7 +79,7 @@ describe('Test the feature `deploy` for `CAT721OpenMinter`', () => {
                 const oldLeaf = nftOpenMinterMerkleTreeData.getLeaf(index)
                 const newLeaf: CAT721MerkleLeaf = {
                     ...oldLeaf,
-                    isMined: true,
+                    hasMintedBefore: true,
                 }
                 const updateLeafInfo = nftOpenMinterMerkleTreeData.updateLeaf(newLeaf, index)
                 const nftStorage = getNftStorage(BigInt(index))
@@ -135,7 +135,7 @@ function generateCollectionLeaf(max: bigint) {
         nftMerkleLeafList.push({
             contentDataHash: sha256(nftStr),
             localId: i,
-            isMined: false,
+            hasMintedBefore: false,
         })
     }
     return nftMerkleLeafList

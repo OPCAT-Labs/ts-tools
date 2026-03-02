@@ -1,11 +1,11 @@
 {
   "version": 10,
   "compilerVersion": "1.22.0+commit.47800da",
-  "contract": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__Genesis",
-  "md5": "b0f465a1dbe0e0ce8ee64e324bc94894",
+  "contract": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__Genesis",
+  "md5": "c0ddc4f85556f0c98370974ae6e2e654",
   "structs": [
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxOut",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxOut",
       "params": [
         {
           "name": "scriptHash",
@@ -23,7 +23,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxIn",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxIn",
       "params": [
         {
           "name": "prevTxHash",
@@ -45,7 +45,47 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__SHPreimage",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxHashPreimage",
+      "params": [
+        {
+          "name": "version",
+          "type": "bytes"
+        },
+        {
+          "name": "inputList",
+          "type": "bytes"
+        },
+        {
+          "name": "outputList",
+          "type": "bytes"
+        },
+        {
+          "name": "nLockTime",
+          "type": "bytes"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__BacktraceInfo",
+      "params": [
+        {
+          "name": "prevTxInput",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxIn"
+        },
+        {
+          "name": "prevTxInputIndex",
+          "type": "int"
+        },
+        {
+          "name": "prevPrevTxPreimage",
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxHashPreimage"
+        }
+      ],
+      "genericTypes": []
+    },
+    {
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__SHPreimage",
       "params": [
         {
           "name": "nVersion",
@@ -53,6 +93,14 @@
         },
         {
           "name": "hashPrevouts",
+          "type": "bytes"
+        },
+        {
+          "name": "inputIndex",
+          "type": "int"
+        },
+        {
+          "name": "outpoint",
           "type": "bytes"
         },
         {
@@ -92,10 +140,6 @@
           "type": "bytes"
         },
         {
-          "name": "inputIndex",
-          "type": "int"
-        },
-        {
           "name": "nLockTime",
           "type": "int"
         },
@@ -107,7 +151,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__Outpoint",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__Outpoint",
       "params": [
         {
           "name": "txHash",
@@ -121,47 +165,25 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxHashPreimage",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ChangeInfo",
       "params": [
         {
-          "name": "version",
-          "type": "bytes"
+          "name": "pubkeyhash",
+          "type": "Ripemd160"
         },
         {
-          "name": "inputList",
-          "type": "bytes"
-        },
-        {
-          "name": "outputList",
-          "type": "bytes"
-        },
-        {
-          "name": "nLockTime",
-          "type": "bytes"
-        }
-      ],
-      "genericTypes": []
-    },
-    {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__BacktraceInfo",
-      "params": [
-        {
-          "name": "prevTxInput",
-          "type": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxIn"
-        },
-        {
-          "name": "prevTxInputIndex",
+          "name": "satoshis",
           "type": "int"
         },
         {
-          "name": "prevPrevTxPreimage",
-          "type": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxHashPreimage"
+          "name": "dataHash",
+          "type": "Sha256"
         }
       ],
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__ReadVarintResult",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ReadVarintResult",
       "params": [
         {
           "name": "data",
@@ -177,19 +199,19 @@
   ],
   "library": [
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__ContextUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ContextUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__StdUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__StdUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
@@ -204,7 +226,7 @@
       "params": [
         {
           "name": "outputs",
-          "type": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__TxOut[6]"
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxOut[6]"
         },
         {
           "name": "outputCount",
@@ -212,7 +234,7 @@
         },
         {
           "name": "__scrypt_ts_shPreimage",
-          "type": "_opcat_labs_scrypt_ts_opcat_2_1_2__rs__SHPreimage"
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__SHPreimage"
         },
         {
           "name": "__scrypt_ts_preimageSig",
@@ -236,5 +258,5 @@
   "stateProps": [],
   "buildType": "release",
   "file": "../genesis.scrypt",
-  "hex": "2102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec03825379547982778c7f75007f770112790112790112790112790112790112790112790112790112790112790112790112790112790112795d798277549d5c79827701209d5b79827701209d5a79827701209d597900a26958798277549d5779827701209d5679827701209d5579827701209d5479827701209d5379827701209d527900a2697800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695d795d797e5c797e5b797e5a79767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e59797e58797e57797e56797e55797e54797e5379546e8b806e7c7f75007f6b6d6d6c7e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6ca85279ba63537978ac6700686952795c7978aa7888785878827d77527997009d6e7c966b6d6d6c7752795c796f75aa527988765379012078827d77527997009d6e7c967777779d6d755779009d7656a16901137900a06301137956a1670068690125766b796c766b796c766b796c6d7c77000127766b796c766b796c766b796c75000119799f635279827700a06970707c527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a53797500635479537987916968686d750124766b796c766b796c766b796c75510119799f635279827700a06970707c527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a53797551635479537987916968686d750121766b796c766b796c766b796c75520119799f635279827700a06970707c527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a53797551635479537987916968686d75011e766b796c766b796c766b796c75530119799f635279827700a06970707c527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a53797551635479537987916968686d75011b766b796c766b796c766b796c75540119799f635279827700a06970707c527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a5379755400a0635479537987916968686d750118766b796c766b796c766b796c75550119799f635279827700a06970707c527982777882777801209d7601209d537900a2695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a5379755500a0635479537987916968686d750053799f635479006e8b0120957f75780120957f77777752797887916975685153799f635479516e8b0120957f75780120957f77777752797887916975685253799f635479526e8b0120957f75780120957f77777752797887916975685353799f635479536e8b0120957f75780120957f77777752797887916975685453799f635479546e8b0120957f75780120957f77777752797887916975685553799f635479556e8b0120957f75780120957f777777527978879169756876aa5b79876b6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6c"
+  "hex": "2102ba79df5f8ae7604a9830f03c7933028186aede0675a16f025dc4f8be8eec03825479519d5379547982778c7f7755795280517f75007f77876354795280517f77010087670068635379547982778c7f75007f770113790113790113790113790113790113790113790113790113790113790113790113790113790113790113795e798277549d5d79827701209d5c7900a2695b79827701249d5a79827701209d5979827701209d587900a26957798277549d5679827701209d5579827701209d5479827701209d5379827701209d5279827701209d7800a26976519c6476529c6751686476539c67516864760281009c67516864760282009c67516864760283009c675168695e795e797e5d79546e8b806e7c7f75007f6b6d6d6c7e5c797e5b797e5a797e5979767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c7e58797e57797e56797e55797e54797e53797e5279546e8b806e7c7f75007f6b6d6d6c7e7854807e6b6d6d6d6d6d6d6d6c77a85279ba67006863537978ac6700686952795b7978aa7888785878827d77527997009d6e7c966b6d6d6c7752795b796f75aa527988765379012078827d77527997009d6e7c967777779d6d75011179009d7656a16901147900a06301147956a1670068690126766b796c766b796c766b796c6d7c77000128766b796c766b796c766b796c7500011a799f635279827700a06970707c527982777882777801209d7601209d537900a0695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a53797500635479537987916968686d750125766b796c766b796c766b796c7551011a799f635279827700a06970707c527982777882777801209d7601209d537900a0695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a53797551635479537987916968686d750122766b796c766b796c766b796c7552011a799f635279827700a06970707c527982777882777801209d7601209d537900a0695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a53797551635479537987916968686d75011f766b796c766b796c766b796c7553011a799f635279827700a06970707c527982777882777801209d7601209d537900a0695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a53797551635479537987916968686d75011c766b796c766b796c766b796c7554011a799f635279827700a06970707c527982777882777801209d7601209d537900a0695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a5379755400a0635479537987916968686d750119766b796c766b796c766b796c7555011a799f635279827700a06970707c527982777882777801209d7601209d537900a0695379767600a2637609ffffffffffffffff00a16700686976586e8b806e7c7f75007f6b6d6d6d6c55797e53797e6b6d6d6c777e547a7572537a5379755500a0635479537987916968686d750053799f635479006e8b0120957f75780120957f77777752797887916975685153799f635479516e8b0120957f75780120957f77777752797887916975685253799f635479526e8b0120957f75780120957f77777752797887916975685353799f635479536e8b0120957f75780120957f77777752797887916975685453799f635479546e8b0120957f75780120957f77777752797887916975685553799f635479556e8b0120957f75780120957f777777527978879169756876aa5a79876b6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6d6c77"
 }

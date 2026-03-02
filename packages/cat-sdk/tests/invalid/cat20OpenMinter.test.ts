@@ -368,17 +368,15 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat20OpenMinter', (
         const tokenId = `${genesisUtxo.txId}_${genesisUtxo.outputIndex}`
         const genesisOutpoint = outpoint2ByteString(tokenId)
 
-        const premineAmount = premineCount * amountPerMint;
         const cat20OpenMinter = new CAT20OpenMinter(
             genesisOutpoint,
             totalMintCount,
-            premineAmount,
             premineCount,
             amountPerMint,
             toTokenOwnerAddress(mainAddress)
         )
         const minterScriptHash = ContractPeripheral.scriptHash(cat20OpenMinter)
-        const cat20 = new CAT20(minterScriptHash, CAT20GuardPeripheral.getGuardVariantScriptHashes(), false, NULL_ADMIN_SCRIPT_HASH)
+        const cat20 = new CAT20(minterScriptHash, false, NULL_ADMIN_SCRIPT_HASH)
         const tokenScriptHash = ContractPeripheral.scriptHash(cat20)
 
         const minterState: CAT20OpenMinterState = {
@@ -422,7 +420,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat20OpenMinter', (
         const nextMinterState = {
             ...minter.state,
         }
-        const isPremine = minter.premine > 0n && !minter.state.hasMintedBefore;
+        const isPremine = minter.premineCount > 0n && !minter.state.hasMintedBefore;
         if (!isPremine) {
             nextMinterState.remainingCount = minter.state.remainingCount - 1n;
         }
@@ -430,7 +428,7 @@ isLocalTest(testProvider) && describe('Test invalid mint for cat20OpenMinter', (
 
         const nextMinter = minter.next(nextMinterState);
 
-        const cat20 = new CAT20(ContractPeripheral.scriptHash(nextMinter), CAT20GuardPeripheral.getGuardVariantScriptHashes(), false, NULL_ADMIN_SCRIPT_HASH);
+        const cat20 = new CAT20(ContractPeripheral.scriptHash(nextMinter), false, NULL_ADMIN_SCRIPT_HASH);
         cat20.state = {
             ownerAddr: toTokenOwnerAddress(mainAddress),
             amount: mintAmount,

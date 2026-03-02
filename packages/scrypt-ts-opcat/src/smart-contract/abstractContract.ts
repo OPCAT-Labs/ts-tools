@@ -39,6 +39,20 @@ export abstract class AbstractContract {
   abstract checkSig(signature: Sig, publickey: PubKey, errorMsg?: string): boolean;
 
   /**
+   * Verifies an ECDSA signature with an explicit sighash flag check.
+   * This method validates that the signature's trailing sighash flag byte matches
+   * the explicitly provided flag parameter before performing the signature verification.
+   *
+   * @param signature - The signature to verify (DER encoded with sighash flag appended)
+   * @param publickey - The public key to verify the signature against
+   * @param sigHashFlag - The expected sighash flag value (e.g., 1 for ALL, 2 for NONE, 129 for ANYONECANPAY_ALL)
+   * @returns true if the flag matches AND the signature is valid, false otherwise
+   * @onchain
+   * @category Signature Verification
+   */
+  abstract checkSigWithFlag(signature: Sig, publickey: PubKey, sigHashFlag: bigint): boolean;
+
+  /**
    * Verifies an ECDSA signature against an explicit message and public key.
    * Unlike checkSig which uses the transaction preimage as the implicit message,
    * checkDataSig allows verifying signatures on arbitrary data.

@@ -18,6 +18,7 @@ import { CAT20_AMOUNT, CAT20State } from '../../../../src/contracts/cat20/types'
 import { TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from '../../../../src/contracts/constants'
 import { Postage } from '../../../../src/typeConstants'
 import { CAT20 } from '../../../../src/contracts/cat20/cat20'
+import { SPEND_TYPE_CONTRACT_SPEND } from '../../../../src/contracts/constants'
 import { CAT20GuardPeripheral } from '../../../../src/utils/contractPeripheral'
 import { ContractPeripheral } from '../../../../src/utils/contractPeripheral'
 import { CAT20StateLib } from '../../../../src/contracts/cat20/cat20StateLib'
@@ -50,10 +51,13 @@ export async function contractSend(
         `Too many inputs that exceed the maximum input limit of ${TX_INPUT_COUNT_MAX}`
       )
     }
-  
+
     const changeAddress = await signer.getAddress()
+    const pubkey = await signer.getPublicKey()
     // we use the p2pkh contract as the contract owner
     const expectContractOwner = toTokenOwnerAddress(changeAddress, true)
+    // F14 Fix: Use user's owner address for deployerAddr (guard deployer is the user, not the contract)
+    const deployerAddr = toTokenOwnerAddress(changeAddress)
   
     let utxos = await provider.getUtxos(changeAddress)
     utxos = filterFeeUtxos(utxos).slice(0, TX_INPUT_COUNT_MAX)
@@ -96,8 +100,7 @@ export async function contractSend(
     // Outputs: token outputs + satoshi change output
     const txOutputCount = receivers.length + 1
 
-    const guardOwnerAddr = toTokenOwnerAddress(changeAddress)
-    const { guard, guardState, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
+    const { guard, guardState, tokenAmounts, tokenBurnAmounts, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
       CAT20GuardPeripheral.createTransferGuard(
         inputTokenUtxos.map((utxo, index) => ({
           token: utxo,
@@ -109,7 +112,7 @@ export async function contractSend(
         })),
         txInputCount,
         txOutputCount,
-        guardOwnerAddr
+        deployerAddr // F14 Fix: use user's owner address as deployerAddr
       )
     const outputTokens: CAT20State[] = _outputTokens.filter(
       (v) => v != undefined
@@ -131,9 +134,8 @@ export async function contractSend(
   
     const guardUtxo = guardPsbt.getUtxo(0)
     const feeUtxo = guardPsbt.getChangeUTXO()!
-    const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
     const inputTokens: CAT20[] = inputTokenUtxos.map(
-      (utxo) => new CAT20(minterScriptHash, guardScriptHashes, hasAdmin, adminScriptHash).bindToUtxo(utxo)
+      (utxo) => new CAT20(minterScriptHash, hasAdmin, adminScriptHash).bindToUtxo(utxo)
     )
   
     /// we use the fee input as contract input;
@@ -162,7 +164,7 @@ export async function contractSend(
               userPubKey: '' as PubKey,
               userSig: '' as Sig,
               spendScriptInputIndex: BigInt(contractInputIndexVal),
-              spendType: 1n, // contract spend
+              spendType: SPEND_TYPE_CONTRACT_SPEND,
             },
 
             guardState,
@@ -180,7 +182,7 @@ export async function contractSend(
   
     // add token outputs
     for (const outputToken of outputTokens) {
-      const outputCat20 = new CAT20(minterScriptHash, guardScriptHashes, hasAdmin, adminScriptHash)
+      const outputCat20 = new CAT20(minterScriptHash, hasAdmin, adminScriptHash)
       outputCat20.state = outputToken
       sendPsbt.addContractOutput(
         outputCat20,
@@ -225,7 +227,15 @@ export async function contractSend(
           nextStateHashes,
           tx.txOutputs.map((output) => sha256(toHex(output.data)))
         )
+
+        // F14 Fix: Get deployer signature for guard
+        const deployerSig = tx.getSig(guardInputIndex, { publicKey: pubkey })
+
         contract.unlock(
+          deployerSig,
+          PubKey(pubkey),
+          tokenAmounts as any,
+          tokenBurnAmounts as any,
           nextStateHashes as any,
           ownerAddrOrScript as any,
           outputTokenAmts as any,

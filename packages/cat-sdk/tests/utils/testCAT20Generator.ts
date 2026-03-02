@@ -20,6 +20,7 @@ export class TestCAT20Generator {
   deployInfo: CAT20TokenInfo<ClosedMinterCAT20Meta> & {
     genesisPsbt: ExtPsbt
     deployPsbt: ExtPsbt
+    adminDeployPsbt?: ExtPsbt
   }
   minterPsbt: ExtPsbt
   adminPsbt?: ExtPsbt
@@ -32,14 +33,28 @@ export class TestCAT20Generator {
     return CAT20GuardPeripheral.getGuardVariantScriptHashes()
   }
 
+  getAdminGenesisOutpoint(): string {
+    // Admin uses its own genesis outpoint when hasAdmin is true
+    if (this.deployInfo.adminGenesisOutpoint) {
+      return this.deployInfo.adminGenesisOutpoint
+    }
+    // Fallback to tokenId for backwards compatibility (shouldn't happen for hasAdmin=true)
+    return this.deployInfo.tokenId
+  }
+
   constructor(
     deployInfo: CAT20TokenInfo<ClosedMinterCAT20Meta> & {
       genesisPsbt: ExtPsbt
       deployPsbt: ExtPsbt
+      adminDeployPsbt?: ExtPsbt
     }
   ) {
     this.deployInfo = deployInfo
     this.minterPsbt = deployInfo.deployPsbt
+    // Initialize adminPsbt from adminDeployPsbt if available
+    if (deployInfo.adminDeployPsbt) {
+      this.adminPsbt = deployInfo.adminDeployPsbt
+    }
   }
 
   static async init(info: ClosedMinterCAT20Meta) {
@@ -57,13 +72,12 @@ export class TestCAT20Generator {
   }
 
   getCat20AdminUtxo() {
-    // If adminPsbt is set (after admin operations), use it to get the updated admin UTXO
-    // Otherwise, use the original admin UTXO from the deploy transaction
+    // If adminPsbt is set (from adminDeployPsbt or after admin operations), use it
+    // Admin UTXO is always at output index 0 (in adminDeployPsbt or subsequent admin txs)
     if (this.adminPsbt) {
       return this.adminPsbt.getUtxo(0)
     }
-    // Admin UTXO is the second output (index 1) in the deploy transaction
-    return this.deployInfo.deployPsbt.getUtxo(1)
+    throw new Error('Admin UTXO not available - adminDeployPsbt was not set')
   }
 
   updateAdminTx(psbt: ExtPsbt) {

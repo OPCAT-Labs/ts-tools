@@ -18,11 +18,15 @@ export interface MethodsMetaValue {
  * When `autoCheckInputState` is set to true, the system will automatically check the StateHash of all inputs
  * in the current transaction by default.  Otherwise, you can use `this.checkInputStateHash(inputIndex: Int32, stateHash: ByteString)`
  * to manually specify which input's StateHash to verify.
+ *
+ * The `sigHashType` option specifies which signature hash type to use for the method.
+ * Default is SigHashType.ALL.
  * @category decorator
  * @onchain
  */
 export interface MethodDecoratorOptions {
-  autoCheckInputState: boolean;
+  autoCheckInputState?: boolean;
+  sigHashType?: SigHashType;
 }
 
 /**
@@ -30,8 +34,9 @@ export interface MethodDecoratorOptions {
  * @category decorator
  * @onchain
  */
-export function method(options: MethodDecoratorOptions = { autoCheckInputState: true }) {
-  const sigHashType: SigHashType = SigHashType.ALL;
+export function method(options: MethodDecoratorOptions = {}) {
+  const autoCheckInputState = options.autoCheckInputState ?? true;
+  const sigHashType: SigHashType = options.sigHashType ?? SigHashType.ALL;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return function (target: any, methodName: string, descriptor: PropertyDescriptor) {
     if (!descriptor) {
@@ -72,7 +77,7 @@ export function method(options: MethodDecoratorOptions = { autoCheckInputState: 
               const curPsbt = self.spentPsbt;
 
               self.setSighashType(sigHashType);
-              self.extendMethodArgs(methodName, args, options.autoCheckInputState);
+              self.extendMethodArgs(methodName, args, autoCheckInputState);
 
               if (curPsbt !== undefined && !curPsbt.isFinalizing) {
                 // the psbt is not finalizing, so just extend the arguments, but not run the method

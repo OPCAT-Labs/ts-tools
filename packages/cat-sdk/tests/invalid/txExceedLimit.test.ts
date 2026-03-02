@@ -2,7 +2,7 @@ import { ExtPsbt, fill, getBackTraceInfo, PubKey, sha256, toByteString, toHex, u
 import { loadAllArtifacts } from "../features/cat20/utils";
 import { createCat20, TestCat20 } from "../utils/testCAT20Generator";
 import { testSigner } from "../utils/testSigner";
-import { CAT20, CAT20State, CAT20StateLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX } from "../../src/contracts";
+import { CAT20, CAT20State, CAT20StateLib, TX_INPUT_COUNT_MAX, TX_OUTPUT_COUNT_MAX, SPEND_TYPE_USER_SPEND, SPEND_TYPE_CONTRACT_SPEND, SPEND_TYPE_ADMIN_SPEND } from "../../src/contracts";
 import { CAT20GuardPeripheral } from '../../src/utils/contractPeripheral';
 import { expect, use } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
@@ -24,7 +24,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         mainPubKey = PubKey(await testSigner.getPublicKey());
     });
 
-    it('should succeed inputCount exceed limit, but token inputs not exceed limit', async () => {
+    it('should fail when inputCount exceeds variant maximum (F11 fix)', async () => {
         const cat20 = await createCat20([1000n], mainAddress, 'test');
         const callback = (psbt: ExtPsbt) => {
             const inputsToAdd = TX_INPUT_COUNT_MAX + 1 - psbt.txInputs.length;
@@ -32,7 +32,9 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
                 psbt.spendUTXO(getDummyUtxo(mainAddress));
             }
         }
-        await testCase(cat20, callback);
+        return expect(testCase(cat20, callback)).to.eventually.be.rejectedWith(
+            'input count exceeds variant maximum',
+        );
     });
 
     it('should fail inputCount exceed limit, but and inputs exceed limit', async () => {
@@ -61,7 +63,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         );
     });
 
-    it('should succeed when inputCount equals limit', async () => {
+    it('should fail when inputCount equals variant maximum plus one (F11 fix)', async () => {
         const cat20 = await createCat20([1000n], mainAddress, 'test');
         const callback = (psbt: ExtPsbt) => {
             const inputsToAdd = TX_INPUT_COUNT_MAX - psbt.txInputs.length;
@@ -70,7 +72,9 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
             }
         }
 
-        await testCase(cat20, callback);
+        return expect(testCase(cat20, callback)).to.eventually.be.rejectedWith(
+            'input count exceeds variant maximum',
+        );
     });
 
     it('should succeed when outputCount equals limit', async () => {
@@ -94,6 +98,9 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
 
 
     async function testCase(cat20: TestCat20, callback: (psbt: ExtPsbt) => void) {
+        // F14 Fix: Get the raw pubkey string for guard signature
+        const pubkey = await testSigner.getPublicKey()
+
         const outputAmountList: bigint[] = [cat20.utxos.reduce((acc, utxo) => acc + CAT20StateLib.deserializeState(utxo.data).amount, 0n)];
         const outputStates: CAT20State[] = outputAmountList.map((amount) => ({
             ownerAddr: CAT20StateLib.deserializeState(cat20.utxos[0].data).ownerAddr,
@@ -106,7 +113,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         const txOutputCount = outputStates.length + 1;
 
         const guardOwnerAddr = toTokenOwnerAddress(mainAddress)
-        const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
+        const { guard, guardState, tokenAmounts, tokenBurnAmounts, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
             cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
             outputStates.map((state, index) => ({ address: state.ownerAddr, amount: state.amount, outputIndex: index })),
             txInputCount,
@@ -114,7 +121,6 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
             guardOwnerAddr
         );
         guard.state = guardState;
-        const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
         {
             const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8}).spendUTXO(getDummyUtxo(mainAddress)).addContractOutput(guard, 1e8);
@@ -125,11 +131,11 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         const guardInputIndex = cat20.utxos.length;
         const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8});
         cat20.utxos.forEach((utxo, inputIndex) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
             psbt.addContractInput(cat20Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
-                        spendType: 0n,
+                        spendType: SPEND_TYPE_USER_SPEND,
                         userPubKey: mainPubKey,
                         userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
                         spendScriptInputIndex: -1n,
@@ -184,7 +190,15 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
               nextStateHashes,
               curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
             )
+
+            // F14 Fix: Get deployer signature for guard
+            const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
             contract.unlock(
+                deployerSig,
+                PubKey(pubkey),
+                tokenAmounts,
+                tokenBurnAmounts,
                 nextStateHashes,
                 ownerAddrOrScripts,
                 outputTokens,
@@ -196,7 +210,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         });
 
         outputStates.forEach((state) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash)
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash)
             cat20Contract.state = state;
             psbt.addContractOutput(
                 cat20Contract,
@@ -211,6 +225,9 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
     }
 
     async function testCaseWithOutputCountMax(cat20: TestCat20, callback: (psbt: ExtPsbt, txOutputCountMax: number) => void) {
+        // F14 Fix: Get the raw pubkey string for guard signature
+        const pubkey = await testSigner.getPublicKey()
+
         const outputAmountList: bigint[] = [cat20.utxos.reduce((acc, utxo) => acc + CAT20StateLib.deserializeState(utxo.data).amount, 0n)];
         const outputStates: CAT20State[] = outputAmountList.map((amount) => ({
             ownerAddr: CAT20StateLib.deserializeState(cat20.utxos[0].data).ownerAddr,
@@ -223,7 +240,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         const txOutputCount = outputStates.length + 1;
 
         const guardOwnerAddr = toTokenOwnerAddress(mainAddress)
-        const { guard, guardState, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
+        const { guard, guardState, tokenAmounts, tokenBurnAmounts, txInputCountMax, txOutputCountMax } = CAT20GuardPeripheral.createTransferGuard(
             cat20.utxos.map((utxo, index) => ({ token: utxo, inputIndex: index })),
             outputStates.map((state, index) => ({ address: state.ownerAddr, amount: state.amount, outputIndex: index })),
             txInputCount,
@@ -231,7 +248,6 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
             guardOwnerAddr
         );
         guard.state = guardState;
-        const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes();
 
         {
             const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8}).spendUTXO(getDummyUtxo(mainAddress)).addContractOutput(guard, 1e8);
@@ -242,11 +258,11 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         const guardInputIndex = cat20.utxos.length;
         const psbt = new ExtPsbt({network: await testProvider.getNetwork(), maximumFeeRate: 1e8});
         cat20.utxos.forEach((utxo, inputIndex) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash).bindToUtxo(utxo);
             psbt.addContractInput(cat20Contract, (contract, curPsbt) => {
                 contract.unlock(
                     {
-                        spendType: 0n,
+                        spendType: SPEND_TYPE_USER_SPEND,
                         userPubKey: mainPubKey,
                         userSig: curPsbt.getSig(inputIndex, { address: mainAddress }),
                         spendScriptInputIndex: -1n,
@@ -296,12 +312,20 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
                 applyFixedArray(cat20States, inputCat20States, cat20InputStartIndex);
             }
             const outputCount = curPsbt.txOutputs.length;
-            const nextStateHashes = fill(toByteString(''), txOutputCountMax) 
+            const nextStateHashes = fill(toByteString(''), txOutputCountMax)
             applyFixedArray(
               nextStateHashes,
               curPsbt.txOutputs.map((output) => sha256(toHex(output.data)))
             )
+
+            // F14 Fix: Get deployer signature for guard
+            const deployerSig = curPsbt.getSig(guardInputIndex, { publicKey: pubkey })
+
             contract.unlock(
+                deployerSig,
+                PubKey(pubkey),
+                tokenAmounts,
+                tokenBurnAmounts,
                 nextStateHashes,
                 ownerAddrOrScripts,
                 outputTokens,
@@ -313,7 +337,7 @@ isLocalTest(testProvider) && describe('Test ExtPsbt inputCount/outputCount excee
         });
 
         outputStates.forEach((state) => {
-            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, guardScriptHashes, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash)
+            const cat20Contract = new CAT20(cat20.generator.minterScriptHash, cat20.generator.deployInfo.hasAdmin, cat20.generator.deployInfo.adminScriptHash)
             cat20Contract.state = state;
             psbt.addContractOutput(
                 cat20Contract,

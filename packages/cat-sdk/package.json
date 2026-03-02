@@ -30,7 +30,7 @@
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:esm": "tsc -p tsconfig.esm.json && node scripts/fix-esm-json-imports.js",
     "deploy": "npx ts-node ./deploy.ts",
-    "compile": "rimraf artifacts && npm run gen:guard && scrypt-cli-opcat compile",
+    "compile": "rimraf artifacts && npm run gen:guard && npx -y tsx@4.20.6 ./scripts/compile.ts",
     "test": "npm run test:local && npm run test:dist",
     "test:local": "mocha",
     "test:dist": "node test-esm/test.mjs && node test-cjs/test.cjs",

@@ -65,7 +65,6 @@ export const mintClosedMinterToken = createFeatureWithDryRun(async function(
   const minterScriptHash = ContractPeripheral.scriptHash(minterUtxo.script)
   const cat20 = new CAT20(
     minterScriptHash,
-    CAT20GuardPeripheral.getGuardVariantScriptHashes(),
     hasAdmin,
     adminScriptHash
   )

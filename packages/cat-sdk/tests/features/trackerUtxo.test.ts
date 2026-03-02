@@ -451,7 +451,7 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
         nftMerkleLeafList.push({
           contentDataHash: sha256(nftStr),
           localId: i,
-          isMined: false,
+          hasMintedBefore: false,
         })
       }
       nftOpenMinterMerkleTreeData = new CAT721OpenMinterMerkleTreeData(nftMerkleLeafList, HEIGHT)
@@ -477,7 +477,7 @@ isLocalTest(testProvider) && describe('Test tracker UTXO compatibility', () => {
       const minterState = CAT721OpenMinter.deserializeState(trackerMinterUtxo.data)
       const index = Number(minterState.nextLocalId)
       const oldLeaf = nftOpenMinterMerkleTreeData.getLeaf(index)
-      const newLeaf: CAT721MerkleLeaf = { ...oldLeaf, isMined: true }
+      const newLeaf: CAT721MerkleLeaf = { ...oldLeaf, hasMintedBefore: true }
       const updateLeafInfo = nftOpenMinterMerkleTreeData.updateLeaf(newLeaf, index)
 
       const nftStorage = {

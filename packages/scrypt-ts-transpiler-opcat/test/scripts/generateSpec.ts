@@ -312,7 +312,6 @@ function getContractMetadata(filePath: string): ContractMetadata {
     const heritageReg = /export +?class +?(\w+) extends +?(\w+)/g;
     const heritageRes = heritageReg.exec(content);
 
-    // todo: better way to match heritage contracts
     if (heritageRes) {
       return {
         hasContract: true,

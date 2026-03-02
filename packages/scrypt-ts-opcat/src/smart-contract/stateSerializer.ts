@@ -119,7 +119,6 @@ export function deserializeState<T>(
         val = valueByteString;
         break;
     }
-    // todo: test multi-dimensional array
 
     let curObj = state;
     fieldNames.forEach((fieldName, index) => {

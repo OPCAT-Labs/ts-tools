@@ -2,6 +2,13 @@ import { Script, Transaction } from '@opcat-labs/opcat';
 import { ByteString, toByteString, byteStringToInt, ContractHeaderSerializer } from '@opcat-labs/scrypt-ts-opcat';
 import { MetadataSerializer, CatTags } from '@opcat-labs/cat-sdk';
 
+// P2PKH script opcodes
+const OP_DUP = 0x76;
+const OP_HASH160 = 0xa9;
+const OP_EQUALVERIFY = 0x88;
+const OP_CHECKSIG = 0xac;
+const HASH160_PUSH_LEN = 20;
+
 export class ContractLib {
   static decodeContractTags(lockingScript: string): string[] {
     try {
@@ -120,11 +127,11 @@ export class ContractLib {
     const chunks = script.chunks;
     return (
       chunks.length === 5 &&
-      chunks[0].opcodenum === 0x76 && // OP_DUP
-      chunks[1].opcodenum === 0xa9 && // OP_HASH160
-      chunks[2].len === 20 && // Push 20 bytes
-      chunks[3].opcodenum === 0x88 && // OP_EQUALVERIFY
-      chunks[4].opcodenum === 0xac // OP_CHECKSIG
+      chunks[0].opcodenum === OP_DUP &&
+      chunks[1].opcodenum === OP_HASH160 &&
+      chunks[2].len === HASH160_PUSH_LEN &&
+      chunks[3].opcodenum === OP_EQUALVERIFY &&
+      chunks[4].opcodenum === OP_CHECKSIG
     );
   }
 

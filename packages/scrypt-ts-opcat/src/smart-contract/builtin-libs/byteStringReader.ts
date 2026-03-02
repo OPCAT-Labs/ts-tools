@@ -42,21 +42,21 @@ export class ByteStringReader extends SmartContractLib {
         const header: bigint = byteStringToInt(slice(this.buf, this.pos, this.pos + 1n));
         this.pos++;
 
-        if (header < 0x4cn) {
+        if (header < StdUtils.OP_PUSHDATA1_VAL) {
             l = header;
             ret = slice(buf, this.pos, this.pos + l);
         }
-        else if (header == 0x4cn) {
+        else if (header == StdUtils.OP_PUSHDATA1_VAL) {
             l = StdUtils.fromLEUnsigned(slice(buf, this.pos, this.pos + 1n));
             this.pos += 1n;
             ret = slice(this.buf, this.pos, this.pos + l);
         }
-        else if (header == 0x4dn) {
+        else if (header == StdUtils.OP_PUSHDATA2_VAL) {
             l = StdUtils.fromLEUnsigned(slice(this.buf, this.pos, this.pos + 2n));
             this.pos += 2n
             ret = slice(this.buf, this.pos, this.pos + l);
         }
-        else if (header == 0x4en) {
+        else if (header == StdUtils.OP_PUSHDATA4_VAL) {
             l = StdUtils.fromLEUnsigned(slice(this.buf, this.pos, this.pos + 4n));
             this.pos += 4n;
             ret = slice(this.buf, this.pos, this.pos + l);
@@ -91,15 +91,15 @@ export class ByteStringReader extends SmartContractLib {
         let ret = toByteString('')
         const header = slice(this.buf, this.pos, this.pos + 1n)
         this.pos++;
-        if (header == toByteString('fd')) {
+        if (header == StdUtils.VARINT_2BYTE) {
             ret = slice(this.buf, this.pos, this.pos + 2n);
             this.pos += 2n;
         }
-        else if (header == toByteString('fe')) {
+        else if (header == StdUtils.VARINT_4BYTE) {
             ret = slice(this.buf, this.pos, this.pos + 4n);
             this.pos += 4n;
         }
-        else if (header == toByteString('ff')) {
+        else if (header == StdUtils.VARINT_8BYTE) {
             ret = slice(this.buf, this.pos, this.pos + 8n);
             this.pos += 8n;
         }

@@ -10,7 +10,6 @@ declare const window: Window & typeof globalThis;
 type HexString = string;
 
 /**
- * todo: change to opcat wallet api
  * Unisat wallet api, see [opcat api docs]{@link https://docs.opcat.io/dev/opcat-developer-center/opcat-wallet#opcat-wallet-api}
  * @category Signer
  */

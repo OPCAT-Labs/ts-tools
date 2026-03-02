@@ -27,7 +27,7 @@ export class ByteStringWriter extends SmartContractLib {
 
         let header: ByteString = toByteString('');
 
-        if (n < 0x4c) {
+        if (n < StdUtils.OP_PUSHDATA1_VAL) {
             header = StdUtils.toLEUnsigned(n, 1n);
         }
         else if (n < 0x100) {
@@ -70,16 +70,16 @@ export class ByteStringWriter extends SmartContractLib {
             size = 1n;
         }
         else if (x < 0x10000n) {
-            this.buf += toByteString('fd');
+            this.buf += StdUtils.VARINT_2BYTE;
             size = 2n;
         }
         else if (x < 0x100000000n) {
             size = 4n;
-            this.buf += toByteString('fe');
+            this.buf += StdUtils.VARINT_4BYTE;
         }
         else {
             size = 8n;
-            this.buf += toByteString('ff');
+            this.buf += StdUtils.VARINT_8BYTE;
         }
         this.buf += StdUtils.toLEUnsigned(x, size);
     }

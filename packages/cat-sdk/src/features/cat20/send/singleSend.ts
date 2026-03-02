@@ -74,18 +74,15 @@ export const singleSend = createFeatureWithDryRun(async function(
   const feeChangeAddress = await signer.getAddress()
   let feeUtxos = await provider.getUtxos(feeChangeAddress)
 
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
   const cat20 = new CAT20(
     minterScriptHash,
-    guardScriptHashes,
     hasAdmin,
     adminScriptHash
   )
   const cat20Script = cat20.lockingScript.toHex()
   inputTokenUtxos = normalizeUtxoScripts(inputTokenUtxos, cat20Script)
 
-  const guardOwnerAddr = toTokenOwnerAddress(feeChangeAddress)
-  const { guardPsbt, outputTokenStates, changeTokenOutputIndex, guard, txInputCountMax, txOutputCountMax } = await singleSendStep1(
+  const { guardPsbt, outputTokenStates, changeTokenOutputIndex, guard, guardState, tokenAmounts, tokenBurnAmounts, txInputCountMax, txOutputCountMax } = await singleSendStep1(
     provider,
     feeUtxos,
     inputTokenUtxos,
@@ -93,7 +90,7 @@ export const singleSend = createFeatureWithDryRun(async function(
     feeChangeAddress,
     tokenChangeAddress,
     feeRate,
-    guardOwnerAddr
+    toTokenOwnerAddress(await signer.getAddress()) // deployerAddr
   );
   const signedGuardPsbt = ExtPsbt.fromHex(await signer.signPsbt(guardPsbt.toHex(), guardPsbt.psbtOptions()))
   guardPsbt.combine(signedGuardPsbt).finalizeAllInputs()
@@ -103,6 +100,8 @@ export const singleSend = createFeatureWithDryRun(async function(
     hasAdmin,
     adminScriptHash,
     guard,
+    tokenAmounts,
+    tokenBurnAmounts,
     guardPsbt,
     inputTokenUtxos,
     outputTokenStates,
@@ -141,6 +140,7 @@ export const singleSend = createFeatureWithDryRun(async function(
  * @param feeChangeAddress the address for the change output
  * @param tokenChangeAddress the address for the change output
  * @param feeRate the fee rate for the transaction
+ * @param guardOwnerAddr the owner address of the guard (used as deployerAddr)
  * @returns the guard and the output token states
  */
 export async function singleSendStep1(
@@ -195,7 +195,7 @@ export async function singleSendStep1(
   // Outputs: token outputs + satoshi change output
   const txOutputCount = receivers.length + 1
 
-  const { guard, guardState, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
+  const { guard, guardState, tokenAmounts, tokenBurnAmounts, outputTokens: _outputTokens, txInputCountMax, txOutputCountMax } =
     CAT20GuardPeripheral.createTransferGuard(
       inputTokenUtxos.map((utxo, index) => ({
         token: utxo,
@@ -219,7 +219,7 @@ export async function singleSendStep1(
     .change(feeChangeAddress, feeRate)
     .seal()
 
-  return { guard, guardPsbt, outputTokenStates: outputTokens, changeTokenOutputIndex, txInputCountMax, txOutputCountMax }
+  return { guard, guardState, tokenAmounts, tokenBurnAmounts, guardPsbt, outputTokenStates: outputTokens, changeTokenOutputIndex, txInputCountMax, txOutputCountMax }
 }
 
 /**
@@ -245,6 +245,8 @@ export async function singleSendStep2(
   hasAdmin: boolean,
   adminScriptHash: ByteString,
   guard: any,
+  tokenAmounts: any,
+  tokenBurnAmounts: any,
   finalizedGuardPsbt: ExtPsbt,
   inputTokenUtxos: UTXO[],
   outputTokenStates: CAT20State[],
@@ -261,7 +263,6 @@ export async function singleSendStep2(
   const guardUtxo = guardPsbt.getUtxo(0)
   const feeUtxo = guardPsbt.getChangeUTXO()!
 
-  const guardScriptHashes = CAT20GuardPeripheral.getGuardVariantScriptHashes()
   const backtraces = await CAT20GuardPeripheral.getBackTraceInfo(
     minterScriptHash,
     inputTokenUtxos,
@@ -272,7 +273,6 @@ export async function singleSendStep2(
   const inputTokens: CAT20[] = inputTokenUtxos.map((_token, index) =>
     new CAT20(
       minterScriptHash,
-      guardScriptHashes,
       hasAdmin,
       adminScriptHash
     ).bindToUtxo({
@@ -321,7 +321,6 @@ export async function singleSendStep2(
   for (const outputToken of outputTokenStates) {
     const cat20 = new CAT20(
       minterScriptHash,
-      guardScriptHashes,
       hasAdmin,
       adminScriptHash
     )
@@ -367,7 +366,14 @@ export async function singleSendStep2(
       tx.txOutputs.map((output) => sha256(toHex(output.data)))
     )
 
+    // F14 Fix: Get deployer signature for guard
+    const deployerSig = tx.getSig(guardInputIndex, { publicKey })
+
     contract.unlock(
+      deployerSig,
+      PubKey(publicKey),
+      tokenAmounts as any,
+      tokenBurnAmounts as any,
       nextStateHashes as any,
       ownerAddrOrScriptHashes as any,
       outputTokenAmts as any,

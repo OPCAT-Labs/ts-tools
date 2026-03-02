@@ -47,10 +47,6 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
   @prop()
   maxCount: bigint
 
-  // this.premine == this.preminerCount * this.limit
-  @prop()
-  premine: CAT20_AMOUNT
-
   @prop()
   premineCount: bigint
 
@@ -63,7 +59,6 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
   constructor(
     genesisOutpoint: ByteString,
     maxCount: bigint,
-    premine: CAT20_AMOUNT,
     premineCount: bigint,
     limit: CAT20_AMOUNT,
     premineAddr: ByteString
@@ -71,12 +66,22 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
     super(...arguments)
     this.genesisOutpoint = genesisOutpoint
     this.maxCount = maxCount
-    // this assumes this.premineCount * this.limit == this.premine,
-    // which can be trivially validated by anyone after the token is deployed
-    this.premine = premine
     this.premineCount = premineCount
     this.limit = limit
     this.preminerAddr = premineAddr
+    // C.3 Fix: Parameter validation
+    assert(
+      this.premineCount >= 0n,
+      'premineCount must be non-negative'
+    )
+    assert(
+      this.limit > 0n,
+      'limit must be greater than 0'
+    )
+    assert(
+      this.premineCount <= this.maxCount,
+      'premineCount must not exceed maxCount'
+    )
   }
 
   @method()
@@ -94,6 +99,12 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
     // backtrace
     backtraceInfo: BacktraceInfo,
   ) {
+    // F10 Fix: Enforce minter must be at input index 0
+    assert(this.ctx.inputIndex == 0n, 'minter must be at input index 0')
+
+    // C.7 Fix: Ensure token output has non-zero satoshis
+    assert(tokenSatoshis > 0n, 'tokenSatoshis must be greater than 0')
+
     // back to genesis
     this.backtraceToOutpoint(backtraceInfo, this.genesisOutpoint)
 
@@ -103,6 +114,8 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
     for (let i = 0; i < MAX_NEXT_MINTERS; i++) {
       const remainingCount = nextRemainingCounts[i]
       if (remainingCount > 0n) {
+        // C.7 Fix: Ensure minter output has non-zero satoshis
+        assert(minterSatoshis > 0n, 'minterSatoshis must be greater than 0 when creating minter output')
         sumNextRemainingCount += remainingCount
         minterOutputs += TxUtils.buildDataOutput(
           this.ctx.spentScriptHash,
@@ -124,7 +137,8 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
       tokenSatoshis,
       tokenStateHash
     )
-    if (!this.state.hasMintedBefore && this.premine > 0n) {
+    const premine = this.premineCount * this.limit
+    if (!this.state.hasMintedBefore && premine > 0n) {
       // needs to premine
       assert(this.maxCount == this.state.remainingCount + this.premineCount, 'maxCount is not equal to remainingCount + premineCount')
       // preminer checksig
@@ -132,14 +146,13 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
       assert(this.checkSig(preminerSig, preminerPubKey), 'preminer sig is invalid')
       // premine dees not affect curState.remainingCount
       assert(sumNextRemainingCount == this.state.remainingCount, 'sumNextRemainingCount is not equal to remainingCount')
-      assert(tokenMint.amount == this.premine, 'token amount is not equal to premine')
+      assert(tokenMint.amount == premine, 'token amount is not equal to premine')
     } else {
       // general mint
       if (!this.state.hasMintedBefore) {
         // this is the first time mint
         assert(this.maxCount == this.state.remainingCount, 'maxCount is not equal to remainingCount')
         assert(this.premineCount == 0n, 'premineCount is not equal to 0')
-        assert(this.premine == 0n, 'premine is not equal to 0')
       }
       assert(sumNextRemainingCount == this.state.remainingCount - 1n, 'sumNextRemainingCount is not equal to remainingCount - 1')
       assert(tokenMint.amount == this.limit, 'token amount is not equal to limit')
@@ -150,13 +163,5 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
 
     // confine curTx outputs
     assert(this.checkOutputs(minterOutputs + tokenOutput + changeOutput), 'outputs are invalid')
-  }
-
-  public checkProps() {
-    //
-    assert(
-      this.premineCount * this.limit == this.premine,
-      'premineCount needs to be multiplied by limit to equal premine.'
-    )
   }
 }

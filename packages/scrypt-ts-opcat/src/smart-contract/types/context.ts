@@ -66,7 +66,7 @@ type DerivedCtx = {
 
   /**
    * @type {Outpoint}
-   * The outpoint of the current input.
+   * The outpoint of the current input, derived from SHPreimage.outpoint field.
    */
   prevout: Outpoint;
 };

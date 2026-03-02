@@ -1,6 +1,6 @@
 import { assert, ByteString, byteStringToInt, fill, FixedArray, intToByteString, len, method, Ripemd160, sha1, SHA256_HASH_LEN, slice, StateLib, toByteString } from "@opcat-labs/scrypt-ts-opcat";
 import { CAT721GuardConstState } from "./types.js";
-import { ConstantsLib, NFT_GUARD_COLLECTION_TYPE_MAX, TX_INPUT_COUNT_MAX_12, TX_INPUT_COUNT_MAX_6 } from "../constants.js";
+import { ConstantsLib, INVALID_INDEX, NFT_GUARD_COLLECTION_TYPE_MAX, TX_INPUT_COUNT_MAX_12, TX_INPUT_COUNT_MAX_6 } from "../constants.js";
 
 
 /**
@@ -18,8 +18,10 @@ export class CAT721GuardStateLib extends StateLib<CAT721GuardConstState> {
             const scriptLen = len(_state.nftScriptHashes[i]);
             assert(scriptLen == SHA256_HASH_LEN);
         }
-        
+
         assert(len(_state.nftScriptIndexes) == BigInt(txInputCountMax))
+        // F18 Fix: Check nftBurnMasks length
+        assert(len(_state.nftBurnMasks) == BigInt(txInputCountMax), 'nftBurnMasks length is invalid')
         for (let i = 0; i < txInputCountMax; i++) {
             const scriptIndex = byteStringToInt(slice(_state.nftScriptIndexes, BigInt(i), BigInt(i + 1)));
             assert(scriptIndex >= -1 && scriptIndex < NFT_GUARD_COLLECTION_TYPE_MAX);
@@ -46,7 +48,7 @@ export class CAT721GuardStateLib extends StateLib<CAT721GuardConstState> {
         nftScriptHashes[3] = ConstantsLib.TOKEN_SCRIPT_HASH_PLACEHOLDER_FC
 
         
-        const nftScriptIndexesArray = fill(-1n, txInputCountMax)
+        const nftScriptIndexesArray = fill(INVALID_INDEX, txInputCountMax)
         const nftScriptIndexes = nftScriptIndexesArray.map(index => intToByteString(index, 1n)).join('')
 
         return {

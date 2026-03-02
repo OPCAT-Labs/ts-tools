@@ -13,16 +13,18 @@ import {
   Sha256,
   toByteString,
   slice,
-  SpentDataHashes
+  SpentDataHashes,
+  len
 } from '@opcat-labs/scrypt-ts-opcat'
 import { OwnerUtils } from '../utils/ownerUtils.js'
 import { CAT20State, CAT20GuardConstState } from './types.js'
 import {
   CAT20ContractUnlockArgs,
 } from '../types.js'
-import { GUARD_VARIANTS_COUNT } from '../constants.js'
+import { GUARD_VARIANTS_COUNT, SHA256_HASH_LEN, SPEND_TYPE_USER_SPEND, SPEND_TYPE_CONTRACT_SPEND, SPEND_TYPE_ADMIN_SPEND } from '../constants.js'
 import { CAT20GuardStateLib } from './cat20GuardStateLib.js'
 import { CatTags } from '../catTags.js'
+import { CAT20GuardVariants } from './cat20GuardVariants.js'
 
 /**
  * The CAT20 contract
@@ -33,10 +35,15 @@ import { CatTags } from '../catTags.js'
 @tags([CatTags.CAT20_TAG])
 export class CAT20 extends SmartContract<CAT20State> {
   @prop()
-  minterScriptHash: ByteString
+  static readonly guardVariantScriptHashes: FixedArray<Sha256, typeof GUARD_VARIANTS_COUNT> = [
+    CAT20GuardVariants.CANONICAL_GUARD_6_6_2,
+    CAT20GuardVariants.CANONICAL_GUARD_6_6_4,
+    CAT20GuardVariants.CANONICAL_GUARD_12_12_2,
+    CAT20GuardVariants.CANONICAL_GUARD_12_12_4,
+  ]
 
   @prop()
-  guardVariantScriptHashes: FixedArray<Sha256, typeof GUARD_VARIANTS_COUNT>;
+  minterScriptHash: ByteString
 
   @prop()
   hasAdmin: boolean
@@ -46,15 +53,25 @@ export class CAT20 extends SmartContract<CAT20State> {
 
   constructor(
     minterScriptHash: ByteString,
-    guardVariantScriptHashes: FixedArray<Sha256, typeof GUARD_VARIANTS_COUNT>,
     hasAdmin: boolean,
     adminScriptHash: ByteString
   ) {
     super(...arguments)
     this.minterScriptHash = minterScriptHash
-    this.guardVariantScriptHashes = guardVariantScriptHashes
     this.hasAdmin = hasAdmin
     this.adminScriptHash = adminScriptHash
+    // C.1 Fix: Ensure admin script hash is valid when hasAdmin is true
+    if (hasAdmin) {
+      assert(
+        len(adminScriptHash) == SHA256_HASH_LEN,
+        'admin script hash must be 32 bytes when hasAdmin is true'
+      )
+    } else {
+      assert(
+        adminScriptHash == toByteString(''),
+        'admin script hash must be empty when hasAdmin is false'
+      )
+    }
   }
 
   @method()
@@ -68,6 +85,12 @@ export class CAT20 extends SmartContract<CAT20State> {
   ) {
     this.backtraceToScript(backtraceInfo, this.minterScriptHash)
 
+    // F1 Fix: Validate guardInputIndex bounds before using it
+    assert(
+      guardInputIndex >= 0n && guardInputIndex < this.ctx.inputCount,
+      'guardInputIndex out of bounds'
+    )
+
     // make sure tx inputs contain a valid guard
     this.checkGuard(
       guardState,
@@ -79,30 +102,44 @@ export class CAT20 extends SmartContract<CAT20State> {
     )
 
     assert(
-      unlockArgs.spendType >= 0n && unlockArgs.spendType <= 2n,
+      unlockArgs.spendType >= SPEND_TYPE_USER_SPEND && unlockArgs.spendType <= SPEND_TYPE_ADMIN_SPEND,
       'invalid spendType'
     )
 
     let spentScriptHash = toByteString('')
-    //
-    if (unlockArgs.spendScriptInputIndex >= 0n) {
+    // For contract or admin spend,
+    // spendScriptInputIndex must be >= 0 to prevent empty script hash bypass
+    if (unlockArgs.spendType == SPEND_TYPE_CONTRACT_SPEND || unlockArgs.spendType == SPEND_TYPE_ADMIN_SPEND) {
+      assert(
+        unlockArgs.spendScriptInputIndex >= 0n,
+        'spendScriptInputIndex must be >= 0 for contract or admin spend'
+      )
       // Check upper bound to prevent out-of-bounds access
       assert(
         unlockArgs.spendScriptInputIndex < this.ctx.inputCount,
         'script index out of bounds'
+      )
+      // F2 Fix: Prevent self-reference - spendScriptInputIndex cannot point to current token input
+      assert(
+        unlockArgs.spendScriptInputIndex != this.ctx.inputIndex,
+        'spendScriptInputIndex cannot reference self'
+      )
+      // F2 Fix: Prevent pointing to guard input
+      assert(
+        unlockArgs.spendScriptInputIndex != guardInputIndex,
+        'spendScriptInputIndex cannot reference guard'
       )
       spentScriptHash = ContextUtils.getSpentScriptHash(
         this.ctx.spentScriptHashes,
         unlockArgs.spendScriptInputIndex
       )
     }
-
-    if (unlockArgs.spendType == 0n) {
+    if (unlockArgs.spendType == SPEND_TYPE_USER_SPEND) {
       // user spend
       // unlock token owned by user key
       OwnerUtils.checkUserOwner(unlockArgs.userPubKey, this.state.ownerAddr)
       assert(this.checkSig(unlockArgs.userSig, unlockArgs.userPubKey))
-    } else if (unlockArgs.spendType == 1n) {
+    } else if (unlockArgs.spendType == SPEND_TYPE_CONTRACT_SPEND) {
       // contract spend
       // unlock token owned by contract script
       assert(this.state.ownerAddr == spentScriptHash)
@@ -125,8 +162,8 @@ export class CAT20 extends SmartContract<CAT20State> {
     // 1. check there is a guard input by shPreimage.hashSpentScriptHashes
     const guardScriptHash = ContextUtils.getSpentScriptHash(t_spentScriptsCtx, guardInputIndexVal);
     assert(
-      guardScriptHash == this.guardVariantScriptHashes[0] || guardScriptHash == this.guardVariantScriptHashes[1] ||
-      guardScriptHash == this.guardVariantScriptHashes[2] || guardScriptHash == this.guardVariantScriptHashes[3],
+      guardScriptHash == CAT20.guardVariantScriptHashes[0] || guardScriptHash == CAT20.guardVariantScriptHashes[1] ||
+      guardScriptHash == CAT20.guardVariantScriptHashes[2] || guardScriptHash == CAT20.guardVariantScriptHashes[3],
       'guard script hash is invalid'
     );
     assert(ContextUtils.getSpentDataHash(t_spentDataHashesCtx, guardInputIndexVal) == CAT20GuardStateLib.stateHash(guardState), 'guard state hash is invalid');

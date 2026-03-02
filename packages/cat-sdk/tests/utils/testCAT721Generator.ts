@@ -26,9 +26,6 @@ export class TestCAT721Generator {
     get minterScriptHash() {
         return this.deployInfo.minterScriptHash
       }
-      get guardScriptHashes() {
-        return CAT721GuardPeripheral.getGuardVariantScriptHashes()
-      }
     constructor(
         deployInfo: CAT721NftInfo<ClosedMinterCAT721Meta> & {
             genesisPsbt: ExtPsbt

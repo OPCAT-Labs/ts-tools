@@ -1,11 +1,11 @@
 {
   "version": 10,
   "compilerVersion": "1.22.0+commit.47800da",
-  "contract": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__P2PKH",
-  "md5": "c5af93cb4966b9a0201c93e84ac386be",
+  "contract": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__P2PKH",
+  "md5": "ea232f2b41eb1ee70f1299ba2f5e3597",
   "structs": [
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxOut",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxOut",
       "params": [
         {
           "name": "scriptHash",
@@ -23,7 +23,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxIn",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxIn",
       "params": [
         {
           "name": "prevTxHash",
@@ -45,7 +45,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxHashPreimage",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxHashPreimage",
       "params": [
         {
           "name": "version",
@@ -67,11 +67,11 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__BacktraceInfo",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__BacktraceInfo",
       "params": [
         {
           "name": "prevTxInput",
-          "type": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxIn"
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxIn"
         },
         {
           "name": "prevTxInputIndex",
@@ -79,13 +79,13 @@
         },
         {
           "name": "prevPrevTxPreimage",
-          "type": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxHashPreimage"
+          "type": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxHashPreimage"
         }
       ],
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__SHPreimage",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__SHPreimage",
       "params": [
         {
           "name": "nVersion",
@@ -93,6 +93,14 @@
         },
         {
           "name": "hashPrevouts",
+          "type": "bytes"
+        },
+        {
+          "name": "inputIndex",
+          "type": "int"
+        },
+        {
+          "name": "outpoint",
           "type": "bytes"
         },
         {
@@ -132,10 +140,6 @@
           "type": "bytes"
         },
         {
-          "name": "inputIndex",
-          "type": "int"
-        },
-        {
           "name": "nLockTime",
           "type": "int"
         },
@@ -147,7 +151,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__Outpoint",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__Outpoint",
       "params": [
         {
           "name": "txHash",
@@ -161,7 +165,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__ChangeInfo",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ChangeInfo",
       "params": [
         {
           "name": "pubkeyhash",
@@ -179,7 +183,7 @@
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__ReadVarintResult",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ReadVarintResult",
       "params": [
         {
           "name": "data",
@@ -195,19 +199,19 @@
   ],
   "library": [
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__TxUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__TxUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__ContextUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__ContextUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
     },
     {
-      "name": "_opcat_labs_scrypt_ts_opcat_3_2_0__rs__StdUtils",
+      "name": "_opcat_labs_scrypt_ts_opcat_3_4_0__rs__StdUtils",
       "params": [],
       "properties": [],
       "genericTypes": []
@@ -225,7 +229,7 @@
           "type": "Sig"
         },
         {
-          "name": "pubKey",
+          "name": "pubkey",
           "type": "PubKey"
         }
       ]
@@ -234,7 +238,7 @@
       "type": "constructor",
       "params": [
         {
-          "name": "address",
+          "name": "addr",
           "type": "Ripemd160"
         }
       ]
@@ -243,5 +247,5 @@
   "stateProps": [],
   "buildType": "release",
   "file": "../p2pkh.scrypt",
-  "hex": "<address>78a978886f75ac777777"
+  "hex": "<addr>78a978885279537982778c7f77515280517f75007f778763515280517f77010087670068636f75ac670068777777"
 }

@@ -10,7 +10,7 @@ import {
   createDryRunProvider,
   ExtPsbt,
 } from '@opcat-labs/scrypt-ts-opcat'
-import { TX_OUTPUT_COUNT_MAX } from '../contracts/constants.js'
+import { TX_OUTPUT_COUNT_MAX, GUARD_TOKEN_TYPE_MAX } from '../contracts/constants.js'
 import { Outpoint } from '../typeConstants.js'
 import { randomBytes } from 'crypto'
 import * as opcat from '@opcat-labs/opcat'
@@ -144,6 +144,10 @@ export function filterFeeUtxos(utxos: UTXO[]): UTXO[] {
 export const emptyString = toByteString('')
 export const emptyOutputByteStrings = function () {
   return fill(emptyString, TX_OUTPUT_COUNT_MAX)
+}
+
+export const emptyTokenAmounts = function () {
+  return fill(0n, GUARD_TOKEN_TYPE_MAX)
 }
 
 export function applyFixedArray<T, L extends number>(

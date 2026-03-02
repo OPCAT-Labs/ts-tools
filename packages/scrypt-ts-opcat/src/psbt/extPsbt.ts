@@ -846,7 +846,7 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
 
   /**
    * Generates PSBT signing options based on signature requests.
-   * 
+   *
    * @param autoFinalized - Whether to automatically finalize the PSBT after signing (default: false)
    * @returns SignOptions object containing signing inputs, or undefined if no signatures are required
    */
@@ -854,9 +854,16 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
     const toSignInputs: ToSignInput[] = [];
     this._sigRequests.forEach((sigReqs, index) => {
       sigReqs.forEach((sigReq) => {
+        // Get the sigHashType from _sigHashTypes Map if not already specified in sigReq
+        const sigHashType = this._sigHashTypes.get(index);
+        const enrichedSigReq = {
+          ...sigReq,
+          // If sigReq already has sighashTypes, use it; otherwise use sigHashType from Map
+          sighashTypes: sigReq.sighashTypes || (sigHashType !== undefined ? [sigHashType] : undefined),
+        };
         toSignInputs.push({
           index,
-          ...sigReq,
+          ...enrichedSigReq,
         });
       });
     });
@@ -879,7 +886,14 @@ export class ExtPsbt extends Psbt implements IExtPsbt {
   getSig(inputIndex: InputIndex, options: Omit<ToSignInput, 'index'>): Sig {
     const input = this.data.inputs[inputIndex];
     let signature: Uint8Array = Uint8Array.from(new Array(P2PKH_SIG_LEN).fill(0));
-    this._addSigRequest(inputIndex, options);
+
+    // Automatically add sighashTypes from _sigHashTypes if not provided
+    const sigHashType = this._sigHashTypes.get(inputIndex);
+    const enrichedOptions = {
+      ...options,
+      sighashTypes: options.sighashTypes || (sigHashType !== undefined ? [sigHashType] : undefined),
+    };
+    this._addSigRequest(inputIndex, enrichedOptions);
 
     if (input.partialSig) {
       const pSig = input.partialSig.find((partialSig) => {

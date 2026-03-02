@@ -7,6 +7,8 @@ import {
   alterFileExt,
   checkByteStringLiteral,
   findBuildChangeOutputExpression,
+  findChangeInfoExpression,
+  findCheckOutputsExpression,
   findPackageDir,
   findReturnStatement,
   getBuiltInType,
@@ -235,6 +237,7 @@ const SmartContractBuiltinMethods = [
   'buildStateOutputs',
   'timeLock',
   'checkSig',
+  'checkSigWithFlag',
   'checkMultiSig',
   'checkDataSig',
   'checkPreimageAdvanced',
@@ -267,6 +270,16 @@ type AccessInfo = {
   accessBacktrace: boolean; // this.backtraceToOutpoint, this.backtraceToScript
   accessBacktraceInSubCall: boolean; // this.backtraceToOutpoint, this.backtraceToScript in private function call
   accessCLTV: boolean;
+  // Direct ctx hash field access (for sighash restrictions)
+  accessHashPrevouts: boolean; // this.ctx.hashPrevouts
+  accessInputIndex: boolean; // this.ctx.inputIndex
+  accessHashSpentAmounts: boolean; // this.ctx.hashSpentAmounts
+  accessHashSpentScriptHashes: boolean; // this.ctx.hashSpentScriptHashes
+  accessHashSpentDataHashes: boolean; // this.ctx.hashSpentDataHashes
+  accessHashSequences: boolean; // this.ctx.hashSequences
+  accessHashOutputs: boolean; // this.ctx.hashOutputs
+  accessInputCount: boolean; // this.ctx.inputCount
+  accessCheckInputState: boolean; // this.checkInputState()
 };
 
 type MethodInfo = {
@@ -1632,6 +1645,78 @@ export class Transpiler {
     }
   }
 
+  /**
+   * Parse sigHashType from decorator options.
+   * Supports both new object syntax: @method({ sigHashType: SigHashType.ALL })
+   * and legacy direct syntax: @method(SigHash.ALL)
+   * @returns hex string representing the sigHashType ('01', '02', '03', '81', '82', '83')
+   */
+  private parseSigHashType(methodDec: ts.Decorator): string {
+    const expression = methodDec.expression;
+    let sigHashType = '01'; // default: SigHash.ALL (0x01)
+
+    if (!ts.isCallExpression(expression) || !expression.arguments[0]) {
+      return sigHashType;
+    }
+
+    const argTxt = expression.arguments[0].getText();
+
+    // Try to match object syntax: { sigHashType: SigHashType.XXX }
+    const objectMatch = /sigHashType:\s*SigHashType\.(\w+)/.exec(argTxt);
+    if (objectMatch) {
+      const sigHashTypeName = objectMatch[1];
+      switch (sigHashTypeName) {
+        case 'ANYONECANPAY_SINGLE':
+          sigHashType = '83'; // 0x83 = 131
+          break;
+        case 'ANYONECANPAY_ALL':
+          sigHashType = '81'; // 0x81 = 129
+          break;
+        case 'ANYONECANPAY_NONE':
+          sigHashType = '82'; // 0x82 = 130
+          break;
+        case 'ALL':
+          sigHashType = '01'; // 0x01 = 1
+          break;
+        case 'SINGLE':
+          sigHashType = '03'; // 0x03 = 3
+          break;
+        case 'NONE':
+          sigHashType = '02'; // 0x02 = 2
+          break;
+        default:
+          break;
+      }
+      return sigHashType;
+    }
+
+    // Legacy direct syntax: @method(SigHash.XXX)
+    switch (argTxt) {
+      case 'SigHash.ANYONECANPAY_SINGLE':
+        sigHashType = '83'; // 0x83 = 131
+        break;
+      case 'SigHash.ANYONECANPAY_ALL':
+        sigHashType = '81'; // 0x81 = 129
+        break;
+      case 'SigHash.ANYONECANPAY_NONE':
+        sigHashType = '82'; // 0x82 = 130
+        break;
+      case 'SigHash.ALL':
+        sigHashType = '01'; // 0x01 = 1
+        break;
+      case 'SigHash.SINGLE':
+        sigHashType = '03'; // 0x03 = 3
+        break;
+      case 'SigHash.NONE':
+        sigHashType = '02'; // 0x02 = 2
+        break;
+      default:
+        break;
+    }
+
+    return sigHashType;
+  }
+
   private transformMethodDeclaration(
     node: ts.MethodDeclaration,
     toSection: EmittedSection,
@@ -1649,30 +1734,8 @@ export class Transpiler {
     this.setMethodDecOptions(methodDec);
     this._currentMethodName = node.name.getText();
 
-    let sigHashType = '41'; //SigHash.ALL;
-
-    switch (match[1]) {
-      case 'SigHash.ANYONECANPAY_SINGLE':
-        sigHashType = 'c3'; // SigHash.ANYONECANPAY_SINGLE;
-        break;
-      case 'SigHash.ANYONECANPAY_ALL':
-        sigHashType = 'c1'; //SigHash.ANYONECANPAY_ALL;
-        break;
-      case 'SigHash.ANYONECANPAY_NONE':
-        sigHashType = 'c2'; //SigHash.ANYONECANPAY_NONE;
-        break;
-      case 'SigHash.ALL':
-        sigHashType = '41'; //SigHash.ALL;
-        break;
-      case 'SigHash.SINGLE':
-        sigHashType = '43'; //SigHash.SINGLE;
-        break;
-      case 'SigHash.NONE':
-        sigHashType = '42'; //SigHash.NONE;
-        break;
-      default:
-        break;
-    }
+    // Parse sigHashType from decorator options (supports both object and legacy syntax)
+    const sigHashType = this.parseSigHashType(methodDec);
 
     const isPublicMethod = Transpiler.isPublicMethod(node);
     if (isPublicMethod) {
@@ -1729,13 +1792,145 @@ export class Transpiler {
       shouldAutoAppendSighashPreimage.shouldAppendArguments &&
       buildChangeOutputExpression !== undefined
     ) {
-      const allowedSighashType = ['c1', '41']; // Only sighash ALL allowed.
+      const allowedSighashType = ['81', '01']; // Only sighash ALL or ANYONECANPAY_ALL allowed.
       if (!allowedSighashType.includes(sigHashType)) {
         throw new TranspileError(
           `Can only use sighash ALL or ANYONECANPAY_ALL if using \`this.buildChangeOutput()\``,
           this.getRange(node),
         );
       }
+    }
+
+    // Check for checkOutputs() + SIGHASH_NONE conflict
+    // SIGHASH_NONE (0x02) and ANYONECANPAY_NONE (0x82) have empty hashOutputs,
+    // so checkOutputs() verification would always fail.
+    const checkOutputsExpression = findCheckOutputsExpression(node);
+    if (
+      shouldAutoAppendSighashPreimage.shouldAppendArguments &&
+      checkOutputsExpression !== undefined
+    ) {
+      const disallowedSighashTypeForCheckOutputs = ['02', '82']; // SIGHASH_NONE and ANYONECANPAY_NONE
+      if (disallowedSighashTypeForCheckOutputs.includes(sigHashType)) {
+        throw new TranspileError(
+          `Cannot use \`this.checkOutputs()\` with sighash NONE or ANYONECANPAY_NONE because hashOutputs is empty`,
+          this.getRange(node),
+        );
+      }
+    }
+
+    // Warning: changeInfo/buildChangeOutput without checkOutputs
+    const changeInfoExpression = findChangeInfoExpression(node);
+    if (
+      shouldAutoAppendSighashPreimage.shouldAppendArguments &&
+      (buildChangeOutputExpression !== undefined || changeInfoExpression !== undefined) &&
+      checkOutputsExpression === undefined
+    ) {
+      console.warn(
+        `Warning: Using changeInfo/buildChangeOutput without checkOutputs() in method '${node.name.getText()}'. ` +
+        `The changeInfo data is not verified without checkOutputs().`
+      );
+    }
+
+    // Check for ctx variable access + ANYONECANPAY conflict
+    // ANYONECANPAY modes (0x81, 0x82, 0x83) have empty hash fields for prevouts, spentAmounts, etc.
+    // Accessing these ctx variables would fail verification.
+    const anyonecanpaySighashTypes = ['81', '82', '83'];
+    const isAnyonecanpay = anyonecanpaySighashTypes.includes(sigHashType);
+
+    // Check for checkInputState first for better error message
+    // (checkInputState depends on spentAmounts and spentDataHashes, so check it before those)
+    const methodInfo = this.findMethodInfo(node.name.getText());
+    if (methodInfo && isAnyonecanpay && methodInfo.accessInfo.accessCheckInputState) {
+      throw new TranspileError(
+        `Cannot use \`this.checkInputState()\` with ANYONECANPAY sighash because spentDataHashes is empty`,
+        this.getRange(node),
+      );
+    }
+
+    if (isAnyonecanpay && shouldAutoAppendPrevouts.shouldAppendArguments) {
+      throw new TranspileError(
+        `Cannot access \`this.ctx.prevouts\` with ANYONECANPAY sighash because hashPrevouts is empty`,
+        this.getRange(node),
+      );
+    }
+
+    if (isAnyonecanpay && shouldAutoAppendSpentAmounts.shouldAppendArguments) {
+      throw new TranspileError(
+        `Cannot access \`this.ctx.spentAmounts\` with ANYONECANPAY sighash because hashSpentAmounts is empty`,
+        this.getRange(node),
+      );
+    }
+
+    if (isAnyonecanpay && shouldAutoAppendSpentScripts.shouldAppendArguments) {
+      throw new TranspileError(
+        `Cannot access \`this.ctx.spentScriptHashes\` with ANYONECANPAY sighash because hashSpentScriptHashes is empty`,
+        this.getRange(node),
+      );
+    }
+
+    if (isAnyonecanpay && shouldAutoAppendSpentDataHashes.shouldAppendArguments) {
+      throw new TranspileError(
+        `Cannot access \`this.ctx.spentDataHashes\` with ANYONECANPAY sighash because hashSpentDataHashes is empty`,
+        this.getRange(node),
+      );
+    }
+
+    // ANYONECANPAY restrictions for direct ctx hash field access
+    if (methodInfo && isAnyonecanpay) {
+      const accessInfo = methodInfo.accessInfo;
+      if (accessInfo.accessHashPrevouts) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.hashPrevouts\` with ANYONECANPAY sighash because it's empty (all zeros)`,
+          this.getRange(node),
+        );
+      }
+      if (accessInfo.accessInputIndex) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.inputIndex\` with ANYONECANPAY sighash because input index is not defined`,
+          this.getRange(node),
+        );
+      }
+      if (accessInfo.accessHashSpentAmounts) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.hashSpentAmounts\` with ANYONECANPAY sighash because it's empty (all zeros)`,
+          this.getRange(node),
+        );
+      }
+      if (accessInfo.accessHashSpentScriptHashes) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.hashSpentScriptHashes\` with ANYONECANPAY sighash because it's empty (all zeros)`,
+          this.getRange(node),
+        );
+      }
+      if (accessInfo.accessHashSpentDataHashes) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.hashSpentDataHashes\` with ANYONECANPAY sighash because it's empty (all zeros)`,
+          this.getRange(node),
+        );
+      }
+      if (accessInfo.accessHashSequences) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.hashSequences\` with ANYONECANPAY sighash because it's empty (all zeros)`,
+          this.getRange(node),
+        );
+      }
+      if (accessInfo.accessInputCount) {
+        throw new TranspileError(
+          `Cannot access \`this.ctx.inputCount\` with ANYONECANPAY sighash because input count is not defined`,
+          this.getRange(node),
+        );
+      }
+      // Note: accessCheckInputState is checked earlier for better error message
+    }
+
+    // NONE sighash restrictions for hashOutputs access
+    const noneSighashTypes = ['02', '82']; // SIGHASH_NONE and ANYONECANPAY_NONE
+    const isNone = noneSighashTypes.includes(sigHashType);
+    if (methodInfo && isNone && methodInfo.accessInfo.accessHashOutputs) {
+      throw new TranspileError(
+        `Cannot access \`this.ctx.hashOutputs\` with sighash NONE because it's empty (all zeros)`,
+        this.getRange(node),
+      );
     }
 
     toSection
@@ -1803,9 +1998,14 @@ export class Transpiler {
           paramLen += 1;
         }
 
-        // note this should be the third from bottom parameter if exists
-        if (shouldAutoAppendPrevouts.shouldAppendArguments) {
+        // Add Outpoint type if prevout or prevouts is accessed
+        if (shouldAutoAppendPrevout.shouldAppendArguments || shouldAutoAppendPrevouts.shouldAppendArguments) {
           this._accessBuiltinsSymbols.add('Outpoint');
+        }
+
+        // note this should be the third from bottom parameter if exists
+        // Only inject prevouts parameter when prevouts (not just prevout) is accessed
+        if (shouldAutoAppendPrevouts.shouldAppendArguments) {
           if (paramLen > 0) {
             psSec.append(', ');
           }
@@ -1875,7 +2075,12 @@ export class Transpiler {
         this,
         (sec) => {
           if (shouldAutoAppendSighashPreimage.shouldAppendArguments) {
+            // Convert sigHashType hex to decimal for the require statement
+            const sigHashTypeDecimal = parseInt(sigHashType, 16);
             sec
+              .append('\n')
+              // Verify sigHashType matches the decorator-specified value
+              .append(`require(${InjectedParam_SHPreimage}.sigHashType == ${sigHashTypeDecimal});`)
               .append('\n')
               .append(`${CALL_CHECK_SHPREIMAGE};`)
               .append(`\n`);
@@ -1898,16 +2103,27 @@ export class Transpiler {
               .append('\n');
           }
 
+          // When prevouts is accessed, validate it
           if (shouldAutoAppendPrevouts.shouldAppendArguments) {
             sec
               .append('\n')
               .append(
-                `Outpoint ${InjectedProp_Prevout} = ContextUtils.checkPrevouts(${InjectedParam_Prevouts}, ${InjectedParam_SHPreimage}.hashPrevouts, ${InjectedParam_SHPreimage}.inputIndex, ${InjectedVar_InputCount});`,
+                `ContextUtils.checkPrevouts(${InjectedParam_Prevouts}, ${InjectedParam_SHPreimage}.hashPrevouts, ${InjectedParam_SHPreimage}.inputIndex, ${InjectedVar_InputCount});`,
               )
               .append('\n');
           }
           if (shouldAutoAppendPrevouts.shouldAppendThisAssignment) {
             sec.append(thisAssignment(InjectedProp_PrevoutsCtx)).append('\n');
+          }
+
+          // When prevout is accessed (either directly or via prevouts), extract from shPreimage
+          if (shouldAutoAppendPrevout.shouldAppendArguments || shouldAutoAppendPrevouts.shouldAppendArguments) {
+            sec
+              .append('\n')
+              .append(
+                `Outpoint ${InjectedProp_Prevout} = ContextUtils.getOutpoint(${InjectedParam_SHPreimage});`,
+              )
+              .append('\n');
           }
           if (shouldAutoAppendPrevout.shouldAppendThisAssignment) {
             sec.append(thisAssignment(InjectedProp_Prevout)).append('\n');
@@ -1962,12 +2178,11 @@ export class Transpiler {
               ? `${this._currentContract.name.getText()}.stateHash(${InjectedParam_CurState})`
               : "b''";
 
-            // here no need to access this, because it's in public function, the variable we access is in the arguments
-            this._accessBuiltinsSymbols.add('StateUtils');
+            // use shPreimage.spentDataHash directly to verify state, no need for spentDataHashes parameter
             sec
               .append('\n')
               .append(
-                `StateUtils.checkInputState(${InjectedParam_SHPreimage}.inputIndex, ${stateHash}, ${InjectedParam_SpentDataHashes});`,
+                `require(${InjectedParam_SHPreimage}.spentDataHash == ${stateHash});`,
               )
               .append('\n');
           }
@@ -1976,7 +2191,7 @@ export class Transpiler {
             sec
               .append('\n')
               .append(
-                `Backtrace.checkPrevTxHashPreimage(${InjectedParam_PrevTxHashPreimage}, ${InjectedParam_Prevouts}, ${InjectedParam_SHPreimage}.inputIndex);`,
+                `Backtrace.checkPrevTxHashPreimage(${InjectedParam_PrevTxHashPreimage}, ${InjectedParam_SHPreimage}.outpoint);`,
               )
               .append('\n');
           }
@@ -2151,6 +2366,16 @@ export class Transpiler {
       accessBacktrace: false,
       accessBacktraceInSubCall: false,
       accessCLTV: false,
+      // Direct ctx hash field access
+      accessHashPrevouts: false,
+      accessInputIndex: false,
+      accessHashSpentAmounts: false,
+      accessHashSpentScriptHashes: false,
+      accessHashSpentDataHashes: false,
+      accessHashSequences: false,
+      accessHashOutputs: false,
+      accessInputCount: false,
+      accessCheckInputState: false,
     };
 
     function vistMethodChild(self: Transpiler, node: ts.Node) {
@@ -2170,7 +2395,6 @@ export class Transpiler {
             case 'prevout':
               Object.assign(accessInfo, {
                 accessPrevout: true,
-                accessSpentAmounts: true,
               });
               break;
             case 'spentAmounts':
@@ -2190,6 +2414,48 @@ export class Transpiler {
                 accessSpentDataHashes: true,
               });
               break;
+            // Direct ctx hash field access (for sighash restrictions)
+            case 'hashPrevouts':
+              Object.assign(accessInfo, {
+                accessHashPrevouts: true,
+              });
+              break;
+            case 'inputIndex':
+              Object.assign(accessInfo, {
+                accessInputIndex: true,
+              });
+              break;
+            case 'hashSpentAmounts':
+              Object.assign(accessInfo, {
+                accessHashSpentAmounts: true,
+              });
+              break;
+            case 'hashSpentScriptHashes':
+              Object.assign(accessInfo, {
+                accessHashSpentScriptHashes: true,
+              });
+              break;
+            case 'hashSpentDataHashes':
+              Object.assign(accessInfo, {
+                accessHashSpentDataHashes: true,
+              });
+              break;
+            case 'hashSequences':
+              Object.assign(accessInfo, {
+                accessHashSequences: true,
+              });
+              break;
+            case 'hashOutputs':
+              Object.assign(accessInfo, {
+                accessHashOutputs: true,
+              });
+              break;
+            case 'inputCount':
+              Object.assign(accessInfo, {
+                accessSpentAmounts: true,
+                accessInputCount: true,
+              });
+              break;
           }
         }
         // access properties under `this`
@@ -2200,10 +2466,9 @@ export class Transpiler {
             });
           } else if (node.name.getText() === 'state') {
             Object.assign(accessInfo, {
-              accessSHPreimage: true, // accessSpentDataHashes depends on shPreimage
+              accessSHPreimage: true,
               accessState: true,
-              accessSpentAmounts: true, // spentDataHashes depends on spentAmounts
-              accessSpentDataHashes: true, // state depends on spentDataHashes
+              // state validation uses shPreimage.spentDataHash, no longer depends on spentAmounts and spentDataHashes
             });
           } else if (node.name.getText() ==='ctx') {
             Object.assign(accessInfo, {
@@ -2230,6 +2495,8 @@ export class Transpiler {
                 accessSHPreimage: true, // accessSpentDataHashes depends on shPreimage
                 accessState: true,
                 accessSpentDataHashes: true,
+                accessSpentAmounts: true, // spentDataHashes verification needs inputCount from spentAmounts
+                accessCheckInputState: true,
               });
             } else if (['timeLock'].includes(methodName)) {
               Object.assign(accessInfo, {
@@ -2240,12 +2507,15 @@ export class Transpiler {
               Object.assign(accessInfo, {
                 accessSHPreimage: true,
               });
-            } else if (['backtraceToOutpoint', 'backtraceToScript'].includes(methodName)) {
+            } else if (methodName === 'backtraceToOutpoint') {
               Object.assign(accessInfo, {
                 accessSHPreimage: true,
-                accessPrevouts: true,
-                accessSpentScripts: true,
-                accessSpentAmounts: true,
+                accessPrevout: true,
+                accessBacktrace: true,
+              });
+            } else if (methodName === 'backtraceToScript') {
+              Object.assign(accessInfo, {
+                accessSHPreimage: true,
                 accessBacktrace: true,
               });
             }
@@ -2782,30 +3052,14 @@ export class Transpiler {
   }
 
   private shouldAutoAppendSighashPreimage(node: ts.MethodDeclaration) {
-    // const hasSigHashPreimageParameters = node.parameters.find(
-    //   (p) => p.type?.getText() === 'SigHashPreimage',
-    // );
-
-    // if (hasSigHashPreimageParameters) {
-    //   return false;
-    // }
-
-    const methodInfo = this.findMethodInfo(node.name.getText());
-
-    if (!methodInfo) {
-      throw new UnknownError(
-        `No method info found for \`${node.name.getText()}\``,
-        this.getRange(node.name),
-      );
-    }
-    const { accessSHPreimage, accessSHPreimageInSubCall } = methodInfo.accessInfo;
-    const { isPublic } = methodInfo;
-
-    const shouldAppendArguments = accessSHPreimage && isPublic;
-    const shouldAppendThisAssignment = accessSHPreimage && accessSHPreimageInSubCall && isPublic;
-    const shouldAccessThis = (!isPublic || accessSHPreimageInSubCall) && accessSHPreimage;
-
-    return { shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis };
+    return this._shouldAutoAppend(node, (methodInfo) => {
+      const { accessSHPreimage, accessSHPreimageInSubCall } = methodInfo.accessInfo;
+      const { isPublic } = methodInfo;
+      const shouldAppendArguments = accessSHPreimage && isPublic;
+      const shouldAppendThisAssignment = accessSHPreimage && accessSHPreimageInSubCall && isPublic;
+      const shouldAccessThis = (!isPublic || accessSHPreimageInSubCall) && accessSHPreimage;
+      return [shouldAppendArguments, shouldAppendThisAssignment, shouldAccessThis];
+    });
   }
 
   private transformParameter(
@@ -5040,6 +5294,9 @@ export class Transpiler {
       if (name === 'checkSig') {
         return this.transformCallCheckSig(node, toSection);
       }
+      if (name === 'checkSigWithFlag') {
+        return this.transformCallCheckSigWithFlag(node, toSection);
+      }
       if (name === 'checkMultiSig') {
         return this.transformCallCheckMultiSig(node, toSection);
       }
@@ -5349,6 +5606,24 @@ export class Transpiler {
     toSection: EmittedSection,
   ): EmittedSection {
     const srcLoc = this.getCoordinates(node.getStart());
+
+    // Get the method's sigHashType from decorator
+    const methodNode = this.getMethodContainsTheNode(node);
+    const methodDec = Transpiler.findDecorator(methodNode, DecoratorName.Method);
+    const sigHashTypeHex = methodDec ? this.parseSigHashType(methodDec) : '01';
+    const sigHashTypeDecimal = parseInt(sigHashTypeHex, 16);
+
+    // Get the signature argument (first argument)
+    const sigArg = node.arguments[0];
+
+    // Generate: (sig[len(sig) - 1 : ] == num2bin(sigHashType, 2)[0 : 1] && num2bin(sigHashType, 2)[1 : ] == b'00' && checkSig(sig, pubKey))
+    toSection.append('(', srcLoc);
+    toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
+    toSection.append(`[len(`);
+    toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
+    toSection.append(`) - 1 : ] == num2bin(${sigHashTypeDecimal}, 2)[0 : 1] && num2bin(${sigHashTypeDecimal}, 2)[1 : ] == b'00' && `);
+
+    // Append checkSig call
     toSection.appendWith(this, (toSec) => {
       const _e: ts.PropertyAccessExpression = node.expression as ts.PropertyAccessExpression;
       return this.transformExpression(_e.name, toSec);
@@ -5361,7 +5636,34 @@ export class Transpiler {
         .appendWith(this, (toSec) => this.transformExpression(arg, toSec))
         .append(index < args.length - 1 ? ', ' : '');
     });
-    return toSection.append(')', srcLoc);
+    return toSection.append('))', srcLoc);
+  }
+
+  private transformCallCheckSigWithFlag(
+    node: ts.CallExpression,
+    toSection: EmittedSection,
+  ): EmittedSection {
+    const srcLoc = this.getCoordinates(node.getStart());
+
+    // checkSigWithFlag(sig, pubKey, flag) -> (sig[len(sig) - 1 : ] == num2bin(flag, 2)[0 : 1] && num2bin(flag, 2)[1 : ] == b'00' && checkSig(sig, pubKey))
+    const sigArg = node.arguments[0];
+    const pubKeyArg = node.arguments[1];
+    const flagArg = node.arguments[2];
+
+    // Generate: (sig[len(sig) - 1 : ] == num2bin(flag, 2)[0 : 1] && num2bin(flag, 2)[1 : ] == b'00' && checkSig(sig, pubKey))
+    toSection.append('(', srcLoc);
+    toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
+    toSection.append(`[len(`);
+    toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
+    toSection.append(`) - 1 : ] == num2bin(`);
+    toSection.appendWith(this, (toSec) => this.transformExpression(flagArg, toSec));
+    toSection.append(`, 2)[0 : 1] && num2bin(`);
+    toSection.appendWith(this, (toSec) => this.transformExpression(flagArg, toSec));
+    toSection.append(`, 2)[1 : ] == b'00' && checkSig(`);
+    toSection.appendWith(this, (toSec) => this.transformExpression(sigArg, toSec));
+    toSection.append(`, `);
+    toSection.appendWith(this, (toSec) => this.transformExpression(pubKeyArg, toSec));
+    return toSection.append('))', srcLoc);
   }
 
   private transformCallCheckMultiSig(
@@ -5590,19 +5892,18 @@ export class Transpiler {
     const { shouldAccessThis } = this.shouldAutoAppendSighashPreimage(methodNode);
     this._accessBuiltinsSymbols.add('Backtrace');
 
-
-    const spentScriptHashes = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScriptHashes}`;
-    const inputIndex = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex`;
+    const prevout = `${shouldAccessThis ? 'this.' : ''}${InjectedProp_Prevout}`;
+    const shPreimage = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}`;
 
     return toSection
       .append('Backtrace.verifyFromOutpoint(')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
       .append(', ')
+      .append(`${prevout}.outputIndex`)
+      .append(', ')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
       .append(', ')
-      .append(
-        `${spentScriptHashes}[${inputIndex} * 32 : (${inputIndex} + 1) * 32]`,
-      )
+      .append(`${shPreimage}.spentScriptHash`)
       .append(', ')
       .appendWith(this, (toSec) => {
         return this.transformAccessPrevTxHashPreimage(node, toSec).append(
@@ -5619,17 +5920,14 @@ export class Transpiler {
     const methodNode = this.getMethodContainsTheNode(node);
     const { shouldAccessThis } = this.shouldAutoAppendSighashPreimage(methodNode);
     this._accessBuiltinsSymbols.add('Backtrace');
-    const spentScriptHashes = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SpentScriptHashes}`;
-    const inputIndex = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}.inputIndex`;
+    const shPreimage = `${shouldAccessThis ? 'this.' : ''}${InjectedParam_SHPreimage}`;
     return toSection
       .append('Backtrace.verifyFromScript(')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[0], toSec))
       .append(', ')
       .appendWith(this, (toSec) => this.transformExpression(node.arguments[1], toSec))
       .append(', ')
-      .append(
-        `${spentScriptHashes}[${inputIndex} * 32 : (${inputIndex} + 1) * 32]`,
-      )
+      .append(`${shPreimage}.spentScriptHash`)
       .append(', ')
       .appendWith(this, (toSec) => {
         return this.transformAccessPrevTxHashPreimage(node, toSec).append(
