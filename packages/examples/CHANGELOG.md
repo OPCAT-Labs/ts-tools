@@ -1,5 +1,16 @@
 # @opcat-labs/examples
 
+## 4.0.0
+
+### Major Changes
+
+- update sighash preimage, fix batch bugs
+
+### Patch Changes
+
+- Updated dependencies
+  - @opcat-labs/scrypt-ts-opcat@4.0.0
+
 ## 3.4.0
 
 ### Minor Changes

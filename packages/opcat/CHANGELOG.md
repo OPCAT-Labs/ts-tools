@@ -1,5 +1,11 @@
 # @opcat-labs/opcat
 
+## 4.0.0
+
+### Major Changes
+
+- update sighash preimage, fix batch bugs
+
 ## 3.4.0
 
 ### Minor Changes
