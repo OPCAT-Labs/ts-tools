@@ -1,0 +1,101 @@
+name: Auto Fix CI Failures
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+  issues: write
+
+on:
+  workflow_run:
+    workflows: ["Test"]
+    types: [completed]
+
+jobs:
+  auto-fix:
+    if: |
+      github.event.workflow_run.conclusion == 'failure' &&
+      toJSON(github.event.workflow_run.pull_requests) != '[]' &&
+      !startsWith(github.event.workflow_run.head_branch, 'claude-auto-fix-ci-')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup git identity
+        run: |
+          git config --global user.email "claude[bot]@users.noreply.github.com"
+          git config --global user.name "claude[bot]"
+
+      - name: Create fix branch
+        id: branch
+        run: |
+          BRANCH="claude-auto-fix-ci-${{ github.event.workflow_run.head_branch }}-${{ github.run_id }}"
+          git checkout -b "$BRANCH"
+          echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
+
+      - name: Get PR number
+        id: pr_info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prs = context.payload.workflow_run.pull_requests;
+            core.setOutput('pr_number', prs.length > 0 ? prs[0].number : '');
+
+      - name: Get CI failure details
+        id: failure_details
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+            const failedJobs = jobs.data.jobs.filter(j => j.conclusion === 'failure');
+            let errorLogs = [];
+            for (const job of failedJobs) {
+              const logs = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                job_id: job.id
+              });
+              errorLogs.push({ jobName: job.name, logs: logs.data });
+            }
+            return {
+              runUrl: run.data.html_url,
+              failedJobs: failedJobs.map(j => j.name),
+              errorLogs
+            };
+
+      - name: Fix CI failures with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            The CI pipeline failed on branch "${{ github.event.workflow_run.head_branch }}".
+            Failed jobs: ${{ join(fromJSON(steps.failure_details.outputs.result).failedJobs, ', ') }}
+            CI run URL: ${{ fromJSON(steps.failure_details.outputs.result).runUrl }}
+            PR number: ${{ steps.pr_info.outputs.pr_number }}
+            Fix branch: ${{ steps.branch.outputs.branch_name }}
+
+            Error logs:
+            ${{ toJSON(fromJSON(steps.failure_details.outputs.result).errorLogs) }}
+
+            Instructions:
+            1. Read the error logs carefully to understand the root cause.
+            2. Make the minimal code changes needed to fix the failures.
+            3. Commit the fixes to the current branch (${{ steps.branch.outputs.branch_name }}).
+            4. Open a PR against "${{ github.event.workflow_run.head_branch }}" with title "fix: auto-fix CI failure on PR #${{ steps.pr_info.outputs.pr_number }}".
+          claude_args: >
+            --model claude-sonnet-4-6
+            --max-turns 15
+            --allowedTools 'Edit,MultiEdit,Write,Read,Glob,Grep,LS,Bash(git:*),Bash(npm:*),Bash(npx:*),Bash(bun:*),Bash(gh:*)'

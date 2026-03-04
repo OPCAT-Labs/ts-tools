@@ -1,0 +1,26 @@
+name: Claude Issue Triage
+
+permissions:
+  contents: read
+  issues: write
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Triage this issue:
+            1. Add appropriate labels (bug, enhancement, question, documentation).
+            2. Assess severity and add a priority label (priority:critical, priority:high, priority:medium, priority:low).
+            3. If it is a clear bug with enough context to fix automatically, also add the label "claude-fixable".
+            4. Post a brief comment summarizing your triage assessment.
+          claude_args: "--model claude-sonnet-4-6 --max-turns 5"
