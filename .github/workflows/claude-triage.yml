@@ -11,6 +11,7 @@ on:
 jobs:
   triage:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
@@ -23,4 +24,7 @@ jobs:
             2. Assess severity and add a priority label (priority:critical, priority:high, priority:medium, priority:low).
             3. If it is a clear bug with enough context to fix automatically, also add the label "claude-fixable".
             4. Post a brief comment summarizing your triage assessment.
-          claude_args: "--model claude-sonnet-4-6 --max-turns 5"
+          claude_args: >
+            --model claude-sonnet-4-6
+            --max-turns 5
+            --allowedTools 'Read,Bash(gh issue edit:*),Bash(gh issue comment:*)'
