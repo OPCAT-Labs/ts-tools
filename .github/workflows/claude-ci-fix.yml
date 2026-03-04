@@ -5,6 +5,7 @@ permissions:
   pull-requests: write
   actions: read
   issues: write
+  id-token: write
 
 on:
   workflow_run:
