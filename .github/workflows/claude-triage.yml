@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@5f8e5bfe5b03891348854ae401476fc905a6ff6a # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
@@ -28,4 +28,4 @@ jobs:
           claude_args: >
             --model claude-sonnet-4-6
             --max-turns 5
-            --allowedTools 'Read,Bash(gh issue edit:*),Bash(gh issue comment:*)'
+            --allowedTools 'Read,Bash(gh issue edit ${{ github.event.issue.number }}:*),Bash(gh issue comment ${{ github.event.issue.number }}:*)'
