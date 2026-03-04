@@ -20,12 +20,20 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |
-            Triage this issue:
-            1. Add appropriate labels (bug, enhancement, question, documentation).
-            2. Assess severity and add a priority label (priority:critical, priority:high, priority:medium, priority:low).
+            Triage issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}
+
+            Issue body:
+            ${{ github.event.issue.body }}
+
+            Instructions (base your triage solely on the issue title and body above — do NOT read source files or explore the codebase):
+            1. Add appropriate labels (bug, enhancement, question, documentation) with:
+               gh issue edit ${{ github.event.issue.number }} --add-label "LABEL"
+            2. Assess severity and add a priority label (priority:critical, priority:high, priority:medium, priority:low) with:
+               gh issue edit ${{ github.event.issue.number }} --add-label "priority:LEVEL"
             3. If it is a clear bug with enough context to fix automatically, also add the label "claude-fixable".
-            4. Post a brief comment summarizing your triage assessment.
+            4. Post a brief comment summarizing your triage assessment with:
+               gh issue comment ${{ github.event.issue.number }} --body "COMMENT"
           claude_args: >
             --model claude-sonnet-4-6
-            --max-turns 5
-            --allowedTools 'Read,Bash(gh issue edit ${{ github.event.issue.number }}:*),Bash(gh issue comment ${{ github.event.issue.number }}:*)'
+            --max-turns 8
+            --allowedTools 'Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label:*)'
