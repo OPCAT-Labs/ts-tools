@@ -25,7 +25,7 @@ jobs:
             Issue body:
             ${{ github.event.issue.body }}
 
-            Instructions:
+            Instructions (base your triage solely on the issue title and body above — do NOT read source files or explore the codebase):
             1. Add appropriate labels (bug, enhancement, question, documentation) with:
                gh issue edit ${{ github.event.issue.number }} --add-label "LABEL"
             2. Assess severity and add a priority label (priority:critical, priority:high, priority:medium, priority:low) with:
@@ -35,5 +35,5 @@ jobs:
                gh issue comment ${{ github.event.issue.number }} --body "COMMENT"
           claude_args: >
             --model claude-sonnet-4-6
-            --max-turns 5
-            --allowedTools 'Read,Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label:*)'
+            --max-turns 8
+            --allowedTools 'Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh label:*)'
