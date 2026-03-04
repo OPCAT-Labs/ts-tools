@@ -1,0 +1,102 @@
+name: Codex Code Review
+
+# pull_request_target runs in the base repo context (has secrets) and
+# fires for fork PRs too, unlike pull_request which loses secrets for forks.
+# The Codex step uses sandbox: read-only so no fork code is executed.
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      review: ${{ steps.codex.outputs.final-message }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          persist-credentials: false
+
+      - name: Fetch PR refs
+        run: |
+          git fetch --no-tags origin \
+            ${{ github.event.pull_request.base.ref }} \
+            +refs/pull/${{ github.event.pull_request.number }}/head
+
+      - name: Write review prompt
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          cat > /tmp/review-prompt.md << 'EOF'
+          You are a senior code reviewer. Review only the diff introduced in this PR.
+          EOF
+          printf "PR number: %s\nPR title: %s\nPR description:\n%s\n" \
+            "$PR_NUMBER" "$PR_TITLE" "$PR_BODY" >> /tmp/review-prompt.md
+          printf "\nDiff command to inspect changes:\n  git diff %s...%s\n" \
+            "$BASE_SHA" "$HEAD_SHA" >> /tmp/review-prompt.md
+          cat >> /tmp/review-prompt.md << 'EOF'
+
+          Check for:
+          - Bugs or logic errors
+          - Security vulnerabilities (injection, XSS, insecure defaults)
+          - Performance issues
+          - Missing or inadequate error handling
+          - Test coverage gaps
+
+          Format your response as a concise Markdown review with clear sections.
+          EOF
+
+      - name: Run Codex Review
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          safety-strategy: drop-sudo
+          sandbox: read-only
+          prompt-file: /tmp/review-prompt.md
+
+  post-review:
+    runs-on: ubuntu-latest
+    needs: review
+    if: needs.review.outputs.review != ''
+    permissions:
+      pull-requests: write
+      issues: read
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          REVIEW: ${{ needs.review.outputs.review }}
+        with:
+          script: |
+            const body = `<!-- codex-review -->\n## Codex Code Review\n\n${process.env.REVIEW}`;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+            });
+            const existing = comments.find(c => c.body.includes('<!-- codex-review -->'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+            }
