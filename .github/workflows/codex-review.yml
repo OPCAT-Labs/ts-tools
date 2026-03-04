@@ -12,7 +12,6 @@ jobs:
   review:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    continue-on-error: true
     outputs:
       review: ${{ steps.codex.outputs.final-message }}
     steps:
