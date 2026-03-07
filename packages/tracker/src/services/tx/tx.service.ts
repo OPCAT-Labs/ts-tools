@@ -285,6 +285,35 @@ export class TxService {
       },
     });
 
+    // M-10 Fix: Build a map of input NFT localIds to detect transfers
+    // Map: collectionScriptHash -> Set<localId>
+    const inputNftLocalIds = new Map<string, Set<bigint>>();
+    const inputTags = ContractLib.decodeInputsTag(tx);
+
+    for (let inputIndex = 0; inputIndex < tx.inputs.length; inputIndex++) {
+      const input = tx.inputs[inputIndex];
+      const inputTag = inputTags[inputIndex];
+
+      if (inputTag.includes(CatTags.CAT721_TAG)) {
+        const inputScriptHash = sha256(input.output.script.toHex());
+        try {
+          const inputFields = ContractLib.decodeFields(input.output.data);
+          if (inputFields && inputFields.length >= 2) {
+            const [, _inputLocalId] = inputFields;
+            const inputLocalId = byteStringToInt(_inputLocalId);
+
+            if (!inputNftLocalIds.has(inputScriptHash)) {
+              inputNftLocalIds.set(inputScriptHash, new Set());
+            }
+            inputNftLocalIds.get(inputScriptHash)!.add(inputLocalId);
+          }
+        } catch (e) {
+          // Failed to parse input fields, skip
+          this.logger.debug(`Failed to parse input ${inputIndex} fields: ${e.message}`);
+        }
+      }
+    }
+
     for (let outputIndex = 0; outputIndex < tx.outputs.length; outputIndex++) {
       const outputTag = outputTags[outputIndex];
       const output = tx.outputs[outputIndex];
@@ -407,6 +436,38 @@ export class TxService {
           backtraceValid &&
           outputTag.includes(CatTags.CAT721_TAG) && tokenInfo
         ) {
+          // M-10 Fix: Validate that there is only one NFT metadata input
+          const nftMetadataInputs = inputMetadatas.filter((m) => m?.type == 'NFT');
+
+          if (nftMetadataInputs.length > 1) {
+            this.logger.warn(
+              `Transaction ${tx.id} contains ${nftMetadataInputs.length} NFT metadata inputs, ` +
+              `skipping NFT metadata indexing`
+            );
+            continue;
+          }
+
+          if (nftMetadataInputs.length === 0) {
+            // No NFT metadata input, skip
+            continue;
+          }
+
+          // M-10 Fix: Check if this NFT is transferred from input (not newly minted)
+          // If the same localId exists in inputs, it's a transfer, not a mint
+          const currentLocalId = amount; // amount is localId for CAT721
+          const isTransferred = inputNftLocalIds.get(lockingScriptHash)?.has(currentLocalId) || false;
+
+          if (isTransferred) {
+            // This NFT is transferred from input, not newly minted
+            // Skip metadata binding to avoid overwriting existing metadata
+            this.logger.debug(
+              `NFT ${tokenInfo.tokenId}:${currentLocalId} is transferred from input, ` +
+              `skipping metadata binding`
+            );
+            continue;
+          }
+
+          // This is a newly minted NFT, bind metadata
           const nftMetadataIndex = inputMetadatas.findIndex((m) => m?.type == 'NFT');
           const nftMetadata = inputMetadatas[nftMetadataIndex];
           if (nftMetadata) {
