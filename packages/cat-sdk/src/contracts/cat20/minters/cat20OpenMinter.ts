@@ -137,29 +137,10 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
       tokenSatoshis,
       tokenStateHash
     )
-    // M-01 Fix: Validate initial state on first mint to prevent forged deployment state
-    // If hasMintedBefore is false, this must be the first mint from genesis deployment
-    // Verify that remainingCount matches expected initial value
-    if (!this.state.hasMintedBefore) {
-      // First mint: validate initial state
-      if (this.premineCount > 0n) {
-        // With premine: remainingCount should be maxCount - premineCount
-        assert(
-          this.maxCount == this.state.remainingCount + this.premineCount,
-          'invalid initial state: maxCount must equal remainingCount + premineCount'
-        )
-      } else {
-        // Without premine: remainingCount should be maxCount
-        assert(
-          this.maxCount == this.state.remainingCount,
-          'invalid initial state: maxCount must equal remainingCount'
-        )
-      }
-    }
-
     const premine = this.premineCount * this.limit
     if (!this.state.hasMintedBefore && premine > 0n) {
       // needs to premine
+      assert(this.maxCount == this.state.remainingCount + this.premineCount, 'maxCount is not equal to remainingCount + premineCount')
       // preminer checksig
       OwnerUtils.checkUserOwner(preminerPubKey, this.preminerAddr)
       assert(this.checkSig(preminerSig, preminerPubKey), 'preminer sig is invalid')
@@ -168,6 +149,11 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
       assert(tokenMint.amount == premine, 'token amount is not equal to premine')
     } else {
       // general mint
+      if (!this.state.hasMintedBefore) {
+        // this is the first time mint
+        assert(this.maxCount == this.state.remainingCount, 'maxCount is not equal to remainingCount')
+        assert(this.premineCount == 0n, 'premineCount is not equal to 0')
+      }
       assert(sumNextRemainingCount == this.state.remainingCount - 1n, 'sumNextRemainingCount is not equal to remainingCount - 1')
       assert(tokenMint.amount == this.limit, 'token amount is not equal to limit')
     }
