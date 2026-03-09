@@ -107,7 +107,7 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
 
     // M-01 Fix: Prevent supply-cap bypass via forged deployment state
     // Validate that remainingCount never exceeds maxCount
-    assert(this.state.remainingCount <= this.maxCount, 'remainingCount exceeds maxCount')
+    assert(this.state.remainingCount + this.premineCount <= this.maxCount, 'remainingCount exceeds maxCount')
 
     // back to genesis
     this.backtraceToOutpoint(backtraceInfo, this.genesisOutpoint)
