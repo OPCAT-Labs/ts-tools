@@ -105,6 +105,10 @@ export class CAT20OpenMinter extends SmartContract<CAT20OpenMinterState> {
     // C.7 Fix: Ensure token output has non-zero satoshis
     assert(tokenSatoshis > 0n, 'tokenSatoshis must be greater than 0')
 
+    // M-01 Fix: Prevent supply-cap bypass via forged deployment state
+    // Validate that remainingCount never exceeds maxCount
+    assert(this.state.remainingCount + this.premineCount <= this.maxCount, 'remainingCount exceeds maxCount')
+
     // back to genesis
     this.backtraceToOutpoint(backtraceInfo, this.genesisOutpoint)
 
