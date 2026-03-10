@@ -87,7 +87,7 @@ jobs:
           retention-days: 7
 
   deploy:
-    name: Deploy to GCP
+    name: Deploy to GCP - ${{ matrix.instance }}
     needs: build
     runs-on: ubuntu-latest
     if: ${{ needs.build.result == 'success' }}
@@ -96,15 +96,31 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    strategy:
+      matrix:
+        instance: [instance-0-layer-mainnet-infra-services-hk0, instance-1-layer-mainnet-hk0]
 
     env:
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
       GCE_ZONE: ${{ vars.GCE_ZONE }}
-      GCE_INSTANCE: ${{ vars.GCE_INSTANCE }}
       DEPLOY_USER: ${{ vars.DEPLOY_USER }}
       DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
 
     steps:
+      - name: Set instance-specific variables
+        run: |
+          if [[ "${{ matrix.instance }}" == instance-0-* ]]; then
+            echo "GCE_INSTANCE=${{ vars.INSTANCE0_GCE_INSTANCE }}" >> $GITHUB_ENV
+            echo "RPC_HOST=${{ vars.INSTANCE0_RPC_HOST }}" >> $GITHUB_ENV
+            echo "DATABASE_DB=${{ vars.INSTANCE0_DATABASE_DB }}" >> $GITHUB_ENV
+            echo "🎯 Deploying to ${{ matrix.instance }}"
+          else
+            echo "GCE_INSTANCE=${{ vars.INSTANCE1_GCE_INSTANCE }}" >> $GITHUB_ENV
+            echo "RPC_HOST=${{ vars.INSTANCE1_RPC_HOST }}" >> $GITHUB_ENV
+            echo "DATABASE_DB=${{ vars.INSTANCE1_DATABASE_DB }}" >> $GITHUB_ENV
+            echo "🎯 Deploying to ${{ matrix.instance }}"
+          fi
+
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -153,10 +169,10 @@ jobs:
           DATABASE_TYPE: ${{ vars.DATABASE_TYPE }}
           DATABASE_HOST: ${{ vars.DATABASE_HOST }}
           DATABASE_PORT: ${{ vars.DATABASE_PORT }}
-          DATABASE_DB: ${{ vars.DATABASE_DB }}
+          DATABASE_DB: ${{ env.DATABASE_DB }}
           DATABASE_USERNAME: ${{ vars.DATABASE_USERNAME }}
           DATABASE_SSL: ${{ vars.DATABASE_SSL }}
-          RPC_HOST: ${{ vars.RPC_HOST }}
+          RPC_HOST: ${{ env.RPC_HOST }}
           RPC_PORT: ${{ vars.RPC_PORT }}
           RPC_USER: ${{ vars.RPC_USER }}
           NETWORK: ${{ vars.NETWORK }}
