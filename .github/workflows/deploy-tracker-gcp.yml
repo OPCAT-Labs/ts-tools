@@ -2,6 +2,8 @@ name: Deploy Tracker to GCP
 
 on:
   push:
+    branches:
+      - 'feat/dual-instance-deployment'  # TODO: test only, remove before merge
     tags:
       - 'deploy-tracker-[0-9]*'
   workflow_dispatch:
