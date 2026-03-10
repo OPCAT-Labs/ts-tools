@@ -115,11 +115,13 @@ jobs:
             echo "GCE_INSTANCE=${{ vars.INSTANCE0_GCE_INSTANCE }}" >> $GITHUB_ENV
             echo "RPC_HOST=${{ vars.INSTANCE0_RPC_HOST }}" >> $GITHUB_ENV
             echo "DATABASE_DB=${{ vars.INSTANCE0_DATABASE_DB }}" >> $GITHUB_ENV
+            echo "ZMQ_SERVER=${{ vars.INSTANCE0_ZMQ_SERVER }}" >> $GITHUB_ENV
             echo "🎯 Deploying to ${{ matrix.instance }}"
           else
             echo "GCE_INSTANCE=${{ vars.INSTANCE1_GCE_INSTANCE }}" >> $GITHUB_ENV
             echo "RPC_HOST=${{ vars.INSTANCE1_RPC_HOST }}" >> $GITHUB_ENV
             echo "DATABASE_DB=${{ vars.INSTANCE1_DATABASE_DB }}" >> $GITHUB_ENV
+            echo "ZMQ_SERVER=${{ vars.INSTANCE1_ZMQ_SERVER }}" >> $GITHUB_ENV
             echo "🎯 Deploying to ${{ matrix.instance }}"
           fi
 
@@ -181,7 +183,7 @@ jobs:
           API_PORT: ${{ vars.API_PORT }}
           WORKER_PORT: ${{ vars.WORKER_PORT }}
           GENESIS_BLOCK_HEIGHT: ${{ vars.GENESIS_BLOCK_HEIGHT }}
-          ZMQ_SERVER: ${{ vars.ZMQ_SERVER }}
+          ZMQ_SERVER: ${{ env.ZMQ_SERVER }}
         run: |
           cat > /tmp/env.prod << EOF
           DATABASE_TYPE=${DATABASE_TYPE}
