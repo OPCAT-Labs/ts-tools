@@ -2,6 +2,8 @@ name: Deploy Tracker to GCP
 
 on:
   push:
+    branches:
+      - 'feat/dual-instance-deployment'  # TODO: test only, remove before merge
     tags:
       - 'deploy-tracker-[0-9]*'
   workflow_dispatch:
@@ -98,7 +100,7 @@ jobs:
       id-token: write
     strategy:
       matrix:
-        instance: [instance-0-layer-mainnet-infra-services-hk0, instance-1-layer-mainnet-hk0]
+        instance: [instance-0, instance-1]
 
     env:
       GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
@@ -109,18 +111,21 @@ jobs:
     steps:
       - name: Set instance-specific variables
         run: |
-          if [[ "${{ matrix.instance }}" == instance-0-* ]]; then
+          if [[ "${{ matrix.instance }}" == "instance-0" ]]; then
             echo "GCE_INSTANCE=${{ vars.INSTANCE0_GCE_INSTANCE }}" >> $GITHUB_ENV
             echo "RPC_HOST=${{ vars.INSTANCE0_RPC_HOST }}" >> $GITHUB_ENV
             echo "DATABASE_DB=${{ vars.INSTANCE0_DATABASE_DB }}" >> $GITHUB_ENV
             echo "ZMQ_SERVER=${{ vars.INSTANCE0_ZMQ_SERVER }}" >> $GITHUB_ENV
             echo "🎯 Deploying to ${{ matrix.instance }}"
-          else
+          elif [[ "${{ matrix.instance }}" == "instance-1" ]]; then
             echo "GCE_INSTANCE=${{ vars.INSTANCE1_GCE_INSTANCE }}" >> $GITHUB_ENV
             echo "RPC_HOST=${{ vars.INSTANCE1_RPC_HOST }}" >> $GITHUB_ENV
             echo "DATABASE_DB=${{ vars.INSTANCE1_DATABASE_DB }}" >> $GITHUB_ENV
             echo "ZMQ_SERVER=${{ vars.INSTANCE1_ZMQ_SERVER }}" >> $GITHUB_ENV
             echo "🎯 Deploying to ${{ matrix.instance }}"
+          else
+            echo "❌ Unknown instance: ${{ matrix.instance }}"
+            exit 1
           fi
 
       - name: Download build artifacts
