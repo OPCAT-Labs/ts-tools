@@ -16,6 +16,7 @@ import { MetadataSerializer } from '@opcat-labs/cat-sdk';
 import { Decimal } from 'decimal.js';
 import { SupportedNetwork } from '@opcat-labs/scrypt-ts-opcat';
 import { ConfigService } from '@nestjs/config';
+import * as tokenOverrides from '../../config/token-overrides.json';
 
 @Injectable()
 export class TokenService {
@@ -372,6 +373,13 @@ export class TokenService {
     }
     const rendered = Object.assign({}, { info: tokenInfo.rawInfo }, tokenInfo);
     delete rendered.rawInfo;
+
+    // Apply token data overrides from config
+    const overrides = tokenOverrides[rendered.tokenId];
+    if (overrides) {
+      Object.assign(rendered, overrides);
+    }
+
     return rendered;
   }
 
